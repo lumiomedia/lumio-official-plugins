@@ -1,3 +1,9 @@
+## 0.1.23
+
+- Skrivbord: 30 px marginal på båda sidor.
+- TV: sidan dras bara ut till den behållare som faktiskt klipper (inget kapas längre i vänsterkanten).
+- TV: ▲ från första kanalen går till appens toppmeny.
+
 ## 0.1.22
 
 - Tablån i spelaren går kant i kant hela vägen ner och täcker spelarens kontroller.

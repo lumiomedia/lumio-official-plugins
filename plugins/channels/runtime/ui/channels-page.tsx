@@ -124,11 +124,25 @@ function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): 
     const el = ref.current
     if (!active || !el || typeof window === 'undefined') { setBleed((b) => (b.left || b.right ? { left: 0, right: 0 } : b)); return }
     const measure = () => {
-      const column = el.closest('[data-app-column]')
-      if (!column) return
-      const cs = getComputedStyle(column)
-      const left = parseFloat(cs.paddingLeft) || 0
-      const right = parseFloat(cs.paddingRight) || 0
+      // Ut till närmaste förälder som KLIPPER i sidled (overflow ≠ visible),
+      // mätt i sidans egna enheter (TV-scenen är skalad). Kolumnens padding
+      // räckte på skrivbordet men drog ut sidan bakom klippkanten på TV.
+      const r = el.getBoundingClientRect()
+      const k = el.offsetWidth > 0 && r.width > 0 ? r.width / el.offsetWidth : 1
+      // Nuvarande (negativa) marginal räknas bort: mät sidans naturliga läge.
+      const own = getComputedStyle(el)
+      const natLeft = r.left - (parseFloat(own.marginLeft) || 0) * k
+      const natRight = r.right + (parseFloat(own.marginRight) || 0) * k
+      let clip: HTMLElement | null = el.parentElement
+      while (clip && getComputedStyle(clip).overflowX === 'visible') clip = clip.parentElement
+      const box = clip ? clip.getBoundingClientRect() : { left: 0, right: window.innerWidth }
+      const cs = clip ? getComputedStyle(clip) : null
+      const borderL = cs ? (parseFloat(cs.borderLeftWidth) || 0) * k : 0
+      const borderR = cs ? (parseFloat(cs.borderRightWidth) || 0) * k : 0
+      // Rullister i klippbehållaren räknas inte (clientWidth < offsetWidth).
+      const scrollbar = clip ? Math.max(0, (clip.offsetWidth - clip.clientWidth) * k - borderL - borderR) : 0
+      const left = Math.max(0, Math.floor((natLeft - box.left - borderL) / k))
+      const right = Math.max(0, Math.floor((box.right - borderR - scrollbar - natRight) / k))
       setBleed((b) => (b.left === left && b.right === right ? b : { left, right }))
     }
     measure()

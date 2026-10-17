@@ -162,6 +162,9 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       // TV-bandet: rader ovanför bandet är inga stationer (de syns bara i uttoningen);
       // ▲ från bandraden går via onNav.
       station={!band || i >= bandAt}
+      // ▲ från första kanalen: appens toppmeny (snabbmenyns mittpost, annars TV-menypillret),
+      // samma väljare som appens TV-hero — geometrin hittade annars en kanalrad.
+      upTarget={isTv && i === 0 ? TV_TOP_MENU_SELECTOR : undefined}
       onNav={fill && !isMobile ? (dir) => onNav(i, dir) : undefined}
       onFocusRow={band ? () => setFocusIndex(i) : undefined}
       isTv={isTv}
@@ -183,7 +186,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     (TV 100 enheter) och herons vänsterkant (skrivbord 30 px).
   */
   // Lika på båda sidor (Jerry 2026-10-17): tablåns kanter speglar herons 60.
-  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 2px'
+  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 12px'
   return (
     <section
       data-channels-guide=""
@@ -257,6 +260,8 @@ interface RowProps {
   station: boolean
   /** ▲▼ på raden (sidans tablå); falskt = ingen rad åt det hållet. */
   onNav?(dir: -1 | 1): boolean
+  /** TV: fokusmotorns ▲-mål (data-f-up) för första raden. */
+  upTarget?: string
   /** TV-bandet: raden fick fokus. */
   onFocusRow?(): void
   /** Klick/OK spelar kanalen (tablån i spelaren); annars väljer klick, och klick på vald rad spelar. */
@@ -272,7 +277,10 @@ interface RowProps {
   onHold?(id: string, element: HTMLElement): void
 }
 
-const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, init, station, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }: RowProps) {
+/** Appens toppmeny på TV: snabbmenyns mittpost (QUICK_MENU_CENTER_SELECTOR), annars menypillret. */
+export const TV_TOP_MENU_SELECTOR = '[data-quick-menu] [data-qm-center], [data-tv-menu-chip]'
+
+const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, init, station, upTarget, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }: RowProps) {
   const plays = isTv || clickPlays
   // Klick: spelar på TV och i spelarens tablå; annars väljer klicket, och klick på vald rad spelar.
   const activate = () => (plays || selected ? onPlay(channel.id) : onSelect(channel.id))
@@ -318,6 +326,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       tabIndex={station ? 0 : -1}
       data-f={station ? '' : undefined}
       data-init={init ? '' : undefined}
+      data-f-up={station && upTarget ? upTarget : undefined}
       data-channel-row={channel.id}
       aria-pressed={selected}
       onClick={activate}

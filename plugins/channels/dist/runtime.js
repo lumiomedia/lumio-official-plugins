@@ -435,6 +435,166 @@
     }
   });
 
+  // lib/storage-cache-keys.ts
+  var init_storage_cache_keys = __esm({
+    "lib/storage-cache-keys.ts"() {
+    }
+  });
+
+  // lib/storage-quota.ts
+  var lastEmptyPassAt;
+  var init_storage_quota = __esm({
+    "lib/storage-quota.ts"() {
+      "use client";
+      init_app_storage();
+      init_storage_cache_keys();
+      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
+    }
+  });
+
+  // lib/app-storage.ts
+  function tauriInternals() {
+    if (typeof window === "undefined") return null;
+    const internals = window.__TAURI_INTERNALS__;
+    return internals && typeof internals.invoke === "function" ? internals : null;
+  }
+  function isMissingCommandError(error) {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    return /not found|unknown command|no such command|command .* not (registered|allowed)/i.test(message);
+  }
+  function markRejected(error) {
+    if (isMissingCommandError(error)) markNative("absent");
+  }
+  function markNative(state2) {
+    if (nativeState === state2) return;
+    nativeState = state2;
+    if (state2 === "absent" && tauriInternals()) {
+      console.warn("[app-storage] ingen nativ lagring bakom invoke \u2014 localStorage \xE4r den enda durabla kopian");
+    }
+  }
+  function nativeInvoke(command, payload) {
+    const internals = tauriInternals();
+    if (!internals) return false;
+    try {
+      const result = internals.invoke(command, payload);
+      if (result && typeof result.then === "function") {
+        const tracked = result.then(
+          () => markNative("durable"),
+          markRejected
+        );
+        pending.add(tracked);
+        void tracked.finally(() => pending.delete(tracked));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function ensureStore() {
+    if (store) return store;
+    const seeded = /* @__PURE__ */ new Map();
+    if (typeof window !== "undefined") {
+      const snapshot = window.__lumioNativeStorageSnapshot;
+      if (snapshot) {
+        if (nativeState === "unknown") nativeState = "durable";
+        for (const [key, value] of Object.entries(snapshot)) {
+          seeded.set(key, String(value));
+        }
+      }
+      try {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (key === null) continue;
+          const value = localStorage.getItem(key);
+          if (value !== null) seeded.set(key, value);
+        }
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const snapshot = window.__lumioNativeStorageSnapshot;
+        const snapRaw = snapshot?.["app_profiles"];
+        const localRaw = seeded.get("app_profiles");
+        const revOf = (raw) => {
+          if (!raw) return -1;
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return 0;
+            const rev = Number(parsed?.rev);
+            return Number.isFinite(rev) ? rev : 0;
+          } catch {
+            return -1;
+          }
+        };
+        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
+          seeded.set("app_profiles", snapRaw);
+          try {
+            localStorage.setItem("app_profiles", snapRaw);
+          } catch {
+          }
+        }
+      } catch {
+      }
+    }
+    store = seeded;
+    return seeded;
+  }
+  function updateSnapshot(key, value) {
+    if (typeof window === "undefined") return;
+    try {
+      const holder = window;
+      if (!holder.__lumioNativeStorageSnapshot) return;
+      if (value === null) delete holder.__lumioNativeStorageSnapshot[key];
+      else holder.__lumioNativeStorageSnapshot[key] = value;
+    } catch {
+    }
+  }
+  function getItem(key) {
+    if (typeof window === "undefined") return null;
+    return ensureStore().get(key) ?? null;
+  }
+  function removeItem(key) {
+    if (typeof window === "undefined") return;
+    ensureStore().delete(key);
+    nativeInvoke("storage_remove_item", { key });
+    updateSnapshot(key, null);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+    }
+  }
+  var pending, nativeState, store;
+  var init_app_storage = __esm({
+    "lib/app-storage.ts"() {
+      "use client";
+      init_storage_quota();
+      init_storage_cache_keys();
+      pending = /* @__PURE__ */ new Set();
+      nativeState = "unknown";
+      store = null;
+    }
+  });
+
+  // lib/android-source-cache.ts
+  function isAndroidUserAgent() {
+    return typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  }
+  function getAndroidSourceCache() {
+    if (typeof window === "undefined") return false;
+    return getItem(KEY_ANDROID_SOURCE_CACHE) === "1";
+  }
+  function androidStreamsDirect() {
+    return isAndroidUserAgent() && !getAndroidSourceCache();
+  }
+  var KEY_ANDROID_SOURCE_CACHE;
+  var init_android_source_cache = __esm({
+    "lib/android-source-cache.ts"() {
+      init_app_storage();
+      KEY_ANDROID_SOURCE_CACHE = "playback_android_source_cache";
+    }
+  });
+
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk, getActiveProfile, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
   var init_profile_storage_shim = __esm({
@@ -865,6 +1025,557 @@
     }
   });
 
+  // lib/subtitle-legibility.ts
+  function isSubtitleFont(value) {
+    return typeof value === "string" && SUBTITLE_FONTS.includes(value);
+  }
+  function domSubtitleTypography(prefs) {
+    return {
+      fontFamily: prefs.font === "default" ? void 0 : `'${FAMILY[prefs.font]}', sans-serif`,
+      // 500 är vad överlägget alltid ritat med (font-medium).
+      fontWeight: prefs.bold ? 500 : 400,
+      letterSpacing: prefs.letterSpacing > 0 ? `${prefs.letterSpacing / 100}em` : void 0,
+      lineHeight: Math.round(BASE_LINE_HEIGHT * prefs.lineSpacing * 10) / 1e3
+    };
+  }
+  function assSubtitleTypography(prefs, fontSize2, nativeFontSize) {
+    const factor = ASS_SIZE_FACTOR[prefs.font];
+    const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
+    const round1 = (value) => Math.round(value * 10) / 10;
+    return {
+      fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
+      bold: prefs.bold,
+      assFontSize: round1(fontSize2 * factor),
+      nativeFontSize: Math.round(nativeFontSize * factor),
+      assSpacing: round1(fontSize2 * em),
+      nativeSpacing: round1(nativeFontSize * em)
+    };
+  }
+  var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      SUBTITLE_FONTS = ["default", "atkinson", "opendyslexic"];
+      SUBTITLE_LETTER_SPACING_OPTIONS = [0, 4, 8, 12];
+      SUBTITLE_LINE_SPACING_OPTIONS = [100, 120, 140, 160];
+      DEFAULT_SUBTITLE_FONT = "default";
+      DEFAULT_SUBTITLE_LETTER_SPACING = 0;
+      DEFAULT_SUBTITLE_LINE_SPACING = 100;
+      DEFAULT_SUBTITLE_BOLD = true;
+      BASE_LINE_HEIGHT = 1.375;
+      DEFAULT_ASS_FONT = "Helvetica";
+      FAMILY = {
+        atkinson: "Atkinson Hyperlegible",
+        opendyslexic: "OpenDyslexic"
+      };
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
+  // lib/playback-settings.ts
+  function getStoredString(key, fallback = "") {
+    if (typeof window === "undefined") return fallback;
+    return getScopedStorageItem(key) ?? fallback;
+  }
+  function emitPlaybackSettingsChanged() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(PLAYBACK_SETTINGS_CHANGED_EVENT));
+  }
+  function onPlaybackSettingsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+  }
+  function normalizeLanguageCode(value) {
+    if (!value) return null;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    return LANG3_TO_2[normalized] ?? normalized;
+  }
+  function languageCodeAliases(value) {
+    const code = normalizeLanguageCode(value);
+    if (!code) return [];
+    return [code, ...Object.keys(LANG3_TO_2).filter((key) => LANG3_TO_2[key] === code)];
+  }
+  function getDefaultSubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getFallbackSubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_FALLBACK_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getDefaultAudioLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_AUDIO_LANGUAGE, "")) ?? "";
+  }
+  function getAudioOutputMode() {
+    const stored = getStoredString(KEY_AUDIO_OUTPUT_MODE, DEFAULT_AUDIO_OUTPUT_MODE);
+    return stored === "compatible" || stored === "best" ? stored : DEFAULT_AUDIO_OUTPUT_MODE;
+  }
+  function getDefaultSubtitleSize() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_SIZE;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_SIZE;
+  }
+  function setDefaultSubtitleSize(value) {
+    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE, String(value));
+    emitPlaybackSettingsChanged();
+  }
+  function getDefaultSubtitleVerticalPosition() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_VERTICAL_POSITION;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_VERTICAL_POSITION;
+  }
+  function setDefaultSubtitleVerticalPosition(value) {
+    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, String(value));
+    emitPlaybackSettingsChanged();
+  }
+  function getDefaultSubtitleOpacity() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_OPACITY;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_OPACITY) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_OPACITY;
+  }
+  function getSubtitleTextColor() {
+    return getStoredString(KEY_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_TEXT_COLOR);
+  }
+  function getSubtitleBackgroundColor() {
+    return getStoredString(KEY_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR);
+  }
+  function getSubtitleOutlineColor() {
+    return getStoredString(KEY_SUBTITLE_OUTLINE_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR);
+  }
+  function getDefaultAspectRatio() {
+    const stored = getStoredString(KEY_DEFAULT_ASPECT_RATIO, DEFAULT_ASPECT_RATIO);
+    return ASPECT_RATIO_MODES.includes(stored) ? stored : DEFAULT_ASPECT_RATIO;
+  }
+  function setDefaultAspectRatio(value) {
+    setScopedStorageItem(KEY_DEFAULT_ASPECT_RATIO, value);
+    emitPlaybackSettingsChanged();
+  }
+  function getRememberAspectRatio() {
+    if (typeof window === "undefined") return DEFAULT_REMEMBER_ASPECT_RATIO;
+    return (getScopedStorageItem(KEY_REMEMBER_ASPECT_RATIO) ?? "0") === "1";
+  }
+  function getSubtitleAutoSync() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_SUBTITLE_AUTO_SYNC) ?? "1") === "1";
+  }
+  function getMatchFrameRateMode() {
+    if (typeof window === "undefined") return "off";
+    const value = getScopedStorageItem(KEY_MATCH_FRAME_RATE);
+    return value === "vod" || value === "all" ? value : "off";
+  }
+  function shouldMatchFrameRate(kind) {
+    const mode = getMatchFrameRateMode();
+    return mode === "all" || mode === "vod" && kind === "vod";
+  }
+  function getAllowSoftwareVideoDecoding() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
+  }
+  function getAutoSkipIntro() {
+    if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
+    return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
+  }
+  function setAutoSkipIntro(value) {
+    setScopedStorageItem(KEY_AUTO_SKIP_INTRO, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getHideWatchedMoviesHome() {
+    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
+    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
+  }
+  function getStayFullscreenOnClose() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_STAY_FULLSCREEN_ON_CLOSE) ?? "0") === "1";
+  }
+  function getHideSkipButtonAfterSeconds() {
+    if (typeof window === "undefined") return 0;
+    const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
+    return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
+  }
+  function getControlsHideAfterSeconds() {
+    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
+    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const parsed = Number.parseInt(raw, 10);
+    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
+  }
+  function getSubtitlesOffByDefault() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem("playback_subtitlesOffByDefault") === "1";
+  }
+  function getTrackBlockWords() {
+    if (typeof window === "undefined") return [];
+    const raw = getScopedStorageItem("playback_trackBlockWords") ?? "";
+    return raw.split(",").map((word) => word.trim().toLowerCase()).filter(Boolean);
+  }
+  function getDownloadDir() {
+    if (typeof window === "undefined") return "";
+    return getItem("lumio_download_dir") ?? "";
+  }
+  function getShowStreamQuality() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem("playback_showStreamQuality") !== "0";
+  }
+  function getShowTitleOnStart() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_SHOW_TITLE_ON_START) ?? "0") === "1";
+  }
+  function getSeriesNameFirst() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_SERIES_NAME_FIRST) ?? "1") === "1";
+  }
+  function getStillWatchingEnabled() {
+    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_ENABLED;
+    return (getScopedStorageItem(KEY_STILL_WATCHING_ENABLED) ?? "0") === "1";
+  }
+  function getStillWatchingMaxMinutes() {
+    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_MAX_MINUTES;
+    const raw = Number.parseInt(getScopedStorageItem(KEY_STILL_WATCHING_MAX_MINUTES) ?? "", 10);
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_STILL_WATCHING_MAX_MINUTES;
+    return raw;
+  }
+  function getUpgradeSubtitleWhenBetter() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_UPGRADE_SUBTITLE_WHEN_BETTER) ?? "1") === "1";
+  }
+  function getForcedSubtitlesWhenAudioMatches() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES) ?? "0") === "1";
+  }
+  function getDisableSubtitlesWhenAudioMatches() {
+    if (typeof window === "undefined") return DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES;
+    return (getScopedStorageItem(KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES) ?? "0") === "1";
+  }
+  function getExtraSubtitleLanguagesRaw() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_EXTRA_SUBTITLE_LANGUAGES) ?? "";
+  }
+  function getExtraSubtitleLanguages() {
+    return getExtraSubtitleLanguagesRaw().split(",").map((code) => code.trim().toLowerCase()).filter(Boolean);
+  }
+  function getRawMpvConf() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
+  }
+  function parseRawMpvConf(raw) {
+    return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
+      const eq = line.indexOf("=");
+      if (eq <= 0) return null;
+      const name = line.slice(0, eq).trim();
+      const value = line.slice(eq + 1).trim();
+      return name ? [name, value] : null;
+    }).filter((entry) => entry != null);
+  }
+  function getPreferEmbeddedSubtitles() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
+  }
+  function getExternalPlayerApp() {
+    if (typeof window === "undefined") return "VLC";
+    const stored = (getScopedStorageItem(KEY_EXTERNAL_PLAYER_APP) ?? "").trim();
+    return stored || "VLC";
+  }
+  function getAudioDelayMs() {
+    if (typeof window === "undefined") return 0;
+    const raw = Number(getStoredString(KEY_AUDIO_DELAY_MS, "0"));
+    if (!Number.isFinite(raw)) return 0;
+    return clampAudioDelayMs(raw);
+  }
+  function clampAudioDelayMs(value) {
+    const steg = Math.round(value / AUDIO_DELAY_STEP_MS) * AUDIO_DELAY_STEP_MS;
+    return Math.max(-AUDIO_DELAY_LIMIT_MS, Math.min(AUDIO_DELAY_LIMIT_MS, steg));
+  }
+  function setAudioDelayMs(value) {
+    setScopedStorageItem(KEY_AUDIO_DELAY_MS, String(clampAudioDelayMs(value)));
+    emitPlaybackSettingsChanged();
+  }
+  function getBluetoothAudioAutoOffset() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
+  }
+  function getExternalDisplayVideoOnly() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_EXTERNAL_DISPLAY_VIDEO_ONLY) !== "0";
+  }
+  function getNightMode() {
+    const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
+    return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
+  }
+  function setNightMode(value) {
+    setScopedStorageItem(KEY_NIGHT_MODE, value);
+    emitPlaybackSettingsChanged();
+  }
+  function getCreditsRecommendations() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS;
+    return (getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS) ?? "0") === "1";
+  }
+  function getCreditsThresholdMinutes() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    return Math.max(1, Math.min(6, raw));
+  }
+  function getCreditsRecommendationsTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    const raw = getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS_TV);
+    if (raw === null) return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    return raw === "1";
+  }
+  function getCreditsThresholdMinutesTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES_TV) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    return Math.max(1, Math.min(6, raw));
+  }
+  function getStatsHud() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STATS_HUD) === "1";
+  }
+  function setStatsHud(value) {
+    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getStripSdh() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
+  }
+  function setStripSdh(value) {
+    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getLearningMode() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_LEARNING_MODE) === "1";
+  }
+  function setLearningMode(value) {
+    setScopedStorageItem(KEY_LEARNING_MODE, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getSecondarySubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_SECONDARY_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getSecondarySubtitleColor() {
+    return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
+  }
+  function getStoredOption(key, options, fallback) {
+    const raw = Number(getStoredString(key, ""));
+    return options.includes(raw) ? raw : fallback;
+  }
+  function getSubtitleLegibility() {
+    const font = getStoredString(KEY_SUBTITLE_FONT, DEFAULT_SUBTITLE_FONT);
+    const bold = getStoredString(KEY_SUBTITLE_BOLD, "");
+    return {
+      font: isSubtitleFont(font) ? font : DEFAULT_SUBTITLE_FONT,
+      letterSpacing: getStoredOption(KEY_SUBTITLE_LETTER_SPACING, SUBTITLE_LETTER_SPACING_OPTIONS, DEFAULT_SUBTITLE_LETTER_SPACING),
+      lineSpacing: getStoredOption(KEY_SUBTITLE_LINE_SPACING, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_LINE_SPACING),
+      bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
+    };
+  }
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var init_playback_settings = __esm({
+    "lib/playback-settings.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+      init_subtitle_legibility();
+      KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
+      KEY_FALLBACK_SUBTITLE_LANGUAGE = "playback_fallbackSubtitleLanguage";
+      KEY_DEFAULT_AUDIO_LANGUAGE = "playback_defaultAudioLanguage";
+      KEY_AUDIO_OUTPUT_MODE = "playback_audioOutputMode";
+      KEY_DEFAULT_SUBTITLE_SIZE = "playback_defaultSubtitleSize";
+      KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION = "playback_defaultSubtitleVerticalPosition";
+      KEY_DEFAULT_SUBTITLE_OPACITY = "playback_defaultSubtitleOpacity";
+      KEY_SUBTITLE_TEXT_COLOR = "playback_subtitleTextColor";
+      KEY_SUBTITLE_BACKGROUND_COLOR = "playback_subtitleBackgroundColor";
+      KEY_SUBTITLE_OUTLINE_COLOR = "playback_subtitleOutlineColor";
+      KEY_DEFAULT_ASPECT_RATIO = "playback_defaultAspectRatio";
+      KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
+      KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
+      KEY_SUBTITLE_AUTO_SYNC = "playback_subtitleAutoSync";
+      KEY_MATCH_FRAME_RATE = "playback_matchFrameRateMode";
+      KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
+      KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
+      KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
+      KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
+      KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
+      KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
+      KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
+      KEY_CREDITS_RECOMMENDATIONS_TV = "playback_creditsRecommendationsTv";
+      KEY_CREDITS_THRESHOLD_MINUTES_TV = "playback_creditsThresholdMinutesTv";
+      KEY_NIGHT_MODE = "playback_nightMode";
+      KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
+      KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
+      KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
+      KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
+      KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
+      KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
+      KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
+      HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
+      CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
+      CONTROLS_HIDE_DEFAULT_SECONDS = 3;
+      PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
+      LANG_NAMES = {
+        en: "English",
+        sv: "Svenska",
+        no: "Norsk",
+        da: "Dansk",
+        fi: "Suomi",
+        de: "Deutsch",
+        fr: "Fran\xE7ais",
+        es: "Espa\xF1ol",
+        it: "Italiano",
+        pt: "Portugu\xEAs",
+        nl: "Nederlands",
+        pl: "Polski",
+        ru: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+        ar: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
+        hi: "\u0939\u093F\u0928\u094D\u0926\u0940",
+        zh: "\u4E2D\u6587",
+        ja: "\u65E5\u672C\u8A9E",
+        ko: "\uD55C\uAD6D\uC5B4",
+        tr: "T\xFCrk\xE7e",
+        cs: "\u010Ce\u0161tina",
+        ro: "Rom\xE2n\u0103",
+        hu: "Magyar",
+        el: "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC",
+        he: "\u05E2\u05D1\u05E8\u05D9\u05EA",
+        uk: "\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430",
+        sr: "Srpski",
+        hr: "Hrvatski",
+        sk: "Sloven\u010Dina",
+        bg: "\u0411\u044A\u043B\u0433\u0430\u0440\u0441\u043A\u0438",
+        vi: "Ti\u1EBFng Vi\u1EC7t",
+        th: "\u0E44\u0E17\u0E22",
+        id: "Bahasa Indonesia"
+      };
+      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
+      ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
+      LANG3_TO_2 = {
+        eng: "en",
+        swe: "sv",
+        nor: "no",
+        dan: "da",
+        fin: "fi",
+        deu: "de",
+        ger: "de",
+        fra: "fr",
+        fre: "fr",
+        spa: "es",
+        ita: "it",
+        por: "pt",
+        nld: "nl",
+        dut: "nl",
+        pol: "pl",
+        rus: "ru",
+        ara: "ar",
+        hin: "hi",
+        zho: "zh",
+        chi: "zh",
+        jpn: "ja",
+        kor: "ko",
+        tur: "tr",
+        ces: "cs",
+        cze: "cs",
+        ron: "ro",
+        rum: "ro",
+        hun: "hu",
+        ell: "el",
+        gre: "el",
+        heb: "he",
+        ukr: "uk",
+        srp: "sr",
+        hrv: "hr",
+        slk: "sk",
+        bul: "bg",
+        vie: "vi",
+        tha: "th",
+        ind: "id"
+      };
+      DEFAULT_SUBTITLE_SIZE = 100;
+      DEFAULT_AUDIO_OUTPUT_MODE = "best";
+      DEFAULT_SUBTITLE_VERTICAL_POSITION = 5;
+      DEFAULT_SUBTITLE_OPACITY = 100;
+      DEFAULT_SUBTITLE_TEXT_COLOR = "#ffffff";
+      DEFAULT_SUBTITLE_BACKGROUND_COLOR = "transparent";
+      DEFAULT_SUBTITLE_OUTLINE_COLOR = "#000000";
+      DEFAULT_ASPECT_RATIO = "auto";
+      DEFAULT_REMEMBER_ASPECT_RATIO = false;
+      DEFAULT_AUTO_SKIP_INTRO = false;
+      DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
+      DEFAULT_STILL_WATCHING_ENABLED = false;
+      DEFAULT_STILL_WATCHING_MAX_MINUTES = 90;
+      DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
+      DEFAULT_CREDITS_RECOMMENDATIONS = false;
+      DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
+      DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
+      DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
+      DEFAULT_NIGHT_MODE = "off";
+      KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
+      KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
+      KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
+      KEY_RAW_MPV_CONF = "playback_rawMpvConf";
+      KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
+      KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
+      AUDIO_DELAY_STEP_MS = 50;
+      AUDIO_DELAY_LIMIT_MS = 2e3;
+      KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
+      BLUETOOTH_AUDIO_OFFSET_MS = -150;
+      KEY_STATS_HUD = "playback_statsHud";
+      KEY_STRIP_SDH = "playback_stripSdh";
+      KEY_LEARNING_MODE = "playback_learningMode";
+      KEY_SECONDARY_SUBTITLE_LANGUAGE = "playback_secondarySubtitleLanguage";
+      KEY_SECONDARY_SUBTITLE_COLOR = "playback_secondarySubtitleColor";
+      DEFAULT_SECONDARY_SUBTITLE_COLOR = "#e8d9a0";
+      KEY_SUBTITLE_FONT = "playback_subtitleFont";
+      KEY_SUBTITLE_LETTER_SPACING = "playback_subtitleLetterSpacing";
+      KEY_SUBTITLE_LINE_SPACING = "playback_subtitleLineSpacing";
+      KEY_SUBTITLE_BOLD = "playback_subtitleBold";
+    }
+  });
+
+  // lib/android-direct-stream.ts
+  function knownFinalUrl(url) {
+    const hit = finals.get(url);
+    if (!hit) return null;
+    if (Date.now() - hit.at > FINAL_URL_TTL_MS) {
+      finals.delete(url);
+      return null;
+    }
+    return hit.url;
+  }
+  async function registerPlayerTee(url) {
+    const controller = new AbortController();
+    const timer3 = setTimeout(() => controller.abort(), TEE_REGISTER_WAIT_MS);
+    try {
+      const r = await fetch("/api/source-tee/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ u: url }),
+        signal: controller.signal
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return typeof j.dir === "string" && j.dir.length > 0 ? j.dir : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer3);
+    }
+  }
+  var FINAL_URL_TTL_MS, finals, TEE_REGISTER_WAIT_MS;
+  var init_android_direct_stream = __esm({
+    "lib/android-direct-stream.ts"() {
+      FINAL_URL_TTL_MS = 30 * 60 * 1e3;
+      finals = /* @__PURE__ */ new Map();
+      TEE_REGISTER_WAIT_MS = 1500;
+    }
+  });
+
   // lib/tauri-native-player.ts
   function sameNativeTracks(a, b) {
     if (a.length !== b.length) return false;
@@ -873,17 +1584,22 @@
       return other !== void 0 && track.id === other.id && track.lang === other.lang && track.title === other.title && track.channels === other.channels && track.codec === other.codec;
     });
   }
-  async function np(cmd) {
+  async function np(cmd, timeoutMs) {
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer3 = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : void 0;
     try {
       const res = await fetch("/api/native-player", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(cmd)
+        body: JSON.stringify(cmd),
+        signal: controller?.signal
       });
       if (!res.ok) return null;
       return await res.json();
     } catch {
       return null;
+    } finally {
+      if (timer3 !== void 0) window.clearTimeout(timer3);
     }
   }
   async function getDeviceCapabilities() {
@@ -898,10 +1614,6 @@
     }
     return deviceCapsPromise;
   }
-  function looksLikeDolbyVision(name) {
-    const separated = /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i;
-    return separated.test(name) || /dolby[.\s_-]?vision/i.test(name);
-  }
   function looksLikeLosslessAudio(name) {
     return /(true[.\s_-]?hd|atmos|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(name);
   }
@@ -913,21 +1625,30 @@
     if (looksLikeLosslessAudio(name) && !caps.trueHd && !caps.dts) {
       return { ok: false, reason: "DEVICE_NO_AUDIO_DECODER" };
     }
-    if (looksLikeDolbyVision(name) && !caps.dolbyVision) {
-      return { ok: false, reason: "DEVICE_NO_DOLBY_VISION" };
-    }
     return { ok: true };
   }
   async function openNativePlayer(opts) {
     const { closeAllAuxSurfaces: closeAllAuxSurfaces3 } = await Promise.resolve().then(() => (init_video_surfaces(), video_surfaces_exports));
     await closeAllAuxSurfaces3("primary-open");
-    const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
+    const direct = androidStreamsDirect();
+    const cacheable = sourceCacheUrl(opts.url, opts.requestHeaders);
+    const wrapped = direct ? null : cacheable;
+    const finalUrl = direct && cacheable ? knownFinalUrl(opts.url) : null;
+    const teeDir = direct && cacheable ? await registerPlayerTee(opts.url) : null;
     await np({
       cmd: "open",
-      url: wrapped,
+      url: wrapped ?? finalUrl ?? opts.url,
+      ...teeDir ? { teeDir } : {},
       start: opts.start ?? 0,
       audioLang: opts.audioLang ?? "",
-      mimeType: opts.mimeType ?? ""
+      mimeType: opts.mimeType ?? "",
+      matchFrameRate: shouldMatchFrameRate(opts.kind ?? "live"),
+      // Läses vid varje start, inte när spelaren skapas: inställningen ska
+      // gälla nästa film utan omstart. Saknas fältet (plugins egen kopia av
+      // den här funktionen) gäller standarden, bara hårdvara.
+      allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
+      // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
+      ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
   }
   async function closeNativePlayer() {
@@ -979,6 +1700,12 @@
       h: Math.round(rect.height * scale)
     });
   }
+  function setNativeFineTime(on) {
+    fineTimeWanted = on;
+  }
+  function setNativeTimeGate(gate) {
+    timeGate = gate;
+  }
   function useNativePlayer(enabled = true) {
     const [timePos, setTimePos] = useState(0);
     const [duration2, setDuration] = useState(0);
@@ -1003,14 +1730,19 @@
     const [externalDisplay, setExternalDisplay] = useState(false);
     const [stats, setStats] = useState(null);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
+    const publishedTimeRef = useRef(0);
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
       let cancelled = false;
       const tick2 = async () => {
-        const s = await np({ cmd: "status" });
+        const s = await np({ cmd: "status" }, STATUS_TIMEOUT_MS);
         if (cancelled || !s || typeof s.timePos !== "number") return;
         const prev = prevRef.current;
-        setTimePos(s.timePos);
+        const published = publishedTimeRef.current;
+        if (fineTimeWanted || s.timePos < published || s.timePos - published >= 1 || timeGate !== null && timeGate(published, s.timePos)) {
+          setTimePos(s.timePos);
+          publishedTimeRef.current = s.timePos;
+        }
         prev.timePos = s.timePos;
         setDuration(s.duration);
         const pending5 = pendingPauseRef.current;
@@ -1059,13 +1791,19 @@
           }
         }
       };
-      const id = window.setInterval(() => {
-        void tick2();
-      }, 250);
-      void tick2();
+      let timer3;
+      const loop = async () => {
+        const startedAt = Date.now();
+        await tick2();
+        if (cancelled) return;
+        timer3 = window.setTimeout(() => {
+          void loop();
+        }, Math.max(0, STATUS_POLL_MS - (Date.now() - startedAt)));
+      };
+      void loop();
       return () => {
         cancelled = true;
-        window.clearInterval(id);
+        if (timer3 !== void 0) window.clearTimeout(timer3);
       };
     }, [enabled]);
     const seek = useCallback((time) => {
@@ -1159,15 +1897,22 @@
       stats
     };
   }
-  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise;
+  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_react_shim();
       init_tauri_mpv();
+      init_playback_settings();
+      init_android_source_cache();
+      init_android_direct_stream();
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
       deviceCapsCache = null;
       deviceCapsPromise = null;
+      fineTimeWanted = true;
+      timeGate = null;
+      STATUS_POLL_MS = 250;
+      STATUS_TIMEOUT_MS = 2e3;
     }
   });
 
@@ -1224,14 +1969,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners7 = /* @__PURE__ */ new Set();
+        const listeners8 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit3 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners7]) l(state2);
+          for (const l of [...listeners8]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1304,15 +2049,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners7.add(l);
-            return () => listeners7.delete(l);
+            listeners8.add(l);
+            return () => listeners8.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit3({ loadFailed: true });
-            listeners7.clear();
+            listeners8.clear();
           }
         };
       }
@@ -1366,17 +2111,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners7 = /* @__PURE__ */ new Set();
+    const listeners8 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners7]) listener(state2);
+      for (const listener of [...listeners8]) listener(state2);
     };
     const dispatch = (next2) => {
       state2 = next2;
-      for (const listener of [...listeners7]) listener(next2);
+      for (const listener of [...listeners8]) listener(next2);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -1452,15 +2197,15 @@
         }
       },
       onState(listener) {
-        listeners7.add(listener);
+        listeners8.add(listener);
         return () => {
-          listeners7.delete(listener);
+          listeners8.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit3({ loadFailed: true });
-        listeners7.clear();
+        listeners8.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1523,11 +2268,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners7 = /* @__PURE__ */ new Set();
+    const listeners8 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners7]) listener(state2);
+      for (const listener of [...listeners8]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1567,7 +2312,7 @@
           const next2 = toSurfaceState(value);
           if (!next2) return;
           state2 = next2;
-          for (const listener of [...listeners7]) listener(next2);
+          for (const listener of [...listeners8]) listener(next2);
         });
       }, 250);
     }
@@ -1609,7 +2354,10 @@
           url: opts.url,
           mimeType: opts.mimeType ?? "",
           start: opts.start ?? 0,
-          muted: opts.muted
+          muted: opts.muted,
+          // Källans egna request-headers (Stremio proxyHeaders): spelaren
+          // sätter dem på varje begäran, HLS-segment inräknade.
+          ...opts.requestHeaders ? { headers: opts.requestHeaders } : {}
         });
         if (myGeneration !== generation) return;
         startPolling(surface, myGeneration);
@@ -1640,9 +2388,9 @@
         return false;
       },
       onState(listener) {
-        listeners7.add(listener);
+        listeners8.add(listener);
         return () => {
-          listeners7.delete(listener);
+          listeners8.delete(listener);
         };
       },
       async destroy(reason) {
@@ -1650,7 +2398,7 @@
         generation++;
         stopPolling();
         if (reason) emit3({ loadFailed: true });
-        listeners7.clear();
+        listeners8.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -1896,6 +2644,7 @@
     return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
   }
   function warmSourceCache(originalUrl, requestHeaders) {
+    if (androidStreamsDirect()) return;
     const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
     if (!wrapped) return;
     void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
@@ -2202,153 +2951,13 @@
       import_event2 = __toESM(require_event());
       init_react_shim();
       init_session_host();
+      init_android_source_cache();
       init_plugin_registry();
       isTauriEnv = detectTauriEnv();
       hasTauriIpc = typeof window !== "undefined" && Boolean(
         window.__TAURI_INTERNALS__ || window.__TAURI__
       );
       isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-    }
-  });
-
-  // lib/storage-cache-keys.ts
-  var init_storage_cache_keys = __esm({
-    "lib/storage-cache-keys.ts"() {
-    }
-  });
-
-  // lib/storage-quota.ts
-  var lastEmptyPassAt;
-  var init_storage_quota = __esm({
-    "lib/storage-quota.ts"() {
-      "use client";
-      init_app_storage();
-      init_storage_cache_keys();
-      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
-    }
-  });
-
-  // lib/app-storage.ts
-  function tauriInternals() {
-    if (typeof window === "undefined") return null;
-    const internals = window.__TAURI_INTERNALS__;
-    return internals && typeof internals.invoke === "function" ? internals : null;
-  }
-  function isMissingCommandError(error) {
-    const message = error instanceof Error ? error.message : String(error ?? "");
-    return /not found|unknown command|no such command|command .* not (registered|allowed)/i.test(message);
-  }
-  function markRejected(error) {
-    if (isMissingCommandError(error)) markNative("absent");
-  }
-  function markNative(state2) {
-    if (nativeState === state2) return;
-    nativeState = state2;
-    if (state2 === "absent" && tauriInternals()) {
-      console.warn("[app-storage] ingen nativ lagring bakom invoke \u2014 localStorage \xE4r den enda durabla kopian");
-    }
-  }
-  function nativeInvoke(command, payload) {
-    const internals = tauriInternals();
-    if (!internals) return false;
-    try {
-      const result = internals.invoke(command, payload);
-      if (result && typeof result.then === "function") {
-        const tracked = result.then(
-          () => markNative("durable"),
-          markRejected
-        );
-        pending.add(tracked);
-        void tracked.finally(() => pending.delete(tracked));
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  function ensureStore() {
-    if (store) return store;
-    const seeded = /* @__PURE__ */ new Map();
-    if (typeof window !== "undefined") {
-      const snapshot = window.__lumioNativeStorageSnapshot;
-      if (snapshot) {
-        if (nativeState === "unknown") nativeState = "durable";
-        for (const [key, value] of Object.entries(snapshot)) {
-          seeded.set(key, String(value));
-        }
-      }
-      try {
-        for (let index = 0; index < localStorage.length; index += 1) {
-          const key = localStorage.key(index);
-          if (key === null) continue;
-          const value = localStorage.getItem(key);
-          if (value !== null) seeded.set(key, value);
-        }
-      } catch {
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const snapshot = window.__lumioNativeStorageSnapshot;
-        const snapRaw = snapshot?.["app_profiles"];
-        const localRaw = seeded.get("app_profiles");
-        const revOf = (raw) => {
-          if (!raw) return -1;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return 0;
-            const rev = Number(parsed?.rev);
-            return Number.isFinite(rev) ? rev : 0;
-          } catch {
-            return -1;
-          }
-        };
-        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
-          seeded.set("app_profiles", snapRaw);
-          try {
-            localStorage.setItem("app_profiles", snapRaw);
-          } catch {
-          }
-        }
-      } catch {
-      }
-    }
-    store = seeded;
-    return seeded;
-  }
-  function updateSnapshot(key, value) {
-    if (typeof window === "undefined") return;
-    try {
-      const holder = window;
-      if (!holder.__lumioNativeStorageSnapshot) return;
-      if (value === null) delete holder.__lumioNativeStorageSnapshot[key];
-      else holder.__lumioNativeStorageSnapshot[key] = value;
-    } catch {
-    }
-  }
-  function getItem(key) {
-    if (typeof window === "undefined") return null;
-    return ensureStore().get(key) ?? null;
-  }
-  function removeItem(key) {
-    if (typeof window === "undefined") return;
-    ensureStore().delete(key);
-    nativeInvoke("storage_remove_item", { key });
-    updateSnapshot(key, null);
-    try {
-      localStorage.removeItem(key);
-    } catch {
-    }
-  }
-  var pending, nativeState, store;
-  var init_app_storage = __esm({
-    "lib/app-storage.ts"() {
-      "use client";
-      init_storage_quota();
-      init_storage_cache_keys();
-      pending = /* @__PURE__ */ new Set();
-      nativeState = "unknown";
-      store = null;
     }
   });
 
@@ -3474,6 +4083,10 @@
           rtInverseTmDesc: "Expands SDR material toward HDR on capable displays.",
           rtHwdec: "Hardware acceleration",
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
+          allowSoftwareDecoding: "Allow software decoding",
+          allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          androidSourceCache: "Cache streams",
+          androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
           atEyebrow: "Audio tuning",
           atTitle: "Shape the sound",
@@ -3488,6 +4101,10 @@
           atDownmixDesc: "Folds 5.1/7.1 down to two channels \u2014 laptop speakers and headphones.",
           atEngineNote: "Requires the built-in desktop engine (mpv). Night mode composes on top.",
           vtTitle: "Picture adjustments",
+          vtScopeLabel: "Applies to",
+          vtScopeFilm: "Just this film",
+          vtScopeAll: "All films",
+          vtActive: "On",
           vtHint: "Applies live to an open player and to every playback that follows.",
           vtBrightness: "Brightness",
           vtContrast: "Contrast",
@@ -3499,6 +4116,7 @@
           vtPresetVivid: "Vivid",
           vtPresetCinema: "Cinema dark",
           vtPresetSharp: "Sharp",
+          vtPresetLabel: "Preset",
           vtEngineNote: "Gamma and sharpen require the built-in desktop engine; the browser player applies the rest.",
           sfTabSafety: "Safety",
           sfDisplayEyebrow: "Display",
@@ -3688,6 +4306,11 @@
           cardShapePoster: "Poster",
           cardShapeLandscape: "Landscape",
           homeExpandCards: "Expand card on focus",
+          homeCardVhs: "VHS cases",
+          homeCardVhsAuto: "Follow Theme & scale",
+          homeCardVhsOn: "Turn on focus",
+          homeCardVhsShelf: "Turned on the shelf",
+          homeCardVhsOff: "Off",
           homeExpandCardsHint: "The card in focus widens into a backdrop with logo and facts. Portrait cards only.",
           qrAddonOpen: "Add via phone",
           qrAddonTitle: "Scan with your phone",
@@ -3725,6 +4348,13 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          cardSheen: "Shine on cards",
+          cardSheenDesc: "A soft light sweeps across a card when you point at it or select it.",
+          vhsCards: "VHS cases",
+          vhsCardsDesc: "Cards turn like a VHS case and show the title on the spine: when you point at or select them, or all the time like a shelf, straightening up when selected.",
+          vhsModeOff: "Off",
+          vhsModeFocus: "Turn on focus",
+          vhsModeShelf: "Turned on the shelf",
           performanceMode: "Performance mode",
           performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
           heroActionsExpanded: "Always show action labels",
@@ -4659,6 +5289,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Remember aspect ratio",
           rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
+          matchFrameRate: "Match frame rate",
+          matchFrameRateDesc: "Switches the TV to the frame rate of what you watch, so motion stops juddering. The screen goes black for a moment when it switches.",
+          matchFrameRateOff: "Off",
+          matchFrameRateVod: "Films and series",
+          matchFrameRateAll: "Live TV too",
           autoSkipIntro: "Auto-skip intro",
           autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
           resumePromptEyebrow: "CONTINUE OR START OVER",
@@ -4799,6 +5434,50 @@
           matchWaitingFor: "Waiting for {name} to start",
           matchUndo: "Undo",
           matchLeft: "You left Film Match",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "PREDICT THE MATCH \xB7 {league}",
+          tipKickoff: "Kick-off {time}",
+          tipIn: "in {n} min",
+          tipScan: "Scan with the camera, or open Couch mode",
+          tipInSofa: "On the couch",
+          tipCount: "{n} of {m} have predicted",
+          tipHasTipped: "\u2713 Predicted",
+          tipTipping: "Predicting \u2026",
+          tipLobbyHint: "Predictions lock at kick-off. The score is not shown if spoiler protection is on.",
+          tipLockNow: "Lock now",
+          tipCancel: "Cancel",
+          tipPill: "Predict",
+          tipPillAgain: "Press down again",
+          tipManageOverline: "PREDICT THE MATCH",
+          tipShowLobby: "Show lobby",
+          tipRow: "PREDICTIONS",
+          tipFinal: "FULL TIME",
+          tipExact: "EXACT SCORE",
+          tipWinner: "RIGHT WINNER",
+          tipClosest: "CLOSEST OF THE REST",
+          tipDone: "Done",
+          tipSeason: "Season",
+          tipSeasonOverline: "COUCH SEASON \xB7 {n} MATCHES",
+          tipNewSeason: "New season",
+          tipNewSeasonConfirm: "Press again for a new season",
+          tipColName: "NAME",
+          tipColExact: "EXACT",
+          tipColWinner: "WINNER",
+          tipColTonight: "TONIGHT",
+          tipColPoints: "POINTS",
+          tipExactSub: "predicted {tip} \xB7 3 pts",
+          tipWon: "{team} won",
+          tipDraw: "Draw",
+          tipOneOff: "one goal off",
+          tipNOff: "{n} goals off",
+          tipPlusOne: "+1 pt",
+          tipNobody: "Nobody",
+          tipWhyExact: "Exact score",
+          tipWhyWinner: "Right winner",
+          tipWhyWinnerClosest: "Right winner \xB7 closest",
+          tipWhyClosest: "Closest",
+          tipWhyWrong: "Wrong winner",
+          tipCreateFailed: "Could not start Predict the match. Try again in a moment.",
           matchEnded: "Film Match ended on the TV",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
@@ -5129,6 +5808,8 @@
           subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
           subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
+          subtitleLanguageDetected: "language detected",
           subtitleAutoSyncUndo: "Undo",
           subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
           subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
@@ -7529,6 +8210,10 @@
           rtInverseTmDesc: "Expanderar SDR-material mot HDR p\xE5 kapabla sk\xE4rmar.",
           rtHwdec: "H\xE5rdvaruacceleration",
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
+          allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
+          allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          androidSourceCache: "Mellanlagra str\xF6mmar",
+          androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
           atEyebrow: "Ljudjustering",
           atTitle: "Forma ljudet",
@@ -7543,6 +8228,10 @@
           atDownmixDesc: "F\xE4ller ihop 5.1/7.1 till tv\xE5 kanaler \u2014 laptoph\xF6gtalare och h\xF6rlurar.",
           atEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv). Nattl\xE4get l\xE4ggs ovanp\xE5.",
           vtTitle: "Bildjusteringar",
+          vtScopeLabel: "G\xE4ller",
+          vtScopeFilm: "Bara den h\xE4r filmen",
+          vtScopeAll: "Alla filmer",
+          vtActive: "P\xE5",
           vtHint: "G\xE4ller live i en \xF6ppen spelare och f\xF6r all uppspelning fram\xE5t.",
           vtBrightness: "Ljusstyrka",
           vtContrast: "Kontrast",
@@ -7554,6 +8243,7 @@
           vtPresetVivid: "Levande",
           vtPresetCinema: "Bio-m\xF6rkt",
           vtPresetSharp: "Skarp",
+          vtPresetLabel: "F\xF6rval",
           vtEngineNote: "Gamma och sk\xE4rpa kr\xE4ver den inbyggda desktop-motorn; webbspelaren till\xE4mpar resten.",
           sfTabSafety: "S\xE4kerhet",
           sfDisplayEyebrow: "Visning",
@@ -7740,6 +8430,11 @@
           cardShapePoster: "St\xE5ende",
           cardShapeLandscape: "Liggande",
           homeExpandCards: "F\xE4ll ut kort vid fokus",
+          homeCardVhs: "VHS-fodral",
+          homeCardVhsAuto: "F\xF6lj Tema & skala",
+          homeCardVhsOn: "Vrids vid fokus",
+          homeCardVhsShelf: "Vridna i hyllan",
+          homeCardVhsOff: "Av",
           homeExpandCardsHint: "Kortet i fokus breddas till en bakgrundsbild med logga och fakta. Bara st\xE5ende kort.",
           qrAddonOpen: "L\xE4gg till via mobilen",
           qrAddonTitle: "Skanna med mobilen",
@@ -7777,6 +8472,13 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          cardSheen: "Bl\xE4nk p\xE5 korten",
+          cardSheenDesc: "Ett mjukt ljus sveper \xF6ver ett kort n\xE4r du pekar p\xE5 det eller v\xE4ljer det.",
+          vhsCards: "VHS-fodral",
+          vhsCardsDesc: "Korten vrids som ett VHS-fodral med titeln p\xE5 ryggen: n\xE4r du pekar p\xE5 eller v\xE4ljer dem, eller hela tiden som i en hylla och r\xE4tas upp n\xE4r de v\xE4ljs.",
+          vhsModeOff: "Av",
+          vhsModeFocus: "Vrids vid fokus",
+          vhsModeShelf: "Vridna i hyllan",
           performanceMode: "Prestandal\xE4ge",
           performanceModeDesc: "F\xF6r svagare tv-boxar: tar bort osk\xE4rpa och skuggor bakom menyer och kort, och l\xE5ter inte heron spela trailern av sig sj\xE4lv. Inget f\xF6rsvinner ur gr\xE4nssnittet.",
           heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
@@ -8702,6 +9404,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Kom ih\xE5g bildformat",
           rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
+          matchFrameRate: "Matcha bildfrekvens",
+          matchFrameRateDesc: "Byter TV:n till bildfrekvensen i det du tittar p\xE5, s\xE5 att r\xF6relser inte hackar. Sk\xE4rmen blir svart en kort stund n\xE4r den byter.",
+          matchFrameRateOff: "Av",
+          matchFrameRateVod: "Filmer och serier",
+          matchFrameRateAll: "\xC4ven live-TV",
           autoSkipIntro: "Auto-skippa intro",
           autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
           resumePromptEyebrow: "FORTS\xC4TT ELLER B\xD6RJA OM",
@@ -8842,6 +9549,50 @@
           matchWaitingFor: "V\xE4ntar p\xE5 att {name} k\xF6r ig\xE5ng",
           matchUndo: "\xC5ngra",
           matchLeft: "Du l\xE4mnade Filmmatch",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "TIPPA MATCHEN \xB7 {league}",
+          tipKickoff: "Avspark {time}",
+          tipIn: "om {n} min",
+          tipScan: "Skanna med kameran, eller \xF6ppna Soffl\xE4ge",
+          tipInSofa: "I soffan",
+          tipCount: "{n} av {m} har tippat",
+          tipHasTipped: "\u2713 Har tippat",
+          tipTipping: "Tippar \u2026",
+          tipLobbyHint: "Tipsen l\xE5ses vid avspark. St\xE4llningen visas inte om spoilerskyddet \xE4r p\xE5.",
+          tipLockNow: "L\xE5s nu",
+          tipCancel: "Avbryt",
+          tipPill: "Tippa",
+          tipPillAgain: "Tryck ned igen",
+          tipManageOverline: "TIPPA MATCHEN",
+          tipShowLobby: "Visa lobbyn",
+          tipRow: "TIPS",
+          tipFinal: "SLUT",
+          tipExact: "R\xC4TT RESULTAT",
+          tipWinner: "R\xC4TT VINNARE",
+          tipClosest: "N\xC4RMAST AV \xD6VRIGA",
+          tipDone: "Klar",
+          tipSeason: "S\xE4songen",
+          tipSeasonOverline: "S\xC4SONG I SOFFAN \xB7 {n} MATCHER",
+          tipNewSeason: "Ny s\xE4song",
+          tipNewSeasonConfirm: "Tryck igen f\xF6r ny s\xE4song",
+          tipColName: "NAMN",
+          tipColExact: "R\xC4TT RES.",
+          tipColWinner: "R\xC4TT VINN.",
+          tipColTonight: "IKV\xC4LL",
+          tipColPoints: "PO\xC4NG",
+          tipExactSub: "tippade {tip} \xB7 3 p",
+          tipWon: "{team} vann",
+          tipDraw: "Oavgjort",
+          tipOneOff: "ett m\xE5l ifr\xE5n",
+          tipNOff: "{n} m\xE5l ifr\xE5n",
+          tipPlusOne: "+1 p",
+          tipNobody: "Ingen",
+          tipWhyExact: "R\xE4tt resultat",
+          tipWhyWinner: "R\xE4tt vinnare",
+          tipWhyWinnerClosest: "R\xE4tt vinnare \xB7 n\xE4rmast",
+          tipWhyClosest: "N\xE4rmast",
+          tipWhyWrong: "Fel vinnare",
+          tipCreateFailed: "Kunde inte starta Tippa matchen. F\xF6rs\xF6k igen om en stund.",
           matchEnded: "Filmmatch avslutades p\xE5 TV:n",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
@@ -9165,6 +9916,8 @@
           subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
           subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
+          subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
           subtitleAutoSyncUndo: "\xC5ngra",
           subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
           subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
@@ -11162,6 +11915,25 @@
   });
 
   // lib/tv-scene.ts
+  function tvSceneScale() {
+    if (typeof document === "undefined") return 1;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale");
+    const value = parseFloat(raw);
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+  function tvSceneHeight() {
+    if (typeof document === "undefined") return TV_SCENE_HEIGHT_PX;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-h");
+    const value = parseFloat(raw);
+    return Number.isFinite(value) && value > 0 ? value : TV_SCENE_HEIGHT_PX;
+  }
+  function tvSceneWidth() {
+    if (typeof document === "undefined") return TV_SCENE_MIN_WIDTH_PX;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-w");
+    const value = parseFloat(raw);
+    if (Number.isFinite(value) && value > 0) return value;
+    return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
+  }
   function tvSceneBoxScale(element) {
     const read10 = (raw) => {
       const value = parseFloat(raw);
@@ -11172,11 +11944,13 @@
     if (typeof getComputedStyle === "undefined") return 1;
     return read10(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
-  var TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
+  var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
     "lib/tv-scene.ts"() {
       "use strict";
       "use client";
+      TV_SCENE_HEIGHT_PX = 1080;
+      TV_SCENE_MIN_WIDTH_PX = 1280;
       TV_SCENE_BOX_ATTR = "data-tv-scene-box";
       TV_SCENE_NARROW_ATTR = "data-tv-scene-narrow";
       TV_SCENE_NARROW_PX = 1024;
@@ -11502,14 +12276,84 @@
     }
   });
 
+  // lib/key-hold.ts
+  function sameKey(entry, event) {
+    if (entry.keyCode > 0 && event.keyCode !== void 0 && event.keyCode > 0) return entry.keyCode === event.keyCode;
+    return entry.key === event.key;
+  }
+  function install() {
+    if (installed || typeof window === "undefined") return;
+    installed = true;
+    window.addEventListener("keyup", (event) => {
+      held = held.filter((entry) => !sameKey(entry, event));
+    }, true);
+    window.addEventListener("blur", () => {
+      held = [];
+    });
+  }
+  function nativeOf(event) {
+    const native = event.nativeEvent;
+    return native && typeof native === "object" ? native : event;
+  }
+  function noteKeyDown(event, now2 = Date.now()) {
+    const identity = nativeOf(event);
+    const cached = answered.get(identity);
+    if (cached) return cached;
+    install();
+    const keyCode = event.keyCode ?? 0;
+    let entry = held.find((candidate) => sameKey(candidate, event));
+    if (entry && now2 - entry.last > KEY_HOLD_STALE_MS) {
+      held = held.filter((candidate) => candidate !== entry);
+      entry = void 0;
+    }
+    let state2;
+    if (entry) {
+      entry.last = now2;
+      state2 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
+    } else {
+      held.push({ key: event.key, keyCode, since: now2, last: now2 });
+      state2 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
+    }
+    answered.set(identity, state2);
+    return state2;
+  }
+  function heldLongerThan(state2, ms2) {
+    return state2.repeat && state2.heldMs > ms2;
+  }
+  function tvSeekStepSeconds(state2) {
+    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  }
+  var KEY_HOLD_STALE_MS, held, installed, answered;
+  var init_key_hold = __esm({
+    "lib/key-hold.ts"() {
+      "use strict";
+      KEY_HOLD_STALE_MS = 1600;
+      held = [];
+      installed = false;
+      answered = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
   // lib/tv-hold.ts
+  function isTvOkKey(event) {
+    return event.key === "Enter" || event.key === " " || event.key === "Select" || event.keyCode === 13 || event.keyCode === 23;
+  }
   function tvHoldHandlers(onShort, onHold) {
     return {
       onKeyDown: (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
+        if (!isTvOkKey(event)) return;
         event.preventDefault();
+        const { synthetic } = noteKeyDown(event);
         if (event.repeat || !event.currentTarget) return;
         const previous = holds2.get(event.currentTarget);
+        if (previous && previous.source === "key" && synthetic) {
+          if (!previous.fired) {
+            window.clearTimeout(previous.timer);
+            previous.fired = true;
+            onHold(event.currentTarget);
+          }
+          return;
+        }
         if (previous) window.clearTimeout(previous.timer);
         const hold = { timer: 0, fired: false, source: "key" };
         const element = event.currentTarget;
@@ -11520,7 +12364,7 @@
         holds2.set(event.currentTarget, hold);
       },
       onKeyUp: (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
+        if (!isTvOkKey(event)) return;
         if (!event.currentTarget) return;
         const hold = holds2.get(event.currentTarget);
         if (!hold || hold.source !== "key") return;
@@ -11611,6 +12455,7 @@
   var init_tv_hold = __esm({
     "lib/tv-hold.ts"() {
       "use strict";
+      init_key_hold();
       TV_HOLD_MS = 650;
       holds2 = /* @__PURE__ */ new WeakMap();
       pointerHoldSuppressed = /* @__PURE__ */ new WeakMap();
@@ -11774,6 +12619,16 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(PERF_KEY) === "1";
   }
+  function getCardSheen() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(SHEEN_KEY) !== "0";
+  }
+  function getVhsCardsMode() {
+    if (typeof window === "undefined") return "off";
+    const value = getScopedStorageItem(VHS_KEY);
+    if (value === "1" || value === "focus") return "focus";
+    return value === "shelf" ? "shelf" : "off";
+  }
   function getHeroActionsExpanded() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(HERO_ACTIONS_KEY) === "1";
@@ -11853,6 +12708,11 @@
     else delete root.dataset.reduceMotion;
     if (getPerformanceMode()) root.dataset.perf = "1";
     else delete root.dataset.perf;
+    if (getCardSheen()) delete root.dataset.cardSheen;
+    else root.dataset.cardSheen = "0";
+    const vhs = getVhsCardsMode();
+    if (vhs === "off") delete root.dataset.vhs;
+    else root.dataset.vhs = vhs;
     if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
     else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
@@ -11884,7 +12744,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT3, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, SHEEN_KEY, VHS_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT3, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -11895,6 +12755,8 @@
       SCALE_KEY = "appearance_ui_scale";
       MOTION_KEY = "appearance_reduce_motion";
       PERF_KEY = "appearance_performance_mode";
+      SHEEN_KEY = "appearance_card_sheen";
+      VHS_KEY = "appearance_vhs_cards";
       ACCENT_KEY = "appearance_accent";
       FONT_KEY = "appearance_font_pair";
       RADIUS_KEY = "appearance_card_radius";
@@ -12501,10 +13363,9 @@
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
   }
-  function read3() {
-    if (typeof window === "undefined") return {};
+  function parseStored(raw) {
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY6) ?? "{}");
+      const parsed = JSON.parse(raw);
       const out = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "string" && value.trim().length > 0) out[key] = value;
@@ -12514,6 +13375,17 @@
     } catch {
       return {};
     }
+  }
+  function readShared() {
+    if (typeof window === "undefined") return {};
+    const raw = getScopedStorageItem(KEY6) ?? "{}";
+    if (parsedCache && parsedCache.raw === raw) return parsedCache.data;
+    const data = parseStored(raw);
+    parsedCache = { raw, data };
+    return data;
+  }
+  function read3() {
+    return { ...readShared() };
   }
   function write3(data) {
     setScopedStorageItem(KEY6, JSON.stringify(data));
@@ -12552,7 +13424,7 @@
     }
   }
   function getWatchedForSeries(tmdbId) {
-    const data = read3();
+    const data = readShared();
     const prefix = `${tmdbId}-`;
     return new Set(Object.keys(data).filter((k) => k.startsWith(prefix)));
   }
@@ -12562,7 +13434,7 @@
     return { tmdbId: match[1], season: Number(match[2]), episode: Number(match[3]) };
   }
   function getWatchedEpisodes() {
-    return Object.entries(read3()).map(([key, value]) => {
+    return Object.entries(readShared()).map(([key, value]) => {
       const parsed = parseEpKey(key);
       if (!parsed) return null;
       return { ...parsed, watchedAt: timestampOf(value) };
@@ -12608,7 +13480,7 @@
     window.addEventListener(DETAIL_EVENT3, handler);
     return () => window.removeEventListener(DETAIL_EVENT3, handler);
   }
-  var KEY6, EVENT9, DETAIL_EVENT3;
+  var KEY6, EVENT9, DETAIL_EVENT3, parsedCache;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
@@ -12616,6 +13488,7 @@
       KEY6 = "watched_episodes";
       EVENT9 = "lumio-watched-episodes-changed";
       DETAIL_EVENT3 = "lumio-watched-episode-mutated";
+      parsedCache = null;
     }
   });
 
@@ -15024,504 +15897,6 @@
     }
   });
 
-  // lib/subtitle-legibility.ts
-  function isSubtitleFont(value) {
-    return typeof value === "string" && SUBTITLE_FONTS.includes(value);
-  }
-  function domSubtitleTypography(prefs) {
-    return {
-      fontFamily: prefs.font === "default" ? void 0 : `'${FAMILY[prefs.font]}', sans-serif`,
-      // 500 är vad överlägget alltid ritat med (font-medium).
-      fontWeight: prefs.bold ? 500 : 400,
-      letterSpacing: prefs.letterSpacing > 0 ? `${prefs.letterSpacing / 100}em` : void 0,
-      lineHeight: Math.round(BASE_LINE_HEIGHT * prefs.lineSpacing * 10) / 1e3
-    };
-  }
-  function assSubtitleTypography(prefs, fontSize2, nativeFontSize) {
-    const factor = ASS_SIZE_FACTOR[prefs.font];
-    const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
-    const round1 = (value) => Math.round(value * 10) / 10;
-    return {
-      fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
-      bold: prefs.bold,
-      assFontSize: round1(fontSize2 * factor),
-      nativeFontSize: Math.round(nativeFontSize * factor),
-      assSpacing: round1(fontSize2 * em),
-      nativeSpacing: round1(nativeFontSize * em)
-    };
-  }
-  var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
-  var init_subtitle_legibility = __esm({
-    "lib/subtitle-legibility.ts"() {
-      SUBTITLE_FONTS = ["default", "atkinson", "opendyslexic"];
-      SUBTITLE_LETTER_SPACING_OPTIONS = [0, 4, 8, 12];
-      SUBTITLE_LINE_SPACING_OPTIONS = [100, 120, 140, 160];
-      DEFAULT_SUBTITLE_FONT = "default";
-      DEFAULT_SUBTITLE_LETTER_SPACING = 0;
-      DEFAULT_SUBTITLE_LINE_SPACING = 100;
-      DEFAULT_SUBTITLE_BOLD = true;
-      BASE_LINE_HEIGHT = 1.375;
-      DEFAULT_ASS_FONT = "Helvetica";
-      FAMILY = {
-        atkinson: "Atkinson Hyperlegible",
-        opendyslexic: "OpenDyslexic"
-      };
-      HELVETICA_WIN_EM = 1.175;
-      ASS_SIZE_FACTOR = {
-        default: 1,
-        atkinson: 1.24 / HELVETICA_WIN_EM,
-        opendyslexic: 2.136 / HELVETICA_WIN_EM
-      };
-    }
-  });
-
-  // lib/playback-settings.ts
-  function getStoredString(key, fallback = "") {
-    if (typeof window === "undefined") return fallback;
-    return getScopedStorageItem(key) ?? fallback;
-  }
-  function emitPlaybackSettingsChanged() {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new Event(PLAYBACK_SETTINGS_CHANGED_EVENT));
-  }
-  function onPlaybackSettingsChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-  }
-  function normalizeLanguageCode(value) {
-    if (!value) return null;
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return null;
-    return LANG3_TO_2[normalized] ?? normalized;
-  }
-  function languageCodeAliases(value) {
-    const code = normalizeLanguageCode(value);
-    if (!code) return [];
-    return [code, ...Object.keys(LANG3_TO_2).filter((key) => LANG3_TO_2[key] === code)];
-  }
-  function getDefaultSubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getFallbackSubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_FALLBACK_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getDefaultAudioLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_AUDIO_LANGUAGE, "")) ?? "";
-  }
-  function getAudioOutputMode() {
-    const stored = getStoredString(KEY_AUDIO_OUTPUT_MODE, DEFAULT_AUDIO_OUTPUT_MODE);
-    return stored === "compatible" || stored === "best" ? stored : DEFAULT_AUDIO_OUTPUT_MODE;
-  }
-  function getDefaultSubtitleSize() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_SIZE;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_SIZE;
-  }
-  function setDefaultSubtitleSize(value) {
-    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE, String(value));
-    emitPlaybackSettingsChanged();
-  }
-  function getDefaultSubtitleVerticalPosition() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_VERTICAL_POSITION;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_VERTICAL_POSITION;
-  }
-  function setDefaultSubtitleVerticalPosition(value) {
-    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, String(value));
-    emitPlaybackSettingsChanged();
-  }
-  function getDefaultSubtitleOpacity() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_OPACITY;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_OPACITY) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_OPACITY;
-  }
-  function getSubtitleTextColor() {
-    return getStoredString(KEY_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_TEXT_COLOR);
-  }
-  function getSubtitleBackgroundColor() {
-    return getStoredString(KEY_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR);
-  }
-  function getSubtitleOutlineColor() {
-    return getStoredString(KEY_SUBTITLE_OUTLINE_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR);
-  }
-  function getDefaultAspectRatio() {
-    const stored = getStoredString(KEY_DEFAULT_ASPECT_RATIO, DEFAULT_ASPECT_RATIO);
-    return ASPECT_RATIO_MODES.includes(stored) ? stored : DEFAULT_ASPECT_RATIO;
-  }
-  function setDefaultAspectRatio(value) {
-    setScopedStorageItem(KEY_DEFAULT_ASPECT_RATIO, value);
-    emitPlaybackSettingsChanged();
-  }
-  function getRememberAspectRatio() {
-    if (typeof window === "undefined") return DEFAULT_REMEMBER_ASPECT_RATIO;
-    return (getScopedStorageItem(KEY_REMEMBER_ASPECT_RATIO) ?? "0") === "1";
-  }
-  function getSubtitleAutoSync() {
-    if (typeof window === "undefined") return true;
-    return (getScopedStorageItem(KEY_SUBTITLE_AUTO_SYNC) ?? "1") === "1";
-  }
-  function getAutoSkipIntro() {
-    if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
-    return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
-  }
-  function setAutoSkipIntro(value) {
-    setScopedStorageItem(KEY_AUTO_SKIP_INTRO, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getHideWatchedMoviesHome() {
-    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
-    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
-  }
-  function getStayFullscreenOnClose() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_STAY_FULLSCREEN_ON_CLOSE) ?? "0") === "1";
-  }
-  function getHideSkipButtonAfterSeconds() {
-    if (typeof window === "undefined") return 0;
-    const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
-    return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
-  }
-  function getControlsHideAfterSeconds() {
-    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
-    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
-    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
-    const parsed = Number.parseInt(raw, 10);
-    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
-  }
-  function getSubtitlesOffByDefault() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem("playback_subtitlesOffByDefault") === "1";
-  }
-  function getTrackBlockWords() {
-    if (typeof window === "undefined") return [];
-    const raw = getScopedStorageItem("playback_trackBlockWords") ?? "";
-    return raw.split(",").map((word) => word.trim().toLowerCase()).filter(Boolean);
-  }
-  function getDownloadDir() {
-    if (typeof window === "undefined") return "";
-    return getItem("lumio_download_dir") ?? "";
-  }
-  function getShowStreamQuality() {
-    if (typeof window === "undefined") return true;
-    return getScopedStorageItem("playback_showStreamQuality") !== "0";
-  }
-  function getShowTitleOnStart() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_SHOW_TITLE_ON_START) ?? "0") === "1";
-  }
-  function getSeriesNameFirst() {
-    if (typeof window === "undefined") return true;
-    return (getScopedStorageItem(KEY_SERIES_NAME_FIRST) ?? "1") === "1";
-  }
-  function getStillWatchingEnabled() {
-    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_ENABLED;
-    return (getScopedStorageItem(KEY_STILL_WATCHING_ENABLED) ?? "0") === "1";
-  }
-  function getStillWatchingMaxMinutes() {
-    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_MAX_MINUTES;
-    const raw = Number.parseInt(getScopedStorageItem(KEY_STILL_WATCHING_MAX_MINUTES) ?? "", 10);
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_STILL_WATCHING_MAX_MINUTES;
-    return raw;
-  }
-  function getUpgradeSubtitleWhenBetter() {
-    if (typeof window === "undefined") return true;
-    return (getScopedStorageItem(KEY_UPGRADE_SUBTITLE_WHEN_BETTER) ?? "1") === "1";
-  }
-  function getForcedSubtitlesWhenAudioMatches() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES) ?? "0") === "1";
-  }
-  function getDisableSubtitlesWhenAudioMatches() {
-    if (typeof window === "undefined") return DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES;
-    return (getScopedStorageItem(KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES) ?? "0") === "1";
-  }
-  function getExtraSubtitleLanguagesRaw() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_EXTRA_SUBTITLE_LANGUAGES) ?? "";
-  }
-  function getExtraSubtitleLanguages() {
-    return getExtraSubtitleLanguagesRaw().split(",").map((code) => code.trim().toLowerCase()).filter(Boolean);
-  }
-  function getRawMpvConf() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
-  }
-  function parseRawMpvConf(raw) {
-    return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
-      const eq = line.indexOf("=");
-      if (eq <= 0) return null;
-      const name = line.slice(0, eq).trim();
-      const value = line.slice(eq + 1).trim();
-      return name ? [name, value] : null;
-    }).filter((entry) => entry != null);
-  }
-  function getPreferEmbeddedSubtitles() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
-  }
-  function getExternalPlayerApp() {
-    if (typeof window === "undefined") return "VLC";
-    const stored = (getScopedStorageItem(KEY_EXTERNAL_PLAYER_APP) ?? "").trim();
-    return stored || "VLC";
-  }
-  function getAudioDelayMs() {
-    if (typeof window === "undefined") return 0;
-    const raw = Number(getStoredString(KEY_AUDIO_DELAY_MS, "0"));
-    if (!Number.isFinite(raw)) return 0;
-    return clampAudioDelayMs(raw);
-  }
-  function clampAudioDelayMs(value) {
-    const steg = Math.round(value / AUDIO_DELAY_STEP_MS) * AUDIO_DELAY_STEP_MS;
-    return Math.max(-AUDIO_DELAY_LIMIT_MS, Math.min(AUDIO_DELAY_LIMIT_MS, steg));
-  }
-  function setAudioDelayMs(value) {
-    setScopedStorageItem(KEY_AUDIO_DELAY_MS, String(clampAudioDelayMs(value)));
-    emitPlaybackSettingsChanged();
-  }
-  function getBluetoothAudioAutoOffset() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
-  }
-  function getExternalDisplayVideoOnly() {
-    if (typeof window === "undefined") return true;
-    return getScopedStorageItem(KEY_EXTERNAL_DISPLAY_VIDEO_ONLY) !== "0";
-  }
-  function getNightMode() {
-    const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
-    return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
-  }
-  function setNightMode(value) {
-    setScopedStorageItem(KEY_NIGHT_MODE, value);
-    emitPlaybackSettingsChanged();
-  }
-  function getCreditsRecommendations() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS;
-    return (getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS) ?? "0") === "1";
-  }
-  function getCreditsThresholdMinutes() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES;
-    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES) ?? "");
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
-    return Math.max(1, Math.min(6, raw));
-  }
-  function getCreditsRecommendationsTv() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
-    const raw = getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS_TV);
-    if (raw === null) return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
-    return raw === "1";
-  }
-  function getCreditsThresholdMinutesTv() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
-    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES_TV) ?? "");
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
-    return Math.max(1, Math.min(6, raw));
-  }
-  function getStatsHud() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_STATS_HUD) === "1";
-  }
-  function setStatsHud(value) {
-    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getStripSdh() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
-  }
-  function setStripSdh(value) {
-    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getLearningMode() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_LEARNING_MODE) === "1";
-  }
-  function setLearningMode(value) {
-    setScopedStorageItem(KEY_LEARNING_MODE, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getSecondarySubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_SECONDARY_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getSecondarySubtitleColor() {
-    return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
-  }
-  function getStoredOption(key, options, fallback) {
-    const raw = Number(getStoredString(key, ""));
-    return options.includes(raw) ? raw : fallback;
-  }
-  function getSubtitleLegibility() {
-    const font = getStoredString(KEY_SUBTITLE_FONT, DEFAULT_SUBTITLE_FONT);
-    const bold = getStoredString(KEY_SUBTITLE_BOLD, "");
-    return {
-      font: isSubtitleFont(font) ? font : DEFAULT_SUBTITLE_FONT,
-      letterSpacing: getStoredOption(KEY_SUBTITLE_LETTER_SPACING, SUBTITLE_LETTER_SPACING_OPTIONS, DEFAULT_SUBTITLE_LETTER_SPACING),
-      lineSpacing: getStoredOption(KEY_SUBTITLE_LINE_SPACING, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_LINE_SPACING),
-      bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
-    };
-  }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
-  var init_playback_settings = __esm({
-    "lib/playback-settings.ts"() {
-      "use strict";
-      init_app_storage();
-      init_profile_storage_shim();
-      init_subtitle_legibility();
-      KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
-      KEY_FALLBACK_SUBTITLE_LANGUAGE = "playback_fallbackSubtitleLanguage";
-      KEY_DEFAULT_AUDIO_LANGUAGE = "playback_defaultAudioLanguage";
-      KEY_AUDIO_OUTPUT_MODE = "playback_audioOutputMode";
-      KEY_DEFAULT_SUBTITLE_SIZE = "playback_defaultSubtitleSize";
-      KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION = "playback_defaultSubtitleVerticalPosition";
-      KEY_DEFAULT_SUBTITLE_OPACITY = "playback_defaultSubtitleOpacity";
-      KEY_SUBTITLE_TEXT_COLOR = "playback_subtitleTextColor";
-      KEY_SUBTITLE_BACKGROUND_COLOR = "playback_subtitleBackgroundColor";
-      KEY_SUBTITLE_OUTLINE_COLOR = "playback_subtitleOutlineColor";
-      KEY_DEFAULT_ASPECT_RATIO = "playback_defaultAspectRatio";
-      KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
-      KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
-      KEY_SUBTITLE_AUTO_SYNC = "playback_subtitleAutoSync";
-      KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
-      KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
-      KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
-      KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
-      KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
-      KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
-      KEY_CREDITS_RECOMMENDATIONS_TV = "playback_creditsRecommendationsTv";
-      KEY_CREDITS_THRESHOLD_MINUTES_TV = "playback_creditsThresholdMinutesTv";
-      KEY_NIGHT_MODE = "playback_nightMode";
-      KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
-      KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
-      KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
-      KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
-      KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
-      KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
-      KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
-      HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
-      CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
-      CONTROLS_HIDE_DEFAULT_SECONDS = 3;
-      PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
-      LANG_NAMES = {
-        en: "English",
-        sv: "Svenska",
-        no: "Norsk",
-        da: "Dansk",
-        fi: "Suomi",
-        de: "Deutsch",
-        fr: "Fran\xE7ais",
-        es: "Espa\xF1ol",
-        it: "Italiano",
-        pt: "Portugu\xEAs",
-        nl: "Nederlands",
-        pl: "Polski",
-        ru: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
-        ar: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
-        hi: "\u0939\u093F\u0928\u094D\u0926\u0940",
-        zh: "\u4E2D\u6587",
-        ja: "\u65E5\u672C\u8A9E",
-        ko: "\uD55C\uAD6D\uC5B4",
-        tr: "T\xFCrk\xE7e",
-        cs: "\u010Ce\u0161tina",
-        ro: "Rom\xE2n\u0103",
-        hu: "Magyar",
-        el: "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC",
-        he: "\u05E2\u05D1\u05E8\u05D9\u05EA",
-        uk: "\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430",
-        sr: "Srpski",
-        hr: "Hrvatski",
-        sk: "Sloven\u010Dina",
-        bg: "\u0411\u044A\u043B\u0433\u0430\u0440\u0441\u043A\u0438",
-        vi: "Ti\u1EBFng Vi\u1EC7t",
-        th: "\u0E44\u0E17\u0E22",
-        id: "Bahasa Indonesia"
-      };
-      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
-      ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
-      LANG3_TO_2 = {
-        eng: "en",
-        swe: "sv",
-        nor: "no",
-        dan: "da",
-        fin: "fi",
-        deu: "de",
-        ger: "de",
-        fra: "fr",
-        fre: "fr",
-        spa: "es",
-        ita: "it",
-        por: "pt",
-        nld: "nl",
-        dut: "nl",
-        pol: "pl",
-        rus: "ru",
-        ara: "ar",
-        hin: "hi",
-        zho: "zh",
-        chi: "zh",
-        jpn: "ja",
-        kor: "ko",
-        tur: "tr",
-        ces: "cs",
-        cze: "cs",
-        ron: "ro",
-        rum: "ro",
-        hun: "hu",
-        ell: "el",
-        gre: "el",
-        heb: "he",
-        ukr: "uk",
-        srp: "sr",
-        hrv: "hr",
-        slk: "sk",
-        bul: "bg",
-        vie: "vi",
-        tha: "th",
-        ind: "id"
-      };
-      DEFAULT_SUBTITLE_SIZE = 100;
-      DEFAULT_AUDIO_OUTPUT_MODE = "best";
-      DEFAULT_SUBTITLE_VERTICAL_POSITION = 5;
-      DEFAULT_SUBTITLE_OPACITY = 100;
-      DEFAULT_SUBTITLE_TEXT_COLOR = "#ffffff";
-      DEFAULT_SUBTITLE_BACKGROUND_COLOR = "transparent";
-      DEFAULT_SUBTITLE_OUTLINE_COLOR = "#000000";
-      DEFAULT_ASPECT_RATIO = "auto";
-      DEFAULT_REMEMBER_ASPECT_RATIO = false;
-      DEFAULT_AUTO_SKIP_INTRO = false;
-      DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
-      DEFAULT_STILL_WATCHING_ENABLED = false;
-      DEFAULT_STILL_WATCHING_MAX_MINUTES = 90;
-      DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
-      DEFAULT_CREDITS_RECOMMENDATIONS = false;
-      DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
-      DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
-      DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
-      DEFAULT_NIGHT_MODE = "off";
-      KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
-      KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
-      KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
-      KEY_RAW_MPV_CONF = "playback_rawMpvConf";
-      KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
-      KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
-      AUDIO_DELAY_STEP_MS = 50;
-      AUDIO_DELAY_LIMIT_MS = 2e3;
-      KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
-      BLUETOOTH_AUDIO_OFFSET_MS = -150;
-      KEY_STATS_HUD = "playback_statsHud";
-      KEY_STRIP_SDH = "playback_stripSdh";
-      KEY_LEARNING_MODE = "playback_learningMode";
-      KEY_SECONDARY_SUBTITLE_LANGUAGE = "playback_secondarySubtitleLanguage";
-      KEY_SECONDARY_SUBTITLE_COLOR = "playback_secondarySubtitleColor";
-      DEFAULT_SECONDARY_SUBTITLE_COLOR = "#e8d9a0";
-      KEY_SUBTITLE_FONT = "playback_subtitleFont";
-      KEY_SUBTITLE_LETTER_SPACING = "playback_subtitleLetterSpacing";
-      KEY_SUBTITLE_LINE_SPACING = "playback_subtitleLineSpacing";
-      KEY_SUBTITLE_BOLD = "playback_subtitleBold";
-    }
-  });
-
   // lib/async-utils.ts
   async function mapWithConcurrency(items2, concurrency, mapper) {
     if (items2.length === 0) return [];
@@ -17035,6 +17410,14 @@
     const cue = cues.find((c) => time >= c.start && time <= c.end);
     return cue?.text ?? null;
   }
+  function cueIndexChanged(cues, from, to, toCueTime) {
+    if (cues.length === 0) return false;
+    const at = (t) => {
+      const ct = toCueTime(t);
+      return cues.findIndex((c) => ct >= c.start && ct <= c.end);
+    };
+    return at(from) !== at(to);
+  }
   function isSecondaryCandidateAllowed(option, primaryId, allowEmbedded) {
     if (option.id === primaryId) return false;
     if (!allowEmbedded && option.source === "embedded") return false;
@@ -17737,8 +18120,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners7 = this.listeners[event$1];
-              listeners7.splice(listeners7.indexOf(handler), 1);
+              const listeners8 = this.listeners[event$1];
+              listeners8.splice(listeners8.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -17767,8 +18150,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners7 = this.listeners[event$1];
-              listeners7.splice(listeners7.indexOf(handler), 1);
+              const listeners8 = this.listeners[event$1];
+              listeners8.splice(listeners8.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -19554,28 +19937,23 @@
   function sortByWatchedAtDesc(entries) {
     return [...entries].sort((a, b) => watchedAtMs(b) - watchedAtMs(a));
   }
-  function isSameProgressTarget(left, right) {
-    const leftSanitized = sanitizeEntry(left);
-    const rightSanitized = sanitizeEntry(right);
-    if ((leftSanitized.season ?? null) !== (rightSanitized.season ?? null) || (leftSanitized.episode ?? null) !== (rightSanitized.episode ?? null)) {
-      return false;
-    }
-    if (entryKey(leftSanitized.id, leftSanitized.season, leftSanitized.episode) === entryKey(rightSanitized.id, rightSanitized.season, rightSanitized.episode)) {
-      return true;
-    }
-    if (leftSanitized.type !== rightSanitized.type) return false;
-    if (leftSanitized.tmdbId && rightSanitized.tmdbId && leftSanitized.tmdbId === rightSanitized.tmdbId) return true;
-    if (leftSanitized.imdbId && rightSanitized.imdbId && leftSanitized.imdbId === rightSanitized.imdbId) return true;
-    const leftTitleKey = normalizeTitleKey(leftSanitized.title);
-    const rightTitleKey = normalizeTitleKey(rightSanitized.title);
-    return Boolean(
-      leftTitleKey && rightTitleKey && leftTitleKey === rightTitleKey && leftSanitized.year != null && rightSanitized.year != null && leftSanitized.year === rightSanitized.year
-    );
+  function progressTargetKeys(entry) {
+    const se = `${entry.season ?? null}|${entry.episode ?? null}`;
+    const keys2 = [`${se}|id|${entry.id}`];
+    const typed = `${se}|${entry.type}`;
+    if (entry.tmdbId) keys2.push(`${typed}|tmdb|${entry.tmdbId}`);
+    if (entry.imdbId) keys2.push(`${typed}|imdb|${entry.imdbId}`);
+    const titleKey = normalizeTitleKey(entry.title);
+    if (titleKey && entry.year != null) keys2.push(`${typed}|title|${titleKey}|${entry.year}`);
+    return keys2;
   }
   function dedupeProgressEntries(entries) {
     const deduped = [];
+    const seen = /* @__PURE__ */ new Set();
     for (const entry of entries.map(sanitizeEntry)) {
-      if (deduped.some((existingEntry) => isSameProgressTarget(existingEntry, entry))) continue;
+      const keys2 = progressTargetKeys(entry);
+      if (keys2.some((key) => seen.has(key))) continue;
+      for (const key of keys2) seen.add(key);
       deduped.push(entry);
     }
     return deduped;
@@ -19626,6 +20004,31 @@
     const next2 = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next2);
   }
+  function flushHistoryMirror() {
+    const mirror = historyMirror;
+    if (!mirror?.pending) return;
+    if (mirror.timer) clearTimeout(mirror.timer);
+    const entry = mirror.pending;
+    mirror.pending = null;
+    mirror.timer = null;
+    mirror.at = Date.now();
+    appendHistoryEntry(entry);
+  }
+  function mirrorToHistory(entry) {
+    const key = historyDedupeKey(entry);
+    const now2 = Date.now();
+    if (historyMirror && historyMirror.key !== key) flushHistoryMirror();
+    if (!historyMirror || historyMirror.key !== key || now2 - historyMirror.at >= HISTORY_MIRROR_MIN_GAP_MS) {
+      if (historyMirror?.timer) clearTimeout(historyMirror.timer);
+      appendHistoryEntry(entry);
+      historyMirror = { key, at: now2, pending: null, timer: null };
+      return;
+    }
+    historyMirror.pending = entry;
+    if (!historyMirror.timer) {
+      historyMirror.timer = setTimeout(flushHistoryMirror, HISTORY_MIRROR_MIN_GAP_MS - (now2 - historyMirror.at));
+    }
+  }
   function deleteFramesForDropped(before, after) {
     const kept = new Set(after.map((entry) => entryKey(entry.id, entry.season, entry.episode)));
     for (const entry of before) {
@@ -19640,7 +20043,7 @@
     setScopedStorageItem(KEY12, JSON.stringify(list));
     deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
-    appendHistoryEntry(sanitizedEntry);
+    mirrorToHistory(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
   }
   function removeStreamProgress(id, season, episode) {
@@ -19656,7 +20059,7 @@
     deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
   }
-  var EVENT11, KEY12, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT11, KEY12, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
@@ -19679,6 +20082,14 @@
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
       HISTORY_MAX = 200;
+      HISTORY_MIRROR_MIN_GAP_MS = 6e4;
+      historyMirror = null;
+      if (typeof window !== "undefined") {
+        window.addEventListener("pagehide", flushHistoryMirror);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") flushHistoryMirror();
+        });
+      }
     }
   });
 
@@ -19888,15 +20299,19 @@
 
   // lib/watch-journal/player-open.ts
   function setPlayerOpen(value) {
+    if (open === value) return;
     open = value;
+    for (const listener of listeners4) listener();
   }
   function isPlayerOpen() {
     return open;
   }
-  var open;
+  var open, listeners4;
   var init_player_open = __esm({
     "lib/watch-journal/player-open.ts"() {
+      init_react_shim();
       open = false;
+      listeners4 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -20247,7 +20662,7 @@
       KEY13 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
-        enabled: true,
+        enabled: false,
         showStripInPlayer: true,
         columns: 160,
         scope: "movies",
@@ -21347,929 +21762,20 @@
       const detail = event.detail;
       if (detail?.action) listener(detail.action);
     };
-    listeners4 += 1;
+    listeners5 += 1;
     window.addEventListener(EVENT12, handler);
     return () => {
-      listeners4 -= 1;
+      listeners5 -= 1;
       window.removeEventListener(EVENT12, handler);
     };
   }
-  var EVENT12, listeners4;
+  var EVENT12, listeners5;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
+      init_key_hold();
       EVENT12 = "lumio-media-key";
-      listeners4 = 0;
-    }
-  });
-
-  // lib/resume-playback.ts
-  function isResumeDurationMismatch(expectedSeconds, actualSeconds, resumeFromSeconds = 0) {
-    if (!isFinite(actualSeconds) || actualSeconds <= 0) return false;
-    if (expectedSeconds != null && expectedSeconds > 600) {
-      if (actualSeconds < Math.min(300, expectedSeconds * 0.2)) return true;
-    }
-    if (resumeFromSeconds > 0 && actualSeconds < resumeFromSeconds * 0.5) return true;
-    return false;
-  }
-  var init_resume_playback = __esm({
-    "lib/resume-playback.ts"() {
-      init_plugin_registry();
-      init_session_host();
-    }
-  });
-
-  // lib/subtitle-autopick.ts
-  function nextSubtitlePreference(current2, picked, manual) {
-    if (!manual) return current2;
-    return picked ? { mode: "language", language: picked.language } : { mode: "off" };
-  }
-  function orderAutoPickLanguages(args) {
-    const settings = args.settingsLanguages.map((lang) => args.normalize(lang)).filter((lang, index, values) => Boolean(lang) && values.indexOf(lang) === index);
-    const chosen = args.preference.mode === "language" ? args.normalize(args.preference.language) : null;
-    return chosen ? [chosen, ...settings.filter((lang) => lang !== chosen)] : settings;
-  }
-  function pickAutoSubtitle(args) {
-    const searchOrder = args.preferEmbedded ? [...args.options.filter(args.isEmbedded), ...args.options.filter((o) => !args.isEmbedded(o))] : args.options;
-    const current2 = args.currentId ? args.options.find((option) => option.id === args.currentId) ?? null : null;
-    for (const lang of args.languages) {
-      const hit = searchOrder.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
-      if (!hit) continue;
-      if (current2 && current2 !== hit && args.isEmbedded(hit) && args.isEmbedded(current2) && !args.isBlocked(current2) && args.matchesLanguage(current2, lang)) return current2;
-      return hit;
-    }
-    if (args.addonCount > 0) return null;
-    return args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
-  }
-  function isUntagged(language) {
-    const value = (language ?? "").trim().toLowerCase();
-    return value === "" || value === "und";
-  }
-  function preselectSubtitleLanguages(args) {
-    if (args.preference.mode === "off") return null;
-    if (args.subtitlesOffByDefault || args.suppressedByMatchingAudio) return null;
-    const ordered = orderAutoPickLanguages({
-      preference: args.preference,
-      settingsLanguages: args.settingsLanguages,
-      normalize: args.normalize
-    });
-    const codes = [];
-    for (const lang of ordered) {
-      for (const code of args.aliases(lang)) {
-        if (/^[a-z]{2,3}$/.test(code) && !codes.includes(code)) codes.push(code);
-      }
-    }
-    return codes.length > 0 ? codes.join(",") : null;
-  }
-  var init_subtitle_autopick = __esm({
-    "lib/subtitle-autopick.ts"() {
-    }
-  });
-
-  // lib/trakt-scrobble.ts
-  function identityKey(identity) {
-    const id = identity.imdbId || `tmdb:${identity.tmdbId ?? ""}`;
-    return identity.mediaType === "episode" ? `${id}:S${identity.season ?? 0}E${identity.episode ?? 0}` : `${id}`;
-  }
-  async function scrobble(action, identity, progressPercent) {
-    if (typeof window === "undefined") return;
-    if (!getTraktScrobbleEnabled()) return;
-    const auth = getTraktAuth();
-    if (!auth) return;
-    if (!identity.tmdbId && !identity.imdbId) return;
-    if (identity.mediaType === "episode" && (identity.season == null || identity.episode == null)) return;
-    const progress = Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10));
-    const callKey = `${action}:${identityKey(identity)}:${Math.round(progress)}`;
-    const now2 = Date.now();
-    if (callKey === lastCallKey && now2 - lastCallAt < DUPLICATE_WINDOW_MS) return;
-    lastCallKey = callKey;
-    lastCallAt = now2;
-    const logScrobble = (message) => {
-      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[trakt-scrobble] ${message}`)}`).catch(() => {
-      });
-    };
-    const what = `${action} ${identity.mediaType}${identity.season != null ? ` S${identity.season}E${identity.episode}` : ""} ${progress}%`;
-    try {
-      const response = await fetch("/api/trakt/scrobble", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          auth,
-          action,
-          mediaType: identity.mediaType,
-          tmdbId: identity.tmdbId ?? void 0,
-          imdbId: identity.imdbId ?? void 0,
-          season: identity.season ?? void 0,
-          episode: identity.episode ?? void 0,
-          progress
-        })
-      });
-      if (response.status === 401) {
-        logScrobble(`${what}: 401 \u2014 auth avvisad`);
-        const payload2 = await response.json().catch(() => null);
-        if (payload2?.authExpired) {
-          clearTraktAuth();
-          logScrobble(`${action}: auth utg\xE5ngen \u2014 Trakt-kopplingen rensad`);
-        } else {
-          logScrobble(`${action}: HTTP 401 utan authExpired`);
-        }
-        return;
-      }
-      if (!response.ok) {
-        logScrobble(`${action}: HTTP ${response.status}`);
-        return;
-      }
-      logScrobble(`${what}: ok`);
-      const payload = await response.json();
-      if (payload.auth?.accessToken && payload.auth.accessToken !== auth.accessToken) {
-        setTraktAuth({ ...auth, ...payload.auth });
-      }
-      logScrobble(`${action} ${identityKey(identity)} @ ${Math.round(progress)}%`);
-    } catch (err) {
-      logScrobble(`${action}: n\xE4tverksfel \u2014 ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-  var lastCallKey, lastCallAt, DUPLICATE_WINDOW_MS;
-  var init_trakt_scrobble = __esm({
-    "lib/trakt-scrobble.ts"() {
-      "use client";
-      init_trakt_storage();
-      lastCallKey = "";
-      lastCallAt = 0;
-      DUPLICATE_WINDOW_MS = 5e3;
-    }
-  });
-
-  // lib/scrobble-fanout.ts
-  function buildTrackerEvent(action, identity, progressPercent, opts) {
-    return {
-      action,
-      mediaType: identity.mediaType,
-      tmdbId: identity.tmdbId != null && identity.tmdbId !== "" ? String(identity.tmdbId) : null,
-      imdbId: identity.imdbId ?? null,
-      season: identity.season ?? null,
-      episode: identity.episode ?? null,
-      progress: Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10)),
-      pulse: opts?.pulse === true
-    };
-  }
-  function trackerEventKey(event) {
-    if (!event.tmdbId && !event.imdbId) return null;
-    if (event.mediaType === "episode" && (event.season == null || event.episode == null)) return null;
-    return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
-  }
-  async function scrobbleAll(action, identity, progressPercent, opts) {
-    const event = buildTrackerEvent(action, identity, progressPercent, opts);
-    const key = trackerEventKey(event);
-    const now2 = Date.now();
-    const duplicate = key !== null && key === lastTrackerKey && now2 - lastTrackerAt < DUPLICATE_WINDOW_MS2;
-    if (key !== null && !duplicate) {
-      lastTrackerKey = key;
-      lastTrackerAt = now2;
-    }
-    const active3 = key === null || duplicate ? [] : getTrackers().filter((tracker) => !tracker.pluginId || isPluginEnabled(tracker.pluginId, 0, { installed: true, active: true }));
-    await Promise.all([
-      scrobble(action, identity, progressPercent),
-      ...active3.map(async (tracker) => {
-        try {
-          await tracker.scrobble?.(event);
-        } catch (error) {
-          console.warn(`[scrobble] tracker ${tracker.id} kastade`, error);
-        }
-      })
-    ]);
-  }
-  var DUPLICATE_WINDOW_MS2, lastTrackerKey, lastTrackerAt;
-  var init_scrobble_fanout = __esm({
-    "lib/scrobble-fanout.ts"() {
-      "use client";
-      init_plugin_registry();
-      init_plugin_state();
-      init_trakt_scrobble();
-      DUPLICATE_WINDOW_MS2 = 5e3;
-      lastTrackerKey = "";
-      lastTrackerAt = -Infinity;
-    }
-  });
-
-  // lib/video-tuning.ts
-  function getVideoTuning() {
-    if (typeof window === "undefined") return { ...DEFAULT_TUNING };
-    try {
-      const raw = getScopedStorageItem(KEY14);
-      if (!raw) return { ...DEFAULT_TUNING };
-      const parsed = JSON.parse(raw);
-      const clamp2 = (v, lo, hi, dflt) => {
-        const n = Number(v);
-        return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
-      };
-      return {
-        brightness: clamp2(parsed.brightness, -50, 50, 0),
-        contrast: clamp2(parsed.contrast, -50, 50, 0),
-        saturation: clamp2(parsed.saturation, -50, 50, 0),
-        gamma: clamp2(parsed.gamma, -50, 50, 0),
-        sharpen: clamp2(parsed.sharpen, 0, 2, 0)
-      };
-    } catch {
-      return { ...DEFAULT_TUNING };
-    }
-  }
-  function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY14, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
-  }
-  function onVideoTuningChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(EVENT13, listener);
-    return () => window.removeEventListener(EVENT13, listener);
-  }
-  function getRenderTuning() {
-    if (typeof window === "undefined") return { ...DEFAULT_RENDER_TUNING };
-    try {
-      const raw = getScopedStorageItem(RENDER_KEY);
-      if (!raw) return { ...DEFAULT_RENDER_TUNING };
-      const parsed = JSON.parse(raw);
-      return {
-        toneMapping: TONE_MAPPINGS.includes(parsed.toneMapping) ? parsed.toneMapping : "auto",
-        inverseToneMapping: parsed.inverseToneMapping === true,
-        hwdec: parsed.hwdec !== false,
-        profile: parsed.profile === "light" || parsed.profile === "max" ? parsed.profile : "balanced",
-        interpolation: parsed.interpolation === true,
-        anime4k: parsed.anime4k === true,
-        largeBuffer: parsed.largeBuffer === true
-      };
-    } catch {
-      return { ...DEFAULT_RENDER_TUNING };
-    }
-  }
-  function setRenderTuning(tuning) {
-    setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
-  }
-  function renderTuningProperties(t, isNetworkStream = false) {
-    const props = [
-      ["hwdec", t.hwdec ? "auto-safe" : "no"],
-      ["tone-mapping", t.toneMapping === "auto" ? "auto" : t.toneMapping],
-      ["inverse-tone-mapping", t.inverseToneMapping ? "yes" : "no"],
-      ["interpolation", t.interpolation ? "yes" : "no"],
-      ["video-sync", t.interpolation ? "display-resample" : "audio"]
-    ];
-    if (!isNetworkStream) {
-      props.push(
-        ["demuxer-max-bytes", t.largeBuffer ? "768MiB" : "150MiB"],
-        ["demuxer-max-back-bytes", t.largeBuffer ? "256MiB" : "50MiB"],
-        ["demuxer-readahead-secs", t.largeBuffer ? "120" : "1"]
-      );
-    } else if (t.largeBuffer) {
-      props.push(["demuxer-max-back-bytes", "512MiB"]);
-    }
-    if (t.profile === "light") {
-      props.push(["scale", "bilinear"], ["dscale", "bilinear"], ["deband", "no"]);
-    } else if (t.profile === "max") {
-      props.push(["scale", "ewa_lanczossharp"], ["dscale", "mitchell"], ["deband", "yes"]);
-    } else {
-      props.push(["scale", "lanczos"], ["dscale", "mitchell"], ["deband", "no"]);
-    }
-    return props;
-  }
-  function isDefaultTuning(t) {
-    return t.brightness === 0 && t.contrast === 0 && t.saturation === 0 && t.gamma === 0 && t.sharpen === 0;
-  }
-  function tuningToCssFilter(t) {
-    if (t.brightness === 0 && t.contrast === 0 && t.saturation === 0) return "";
-    const mul = (v) => (1 + v / 100).toFixed(3);
-    return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
-  }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY14, EVENT13, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
-  var init_video_tuning = __esm({
-    "lib/video-tuning.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      DEFAULT_TUNING = { brightness: 0, contrast: 0, saturation: 0, gamma: 0, sharpen: 0 };
-      TUNING_PRESETS = {
-        standard: { labelKey: "vtPresetStandard", patch: {} },
-        brighter: { labelKey: "vtPresetBrighter", patch: { gamma: 12, brightness: 4 } },
-        vivid: { labelKey: "vtPresetVivid", patch: { saturation: 15, contrast: 8 } },
-        cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
-        sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
-      };
-      KEY14 = "video_tuning";
-      EVENT13 = "lumio-video-tuning-changed";
-      TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
-      DEFAULT_RENDER_TUNING = {
-        toneMapping: "auto",
-        inverseToneMapping: false,
-        hwdec: true,
-        profile: "balanced",
-        interpolation: false,
-        anime4k: false,
-        largeBuffer: false
-      };
-      RENDER_KEY = "video_render_tuning";
-    }
-  });
-
-  // lib/audio-tuning.ts
-  function getAudioTuning() {
-    if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
-    try {
-      const raw = getScopedStorageItem(KEY15);
-      if (!raw) return { ...DEFAULT_AUDIO_TUNING };
-      const parsed = JSON.parse(raw);
-      return {
-        normalize: parsed.normalize === true,
-        bassBoost: parsed.bassBoost === true,
-        voiceClarity: parsed.voiceClarity === true,
-        downmixStereo: parsed.downmixStereo === true
-      };
-    } catch {
-      return { ...DEFAULT_AUDIO_TUNING };
-    }
-  }
-  function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY15, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
-  }
-  function onAudioTuningChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(EVENT14, listener);
-    return () => window.removeEventListener(EVENT14, listener);
-  }
-  function audioTuningFilters(t) {
-    const filters = [];
-    if (t.bassBoost) filters.push("lavfi=[bass=g=6]");
-    if (t.voiceClarity) filters.push("lavfi=[highpass=f=90,equalizer=f=2000:t=q:w=0.7:g=6,equalizer=f=4000:t=q:w=1.0:g=3]");
-    if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
-    return filters;
-  }
-  var DEFAULT_AUDIO_TUNING, KEY15, EVENT14;
-  var init_audio_tuning = __esm({
-    "lib/audio-tuning.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      DEFAULT_AUDIO_TUNING = {
-        normalize: false,
-        bassBoost: false,
-        voiceClarity: false,
-        downmixStereo: false
-      };
-      KEY15 = "audio_tuning";
-      EVENT14 = "lumio-audio-tuning-changed";
-    }
-  });
-
-  // components/player/player-tuning-panel.tsx
-  function MiniHeader({ children }) {
-    return /* @__PURE__ */ jsx("p", { className: "mb-2 mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 first:mt-0", children });
-  }
-  function MiniToggle({ checked, onChange, tv }) {
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        role: "switch",
-        "aria-checked": checked,
-        ...tv ? { "data-f": "" } : {},
-        onClick: onChange,
-        className: `relative h-5 w-9 flex-none rounded-full transition ${checked ? "bg-accent-500" : "bg-white/10"}`,
-        children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? "left-[1.125rem]" : "left-0.5"}` })
-      }
-    );
-  }
-  function PlayerTuningPanel({ onClose }) {
-    const { t } = useLang();
-    const isTv = useTvMode();
-    const closeRef = useRef(null);
-    const [tuning, setTuningState] = useState(() => getVideoTuning());
-    const [render, setRenderState] = useState(() => getRenderTuning());
-    const [audio, setAudioState] = useState(() => getAudioTuning());
-    useEffect(() => onVideoTuningChanged(() => {
-      setTuningState(getVideoTuning());
-      setRenderState(getRenderTuning());
-    }), []);
-    useEffect(() => onAudioTuningChanged(() => setAudioState(getAudioTuning())), []);
-    function apply(next2) {
-      setTuningState(next2);
-      setVideoTuning(next2);
-    }
-    function applyRender(next2) {
-      setRenderState(next2);
-      setRenderTuning(next2);
-    }
-    function applyAudio(next2) {
-      setAudioState(next2);
-      setAudioTuning(next2);
-    }
-    const matchesPreset = (patch) => {
-      const full = { ...DEFAULT_TUNING, ...patch };
-      return Object.keys(full).every((k) => full[k] === tuning[k]);
-    };
-    useEffect(() => {
-      if (!isTv) return;
-      let cancelled = false;
-      let frames = 0;
-      let held = 0;
-      const attempt = () => {
-        if (cancelled) return;
-        const btn = closeRef.current;
-        if (btn && btn.offsetParent !== null) {
-          if (document.activeElement === btn) {
-            if (++held >= 5) return;
-          } else {
-            held = 0;
-            btn.focus();
-          }
-        }
-        if (frames++ < 60) requestAnimationFrame(attempt);
-      };
-      requestAnimationFrame(attempt);
-      return () => {
-        cancelled = true;
-      };
-    }, [isTv]);
-    const tvRow = (onStep) => isTv ? {
-      "data-f": "",
-      tabIndex: 0,
-      onKeyDown: (e) => {
-        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-        e.preventDefault();
-        e.stopPropagation();
-        onStep(e.key === "ArrowRight" ? 1 : -1);
-      }
-    } : {};
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        className: "absolute bottom-24 right-4 z-[60] max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 bg-black/85 p-4 shadow-2xl backdrop-blur-xl",
-        onClick: (e) => e.stopPropagation(),
-        onMouseMove: (e) => e.stopPropagation(),
-        ...isTv ? { "data-panel-root": "", "data-scroll": "" } : {},
-        onKeyDown: (e) => {
-          if (!isTv) return;
-          if (e.key === "Escape" || e.key === "Backspace") {
-            e.preventDefault();
-            e.stopPropagation();
-            onClose();
-          }
-        },
-        children: [
-          /* @__PURE__ */ jsxs("div", { className: "mb-3 flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx("p", { className: "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400", children: t("vtTitle") }),
-            /* @__PURE__ */ jsx("button", { type: "button", ref: closeRef, ...isTv ? { "data-f": "", "data-init": "" } : {}, onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
-          ] }),
-          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: Object.entries(TUNING_PRESETS).map(([id, preset2]) => /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              ...isTv ? { "data-f": "" } : {},
-              onClick: () => apply({ ...DEFAULT_TUNING, ...preset2.patch }),
-              className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${matchesPreset(preset2.patch) ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
-              children: t(preset2.labelKey)
-            },
-            id
-          )) }),
-          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: DIALS.map(({ key, labelKey, min, max, step }) => (
-            // TV: HELA raden är stationen (reglaget går inte att dra med
-            // fjärrkontroll) — vänster/höger stegar värdet, upp/ner byter rad.
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "flex items-center gap-2.5 rounded-lg",
-                ...tvRow((dir) => {
-                  const next2 = Math.min(max, Math.max(min, Number((tuning[key] + dir * step).toFixed(2))));
-                  apply({ ...tuning, [key]: next2 });
-                }),
-                children: [
-                  /* @__PURE__ */ jsx("span", { className: "w-16 flex-none text-[11px] text-slate-300", children: t(labelKey) }),
-                  /* @__PURE__ */ jsx(
-                    "input",
-                    {
-                      type: "range",
-                      min,
-                      max,
-                      step,
-                      value: tuning[key],
-                      tabIndex: isTv ? -1 : void 0,
-                      onChange: (e) => apply({ ...tuning, [key]: Number(e.target.value) }),
-                      className: "h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-aurora-400"
-                    }
-                  ),
-                  /* @__PURE__ */ jsx("span", { className: "w-9 flex-none text-right text-[10.5px] tabular-nums text-slate-400", children: key === "sharpen" ? tuning[key].toFixed(2) : tuning[key] > 0 ? `+${tuning[key]}` : tuning[key] })
-                ]
-              },
-              key
-            )
-          )) }),
-          /* @__PURE__ */ jsx(MiniHeader, { children: t("atEyebrow") }),
-          /* @__PURE__ */ jsx("div", { className: "space-y-2", children: AUDIO_TOGGLES.map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-            /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
-            /* @__PURE__ */ jsx(MiniToggle, { tv: isTv, checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
-          ] }, key)) }),
-          /* @__PURE__ */ jsx(MiniHeader, { children: t("rtEyebrow") }),
-          /* @__PURE__ */ jsxs("div", { className: "space-y-2.5", children: [
-            /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: ["light", "balanced", "max"].map((profile) => /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                ...isTv ? { "data-f": "" } : {},
-                onClick: () => applyRender({ ...render, profile }),
-                className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${render.profile === profile ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
-                children: t(profile === "light" ? "rtProfileLight" : profile === "max" ? "rtProfileMax" : "rtProfileBalanced")
-              },
-              profile
-            )) }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "flex items-center justify-between gap-2 rounded-lg",
-                ...tvRow((dir) => {
-                  const at = TONE_MAPPINGS.indexOf(render.toneMapping);
-                  const next2 = TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length];
-                  applyRender({ ...render, toneMapping: next2 });
-                }),
-                children: [
-                  /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
-                  /* @__PURE__ */ jsx(
-                    "select",
-                    {
-                      value: render.toneMapping,
-                      tabIndex: isTv ? -1 : void 0,
-                      onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
-                      className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
-                      children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
-                    }
-                  )
-                ]
-              }
-            ),
-            [
-              ["inverseToneMapping", "rtInverseTm"],
-              ["hwdec", "rtHwdec"],
-              ["interpolation", "rtInterpolation"],
-              ["anime4k", "rtAnime4k"],
-              ["largeBuffer", "rtBuffer"]
-            ].map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-              /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
-              /* @__PURE__ */ jsx(
-                MiniToggle,
-                {
-                  tv: isTv,
-                  checked: Boolean(render[key]),
-                  onChange: () => applyRender({ ...render, [key]: !render[key] })
-                }
-              )
-            ] }, key))
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "mt-4 flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                ...isTv ? { "data-f": "" } : {},
-                disabled: isDefaultTuning(tuning),
-                onClick: () => {
-                  apply({ ...DEFAULT_TUNING });
-                  applyRender({ ...DEFAULT_RENDER_TUNING });
-                },
-                className: "rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-30",
-                children: t("shortcutsReset")
-              }
-            ),
-            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-500", children: t("vtLiveNote") })
-          ] })
-        ]
-      }
-    );
-  }
-  var DIALS, AUDIO_TOGGLES;
-  var init_player_tuning_panel = __esm({
-    "components/player/player-tuning-panel.tsx"() {
-      "use client";
-      init_react_shim();
-      init_i18n();
-      init_tv_focus_shim();
-      init_video_tuning();
-      init_audio_tuning();
-      init_jsx_runtime_shim();
-      DIALS = [
-        { key: "brightness", labelKey: "vtBrightness", min: -50, max: 50, step: 1 },
-        { key: "contrast", labelKey: "vtContrast", min: -50, max: 50, step: 1 },
-        { key: "saturation", labelKey: "vtSaturation", min: -50, max: 50, step: 1 },
-        { key: "gamma", labelKey: "vtGamma", min: -50, max: 50, step: 1 },
-        { key: "sharpen", labelKey: "vtSharpen", min: 0, max: 2, step: 0.05 }
-      ];
-      AUDIO_TOGGLES = [
-        ["normalize", "atNormalize"],
-        ["bassBoost", "atBass"],
-        ["voiceClarity", "atVoice"],
-        ["downmixStereo", "atDownmix"]
-      ];
-    }
-  });
-
-  // lib/haptics-filter.ts
-  function hapticFilter(channelCount, sampleRate) {
-    if (!Number.isFinite(channelCount) || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
-    const n = Math.max(1, Math.round(sampleRate * 0.05));
-    const block = `asetnsamples=n=${n}:p=0`;
-    const label = `@${HAPTIC_FILTER_LABEL}:lavfi=`;
-    if (channelCount >= 6) return `${label}[${block},${STATS}]`;
-    if (channelCount === 2) {
-      return `${label}[asplit[m][s];[s]pan=mono|c0=0.5*c0+0.5*c1,lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=stereo|c0=c0|c1=c1]`;
-    }
-    if (channelCount === 1) {
-      return `${label}[asplit[m][s];[s]lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=mono|c0=c0]`;
-    }
-    return null;
-  }
-  function shouldAddHapticFilter(s) {
-    return s.active && s.firstFrame && !s.droid;
-  }
-  var HAPTIC_FILTER_LABEL, STATS;
-  var init_haptics_filter = __esm({
-    "lib/haptics-filter.ts"() {
-      HAPTIC_FILTER_LABEL = "lumiohaptic";
-      STATS = "astats=metadata=1:reset=1:measure_perchannel=RMS_level:measure_overall=none";
-    }
-  });
-
-  // lib/haptics-host.ts
-  function getHapticsHostEnabled() {
-    return getItem(HAPTICS_HOST_ENABLED_KEY) === "1";
-  }
-  async function fetchHapticsHostStatus() {
-    try {
-      const response = await fetch("/api/haptics/host/status");
-      if (!response.ok) return null;
-      return await response.json();
-    } catch {
-      return null;
-    }
-  }
-  function markHapticsUnsupported(reason) {
-    unsupportedReason = reason;
-  }
-  function resetHapticsSupport() {
-    unsupportedReason = null;
-  }
-  function reportHapticsPlayback(s) {
-    if (!getHapticsHostEnabled()) return;
-    const payload = JSON.stringify({
-      playing: s.playing,
-      firstFrame: s.firstFrame,
-      title: s.title ?? null,
-      supported: unsupportedReason === null,
-      reason: unsupportedReason
-    });
-    if (payload === lastSent) return;
-    lastSent = payload;
-    void fetch("/api/haptics/playback", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).catch(() => {
-      lastSent = "";
-    });
-  }
-  async function tick() {
-    timer2 = null;
-    if (inFlight) {
-      again = true;
-      return;
-    }
-    if (listeners5.size === 0) return;
-    inFlight = true;
-    latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
-    inFlight = false;
-    listeners5.forEach((l) => l(latest));
-    if (again) {
-      again = false;
-      void tick();
-      return;
-    }
-    if (listeners5.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
-  }
-  function subscribeHapticsHostStatus(listener) {
-    listeners5.add(listener);
-    listener(latest);
-    if (!timer2 && !inFlight) void tick();
-    return () => {
-      listeners5.delete(listener);
-    };
-  }
-  function useHapticsHostStatus() {
-    const [status, setStatus] = useState(latest);
-    useEffect(() => subscribeHapticsHostStatus(setStatus), []);
-    return status;
-  }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners5, timer2, latest, inFlight, again;
-  var init_haptics_host = __esm({
-    "lib/haptics-host.ts"() {
-      "use client";
-      init_react_shim();
-      init_app_storage();
-      HAPTICS_HOST_ENABLED_KEY = "haptics_host_enabled";
-      POLL_MS = 1e3;
-      unsupportedReason = null;
-      lastSent = "";
-      listeners5 = /* @__PURE__ */ new Set();
-      timer2 = null;
-      latest = null;
-      inFlight = false;
-      again = false;
-    }
-  });
-
-  // lib/download-target.ts
-  async function resolveDownloadFolder() {
-    const preset2 = getDownloadDir();
-    if (preset2) return preset2;
-    if (isAndroidTauriEnv) {
-      return await (0, import_core3.invoke)("default_download_dir");
-    }
-    if (isTauriEnv) {
-      const picked = await (0, import_core3.invoke)("pick_folder");
-      return picked ?? await (0, import_core3.invoke)("default_download_dir");
-    }
-    const response = await fetch("/api/pick-folder", { method: "POST" });
-    if (!response.ok) throw new Error("Folder picker failed");
-    return (await response.json()).path;
-  }
-  var import_core3;
-  var init_download_target = __esm({
-    "lib/download-target.ts"() {
-      import_core3 = __toESM(require_core());
-      init_tauri_mpv();
-      init_tauri_native_player();
-      init_playback_settings();
-      init_session_host();
-    }
-  });
-
-  // lib/vlc-deep-link.ts
-  function resolveDirectStreamUrl(url) {
-    if (!url) return null;
-    if (/^https?:\/\//i.test(url)) return url;
-    if (typeof window === "undefined") return null;
-    try {
-      const original = new URL(url, window.location.href).searchParams.get("url");
-      if (original && /^https?:\/\//i.test(original)) return original;
-    } catch {
-    }
-    return null;
-  }
-  function vlcSupported() {
-    if (typeof window === "undefined") return false;
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-    try {
-      return window.matchMedia("(pointer: coarse)").matches;
-    } catch {
-      return false;
-    }
-  }
-  function positionExtra(startSeconds2) {
-    const ms2 = Math.round((startSeconds2 ?? 0) * 1e3);
-    return ms2 > 0 ? `;l.position=${ms2}` : "";
-  }
-  function openInVlc(url, startSeconds2) {
-    if (typeof window === "undefined") return false;
-    if (!vlcSupported()) return false;
-    const direct = resolveDirectStreamUrl(url);
-    if (!direct) return false;
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    if (isAndroid) {
-      const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
-      const rest = direct.replace(/^https?:\/\//i, "");
-      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};package=org.videolan.vlc;type=video/*${positionExtra(startSeconds2)};end`;
-      return true;
-    }
-    window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
-    return true;
-  }
-  function isAppleMobile() {
-    if (typeof navigator === "undefined") return false;
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-    if (!/Macintosh/i.test(navigator.userAgent)) return false;
-    try {
-      return window.matchMedia("(pointer: coarse)").matches;
-    } catch {
-      return false;
-    }
-  }
-  function openInExternalPlayer(url, startSeconds2) {
-    if (typeof window === "undefined") return false;
-    const direct = resolveDirectStreamUrl(url);
-    if (!direct) return false;
-    if (/Android/i.test(navigator.userAgent)) {
-      const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
-      const rest = direct.replace(/^https?:\/\//i, "");
-      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*${positionExtra(startSeconds2)};end`;
-      return true;
-    }
-    if (isAppleMobile()) {
-      window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
-      return true;
-    }
-    return false;
-  }
-  var init_vlc_deep_link = __esm({
-    "lib/vlc-deep-link.ts"() {
-      init_app_storage();
-    }
-  });
-
-  // lib/spotify-settings.ts
-  function getSpotifyClientId() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_SPOTIFY_CLIENT_ID) ?? "";
-  }
-  function getSpotifyClientSecret() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_SPOTIFY_CLIENT_SECRET) ?? "";
-  }
-  var KEY_SPOTIFY_CLIENT_ID, KEY_SPOTIFY_CLIENT_SECRET;
-  var init_spotify_settings = __esm({
-    "lib/spotify-settings.ts"() {
-      init_profile_storage_shim();
-      KEY_SPOTIFY_CLIENT_ID = "spotify_client_id";
-      KEY_SPOTIFY_CLIENT_SECRET = "spotify_client_secret";
-    }
-  });
-
-  // lib/services/soundtrack-request-cache.ts
-  function now() {
-    return Date.now();
-  }
-  function toKey(params, spotifyClientId, spotifyClientSecret) {
-    const authFingerprint = `${spotifyClientId}|${spotifyClientSecret}`;
-    return `${params.toString()}|auth:${authFingerprint}`;
-  }
-  function readFresh(key) {
-    const entry = cachedByKey.get(key);
-    if (!entry) return null;
-    if (entry.expiresAt <= now()) {
-      cachedByKey.delete(key);
-      return null;
-    }
-    return entry.value;
-  }
-  function writeCache(key, value) {
-    if (!value.found) return;
-    cachedByKey.set(key, {
-      value,
-      expiresAt: now() + SOUNDTRACK_TTL_MS
-    });
-  }
-  function buildFallbackResult(params) {
-    const title = params.get("title") ?? "";
-    const fallbackUrl = `https://open.spotify.com/search/${encodeURIComponent(`${title} soundtrack`)}/albums`;
-    return {
-      configured: false,
-      found: false,
-      fallbackUrl
-    };
-  }
-  async function fetchSoundtrackCached(params, options) {
-    const spotifyClientId = getSpotifyClientId().trim();
-    const spotifyClientSecret = getSpotifyClientSecret().trim();
-    const key = toKey(params, spotifyClientId, spotifyClientSecret);
-    const fresh = readFresh(key);
-    if (fresh) return fresh;
-    const existing = inflightByKey.get(key);
-    if (existing) return existing;
-    const headers = {};
-    if (spotifyClientId) headers["x-lumio-spotify-client-id"] = spotifyClientId;
-    if (spotifyClientSecret) headers["x-lumio-spotify-client-secret"] = spotifyClientSecret;
-    const request = (async () => {
-      try {
-        const value = await fetchJsonWithRetry(`/api/soundtrack?${params.toString()}`, {
-          ...spotifyClientId || spotifyClientSecret ? { headers } : {}
-        }, {
-          timeoutMs: options?.timeoutMs ?? 9e3,
-          retries: options?.retries ?? 2,
-          retryDelayMs: options?.retryDelayMs ?? 420,
-          signal: options?.signal
-        });
-        writeCache(key, value);
-        return value;
-      } catch (error) {
-        const kind = classifyFetchError(error);
-        if (kind === "aborted") throw error;
-        return buildFallbackResult(params);
-      }
-    })().finally(() => {
-      const active3 = inflightByKey.get(key);
-      if (active3 === request) inflightByKey.delete(key);
-    });
-    inflightByKey.set(key, request);
-    return request;
-  }
-  var SOUNDTRACK_TTL_MS, cachedByKey, inflightByKey;
-  var init_soundtrack_request_cache = __esm({
-    "lib/services/soundtrack-request-cache.ts"() {
-      init_fetch_client();
-      init_spotify_settings();
-      SOUNDTRACK_TTL_MS = 10 * 60 * 1e3;
-      cachedByKey = /* @__PURE__ */ new Map();
-      inflightByKey = /* @__PURE__ */ new Map();
+      listeners5 = 0;
     }
   });
 
@@ -22537,9 +22043,9 @@
     const pending5 = inflight5.get(key);
     if (pending5) return pending5.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
-      const answered = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
+      const answered2 = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
       const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
-      if (answered && !framedSkip) {
+      if (answered2 && !framedSkip) {
         memo2.set(key, { at: Date.now(), result });
       }
       return result;
@@ -22587,6 +22093,1105 @@
       MEMO_TTL_MS = 45e3;
       inflight5 = /* @__PURE__ */ new Map();
       memo2 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/core-streams/prepare.ts
+  var init_prepare = __esm({
+    "lib/core-streams/prepare.ts"() {
+      "use strict";
+      init_filters();
+      init_stream_utils();
+    }
+  });
+
+  // lib/core-streams/playback.ts
+  var SLATE_MIN_BYTES, DIRECT_START_MAX_AGE_MS;
+  var init_playback = __esm({
+    "lib/core-streams/playback.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_session_host();
+      init_lookup();
+      init_prepare();
+      init_stream_utils();
+      SLATE_MIN_BYTES = 256 * 1024;
+      DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
+    }
+  });
+
+  // lib/resume-playback.ts
+  function isResumeDurationMismatch(expectedSeconds, actualSeconds, resumeFromSeconds = 0) {
+    if (!isFinite(actualSeconds) || actualSeconds <= 0) return false;
+    if (expectedSeconds != null && expectedSeconds > 600) {
+      if (actualSeconds < Math.min(300, expectedSeconds * 0.2)) return true;
+    }
+    if (resumeFromSeconds > 0 && actualSeconds < resumeFromSeconds * 0.5) return true;
+    return false;
+  }
+  var init_resume_playback = __esm({
+    "lib/resume-playback.ts"() {
+      init_plugin_registry();
+      init_android_direct_stream();
+      init_session_host();
+      init_playback_settings();
+      init_stream_utils();
+      init_playback();
+    }
+  });
+
+  // lib/subtitle-autopick.ts
+  function nextSubtitlePreference(current2, picked, manual) {
+    if (!manual) return current2;
+    return picked ? { mode: "language", language: picked.language } : { mode: "off" };
+  }
+  function orderAutoPickLanguages(args) {
+    const settings = args.settingsLanguages.map((lang) => args.normalize(lang)).filter((lang, index, values) => Boolean(lang) && values.indexOf(lang) === index);
+    const chosen = args.preference.mode === "language" ? args.normalize(args.preference.language) : null;
+    return chosen ? [chosen, ...settings.filter((lang) => lang !== chosen)] : settings;
+  }
+  function pickAutoSubtitle(args) {
+    const searchOrder = args.preferEmbedded ? [...args.options.filter(args.isEmbedded), ...args.options.filter((o) => !args.isEmbedded(o))] : args.options;
+    const current2 = args.currentId ? args.options.find((option) => option.id === args.currentId) ?? null : null;
+    for (const lang of args.languages) {
+      const hit = searchOrder.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
+      if (!hit) continue;
+      if (current2 && current2 !== hit && args.isEmbedded(hit) && args.isEmbedded(current2) && !args.isBlocked(current2) && args.matchesLanguage(current2, lang)) return current2;
+      return hit;
+    }
+    if (args.addonCount > 0) return null;
+    return args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
+  }
+  function isUntagged(language) {
+    const value = (language ?? "").trim().toLowerCase();
+    return value === "" || value === "und";
+  }
+  function preselectSubtitleLanguages(args) {
+    if (args.preference.mode === "off") return null;
+    if (args.subtitlesOffByDefault || args.suppressedByMatchingAudio) return null;
+    const ordered = orderAutoPickLanguages({
+      preference: args.preference,
+      settingsLanguages: args.settingsLanguages,
+      normalize: args.normalize
+    });
+    const codes = [];
+    for (const lang of ordered) {
+      for (const code of args.aliases(lang)) {
+        if (/^[a-z]{2,3}$/.test(code) && !codes.includes(code)) codes.push(code);
+      }
+    }
+    return codes.length > 0 ? codes.join(",") : null;
+  }
+  var init_subtitle_autopick = __esm({
+    "lib/subtitle-autopick.ts"() {
+    }
+  });
+
+  // lib/trakt-scrobble.ts
+  function identityKey(identity) {
+    const id = identity.imdbId || `tmdb:${identity.tmdbId ?? ""}`;
+    return identity.mediaType === "episode" ? `${id}:S${identity.season ?? 0}E${identity.episode ?? 0}` : `${id}`;
+  }
+  async function scrobble(action, identity, progressPercent) {
+    if (typeof window === "undefined") return;
+    if (!getTraktScrobbleEnabled()) return;
+    const auth = getTraktAuth();
+    if (!auth) return;
+    if (!identity.tmdbId && !identity.imdbId) return;
+    if (identity.mediaType === "episode" && (identity.season == null || identity.episode == null)) return;
+    const progress = Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10));
+    const callKey = `${action}:${identityKey(identity)}:${Math.round(progress)}`;
+    const now2 = Date.now();
+    if (callKey === lastCallKey && now2 - lastCallAt < DUPLICATE_WINDOW_MS) return;
+    lastCallKey = callKey;
+    lastCallAt = now2;
+    const logScrobble = (message) => {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[trakt-scrobble] ${message}`)}`).catch(() => {
+      });
+    };
+    const what = `${action} ${identity.mediaType}${identity.season != null ? ` S${identity.season}E${identity.episode}` : ""} ${progress}%`;
+    try {
+      const response = await fetch("/api/trakt/scrobble", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auth,
+          action,
+          mediaType: identity.mediaType,
+          tmdbId: identity.tmdbId ?? void 0,
+          imdbId: identity.imdbId ?? void 0,
+          season: identity.season ?? void 0,
+          episode: identity.episode ?? void 0,
+          progress
+        })
+      });
+      if (response.status === 401) {
+        logScrobble(`${what}: 401 \u2014 auth avvisad`);
+        const payload2 = await response.json().catch(() => null);
+        if (payload2?.authExpired) {
+          clearTraktAuth();
+          logScrobble(`${action}: auth utg\xE5ngen \u2014 Trakt-kopplingen rensad`);
+        } else {
+          logScrobble(`${action}: HTTP 401 utan authExpired`);
+        }
+        return;
+      }
+      if (!response.ok) {
+        logScrobble(`${action}: HTTP ${response.status}`);
+        return;
+      }
+      logScrobble(`${what}: ok`);
+      const payload = await response.json();
+      if (payload.auth?.accessToken && payload.auth.accessToken !== auth.accessToken) {
+        setTraktAuth({ ...auth, ...payload.auth });
+      }
+      logScrobble(`${action} ${identityKey(identity)} @ ${Math.round(progress)}%`);
+    } catch (err) {
+      logScrobble(`${action}: n\xE4tverksfel \u2014 ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  var lastCallKey, lastCallAt, DUPLICATE_WINDOW_MS;
+  var init_trakt_scrobble = __esm({
+    "lib/trakt-scrobble.ts"() {
+      "use client";
+      init_trakt_storage();
+      lastCallKey = "";
+      lastCallAt = 0;
+      DUPLICATE_WINDOW_MS = 5e3;
+    }
+  });
+
+  // lib/scrobble-fanout.ts
+  function buildTrackerEvent(action, identity, progressPercent, opts) {
+    return {
+      action,
+      mediaType: identity.mediaType,
+      tmdbId: identity.tmdbId != null && identity.tmdbId !== "" ? String(identity.tmdbId) : null,
+      imdbId: identity.imdbId ?? null,
+      season: identity.season ?? null,
+      episode: identity.episode ?? null,
+      progress: Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10)),
+      pulse: opts?.pulse === true
+    };
+  }
+  function trackerEventKey(event) {
+    if (!event.tmdbId && !event.imdbId) return null;
+    if (event.mediaType === "episode" && (event.season == null || event.episode == null)) return null;
+    return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
+  }
+  async function scrobbleAll(action, identity, progressPercent, opts) {
+    const event = buildTrackerEvent(action, identity, progressPercent, opts);
+    const key = trackerEventKey(event);
+    const now2 = Date.now();
+    const duplicate = key !== null && key === lastTrackerKey && now2 - lastTrackerAt < DUPLICATE_WINDOW_MS2;
+    if (key !== null && !duplicate) {
+      lastTrackerKey = key;
+      lastTrackerAt = now2;
+    }
+    const active3 = key === null || duplicate ? [] : getTrackers().filter((tracker) => !tracker.pluginId || isPluginEnabled(tracker.pluginId, 0, { installed: true, active: true }));
+    await Promise.all([
+      scrobble(action, identity, progressPercent),
+      ...active3.map(async (tracker) => {
+        try {
+          await tracker.scrobble?.(event);
+        } catch (error) {
+          console.warn(`[scrobble] tracker ${tracker.id} kastade`, error);
+        }
+      })
+    ]);
+  }
+  var DUPLICATE_WINDOW_MS2, lastTrackerKey, lastTrackerAt;
+  var init_scrobble_fanout = __esm({
+    "lib/scrobble-fanout.ts"() {
+      "use client";
+      init_plugin_registry();
+      init_plugin_state();
+      init_trakt_scrobble();
+      DUPLICATE_WINDOW_MS2 = 5e3;
+      lastTrackerKey = "";
+      lastTrackerAt = -Infinity;
+    }
+  });
+
+  // lib/video-tuning.ts
+  function getVideoTuningScope() {
+    return filmTuning ? "film" : "all";
+  }
+  function setFilmVideoTuning(tuning) {
+    filmTuning = { ...tuning };
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
+  }
+  function clearFilmVideoTuning() {
+    if (!filmTuning) return;
+    filmTuning = null;
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
+  }
+  function isVideoTuningActive(tuning) {
+    return Object.keys(DEFAULT_TUNING).some((key) => tuning[key] !== DEFAULT_TUNING[key]);
+  }
+  function getVideoTuning() {
+    if (filmTuning) return { ...filmTuning };
+    return getStoredVideoTuning();
+  }
+  function getStoredVideoTuning() {
+    if (typeof window === "undefined") return { ...DEFAULT_TUNING };
+    try {
+      const raw = getScopedStorageItem(KEY14);
+      if (!raw) return { ...DEFAULT_TUNING };
+      const parsed = JSON.parse(raw);
+      const clamp2 = (v, lo, hi, dflt) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
+      };
+      return {
+        brightness: clamp2(parsed.brightness, -50, 50, 0),
+        contrast: clamp2(parsed.contrast, -50, 50, 0),
+        saturation: clamp2(parsed.saturation, -50, 50, 0),
+        gamma: clamp2(parsed.gamma, -50, 50, 0),
+        sharpen: clamp2(parsed.sharpen, 0, 2, 0)
+      };
+    } catch {
+      return { ...DEFAULT_TUNING };
+    }
+  }
+  function setVideoTuning(tuning) {
+    setScopedStorageItem(KEY14, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
+  }
+  function onVideoTuningChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT13, listener);
+    return () => window.removeEventListener(EVENT13, listener);
+  }
+  function getRenderTuning() {
+    if (typeof window === "undefined") return { ...DEFAULT_RENDER_TUNING };
+    try {
+      const raw = getScopedStorageItem(RENDER_KEY);
+      if (!raw) return { ...DEFAULT_RENDER_TUNING };
+      const parsed = JSON.parse(raw);
+      return {
+        toneMapping: TONE_MAPPINGS.includes(parsed.toneMapping) ? parsed.toneMapping : "auto",
+        inverseToneMapping: parsed.inverseToneMapping === true,
+        hwdec: parsed.hwdec !== false,
+        profile: parsed.profile === "light" || parsed.profile === "max" ? parsed.profile : "balanced",
+        interpolation: parsed.interpolation === true,
+        anime4k: parsed.anime4k === true,
+        largeBuffer: parsed.largeBuffer === true
+      };
+    } catch {
+      return { ...DEFAULT_RENDER_TUNING };
+    }
+  }
+  function setRenderTuning(tuning) {
+    setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
+  }
+  function renderTuningProperties(t, isNetworkStream = false) {
+    const props = [
+      ["hwdec", t.hwdec ? "auto-safe" : "no"],
+      ["tone-mapping", t.toneMapping === "auto" ? "auto" : t.toneMapping],
+      ["inverse-tone-mapping", t.inverseToneMapping ? "yes" : "no"],
+      ["interpolation", t.interpolation ? "yes" : "no"],
+      ["video-sync", t.interpolation ? "display-resample" : "audio"]
+    ];
+    if (!isNetworkStream) {
+      props.push(
+        ["demuxer-max-bytes", t.largeBuffer ? "768MiB" : "150MiB"],
+        ["demuxer-max-back-bytes", t.largeBuffer ? "256MiB" : "50MiB"],
+        ["demuxer-readahead-secs", t.largeBuffer ? "120" : "1"]
+      );
+    } else if (t.largeBuffer) {
+      props.push(["demuxer-max-back-bytes", "512MiB"]);
+    }
+    if (t.profile === "light") {
+      props.push(["scale", "bilinear"], ["dscale", "bilinear"], ["deband", "no"]);
+    } else if (t.profile === "max") {
+      props.push(["scale", "ewa_lanczossharp"], ["dscale", "mitchell"], ["deband", "yes"]);
+    } else {
+      props.push(["scale", "lanczos"], ["dscale", "mitchell"], ["deband", "no"]);
+    }
+    return props;
+  }
+  function isDefaultTuning(t) {
+    return t.brightness === 0 && t.contrast === 0 && t.saturation === 0 && t.gamma === 0 && t.sharpen === 0;
+  }
+  function tuningToCssFilter(t) {
+    if (t.brightness === 0 && t.contrast === 0 && t.saturation === 0) return "";
+    const mul = (v) => (1 + v / 100).toFixed(3);
+    return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
+  }
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY14, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var init_video_tuning = __esm({
+    "lib/video-tuning.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      DEFAULT_TUNING = { brightness: 0, contrast: 0, saturation: 0, gamma: 0, sharpen: 0 };
+      TUNING_PRESETS = {
+        standard: { labelKey: "vtPresetStandard", patch: {} },
+        brighter: { labelKey: "vtPresetBrighter", patch: { gamma: 12, brightness: 4 } },
+        vivid: { labelKey: "vtPresetVivid", patch: { saturation: 15, contrast: 8 } },
+        cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
+        sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
+      };
+      KEY14 = "video_tuning";
+      EVENT13 = "lumio-video-tuning-changed";
+      filmTuning = null;
+      TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
+      DEFAULT_RENDER_TUNING = {
+        toneMapping: "auto",
+        inverseToneMapping: false,
+        hwdec: true,
+        profile: "balanced",
+        interpolation: false,
+        anime4k: false,
+        largeBuffer: false
+      };
+      RENDER_KEY = "video_render_tuning";
+    }
+  });
+
+  // lib/audio-tuning.ts
+  function getAudioTuning() {
+    if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
+    try {
+      const raw = getScopedStorageItem(KEY15);
+      if (!raw) return { ...DEFAULT_AUDIO_TUNING };
+      const parsed = JSON.parse(raw);
+      return {
+        normalize: parsed.normalize === true,
+        bassBoost: parsed.bassBoost === true,
+        voiceClarity: parsed.voiceClarity === true,
+        downmixStereo: parsed.downmixStereo === true
+      };
+    } catch {
+      return { ...DEFAULT_AUDIO_TUNING };
+    }
+  }
+  function setAudioTuning(tuning) {
+    setScopedStorageItem(KEY15, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
+  }
+  function onAudioTuningChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT14, listener);
+    return () => window.removeEventListener(EVENT14, listener);
+  }
+  function audioTuningFilters(t) {
+    const filters = [];
+    if (t.bassBoost) filters.push("lavfi=[bass=g=6]");
+    if (t.voiceClarity) filters.push("lavfi=[highpass=f=90,equalizer=f=2000:t=q:w=0.7:g=6,equalizer=f=4000:t=q:w=1.0:g=3]");
+    if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
+    return filters;
+  }
+  var DEFAULT_AUDIO_TUNING, KEY15, EVENT14;
+  var init_audio_tuning = __esm({
+    "lib/audio-tuning.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      DEFAULT_AUDIO_TUNING = {
+        normalize: false,
+        bassBoost: false,
+        voiceClarity: false,
+        downmixStereo: false
+      };
+      KEY15 = "audio_tuning";
+      EVENT14 = "lumio-audio-tuning-changed";
+    }
+  });
+
+  // components/player/player-tuning-panel.tsx
+  function MiniHeader({ children }) {
+    return /* @__PURE__ */ jsx("p", { className: "mb-2 mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 first:mt-0", children });
+  }
+  function MiniToggle({ checked, onChange, tv }) {
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        role: "switch",
+        "aria-checked": checked,
+        ...tv ? { "data-f": "" } : {},
+        onClick: onChange,
+        className: `relative h-5 w-9 flex-none rounded-full transition ${checked ? "bg-accent-500" : "bg-white/10"}`,
+        children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? "left-[1.125rem]" : "left-0.5"}` })
+      }
+    );
+  }
+  function PlayerTuningPanel({ onClose, surface }) {
+    const { t } = useLang();
+    const isTv = useTvMode();
+    const closeRef = useRef(null);
+    const panelRef = useRef(null);
+    const droid = isAndroidTauriEnv;
+    const [tuning, setTuningState] = useState(() => getVideoTuning());
+    const [render, setRenderState] = useState(() => getRenderTuning());
+    const [audio, setAudioState] = useState(() => getAudioTuning());
+    useEffect(() => onVideoTuningChanged(() => {
+      setTuningState(getVideoTuning());
+      setRenderState(getRenderTuning());
+    }), []);
+    useEffect(() => onAudioTuningChanged(() => setAudioState(getAudioTuning())), []);
+    const [scope, setScope] = useState(() => getVideoTuningScope() === "film" || !isVideoTuningActive(getStoredVideoTuning()) ? "film" : "all");
+    function apply(next2) {
+      setTuningState(next2);
+      if (scope === "film") setFilmVideoTuning(next2);
+      else setVideoTuning(next2);
+    }
+    function changeScope(next2) {
+      if (next2 === scope) return;
+      setScope(next2);
+      if (next2 === "all") {
+        setVideoTuning(tuning);
+        clearFilmVideoTuning();
+      } else {
+        setFilmVideoTuning(tuning);
+      }
+    }
+    function applyRender(next2) {
+      setRenderState(next2);
+      setRenderTuning(next2);
+    }
+    function applyAudio(next2) {
+      setAudioState(next2);
+      setAudioTuning(next2);
+    }
+    const matchesPreset = (patch) => {
+      const full = { ...DEFAULT_TUNING, ...patch };
+      return Object.keys(full).every((k) => full[k] === tuning[k]);
+    };
+    useEffect(() => {
+      if (!isTv) return;
+      let cancelled = false;
+      let frames = 0;
+      let held2 = 0;
+      const attempt = () => {
+        if (cancelled) return;
+        const btn = panelRef.current?.querySelector("[data-init]") ?? null;
+        if (btn && btn.offsetParent !== null) {
+          if (document.activeElement === btn) {
+            if (++held2 >= 5) return;
+          } else {
+            held2 = 0;
+            btn.focus();
+          }
+        }
+        if (frames++ < 60) requestAnimationFrame(attempt);
+      };
+      requestAnimationFrame(attempt);
+      return () => {
+        cancelled = true;
+      };
+    }, [isTv]);
+    const tvRow = (onStep) => isTv ? {
+      "data-f": "",
+      tabIndex: 0,
+      onKeyDown: (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        e.stopPropagation();
+        onStep(e.key === "ArrowRight" ? 1 : -1);
+      }
+    } : {};
+    if (isTv) {
+      const presets = presetsFor(droid);
+      const presetAt = presets.findIndex(([, preset2]) => matchesPreset(preset2.patch));
+      const stepPreset = (dir) => {
+        const next2 = presets[((presetAt < 0 ? 0 : presetAt) + dir + presets.length) % presets.length];
+        if (next2) apply({ ...DEFAULT_TUNING, ...next2[1].patch });
+      };
+      const stepTone = (dir) => {
+        const at = TONE_MAPPINGS.indexOf(render.toneMapping);
+        applyRender({ ...render, toneMapping: TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length] });
+      };
+      const stepKeys = (onStep) => ({
+        onKeyDown: (e) => {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          e.stopPropagation();
+          onStep(e.key === "ArrowRight" ? 1 : -1);
+        }
+      });
+      const value = (text) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text });
+      const toggle = (key, label, on, flip) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, "data-f": "1", onClick: flip, className: TV_ROW, children: [
+        /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: label }),
+        /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
+      ] }, key);
+      return /* @__PURE__ */ jsxs("div", { ...surface, ref: panelRef, onClick: (e) => e.stopPropagation(), onMouseMove: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("vtTitle") }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            "data-f": "1",
+            "data-init": "",
+            className: TV_ROW,
+            onClick: () => changeScope(scope === "film" ? "all" : "film"),
+            ...stepKeys(() => changeScope(scope === "film" ? "all" : "film")),
+            children: [
+              /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("vtScopeLabel") }),
+              value(t(scope === "film" ? "vtScopeFilm" : "vtScopeAll"))
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepPreset(1), ...stepKeys(stepPreset), children: [
+          /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("vtPresetLabel") }),
+          value(presetAt >= 0 ? t(presets[presetAt][1].labelKey) : "\u2013")
+        ] }),
+        dialsFor(droid).map(({ key, labelKey, min, max, step }) => {
+          const remoteStep = key === "sharpen" ? 0.1 : Math.max(step, 5);
+          const stepDial = (dir) => apply({ ...tuning, [key]: Math.min(max, Math.max(min, Number((tuning[key] + dir * remoteStep).toFixed(2)))) });
+          const v = tuning[key];
+          return /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepDial(1), ...stepKeys(stepDial), children: [
+            /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t(labelKey) }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "relative h-1 w-20 flex-none rounded-full bg-white/20", children: /* @__PURE__ */ jsx("span", { className: "absolute inset-y-0 left-0 rounded-full bg-[rgb(var(--player-accent))]", style: { width: `${(v - min) / (max - min) * 100}%` } }) }),
+            /* @__PURE__ */ jsx("span", { className: "w-12 flex-none text-right text-[13px] tabular-nums text-slate-400", children: key === "sharpen" ? v.toFixed(2) : v > 0 ? `+${v}` : String(v) })
+          ] }, key);
+        }),
+        droid ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("atEyebrow") }),
+          AUDIO_TOGGLES.map(([key, labelKey]) => toggle(key, t(labelKey), audio[key], () => applyAudio({ ...audio, [key]: !audio[key] }))),
+          /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("rtEyebrow") }),
+          /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepTone(1), ...stepKeys(stepTone), children: [
+            /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("rtToneMapping") }),
+            value(render.toneMapping)
+          ] }),
+          [
+            ["inverseToneMapping", "rtInverseTm"],
+            ["hwdec", "rtHwdec"],
+            ["interpolation", "rtInterpolation"],
+            ["anime4k", "rtAnime4k"],
+            ["largeBuffer", "rtBuffer"]
+          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] })))
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            "data-f": "1",
+            className: `${TV_ROW} mt-1 border-t border-white/[0.08]`,
+            onClick: () => {
+              apply({ ...DEFAULT_TUNING });
+              applyRender({ ...DEFAULT_RENDER_TUNING });
+            },
+            children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("shortcutsReset") })
+          }
+        )
+      ] });
+    }
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "absolute bottom-24 right-4 z-[60] max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 bg-black/85 p-4 shadow-2xl backdrop-blur-xl",
+        onClick: (e) => e.stopPropagation(),
+        onMouseMove: (e) => e.stopPropagation(),
+        ...isTv ? { "data-panel-root": "", "data-scroll": "" } : {},
+        onKeyDown: (e) => {
+          if (!isTv) return;
+          if (e.key === "Escape" || e.key === "Backspace") {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }
+        },
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "mb-3 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx("p", { className: "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400", children: t("vtTitle") }),
+            /* @__PURE__ */ jsx("button", { type: "button", ref: closeRef, ...isTv ? { "data-f": "", "data-init": "" } : {}, onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "mb-3", children: [
+            /* @__PURE__ */ jsx("p", { className: "mb-1.5 text-[10.5px] text-slate-400", children: t("vtScopeLabel") }),
+            /* @__PURE__ */ jsx("div", { className: "flex gap-1.5", role: "radiogroup", "aria-label": t("vtScopeLabel"), children: ["film", "all"].map((option) => /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                role: "radio",
+                "aria-checked": scope === option,
+                ...isTv ? { "data-f": "" } : {},
+                onClick: () => changeScope(option),
+                className: `flex-1 rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${scope === option ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+                children: t(option === "film" ? "vtScopeFilm" : "vtScopeAll")
+              },
+              option
+            )) })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: presetsFor(droid).map(([id, preset2]) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              ...isTv ? { "data-f": "" } : {},
+              onClick: () => apply({ ...DEFAULT_TUNING, ...preset2.patch }),
+              className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${matchesPreset(preset2.patch) ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+              children: t(preset2.labelKey)
+            },
+            id
+          )) }),
+          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: dialsFor(droid).map(({ key, labelKey, min, max, step }) => (
+            // TV: HELA raden är stationen (reglaget går inte att dra med
+            // fjärrkontroll) — vänster/höger stegar värdet, upp/ner byter rad.
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "flex items-center gap-2.5 rounded-lg",
+                ...tvRow((dir) => {
+                  const next2 = Math.min(max, Math.max(min, Number((tuning[key] + dir * step).toFixed(2))));
+                  apply({ ...tuning, [key]: next2 });
+                }),
+                children: [
+                  /* @__PURE__ */ jsx("span", { className: "w-16 flex-none text-[11px] text-slate-300", children: t(labelKey) }),
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "range",
+                      min,
+                      max,
+                      step,
+                      value: tuning[key],
+                      tabIndex: isTv ? -1 : void 0,
+                      onChange: (e) => apply({ ...tuning, [key]: Number(e.target.value) }),
+                      className: "h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/20 accent-aurora-400"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: "w-9 flex-none text-right text-[10.5px] tabular-nums text-slate-400", children: key === "sharpen" ? tuning[key].toFixed(2) : tuning[key] > 0 ? `+${tuning[key]}` : tuning[key] })
+                ]
+              },
+              key
+            )
+          )) }),
+          droid ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx(MiniHeader, { children: t("atEyebrow") }),
+            /* @__PURE__ */ jsx("div", { className: "space-y-2", children: AUDIO_TOGGLES.map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
+              /* @__PURE__ */ jsx(MiniToggle, { tv: isTv, checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
+            ] }, key)) }),
+            /* @__PURE__ */ jsx(MiniHeader, { children: t("rtEyebrow") }),
+            /* @__PURE__ */ jsxs("div", { className: "space-y-2.5", children: [
+              /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: ["light", "balanced", "max"].map((profile) => /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  ...isTv ? { "data-f": "" } : {},
+                  onClick: () => applyRender({ ...render, profile }),
+                  className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${render.profile === profile ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+                  children: t(profile === "light" ? "rtProfileLight" : profile === "max" ? "rtProfileMax" : "rtProfileBalanced")
+                },
+                profile
+              )) }),
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  className: "flex items-center justify-between gap-2 rounded-lg",
+                  ...tvRow((dir) => {
+                    const at = TONE_MAPPINGS.indexOf(render.toneMapping);
+                    const next2 = TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length];
+                    applyRender({ ...render, toneMapping: next2 });
+                  }),
+                  children: [
+                    /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
+                    /* @__PURE__ */ jsx(
+                      "select",
+                      {
+                        value: render.toneMapping,
+                        tabIndex: isTv ? -1 : void 0,
+                        onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
+                        className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
+                        children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
+                      }
+                    )
+                  ]
+                }
+              ),
+              [
+                ["inverseToneMapping", "rtInverseTm"],
+                ["hwdec", "rtHwdec"],
+                ["interpolation", "rtInterpolation"],
+                ["anime4k", "rtAnime4k"],
+                ["largeBuffer", "rtBuffer"]
+              ].map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
+                /* @__PURE__ */ jsx(
+                  MiniToggle,
+                  {
+                    tv: isTv,
+                    checked: Boolean(render[key]),
+                    onChange: () => applyRender({ ...render, [key]: !render[key] })
+                  }
+                )
+              ] }, key))
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "mt-4 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...isTv ? { "data-f": "" } : {},
+                disabled: isDefaultTuning(tuning),
+                onClick: () => {
+                  apply({ ...DEFAULT_TUNING });
+                  applyRender({ ...DEFAULT_RENDER_TUNING });
+                },
+                className: "rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-30",
+                children: t("shortcutsReset")
+              }
+            ),
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-500", children: t("vtLiveNote") })
+          ] })
+        ]
+      }
+    );
+  }
+  var DIALS, AUDIO_TOGGLES, ANDROID_DIALS, dialsFor, presetsFor, TV_ROW, TV_LABEL;
+  var init_player_tuning_panel = __esm({
+    "components/player/player-tuning-panel.tsx"() {
+      "use client";
+      init_react_shim();
+      init_i18n();
+      init_tv_focus_shim();
+      init_video_tuning();
+      init_audio_tuning();
+      init_tauri_native_player();
+      init_jsx_runtime_shim();
+      DIALS = [
+        { key: "brightness", labelKey: "vtBrightness", min: -50, max: 50, step: 1 },
+        { key: "contrast", labelKey: "vtContrast", min: -50, max: 50, step: 1 },
+        { key: "saturation", labelKey: "vtSaturation", min: -50, max: 50, step: 1 },
+        { key: "gamma", labelKey: "vtGamma", min: -50, max: 50, step: 1 },
+        { key: "sharpen", labelKey: "vtSharpen", min: 0, max: 2, step: 0.05 }
+      ];
+      AUDIO_TOGGLES = [
+        ["normalize", "atNormalize"],
+        ["bassBoost", "atBass"],
+        ["voiceClarity", "atVoice"],
+        ["downmixStereo", "atDownmix"]
+      ];
+      ANDROID_DIALS = /* @__PURE__ */ new Set(["brightness", "contrast", "saturation"]);
+      dialsFor = (droid) => droid ? DIALS.filter((d) => ANDROID_DIALS.has(d.key)) : DIALS;
+      presetsFor = (droid) => Object.entries(TUNING_PRESETS).filter(([, preset2]) => !droid || Object.keys(preset2.patch).every((k) => ANDROID_DIALS.has(k)));
+      TV_ROW = "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)]";
+      TV_LABEL = "flex-1 text-left text-sm leading-tight";
+    }
+  });
+
+  // lib/haptics-filter.ts
+  function hapticFilter(channelCount, sampleRate) {
+    if (!Number.isFinite(channelCount) || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
+    const n = Math.max(1, Math.round(sampleRate * 0.05));
+    const block = `asetnsamples=n=${n}:p=0`;
+    const label = `@${HAPTIC_FILTER_LABEL}:lavfi=`;
+    if (channelCount >= 6) return `${label}[${block},${STATS}]`;
+    if (channelCount === 2) {
+      return `${label}[asplit[m][s];[s]pan=mono|c0=0.5*c0+0.5*c1,lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=stereo|c0=c0|c1=c1]`;
+    }
+    if (channelCount === 1) {
+      return `${label}[asplit[m][s];[s]lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=mono|c0=c0]`;
+    }
+    return null;
+  }
+  function shouldAddHapticFilter(s) {
+    return s.active && s.firstFrame && !s.droid;
+  }
+  var HAPTIC_FILTER_LABEL, STATS;
+  var init_haptics_filter = __esm({
+    "lib/haptics-filter.ts"() {
+      HAPTIC_FILTER_LABEL = "lumiohaptic";
+      STATS = "astats=metadata=1:reset=1:measure_perchannel=RMS_level:measure_overall=none";
+    }
+  });
+
+  // lib/haptics-host.ts
+  function getHapticsHostEnabled() {
+    return getItem(HAPTICS_HOST_ENABLED_KEY) === "1";
+  }
+  async function fetchHapticsHostStatus() {
+    try {
+      const response = await fetch("/api/haptics/host/status");
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+  function markHapticsUnsupported(reason) {
+    unsupportedReason = reason;
+  }
+  function resetHapticsSupport() {
+    unsupportedReason = null;
+  }
+  function reportHapticsPlayback(s) {
+    if (!getHapticsHostEnabled()) return;
+    const payload = JSON.stringify({
+      playing: s.playing,
+      firstFrame: s.firstFrame,
+      title: s.title ?? null,
+      supported: unsupportedReason === null,
+      reason: unsupportedReason
+    });
+    if (payload === lastSent) return;
+    lastSent = payload;
+    void fetch("/api/haptics/playback", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).catch(() => {
+      lastSent = "";
+    });
+  }
+  async function tick() {
+    timer2 = null;
+    if (inFlight) {
+      again = true;
+      return;
+    }
+    if (listeners6.size === 0) return;
+    inFlight = true;
+    latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
+    inFlight = false;
+    listeners6.forEach((l) => l(latest));
+    if (again) {
+      again = false;
+      void tick();
+      return;
+    }
+    if (listeners6.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
+  }
+  function subscribeHapticsHostStatus(listener) {
+    listeners6.add(listener);
+    listener(latest);
+    if (!timer2 && !inFlight) void tick();
+    return () => {
+      listeners6.delete(listener);
+    };
+  }
+  function useHapticsHostStatus() {
+    const [status, setStatus] = useState(latest);
+    useEffect(() => subscribeHapticsHostStatus(setStatus), []);
+    return status;
+  }
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners6, timer2, latest, inFlight, again;
+  var init_haptics_host = __esm({
+    "lib/haptics-host.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      HAPTICS_HOST_ENABLED_KEY = "haptics_host_enabled";
+      POLL_MS = 1e3;
+      unsupportedReason = null;
+      lastSent = "";
+      listeners6 = /* @__PURE__ */ new Set();
+      timer2 = null;
+      latest = null;
+      inFlight = false;
+      again = false;
+    }
+  });
+
+  // lib/player-menu-anchor.ts
+  function anchoredMenuGeometry(rect, space, menuWidth = 0) {
+    const top2 = rect.top / space.scale;
+    const rightEdge = rect.right / space.scale;
+    const right = Math.round(Math.max(4, space.width - rightEdge));
+    const maxRight = Math.round(Math.max(4, space.width - menuWidth - 4));
+    return {
+      bottom: Math.round(space.height - top2 + 8),
+      right: Math.min(right, maxRight),
+      maxHeight: Math.max(160, Math.round(top2 - 16))
+    };
+  }
+  var init_player_menu_anchor = __esm({
+    "lib/player-menu-anchor.ts"() {
+    }
+  });
+
+  // lib/download-target.ts
+  async function resolveDownloadFolder() {
+    const preset2 = getDownloadDir();
+    if (preset2) return preset2;
+    if (isAndroidTauriEnv) {
+      return await (0, import_core3.invoke)("default_download_dir");
+    }
+    if (isTauriEnv) {
+      const picked = await (0, import_core3.invoke)("pick_folder");
+      return picked ?? await (0, import_core3.invoke)("default_download_dir");
+    }
+    const response = await fetch("/api/pick-folder", { method: "POST" });
+    if (!response.ok) throw new Error("Folder picker failed");
+    return (await response.json()).path;
+  }
+  var import_core3;
+  var init_download_target = __esm({
+    "lib/download-target.ts"() {
+      import_core3 = __toESM(require_core());
+      init_tauri_mpv();
+      init_tauri_native_player();
+      init_playback_settings();
+      init_session_host();
+    }
+  });
+
+  // lib/vlc-deep-link.ts
+  function resolveDirectStreamUrl(url) {
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    if (typeof window === "undefined") return null;
+    try {
+      const original = new URL(url, window.location.href).searchParams.get("url");
+      if (original && /^https?:\/\//i.test(original)) return original;
+    } catch {
+    }
+    return null;
+  }
+  function vlcSupported() {
+    if (typeof window === "undefined") return false;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+    try {
+      return window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      return false;
+    }
+  }
+  function positionExtra(startSeconds2) {
+    const ms2 = Math.round((startSeconds2 ?? 0) * 1e3);
+    return ms2 > 0 ? `;l.position=${ms2}` : "";
+  }
+  function openInVlc(url, startSeconds2) {
+    if (typeof window === "undefined") return false;
+    if (!vlcSupported()) return false;
+    const direct = resolveDirectStreamUrl(url);
+    if (!direct) return false;
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
+      const rest = direct.replace(/^https?:\/\//i, "");
+      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};package=org.videolan.vlc;type=video/*${positionExtra(startSeconds2)};end`;
+      return true;
+    }
+    window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
+    return true;
+  }
+  function isAppleMobile() {
+    if (typeof navigator === "undefined") return false;
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+    if (!/Macintosh/i.test(navigator.userAgent)) return false;
+    try {
+      return window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      return false;
+    }
+  }
+  function openInExternalPlayer(url, startSeconds2) {
+    if (typeof window === "undefined") return false;
+    const direct = resolveDirectStreamUrl(url);
+    if (!direct) return false;
+    if (/Android/i.test(navigator.userAgent)) {
+      const scheme = /^http:\/\//i.test(direct) ? "http" : "https";
+      const rest = direct.replace(/^https?:\/\//i, "");
+      window.location.href = `intent://${rest}#Intent;action=android.intent.action.VIEW;scheme=${scheme};type=video/*${positionExtra(startSeconds2)};end`;
+      return true;
+    }
+    if (isAppleMobile()) {
+      window.location.href = `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(direct)}`;
+      return true;
+    }
+    return false;
+  }
+  var init_vlc_deep_link = __esm({
+    "lib/vlc-deep-link.ts"() {
+      init_app_storage();
+    }
+  });
+
+  // lib/spotify-settings.ts
+  function getSpotifyClientId() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_SPOTIFY_CLIENT_ID) ?? "";
+  }
+  function getSpotifyClientSecret() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_SPOTIFY_CLIENT_SECRET) ?? "";
+  }
+  var KEY_SPOTIFY_CLIENT_ID, KEY_SPOTIFY_CLIENT_SECRET;
+  var init_spotify_settings = __esm({
+    "lib/spotify-settings.ts"() {
+      init_profile_storage_shim();
+      KEY_SPOTIFY_CLIENT_ID = "spotify_client_id";
+      KEY_SPOTIFY_CLIENT_SECRET = "spotify_client_secret";
+    }
+  });
+
+  // lib/services/soundtrack-request-cache.ts
+  function now() {
+    return Date.now();
+  }
+  function toKey(params, spotifyClientId, spotifyClientSecret) {
+    const authFingerprint = `${spotifyClientId}|${spotifyClientSecret}`;
+    return `${params.toString()}|auth:${authFingerprint}`;
+  }
+  function readFresh(key) {
+    const entry = cachedByKey.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= now()) {
+      cachedByKey.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+  function writeCache(key, value) {
+    if (!value.found) return;
+    cachedByKey.set(key, {
+      value,
+      expiresAt: now() + SOUNDTRACK_TTL_MS
+    });
+  }
+  function buildFallbackResult(params) {
+    const title = params.get("title") ?? "";
+    const fallbackUrl = `https://open.spotify.com/search/${encodeURIComponent(`${title} soundtrack`)}/albums`;
+    return {
+      configured: false,
+      found: false,
+      fallbackUrl
+    };
+  }
+  async function fetchSoundtrackCached(params, options) {
+    const spotifyClientId = getSpotifyClientId().trim();
+    const spotifyClientSecret = getSpotifyClientSecret().trim();
+    const key = toKey(params, spotifyClientId, spotifyClientSecret);
+    const fresh = readFresh(key);
+    if (fresh) return fresh;
+    const existing = inflightByKey.get(key);
+    if (existing) return existing;
+    const headers = {};
+    if (spotifyClientId) headers["x-lumio-spotify-client-id"] = spotifyClientId;
+    if (spotifyClientSecret) headers["x-lumio-spotify-client-secret"] = spotifyClientSecret;
+    const request = (async () => {
+      try {
+        const value = await fetchJsonWithRetry(`/api/soundtrack?${params.toString()}`, {
+          ...spotifyClientId || spotifyClientSecret ? { headers } : {}
+        }, {
+          timeoutMs: options?.timeoutMs ?? 9e3,
+          retries: options?.retries ?? 2,
+          retryDelayMs: options?.retryDelayMs ?? 420,
+          signal: options?.signal
+        });
+        writeCache(key, value);
+        return value;
+      } catch (error) {
+        const kind = classifyFetchError(error);
+        if (kind === "aborted") throw error;
+        return buildFallbackResult(params);
+      }
+    })().finally(() => {
+      const active3 = inflightByKey.get(key);
+      if (active3 === request) inflightByKey.delete(key);
+    });
+    inflightByKey.set(key, request);
+    return request;
+  }
+  var SOUNDTRACK_TTL_MS, cachedByKey, inflightByKey;
+  var init_soundtrack_request_cache = __esm({
+    "lib/services/soundtrack-request-cache.ts"() {
+      init_fetch_client();
+      init_spotify_settings();
+      SOUNDTRACK_TTL_MS = 10 * 60 * 1e3;
+      cachedByKey = /* @__PURE__ */ new Map();
+      inflightByKey = /* @__PURE__ */ new Map();
     }
   });
 
@@ -23240,15 +23845,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -23262,7 +23867,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
+        className: "person-sidebar-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -23336,6 +23941,7 @@
   function PlayerWikiPanel({ tmdbId, mediaType, imdbId, onClose, onBack }) {
     const isTv = useTvMode();
     const closeRef = useRef(null);
+    const contentRef = useRef(null);
     const [data, setData] = useState(null);
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -23387,15 +23993,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -23409,7 +24015,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
@@ -23435,13 +24041,14 @@
                 type: "button",
                 ref: closeRef,
                 ...isTv ? { "data-f": "", "data-init": "" } : {},
+                onFocus: isTv ? () => contentRef.current?.scrollTo({ top: 0 }) : void 0,
                 onClick: onClose,
                 className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex-1 overflow-y-auto overscroll-contain", ...isTv ? { "data-scroll": "" } : {}, children: [
+          /* @__PURE__ */ jsxs("div", { ref: contentRef, className: "flex-1 overflow-y-auto overscroll-contain", ...isTv ? { "data-scroll": "" } : {}, children: [
             loading2 && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
             error && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               "Could not load info",
@@ -23502,7 +24109,7 @@
                       className: "flex flex-col items-center text-center transition hover:opacity-80 active:opacity-60",
                       title: actor.name,
                       children: [
-                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
+                        /* @__PURE__ */ jsx("div", { className: "vp-cast-photo relative mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[11px] font-medium text-slate-200", children: actor.name }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[10px] text-slate-500", children: actor.character })
                       ]
@@ -23597,15 +24204,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -23616,10 +24223,32 @@
         cancelled = true;
       };
     }, [isTv, title, year]);
+    const embedBoxRef = useRef(null);
+    const [embedBox, setEmbedBox] = useState(null);
+    useEffect(() => {
+      const el = embedBoxRef.current;
+      if (!isTv || !el) return;
+      const measure = () => setEmbedBox({ w: el.clientWidth, h: el.clientHeight });
+      measure();
+      const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+      ro?.observe(el);
+      return () => ro?.disconnect();
+    }, [isTv, state2]);
+    const wanted = 1.25 / (tvSceneScale() || 1);
+    const embedZoom = isTv && embedBox && embedBox.w > 0 ? Math.min(wanted, embedBox.w / SPOTIFY_MIN_LAYOUT_PX) : 1;
+    const embedZoomStyle = !isTv || !embedBox ? {} : {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: embedBox.w / embedZoom,
+      height: embedBox.h / embedZoom,
+      transform: `scale(${embedZoom})`,
+      transformOrigin: "top left"
+    };
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col overflow-hidden",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col overflow-hidden",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
@@ -23670,8 +24299,12 @@
              * kompakta spelare och panelen slutade en bit ner i stället för att
              * fylla nedåt (Jerry 2026-09-08). Raden `1fr` är alltid uträknad, så
              * iframen får sin höjd redan i första layouten.
+             *
+             * Kolumnen låses till panelens bredd (`minmax(0,1fr)`): annars blåste
+             * albumtitelns radlängd upp den bredare än panelen, och Spotify-
+             * rutan — som mäts — blev lika bred och klipptes vid panelkanten.
              */
-            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-rows-[auto_1fr]", children: [
+            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr]", children: [
               /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3", children: [
                 result.coverUrl && /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
                 /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
@@ -23691,14 +24324,24 @@
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsx(
+              isTv ? /* @__PURE__ */ jsx("div", { ref: embedBoxRef, className: "relative min-h-0 min-w-0 overflow-hidden", children: /* @__PURE__ */ jsx(
                 "iframe",
                 {
                   src: result.embedUrl,
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
                   className: "h-full w-full min-h-0",
-                  style: { border: "none", display: "block" },
+                  style: { border: "none", display: "block", ...embedZoomStyle },
+                  title: result.albumName ?? t("soundtrack")
+                }
+              ) }) : /* @__PURE__ */ jsx(
+                "iframe",
+                {
+                  src: result.embedUrl,
+                  allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
+                  loading: "lazy",
+                  className: "h-full w-full min-h-0",
+                  style: { border: "none", display: "block", ...embedZoomStyle },
                   title: result.albumName ?? t("soundtrack")
                 }
               )
@@ -23708,15 +24351,18 @@
       }
     );
   }
+  var SPOTIFY_MIN_LAYOUT_PX;
   var init_player_soundtrack_panel = __esm({
     "components/player/player-soundtrack-panel.tsx"() {
       "use client";
       init_react_shim();
+      init_tv_scene();
       init_i18n();
       init_tv_focus_shim();
       init_fetch_client();
       init_soundtrack_request_cache();
       init_jsx_runtime_shim();
+      SPOTIFY_MIN_LAYOUT_PX = 520;
     }
   });
 
@@ -23753,7 +24399,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -23867,7 +24513,7 @@
       "div",
       {
         "data-player-streams-panel": "",
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -23993,7 +24639,7 @@
     } catch {
       sport = null;
     }
-    return { state: { player, surfaces: { sport } }, acks };
+    return { state: { player, surfaces: { sport }, tip: tipSummary }, acks };
   }
   function notifyCouchState() {
     if (!post || flushQueued2) return;
@@ -24005,12 +24651,13 @@
       post?.(buildStateBody(acks));
     });
   }
-  var sportSurface, players, top, pendingAcks, flushQueued2, post;
+  var sportSurface, tipSummary, players, top, pendingAcks, flushQueued2, post;
   var init_host_bridge = __esm({
     "lib/couch/host-bridge.ts"() {
       init_host_trakt();
       init_sport_protocol();
       sportSurface = null;
+      tipSummary = null;
       players = [];
       top = () => players[players.length - 1] ?? null;
       pendingAcks = [];
@@ -24173,17 +24820,17 @@
       if (!go || !now2.ref) return;
       lastAtRef.current = at;
       const ref = now2.ref;
-      const engine = now2.engine;
-      void captureContinueFrame(engine, ref, now2.videoRef.current).then((ok) => {
+      const engine2 = now2.engine;
+      void captureContinueFrame(engine2, ref, now2.videoRef.current).then((ok) => {
         if (!ok) return;
         window.setTimeout(() => {
           void pushContinueFrame(ref);
-        }, engine === "none" ? 0 : CONTINUE_FRAME_PUSH_DELAY_MS);
+        }, engine2 === "none" ? 0 : CONTINUE_FRAME_PUSH_DELAY_MS);
       }).catch(() => {
       });
     }, []);
     const wasPlayingRef = useRef(false);
-    const { playing, armed } = options;
+    const { playing, armed, engine } = options;
     useEffect(() => {
       if (!armed) {
         wasPlayingRef.current = false;
@@ -24192,9 +24839,34 @@
       if (wasPlayingRef.current && !playing) captureNow();
       wasPlayingRef.current = playing;
       if (!playing) return;
+      if (engine === "droid") {
+        const syncLeaveFrame = () => {
+          const now2 = latest2.current;
+          const take = now2.ref !== null && getContinueFramesEnabled() && !now2.shouldSkip();
+          const path = take && now2.ref ? `/api/player-frame?key=${continueFrameKey(now2.ref)}` : null;
+          void np({ cmd: "setLeaveFrame", path });
+          return path;
+        };
+        syncLeaveFrame();
+        const interval2 = window.setInterval(syncLeaveFrame, CONTINUE_FRAME_PERIOD_MS);
+        const onHidden = () => {
+          const ref = latest2.current.ref;
+          if (document.visibilityState === "hidden" && ref) {
+            window.setTimeout(() => {
+              void pushContinueFrame(ref);
+            }, CONTINUE_FRAME_PUSH_DELAY_MS);
+          }
+        };
+        document.addEventListener("visibilitychange", onHidden);
+        return () => {
+          window.clearInterval(interval2);
+          document.removeEventListener("visibilitychange", onHidden);
+          void np({ cmd: "setLeaveFrame", path: null });
+        };
+      }
       const interval = window.setInterval(captureNow, CONTINUE_FRAME_PERIOD_MS);
       return () => window.clearInterval(interval);
-    }, [playing, armed, captureNow]);
+    }, [playing, armed, engine, captureNow]);
     return captureNow;
   }
   var CONTINUE_FRAME_MIN_GAP_MS, CONTINUE_FRAME_PERIOD_MS, CONTINUE_FRAME_PUSH_DELAY_MS;
@@ -24204,6 +24876,7 @@
       init_react_shim();
       init_continue_frames();
       init_continue_frame_capture();
+      init_tauri_native_player();
       CONTINUE_FRAME_MIN_GAP_MS = 1500;
       CONTINUE_FRAME_PERIOD_MS = 6e4;
       CONTINUE_FRAME_PUSH_DELAY_MS = 2500;
@@ -24917,6 +25590,16 @@
   function requestAudioVerification(jobId, url, signal) {
     return post2("/api/subtitles/sync/verify-audio", { jobId, url }, signal);
   }
+  async function fetchEmbeddedTrackLanguages(url, fileName, extra) {
+    try {
+      const res = await fetch("/api/subtitles/sync/tracks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.tracks) ? data.tracks : [];
+    } catch {
+      return [];
+    }
+  }
   async function prefetchSubtitleSyncIndex(url, fileName, extra) {
     await fetch("/api/subtitles/sync/prefetch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) }).catch(() => {
     });
@@ -25212,10 +25895,19 @@ ${effectiveName(url, id)}`;
       const identity = syncIdentity({ fileName: args.fileName, title: args.title, year: args.year, season: args.season, episode: args.episode });
       const key = prefetchKey(args.mediaUrl, identity);
       if (prefetchedUrlRef.current === key || !getSubtitleAutoSync()) return;
-      prefetchedUrlRef.current = key;
-      const { fileName, ...extra } = identity;
-      logSubsyncClient(`${CLIENT_PREFIX} f\xF6rh\xE4mtning skickad fil=${fileLabel(args.mediaUrl, identity)}`);
-      void prefetchSubtitleSyncIndex(args.mediaUrl, fileName, extra);
+      const mediaUrl = args.mediaUrl;
+      const send = () => {
+        prefetchedUrlRef.current = key;
+        const { fileName, ...extra } = identity;
+        logSubsyncClient(`${CLIENT_PREFIX} f\xF6rh\xE4mtning skickad fil=${fileLabel(mediaUrl, identity)}`);
+        void prefetchSubtitleSyncIndex(mediaUrl, fileName, extra);
+      };
+      if (!androidStreamsDirect()) {
+        send();
+        return;
+      }
+      const timer3 = setTimeout(send, ANDROID_PREFETCH_DELAY_MS);
+      return () => clearTimeout(timer3);
     }, [args.firstFrameRendered, args.mediaUrl, args.isLive, args.fileName, args.title, args.year, args.season, args.episode]);
     useEffect(() => {
       guardRef.current.begin();
@@ -25333,6 +26025,7 @@ ${effectiveName(url, id)}`;
         inFlightRef.current = false;
         const k = outcomeMessageKey(r);
         a.setStatus(k ? { type: "done", message: a.t(k) } : { type: "idle" });
+        if (sel && r.status === "no_fit" && !/^(network|http_)/.test(r.reason ?? "")) a.onNoFit?.(sel);
       };
       const waitPlayed = async (seconds) => {
         let played = 0;
@@ -25439,11 +26132,12 @@ ${effectiveName(url, id)}`;
       })();
     }, [args.selectionToken, args.firstFrameRendered, args.selected?.id]);
   }
-  var AUDIO_WAIT_PLAYED_SECONDS, toCandidate;
+  var AUDIO_WAIT_PLAYED_SECONDS, toCandidate, ANDROID_PREFETCH_DELAY_MS;
   var init_use_subtitle_auto_sync = __esm({
     "components/player/use-subtitle-auto-sync.ts"() {
       "use strict";
       init_react_shim();
+      init_android_source_cache();
       init_subtitle_delay_store();
       init_playback_settings();
       init_client2();
@@ -25454,6 +26148,59 @@ ${effectiveName(url, id)}`;
       init_diag();
       AUDIO_WAIT_PLAYED_SECONDS = 20;
       toCandidate = (s) => ({ id: s.id, url: s.url, lang3: s.lang3, hashMatch: s.hashMatch, release: s.release });
+      ANDROID_PREFETCH_DELAY_MS = 2e4;
+    }
+  });
+
+  // components/player/use-embedded-track-languages.ts
+  function useEmbeddedTrackLanguages(a) {
+    const [detected, setDetected] = useState(() => /* @__PURE__ */ new Map());
+    const wanted = a.unknownTrackNumbers.join(",");
+    useEffect(() => {
+      setDetected(/* @__PURE__ */ new Map());
+    }, [a.mediaUrl]);
+    useEffect(() => {
+      if (!a.firstFrameRendered || !a.mediaUrl || a.isLive || !wanted) return;
+      const numbers = wanted.split(",").map(Number);
+      const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
+      const { fileName, ...extra } = identity;
+      void prefetchSubtitleSyncIndex(a.mediaUrl, fileName, extra);
+      let cancelled = false;
+      const timers2 = [];
+      const found = /* @__PURE__ */ new Map();
+      const ask = async () => {
+        if (cancelled) return;
+        const tracks = await fetchEmbeddedTrackLanguages(a.mediaUrl, fileName, extra);
+        if (cancelled) return;
+        let changed = false;
+        for (const t of tracks) {
+          if (t.detected && numbers.includes(t.number) && found.get(t.number) !== t.detected) {
+            found.set(t.number, t.detected);
+            changed = true;
+          }
+        }
+        if (changed) setDetected(new Map(found));
+        if (numbers.every((n) => found.has(n))) timers2.forEach(clearTimeout);
+      };
+      for (const delay of DETECT_SCHEDULE_MS) timers2.push(setTimeout(() => {
+        void ask();
+      }, delay));
+      return () => {
+        cancelled = true;
+        timers2.forEach(clearTimeout);
+      };
+    }, [a.firstFrameRendered, a.mediaUrl, a.isLive, wanted, a.fileName, a.title, a.year, a.season, a.episode]);
+    return detected;
+  }
+  var DETECT_SCHEDULE_MS;
+  var init_use_embedded_track_languages = __esm({
+    "components/player/use-embedded-track-languages.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_client2();
+      init_plan();
+      DETECT_SCHEDULE_MS = [1e4, 3e4, 75e3, 15e4, 3e5];
     }
   });
 
@@ -25492,17 +26239,17 @@ ${effectiveName(url, id)}`;
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners6.add(listener);
+    listeners7.add(listener);
     return () => {
-      listeners6.delete(listener);
+      listeners7.delete(listener);
     };
   }
-  var session, listeners6;
+  var session, listeners7;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners6 = /* @__PURE__ */ new Set();
+      listeners7 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -26068,7 +26815,7 @@ ${effectiveName(url, id)}`;
       "aside",
       {
         "data-clip-panel": true,
-        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
         style: { background: "rgb(var(--base-950) / 0.96)" },
         onClick: (event) => event.stopPropagation(),
         children: [
@@ -26413,7 +27160,7 @@ ${effectiveName(url, id)}`;
         "data-clip-panel": true,
         "data-tv-surface": "clip",
         "data-panel-root": true,
-        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)]",
+        className: "vp-side-panel vp-side-panel-narrow absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)]",
         style: { background: "rgb(var(--base-950) / 0.96)" },
         children: [
           /* @__PURE__ */ jsx("div", { className: "border-b border-white/[0.07] px-4 py-3 text-[length:var(--st-label)] font-semibold uppercase tracking-[0.22em] text-slate-400", children: t("clipNew") }),
@@ -26453,7 +27200,7 @@ ${effectiveName(url, id)}`;
     );
   }
   function ClipTvQrDialog({ link, inSec, outSec, t }) {
-    return /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 right-[340px] z-[45] grid place-items-center bg-black/50", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3 rounded-xl bg-base-800/95 px-8 py-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)]", children: [
+    return /* @__PURE__ */ jsx("div", { className: "vp-side-panel-gap vp-side-panel-narrow absolute inset-y-0 left-0 right-[340px] z-[45] grid place-items-center bg-black/50", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3 rounded-xl bg-base-800/95 px-8 py-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)]", children: [
       /* @__PURE__ */ jsx("div", { className: "rounded-lg bg-white p-3", children: /* @__PURE__ */ jsx(QRCodeSVG, { value: link, size: 150 }) }),
       /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-h3)] font-semibold text-white", children: t("clipScanQr") }),
       /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] tabular-nums text-slate-300", children: [
@@ -27871,20 +28618,11 @@ ${cue.text}`).join("\n\n")}
   }
   function getAnchoredMenuStyle(trigger, menuWidth = 0) {
     if (!trigger || typeof window === "undefined") return { visibility: "hidden", position: "fixed" };
-    const rect = trigger.getBoundingClientRect();
-    const right = Math.round(Math.max(4, window.innerWidth - rect.right));
-    const maxRight = Math.round(Math.max(4, window.innerWidth - menuWidth - 4));
+    const inScene = document.documentElement.getAttribute("data-tv-scene") === "1";
+    const space = inScene ? { width: tvSceneWidth(), height: tvSceneHeight(), scale: tvSceneScale() || 1 } : { width: window.innerWidth, height: window.innerHeight, scale: 1 };
     return {
       position: "fixed",
-      bottom: Math.round(window.innerHeight - rect.top + 8),
-      right: Math.min(right, maxRight),
-      // Menyn växer UPPÅT från kontrollraden och hade ingen höjdgräns: raderna
-      // är ~44 px, och ••• -menyns nio poster blir drygt 400 px. En telefon i
-      // liggande läge är ~412 px hög, så de översta posterna låg redan utanför
-      // skärmen utan att gå att nå — det syntes inte i porträtt, där det finns
-      // gott om höjd. Gränsen är utrymmet ovanför knappen, och rullningen gör
-      // resten nåbar i stället för avklippt.
-      maxHeight: Math.max(160, Math.round(rect.top - 16)),
+      ...anchoredMenuGeometry(trigger.getBoundingClientRect(), space, menuWidth),
       overflowY: "auto"
     };
   }
@@ -28352,6 +29090,7 @@ ${cue.text}`).join("\n\n")}
     const setShowEpisodes = surfaceSetter("episodes");
     const showStreams = openSurface === "streams";
     const setShowStreams = surfaceSetter("streams");
+    const tvSidePanelOpen = isTv && (showWiki || showSoundtrack || showEpisodes || showStreams);
     const hasStreamChoice = Boolean(streams && streams.items.length >= 2);
     const showStreamButton = Boolean(streams && (hasStreamChoice || streams.loading));
     const showTuningPanel = openSurface === "tuning";
@@ -28396,6 +29135,8 @@ ${cue.text}`).join("\n\n")}
     const showsControl = (id) => !hiddenControls.has(id);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
     useEffect(() => onVideoTuningChanged(() => setVideoTuningState(getVideoTuning())), []);
+    useEffect(() => () => clearFilmVideoTuning(), []);
+    const tuningActive = isVideoTuningActive(videoTuning);
     const [dvColorFallback, setDvColorFallback] = useState(false);
     const [dvColorFallbackMuted, setDvColorFallbackMuted] = useState(false);
     const dvColorFallbackActive = dvColorFallback && !dvColorFallbackMuted;
@@ -28672,6 +29413,7 @@ ${cue.text}`).join("\n\n")}
     const subDelayRef = useRef(0);
     const subDriftRef = useRef(null);
     const [syncNotice, setSyncNotice] = useState(null);
+    const [syncNoFit, setSyncNoFit] = useState(null);
     const syncNoticeTimerRef = useRef(null);
     const showSyncNotice = useCallback((n) => {
       setSyncNotice(n);
@@ -28882,7 +29624,8 @@ ${cue.text}`).join("\n\n")}
         external: false,
         selected: t2.id === droid.sid,
         forced: false,
-        externalFilename: null
+        externalFilename: null,
+        srcId: t2.number ?? null
       })));
     }, [isDroidEngine, droid.audioTracks, droid.subtitleTracks, droid.selectedAudio, droid.sid]);
     useEffect(() => {
@@ -28942,7 +29685,7 @@ ${cue.text}`).join("\n\n")}
         cinemaMute.held = true;
         droid.setMuted(true);
       }
-      await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang });
+      await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang, requestHeaders: args.requestHeaders, kind: "vod" });
     } : openMpvPlayer;
     const closeMpvPlayer2 = isDroidEngine ? closeNativePlayer : closeMpvPlayer;
     const setMpvPause2 = isDroidEngine ? async (paused) => {
@@ -28974,7 +29717,8 @@ ${cue.text}`).join("\n\n")}
       external: false,
       selected: t2.id === droidRef.current.sid,
       forced: false,
-      externalFilename: null
+      externalFilename: null,
+      srcId: t2.number ?? null
     })) : getMpvSubtitleTracks;
     const getMpvSid2 = isDroidEngine ? async () => droidRef.current.sid : getMpvSid;
     const mpvSetBounds2 = isDroidEngine ? nativeSetBounds : mpvSetBounds;
@@ -29345,6 +30089,21 @@ ${cue.text}`).join("\n\n")}
     const subtitleClockBase = subtitleClockOverride ?? realTime;
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setNativeFineTime(controlsVisible);
+    }, [isDroidEngine, controlsVisible]);
+    useEffect(() => () => setNativeFineTime(true), []);
+    const cueGateRef = useRef({ cues, secondaryCues, subDelay, secondarySubDelay, subDrift });
+    cueGateRef.current = { cues, secondaryCues, subDelay, secondarySubDelay, subDrift };
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setNativeTimeGate((publishedTime, nextTime) => {
+        const g = cueGateRef.current;
+        return cueIndexChanged(g.cues, publishedTime, nextTime, (t2) => t2 - g.subDelay + (g.subDrift ? g.subDrift.slope * (t2 - g.subDrift.anchor) : 0)) || cueIndexChanged(g.secondaryCues, publishedTime, nextTime, (t2) => t2 - g.secondarySubDelay);
+      });
+      return () => setNativeTimeGate(null);
+    }, [isDroidEngine]);
     const embeddedCueText = isDroidEngine && !activeCue ? (mpv.cueText ?? "").trim() : "";
     const rawSubtitleText = activeCue?.text ?? (embeddedCueText || null);
     const renderedSubtitleText = rawSubtitleText && stripSdh ? stripSdhText(rawSubtitleText) || null : rawSubtitleText;
@@ -29367,7 +30126,8 @@ ${cue.text}`).join("\n\n")}
     const activeAudioChannels = activeAudioInfo?.channels ?? null;
     const audioChannelLabel = activeAudioChannels ? activeAudioChannels === 1 ? "Mono" : activeAudioChannels === 2 ? "Stereo" : activeAudioChannels === 6 ? "5.1" : `${activeAudioChannels}ch` : null;
     const audioCodecLabel = activeAudioInfo?.codec?.toUpperCase() ?? null;
-    const audioIndicator = useMpv ? audioChannelLabel ? `Original via mpv ${audioChannelLabel}` : "Original via mpv" : isServerStreamUrl(videoSrc) ? `${audioOutputMode === "compatible" ? "AAC Stereo" : `AAC ${audioChannelLabel ?? "Audio"}`}` : `${audioCodecLabel ?? "Direct"}${audioChannelLabel ? ` ${audioChannelLabel}` : ""}`;
+    const audioEngineLabel = isAndroidTauriEnv ? "Original" : "Original via mpv";
+    const audioIndicator = useMpv ? audioChannelLabel ? `${audioEngineLabel} ${audioChannelLabel}` : audioEngineLabel : isServerStreamUrl(videoSrc) ? `${audioOutputMode === "compatible" ? "AAC Stereo" : `AAC ${audioChannelLabel ?? "Audio"}`}` : `${audioCodecLabel ?? "Direct"}${audioChannelLabel ? ` ${audioChannelLabel}` : ""}`;
     const aspectLabel = getAspectRatioLabel(aspectRatioMode, t);
     const cropZoomLabel = getCropZoomLabel(cropZoomMode, t);
     const videoPresentation = getVideoPresentation(aspectRatioMode);
@@ -30721,15 +31481,15 @@ ${cue.text}`).join("\n\n")}
       if (!isTv || !splashVisibleForTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = splashCancelRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -31035,13 +31795,6 @@ ${cue.text}`).join("\n\n")}
       } else if (scrobbleStartedRef.current) {
         void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress());
       }
-    }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
-    useEffect(() => {
-      if (!isPlaying || !hasStarted || !durationConfirmed) return;
-      const interval = setInterval(() => {
-        void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress(), { pulse: true });
-      }, 3e4);
-      return () => clearInterval(interval);
     }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
     useEffect(() => {
       if (!wikiTmdbId && !imdbId) return;
@@ -31598,7 +32351,7 @@ ${cue.text}`).join("\n\n")}
       void safePlay(videoRef.current);
     }
     useEffect(() => {
-      const shouldProbe = useMpv || shouldProxyPlayback;
+      const shouldProbe = useMpv && !isAndroidTauriEnv || shouldProxyPlayback;
       if (!shouldProbe) return;
       let cancelled = false;
       if (useMpv) setPreparingProxySource(false);
@@ -31946,18 +32699,36 @@ ${cue.text}`).join("\n\n")}
         window.clearInterval(interval);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
+    const unknownEmbeddedTrackNumbers = useMemo(
+      () => mpvSubtitleTracks.filter((track) => !track.external && track.srcId != null && toSubtitleLangGroup(track.language) === "und").map((track) => track.srcId),
+      [mpvSubtitleTracks]
+    );
+    const detectedEmbeddedLanguages = useEmbeddedTrackLanguages({
+      mediaUrl: url,
+      fileName: filename,
+      title: mediaTitle ?? title,
+      year: year ?? null,
+      season,
+      episode,
+      isLive: isHlsUrl2(url),
+      firstFrameRendered: useMpv ? mpv.firstFrameRendered : hasStarted,
+      unknownTrackNumbers: useMpv ? unknownEmbeddedTrackNumbers : []
+    });
     const embeddedSubtitleOptions = useMemo(() => {
       if (!EMBEDDED_SUBTITLES_ENABLED) return [];
       if (useMpv && mpvSubtitleTracks.length > 0) {
         return mpvSubtitleTracks.map((track) => {
-          const language = toSubtitleLangGroup(track.language);
+          const tagged = toSubtitleLangGroup(track.language);
+          const detected = tagged === "und" && track.srcId != null ? detectedEmbeddedLanguages.get(track.srcId) : void 0;
+          const language = detected ?? tagged;
           return {
             language,
             lang3: language,
             url: "",
             id: `embedded:${track.sid}`,
             source: "embedded",
-            label: track.title ?? void 0
+            label: detected ? [track.title, t("subtitleLanguageDetected")].filter(Boolean).join(" \xB7 ") : track.title ?? void 0,
+            ...detected ? { detectedLanguage: true } : {}
           };
         });
       }
@@ -31971,7 +32742,7 @@ ${cue.text}`).join("\n\n")}
         source: "embedded",
         label: track.title ?? void 0
       }));
-    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine]);
+    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine, detectedEmbeddedLanguages, t]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
@@ -32039,11 +32810,32 @@ ${cue.text}`).join("\n\n")}
       restoreOriginal: restoreOriginalSubtitle,
       showNotice: showSyncNotice,
       clearNotice: () => setSyncNotice(null),
+      onNoFit: (sub) => {
+        if (sub.source !== "embedded") setSyncNoFit({ subId: sub.id, lang: sub.lang3 });
+      },
       setStatus: (st) => setSubtitleAutoSyncState(
         st.type === "idle" ? { type: "idle" } : st.type === "analyzing" ? { type: "analyzing", message: st.message } : { type: st.type, message: st.message ?? "" }
       ),
       t
     });
+    useEffect(() => {
+      setSyncNoFit(null);
+    }, [url]);
+    useEffect(() => {
+      if (!syncNoFit) return;
+      if (activeSubId !== syncNoFit.subId) {
+        setSyncNoFit(null);
+        return;
+      }
+      const wanted = toSubtitleLangGroup(syncNoFit.lang);
+      const own = wanted === "und" ? void 0 : embeddedSubtitleOptions.find((option) => toSubtitleLangGroup(option.language) === wanted);
+      if (!own) return;
+      setSyncNoFit(null);
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] no_fit \u2192 filens eget sp\xE5r ${own.id} (${own.lang3}${own.detectedLanguage ? ", uppt\xE4ckt" : ""})`)}`).catch(() => {
+      });
+      void selectSubtitle(own, { noAutoSync: true });
+      showSyncNotice({ message: t("subtitleAutoSyncSwappedEmbedded") });
+    }, [syncNoFit, activeSubId, embeddedSubtitleOptions, selectSubtitle, showSyncNotice, t]);
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
       setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
@@ -32743,7 +33535,7 @@ ${cue.text}`).join("\n\n")}
       endsTemplate: t("plEndsAt"),
       formatClock: (ms2) => statusClock.format(ms2)
     });
-    const renderStatusLine = (textClass) => statusParts.length === 0 ? null : /* @__PURE__ */ jsx("span", { className: `flex flex-none items-center gap-2 whitespace-nowrap font-medium text-white ${textClass}`, children: statusParts.map((part, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
+    const renderStatusLine = (textClass) => statusParts.length === 0 ? null : /* @__PURE__ */ jsx("span", { className: `vp-status-line flex flex-none items-center gap-2 whitespace-nowrap font-medium text-white ${textClass}`, children: statusParts.map((part, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
       index > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "h-[3px] w-[3px] flex-none rounded-full bg-white/80" }) : null,
       /* @__PURE__ */ jsx("span", { children: part })
     ] }, part)) });
@@ -32879,7 +33671,6 @@ ${cue.text}`).join("\n\n")}
     const [clipQrOpen, setClipQrOpen] = useState(false);
     const [clipTvFocus, setClipTvFocus] = useState(null);
     const [clipTvStill, setClipTvStill] = useState(null);
-    const clipKeyHoldRef = useRef(0);
     const clipKeyRepeatAtRef = useRef(0);
     const showClipTv = showClip && Boolean(clip3) && isTv;
     useEffect(() => {
@@ -32972,16 +33763,16 @@ ${cue.text}`).join("\n\n")}
       const group = Array.from(document.querySelectorAll(`[data-clip-station="${station}"]`));
       const idx = group.indexOf(target2);
       const now2 = Date.now();
-      if (!event.repeat) clipKeyHoldRef.current = now2;
-      if (!tvRepeatAllowed({ repeat: event.repeat, lastAt: clipKeyRepeatAtRef.current, now: now2 })) {
+      const hold = noteKeyDown(event, now2);
+      if (!tvRepeatAllowed({ repeat: hold.repeat, lastAt: clipKeyRepeatAtRef.current, now: now2 })) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
       clipKeyRepeatAtRef.current = now2;
-      const held = event.repeat && now2 - clipKeyHoldRef.current > 1e3;
+      const held2 = heldLongerThan(hold, 1e3);
       const lengthAvailable = document.querySelector('[data-clip-station="length"]') !== null;
-      const action = tvClipKey({ station, key: event.key, held, first: idx <= 0, lengthAvailable });
+      const action = tvClipKey({ station, key: event.key, held: held2, first: idx <= 0, lengthAvailable });
       if (action.kind === "none") {
         if (station === "qr" && event.key.startsWith("Arrow")) {
           event.preventDefault();
@@ -33242,7 +34033,7 @@ ${cue.text}`).join("\n\n")}
       mpv.setSpeed(next2);
     };
     const renderGearRoot = () => /* @__PURE__ */ jsxs(Fragment2, { children: [
-      isTv && clipAvailable ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => {
+      isTv && clipAvailable && !showsControl("clip") ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => {
         setShowMoreMenu(false);
         openClip();
       }, className: dtMoreRowClass, children: [
@@ -33675,7 +34466,7 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("moments", "h-[19px] w-[19px]")
         }
       ) : null,
-      tuning: /* @__PURE__ */ jsx(
+      tuning: /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
@@ -33684,8 +34475,11 @@ ${cue.text}`).join("\n\n")}
           onClick: () => setShowTuningPanel((v) => !v),
           title: t("vtTitle"),
           "aria-label": t("vtTitle"),
-          className: dtIconButtonClass(showTuningPanel ? "open" : "idle"),
-          children: playerIcon("tuning", "h-[19px] w-[19px]")
+          className: `relative ${dtIconButtonClass(showTuningPanel ? "open" : "idle")}`,
+          children: [
+            playerIcon("tuning", "h-[19px] w-[19px]"),
+            tuningActive ? /* @__PURE__ */ jsx("span", { "data-tuning-active": "", "aria-hidden": true, className: "absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent-400" }) : null
+          ]
         }
       ),
       more: /* @__PURE__ */ jsx(
@@ -33725,14 +34519,11 @@ ${cue.text}`).join("\n\n")}
     const seekHeightClass = seekLook.heightClass;
     const seekFillColorClass = seekLook.fillClass;
     const seekFillStyleClass = seekLook.overlayClass;
-    const tvSeekHoldStartedAtRef = useRef(0);
     const handleTvSeekKey = (event) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         event.stopPropagation();
-        if (!event.repeat) tvSeekHoldStartedAtRef.current = Date.now();
-        const held = event.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
-        const step = held ? 60 : 10;
+        const step = tvSeekStepSeconds(noteKeyDown(event));
         seek(event.key === "ArrowLeft" ? -step : step);
         return;
       }
@@ -34256,6 +35047,7 @@ ${cue.text}`).join("\n\n")}
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
+        value: tuningActive ? t("vtActive") : void 0,
         state: showTuningPanel ? "open" : "idle",
         onClick: () => setShowTuningPanel((open2) => !open2),
         triggerRef: tuningTriggerRef
@@ -34552,18 +35344,18 @@ ${cue.text}`).join("\n\n")}
                   opacity: controlsVisible ? 1 : 0,
                   pointerEvents: controlsVisible ? "auto" : "none",
                   // Klippets sidopanel tar 340 px till höger.
-                  right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0
+                  right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0
                 },
                 children: [
                   isDesktopTauriEnv ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
                   /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-2.5", children: [
                     /* @__PURE__ */ jsx("span", { className: "truncate text-sm font-medium text-slate-100", children: headerTitle }),
-                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
+                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
                     showsControl("audioOutput") ? /* @__PURE__ */ jsx(
                       "span",
                       {
                         title: t("currentAudioOutput"),
-                        className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
+                        className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
                         children: audioIndicator
                       }
                     ) : null
@@ -34572,7 +35364,7 @@ ${cue.text}`).join("\n\n")}
                     /* @__PURE__ */ jsx(BingeModeChip, {}),
                     showClip && clip3 && isTv ? /* @__PURE__ */ jsx("span", { className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-black/60 px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-white", children: clip3.scrubbing ? tClip("clipFrame").replace("{time}", formatClipTime(clip3.activeHandle === "out" ? clip3.outSec : clip3.inSec)) : tClip("clipLoopChip").replace("{len}", String(Math.round(clip3.outSec - clip3.inSec))) }) : null,
                     showClip ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
-                      /* @__PURE__ */ jsxs(
+                      isTv ? null : /* @__PURE__ */ jsxs(
                         "button",
                         {
                           type: "button",
@@ -35015,7 +35807,7 @@ ${cue.text}`).join("\n\n")}
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
                       // Liggande: designens -60 % lyfter klustret ur seekradens väg.
                       transform: landscapeChrome ? "translateY(-60%)" : void 0,
-                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0,
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0,
                       // Stående: centrerad på VIDEON, inte i ytan mellan listen och
                       // kontrollerna. Bilden är brevlådad och ligger mitt i
                       // videoytan — designens "centrerad över videon" är alltså
@@ -35527,10 +36319,20 @@ ${cue.text}`).join("\n\n")}
                   ] })
                 ] }) }),
                 showStartTitle && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute left-8 top-10 z-[55] max-w-[70%]", children: /* @__PURE__ */ jsx("p", { className: "text-2xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-3xl", children: title }) }),
-                showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => {
-                  setShowTuningPanel(false);
-                  if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
-                } }),
+                showTuningPanel && /* @__PURE__ */ jsx(
+                  PlayerTuningPanel,
+                  {
+                    surface: isTv ? {
+                      ...tvSurface2("tuning"),
+                      style: pickerStyle(tuningTriggerRef.current, 420),
+                      className: dtMenuSurfaceClass
+                    } : void 0,
+                    onClose: () => {
+                      setShowTuningPanel(false);
+                      if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
+                    }
+                  }
+                ),
                 momentNotice ? /* @__PURE__ */ jsx(
                   "div",
                   {
@@ -35691,7 +36493,7 @@ ${cue.text}`).join("\n\n")}
                     style: {
                       opacity: controlsVisible && controlsReady ? 1 : 0,
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
-                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0,
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0,
                       // Sidoinsetet gäller bara liggande telefon: där ligger urklippet i
                       // sidan och skulle annars klippa tiden respektive Mer-brickan.
                       //
@@ -36069,7 +36871,7 @@ ${cue.text}`).join("\n\n")}
                                 children: t("soundtrack")
                               }
                             ),
-                            tuning: /* @__PURE__ */ jsx(
+                            tuning: /* @__PURE__ */ jsxs(
                               "button",
                               {
                                 type: "button",
@@ -36077,11 +36879,14 @@ ${cue.text}`).join("\n\n")}
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => setShowTuningPanel((v) => !v),
                                 title: t("vtTitle"),
-                                className: `transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
-                                children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
-                                  /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
-                                  /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
-                                ] })
+                                className: `relative transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
+                                children: [
+                                  /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
+                                    /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
+                                  ] }),
+                                  tuningActive ? /* @__PURE__ */ jsx("span", { "data-tuning-active": "", "aria-hidden": true, className: "absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-accent-400" }) : null
+                                ]
                               }
                             ),
                             more: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx(
@@ -36629,7 +37434,7 @@ ${cue.text}`).join("\n\n")}
     );
     return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, MPV_TRANSITION_COVER_ATTR;
+  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, TV_SIDE_PANEL_WIDTH, TV_CLIP_PANEL_WIDTH, MPV_TRANSITION_COVER_ATTR;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
@@ -36674,6 +37479,8 @@ ${cue.text}`).join("\n\n")}
       init_scroll_lock();
       init_i18n();
       init_tv_focus_shim();
+      init_tv_scene();
+      init_player_menu_anchor();
       init_download_target();
       init_session_host();
       init_pip();
@@ -36707,6 +37514,7 @@ ${cue.text}`).join("\n\n")}
       init_playback_settings();
       init_lan_streaming_settings();
       init_use_subtitle_auto_sync();
+      init_use_embedded_track_languages();
       init_subtitle_delay_store();
       init_user_delay();
       init_diag();
@@ -36721,6 +37529,7 @@ ${cue.text}`).join("\n\n")}
       init_clip_panel();
       init_clip_trimmer();
       init_clip_state();
+      init_key_hold();
       init_clip_loop();
       init_clip_phone_panels();
       init_clip_tv_panel();
@@ -36747,6 +37556,8 @@ ${cue.text}`).join("\n\n")}
       isProxyUrl = (src) => src.startsWith("/api/proxy-stream");
       isHlsUrl2 = (src) => src.startsWith("/api/hls-stream/");
       isServerStreamUrl = (src) => isProxyUrl(src) || isHlsUrl2(src);
+      TV_SIDE_PANEL_WIDTH = "min(calc(440 * var(--tv-u) * var(--tv-font-scale, 1)), 40%)";
+      TV_CLIP_PANEL_WIDTH = "min(calc(380 * var(--tv-u) * var(--tv-font-scale, 1)), 34%)";
       MPV_TRANSITION_COVER_ATTR = "data-lumio-mpv-transition-cover";
     }
   });
@@ -38145,7 +38956,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!isTv) return;
       let cancelled = false;
-      let held = 0;
+      let held2 = 0;
       let userActed = false;
       const onKey = () => {
         userActed = true;
@@ -38157,9 +38968,9 @@ ${cue.text}`).join("\n\n")}
         const target2 = document.querySelector(".full-cast-root [data-init]");
         if (target2 && target2.offsetParent !== null) {
           if (document.activeElement === target2) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             target2.focus();
           }
         }
@@ -39043,8 +39854,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners7 = this.eventListeners[eventName];
-            for (const listener of listeners7)
+            const listeners8 = this.eventListeners[eventName];
+            for (const listener of listeners8)
               listener(arg);
             return true;
           }
@@ -39429,6 +40240,7 @@ ${cue.text}`).join("\n\n")}
     onWatchlistChanged: () => onWatchlistChanged,
     onWatchlistMutation: () => onWatchlistMutation,
     onZappLaunchRequested: () => onZappLaunchRequested,
+    openCouchTip: () => openCouchTip,
     openExternalUrl: () => openExternalUrl,
     openMpvPlayer: () => openMpvPlayer,
     openNativePlayer: () => openNativePlayer,
@@ -39856,6 +40668,10 @@ ${cue.text}`).join("\n\n")}
   }
   function notifyCouchPlayer() {
     couchHost()?.notifyState();
+  }
+  function openCouchTip(m, starterPhoneId) {
+    const open2 = couchHost()?.openTip;
+    return typeof open2 === "function" ? open2(m, starterPhoneId) === true : false;
   }
   var BROWSE_BACK_EVENT, PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS, PLUGIN_HOME_ROW_GRID_TRACK_CLASS, LIBRARY_BROWSE_PAGE_ID, couchHost, hasCouchSdk;
   var init_plugin_sdk = __esm({
@@ -41492,20 +42308,20 @@ ${cue.text}`).join("\n\n")}
     }, done: Promise.resolve(pool) };
   }
   function startJob(channel, sig, deps, key) {
-    const listeners7 = /* @__PURE__ */ new Set();
+    const listeners8 = /* @__PURE__ */ new Set();
     const job = {
       view: { pool: null, complete: false },
       subscribe(fn) {
-        listeners7.add(fn);
+        listeners8.add(fn);
         return () => {
-          listeners7.delete(fn);
+          listeners8.delete(fn);
         };
       },
       done: Promise.resolve(EMPTY4)
     };
     const publish = (view) => {
       job.view = view;
-      for (const fn of [...listeners7]) fn(view);
+      for (const fn of [...listeners8]) fn(view);
     };
     const fixes = readRuntimeFixes();
     job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(applyRuntimeFixes(partial, fixes), MAX_POOL_ITEMS, channel.seed), complete: false })).then((items2) => {
@@ -42217,6 +43033,7 @@ ${cue.text}`).join("\n\n")}
         clickPlays: !!compact,
         init: isTv && initId === channel.id,
         station: !band || i >= bandAt,
+        upTarget: isTv && i === 0 ? TV_TOP_MENU_SELECTOR : void 0,
         onNav: fill3 && !isMobile ? (dir) => onNav(i, dir) : void 0,
         onFocusRow: band ? () => setFocusIndex(i) : void 0,
         isTv,
@@ -42231,7 +43048,7 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
-    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 2px";
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 12px";
     return /* @__PURE__ */ jsx(
       "section",
       {
@@ -42298,7 +43115,8 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
-  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, station, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }) {
+  var TV_TOP_MENU_SELECTOR = "[data-quick-menu] [data-qm-center], [data-tv-menu-chip]";
+  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, station, upTarget, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }) {
     const plays = isTv || clickPlays;
     const activate = () => plays || selected ? onPlay(channel.id) : onSelect(channel.id);
     const hold = isTv && onHold && typeof tvHoldHandlers === "function" ? tvHoldHandlers(() => onPlay(channel.id), (el) => onHold(channel.id, el)) : null;
@@ -42342,6 +43160,7 @@ ${cue.text}`).join("\n\n")}
         tabIndex: station ? 0 : -1,
         "data-f": station ? "" : void 0,
         "data-init": init ? "" : void 0,
+        "data-f-up": station && upTarget ? upTarget : void 0,
         "data-channel-row": channel.id,
         "aria-pressed": selected,
         onClick: activate,
@@ -42588,7 +43407,7 @@ ${cue.text}`).join("\n\n")}
           flexShrink: 0,
           minHeight,
           boxSizing: "border-box",
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "20px 16px 20px"}`,
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "30px 16px 30px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
@@ -45065,11 +45884,20 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       const measure = () => {
-        const column = el.closest("[data-app-column]");
-        if (!column) return;
-        const cs = getComputedStyle(column);
-        const left = parseFloat(cs.paddingLeft) || 0;
-        const right = parseFloat(cs.paddingRight) || 0;
+        const r = el.getBoundingClientRect();
+        const k = el.offsetWidth > 0 && r.width > 0 ? r.width / el.offsetWidth : 1;
+        const own = getComputedStyle(el);
+        const natLeft = r.left - (parseFloat(own.marginLeft) || 0) * k;
+        const natRight = r.right + (parseFloat(own.marginRight) || 0) * k;
+        let clip3 = el.parentElement;
+        while (clip3 && getComputedStyle(clip3).overflowX === "visible") clip3 = clip3.parentElement;
+        const box = clip3 ? clip3.getBoundingClientRect() : { left: 0, right: window.innerWidth };
+        const cs = clip3 ? getComputedStyle(clip3) : null;
+        const borderL = cs ? (parseFloat(cs.borderLeftWidth) || 0) * k : 0;
+        const borderR = cs ? (parseFloat(cs.borderRightWidth) || 0) * k : 0;
+        const scrollbar = clip3 ? Math.max(0, (clip3.offsetWidth - clip3.clientWidth) * k - borderL - borderR) : 0;
+        const left = Math.max(0, Math.floor((natLeft - box.left - borderL) / k));
+        const right = Math.max(0, Math.floor((box.right - borderR - scrollbar - natRight) / k));
         setBleed((b) => b.left === left && b.right === right ? b : { left, right });
       };
       measure();
@@ -45436,7 +46264,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.22",
+    version: "0.1.23",
     description: S.description,
     preinstalled: false,
     register(ctx) {
