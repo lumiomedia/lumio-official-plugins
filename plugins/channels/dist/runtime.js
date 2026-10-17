@@ -20758,6 +20758,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -43001,7 +43002,7 @@ ${cue.text}`).join("\n\n")}
     };
     const ring = fill3 && !isMobile ? dimS(10, isTv) : "0px";
     const header = /* @__PURE__ */ jsxs("div", { "data-guide-axis": "", style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, marginInline: ring }, children: [
-      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textSoft }, children: t("guideHeader") }),
+      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0, paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textSoft }, children: t("guideHeader") }),
       /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
         "span",
         {
@@ -43048,7 +43049,7 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
-    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 12px";
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 40px";
     return /* @__PURE__ */ jsx(
       "section",
       {
@@ -43226,7 +43227,7 @@ ${cue.text}`).join("\n\n")}
   });
   function Block({ slot, win, now: now2, lit, isTv, t }) {
     const box = blockBox(slot, win);
-    if (!box) return null;
+    if (!box || box.widthPct < 1.5) return null;
     const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN4;
     const showTime = visibleMin >= 30;
     const isRest = slot.kind === "rest";
@@ -43407,7 +43408,7 @@ ${cue.text}`).join("\n\n")}
           flexShrink: 0,
           minHeight,
           boxSizing: "border-box",
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "30px 16px 30px"}`,
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "50px 16px 50px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
@@ -46264,7 +46265,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.24",
+    version: "0.1.25",
     description: S.description,
     preinstalled: false,
     register(ctx) {

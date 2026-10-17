@@ -212,7 +212,7 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
         padding: isTv
           ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}`
           // Samma vänsterkant som tablåns kanalnamn (sektionens 12 + ringmarginalens 10 + etikettens 8; mobil 16).
-          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 12px 16px' : '30px 16px 30px'}`,
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 12px 16px' : '50px 16px 50px'}`,
         color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
     >

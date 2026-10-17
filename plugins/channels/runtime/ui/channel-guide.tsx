@@ -134,7 +134,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
   const ring = fill && !isMobile ? dimS(10, isTv) : '0px'
   const header = (
     <div data-guide-axis="" style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, marginInline: ring }}>
-      <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textSoft }}>
+      <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0, paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textSoft }}>
         {t('guideHeader')}
       </span>
       <div style={{ position: 'relative', height: '100%' }}>
@@ -191,7 +191,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     (TV 100 enheter) och herons vänsterkant (skrivbord 30 px).
   */
   // Lika på båda sidor (Jerry 2026-10-17): tablåns kanter speglar herons 60.
-  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 12px'
+  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 40px'
   return (
     <section
       data-channels-guide=""
@@ -386,7 +386,9 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
 
 function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: GuideWindow; now: number; lit: boolean; isTv: boolean; t: T }) {
   const box = blockBox(slot, win)
-  if (!box) return null
+  // För smalt för att visa något (≈ under 3 min av fönstret): blockets egen
+  // inre marginal gjorde det bredare än platsen och det stack ut förbi raden.
+  if (!box || box.widthPct < 1.5) return null
   const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN
   const showTime = visibleMin >= 30
   const isRest = slot.kind === 'rest'
