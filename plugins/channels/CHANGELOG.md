@@ -1,3 +1,7 @@
+## 0.1.22
+
+- Tablån i spelaren går kant i kant hela vägen ner och täcker spelarens kontroller.
+
 ## 0.1.21
 
 - Kant i kant: sidan går ut över appkolumnens sidomarginaler även på TV; innehållet ~20 från sidorna (TV i TV-enheter, skrivbord 20 px).

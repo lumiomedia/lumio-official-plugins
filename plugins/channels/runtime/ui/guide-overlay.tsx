@@ -78,12 +78,16 @@ export function GuideOverlay({ channels, currentId, now, isTv, t, onPlay, onClos
         role="dialog"
         aria-label={t('playerGuide')}
         style={{
-          position: 'absolute', left: narrow ? 0 : '1.5rem', right: narrow ? 0 : '1.5rem',
-          bottom: narrow ? 0 : 'calc(var(--android-inset-bottom, 0px) + 1.5rem)',
+          // Hela vägen ner och kant i kant (Jerry 2026-10-17): tablån täcker
+          // spelarens kontroller i stället för att sväva ovanför dem.
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          paddingBottom: 'var(--android-inset-bottom, 0px)',
           // TV: scenens höjd, inte fönstrets (vh i TV-scenen är den riktiga viewporten).
-          maxHeight: narrow ? '70vh' : isTv ? 'calc(var(--tv-vp-h, 100vh) * 0.62)' : '62vh', display: 'flex', flexDirection: 'column',
-          borderRadius: narrow ? `${RADIUS.osd}px ${RADIUS.osd}px 0 0` : RADIUS.osd,
-          ...glass(isTv, { fill: 'rgba(12,12,16,0.88)', blur: 16 }),
+          maxHeight: narrow ? '75vh' : isTv ? 'calc(var(--tv-vp-h, 100vh) * 0.72)' : '72vh', display: 'flex', flexDirection: 'column',
+          borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0`,
+          // Tät nog att spelarens tidslinje inte lyser igenom.
+          ...glass(isTv, { fill: 'rgba(12,12,16,0.97)', blur: 16 }),
+          borderBottom: 'none', borderLeft: 'none', borderRight: 'none',
           overflow: 'hidden',
         }}
       >
