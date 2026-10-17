@@ -186,6 +186,15 @@ describe('TvSettingsView', () => {
     expect(screen.getByText(/fetched/)).toBeInTheDocument()
     expect(screen.getByText('Add M3U URL')).toBeInTheDocument()
   })
+  it('Spellistor: Byt namn ger listan ett eget namn', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [urlList])
+    mount('playlists')
+    fireEvent.click(screen.getByTestId(`list-rename-${urlList.id}`))
+    fireEvent.change(await screen.findByTestId('tv-keyboard-input'), { target: { value: 'Min IPTV' } })
+    fireEvent.click(screen.getByText('Done'))
+    await waitFor(() => expect(getLiveTvLists()[0]?.label).toBe('Min IPTV'))
+    expect(await screen.findByText('Min IPTV')).toBeInTheDocument()
+  })
   it('Spellistor: Remove tar även bort käll-URL:en ur m3u_urls', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [urlList])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls', ['http://iptv.example.com/list.m3u8'])
@@ -214,6 +223,12 @@ describe('TvSettingsView', () => {
     const created = getLiveTvLists().find((entry) => entry.source === 'http://ny.example/list.m3u')!
     expect(created.channelCount).toBe(17000)
     expect(await screen.findByText(/17,000 channels/)).toBeInTheDocument()
+
+    // Sist: ett eget namn på den nya listan.
+    fireEvent.change(await screen.findByTestId('tv-keyboard-input'), { target: { value: 'Min lista' } })
+    fireEvent.click(screen.getByText('Done'))
+    await waitFor(() => expect(getLiveTvLists().find((entry) => entry.id === created.id)?.label).toBe('Min lista'))
+    expect(await screen.findByText('Min lista')).toBeInTheDocument()
   })
 
   it('Spellistor: en misslyckad förstahämtning tar bort den nyss skapade listan och säger till', async () => {

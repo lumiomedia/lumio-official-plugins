@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { playlistTitle } from '../playlist-title'
 import {
   addChannelToLiveTvList,
   applyM3uUrls,
@@ -24,6 +25,7 @@ import {
   parseXtreamSource,
   removeChannelFromLiveTvList,
   saveXtreamLogin,
+  renameLiveTvList,
   setLogoFallbackEnabled,
   updateLiveTvListEpg,
   xtreamPseudoUrl,
@@ -198,9 +200,15 @@ export const ListRow = memo(function ListRow({
   onRemove,
   onEditChannels,
   onCategories,
+  onRename,
+  title,
   phone = false,
 }: {
   list: LiveTvList
+  /** Visningsnamnet (eget namn, annars värd + konto) — se playlist-title.ts. */
+  title: string
+  /** Byt namn. Saknas när enheten inte har någon textinmatning. */
+  onRename?: (list: LiveTvList) => void
   tt: TT
   locale: string
   busy: ImportProgress | null
@@ -251,7 +259,7 @@ export const ListRow = memo(function ListRow({
     >
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: phone ? 4 : dp(4) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: phone ? 8 : dp(10), minWidth: 0 }}>
-          <strong style={phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</strong>
+          <strong style={phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</strong>
           {list.needsReimport ? (
             <span style={phone
               ? { flexShrink: 0, fontSize: 11, fontWeight: 600, minHeight: 22, padding: '0 8px', borderRadius: 999, background: MT.warnSoft, color: MT.warnText, display: 'inline-flex', alignItems: 'center' }
@@ -288,6 +296,7 @@ export const ListRow = memo(function ListRow({
       >
         {importable ? <Action phone={phone} testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
         {importable ? <Action phone={phone} testId={`list-categories-${list.id}`} label={tt('categories')} onOk={() => onCategories(list)} /> : null}
+        {onRename ? <Action phone={phone} testId={`list-rename-${list.id}`} label={tt('rename')} onOk={() => onRename(list)} /> : null}
         {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
         {list.kind === 'custom' ? <Action phone={phone} testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
         {/* Inställning, inte handling: egen bakgrundston — samma TV.s06 som
@@ -398,6 +407,14 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
     }
   }
 
+  /**
+   * Sista steget när en NY spellista lagts till och hämtats: ett eget namn.
+   * Avbryts frågan får listan serverns namn, och det går att byta senare med
+   * Byt namn. Först efter en lyckad hämtning — en misslyckad lista tas bort.
+   */
+  const askName = (list: LiveTvList) =>
+    keyboard.ask(tt('renamePlaylist'), '', (value) => { if (value.trim()) renameLiveTvList(list.id, value) })
+
   const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => {
     const url = value.trim()
     if (!url) return
@@ -408,6 +425,7 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
       // Adressen skrivs bara in bland de aktiva när hämtningen gick igenom —
       // annars stod en URL kvar som aldrig gav några kanaler.
       if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url])
+      if (ok && !existedBefore) askName(list)
     })
   }, 'url')
 
@@ -450,7 +468,8 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
     saveXtreamLogin(login)
     const source = xtreamPseudoUrl(login)
     const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
-    await runImport(ensureXtreamList(login), existedBefore)
+    const list = ensureXtreamList(login)
+    if (await runImport(list, existedBefore) && !existedBefore) askName(list)
   }
 
   /**
@@ -504,6 +523,11 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
   /** Kategoripanelen (spec 2026-09-24): från radens knapp, eller automatiskt en gång efter första importen. */
   const [curation, setCuration] = useState<{ listId: string; mode: 'settings' | 'after-import' } | null>(null)
   const onCategories = useCallback((list: LiveTvList) => setCuration({ listId: list.id, mode: 'settings' }), [])
+  // Tangentbordet byter identitet per rendering; raderna får ett stabilt handtag.
+  const renameRef = useRef<(list: LiveTvList) => void>(() => {})
+  renameRef.current = (list: LiveTvList) =>
+    keyboard.ask(tt('renamePlaylist'), list.label ?? '', (value) => renameLiveTvList(list.id, value))
+  const onRename = useCallback((list: LiveTvList) => renameRef.current(list), [])
 
   /**
    * EGNA LISTOR: kanalerna bockas i en flervalsväljare, och medlemskapet hålls
@@ -589,6 +613,8 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
           onRemove={onRemove}
           onEditChannels={openPicker}
           onCategories={onCategories}
+          onRename={keyboard.available ? onRename : undefined}
+          title={playlistTitle(list, lists)}
           phone={phone}
         />
       ))}
@@ -738,6 +764,11 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
   }, [login.base, login.username, login.password])
   let host = login.base
   try { host = new URL(login.base).host } catch { /* behåll basen */ }
+  // Samma namn som spellistan kontot hör till, så två konton hos samma
+  // leverantör inte blir två identiska rader.
+  const allLists = getLiveTvLists()
+  const ownList = allLists.find((entry) => entry.xtreamLoginId === login.id)
+  const title = ownList ? playlistTitle(ownList, allLists) : host
   const expiry = account ? formatExpiry(account.expDate, locale) : null
   const meta = failed
     ? tt('xtreamAccountUnavailable')
@@ -754,7 +785,7 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
         : { minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `${dp(12)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19) }}
     >
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: phone ? 4 : dp(4) }}>
-        <strong style={phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</strong>
+        <strong style={phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</strong>
         <span style={{ fontSize: phone ? 13 : dp(16), color: failed ? '#fca5a5' : phone ? MT.dim : TV.dim }}>
           {orphan ? `${tt('orphanLogins')} · ${meta}` : meta}
         </span>

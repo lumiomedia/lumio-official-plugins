@@ -10,6 +10,8 @@ import { useLang } from '@/lib/plugin-sdk'
  */
 const EN = {
   categories: 'Categories',
+  rename: 'Rename',
+  renamePlaylist: 'Playlist name (empty = server name)',
   curationSummary: '{groups} categories · {hidden} hidden · {merged} merged',
   showAll: 'Show all',
   hideAll: 'Hide all',
@@ -765,6 +767,8 @@ const EN = {
 
 const SV: Record<keyof typeof EN, string> = {
   categories: 'Kategorier',
+  rename: 'Byt namn',
+  renamePlaylist: 'Spellistans namn (tomt = serverns namn)',
   curationSummary: '{groups} kategorier · {hidden} dolda · {merged} ihopslagna',
   showAll: 'Visa alla',
   hideAll: 'Dölj alla',

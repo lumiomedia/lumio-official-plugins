@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.4
+
+- Rename a playlist on the TV and the phone too: Rename sits next to Categories on each playlist. After adding a new playlist, Live TV asks what to call it (skip it to keep the server name). The Xtream account rows use the same names. Requires Lumio 0.1.625.
+
 ## 0.16.3
 
 - Give a playlist its own name: open the playlist in Settings and type a name. Two accounts on the same server are no longer two identical rows; without a name they show the account's username, also in the playlist picker. Requires Lumio 0.1.625.

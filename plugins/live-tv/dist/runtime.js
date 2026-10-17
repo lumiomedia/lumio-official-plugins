@@ -20522,6 +20522,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -41080,6 +41081,36 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-title.ts
+  function hostOf2(url) {
+    try {
+      return new URL(url).host || url;
+    } catch {
+      return url;
+    }
+  }
+  function playlistHost(list) {
+    return list.kind === "m3u" && list.url ? hostOf2(list.url) : list.name;
+  }
+  function playlistTitle(list, all) {
+    const own = list.label?.trim();
+    if (own) return own;
+    const host2 = playlistHost(list);
+    const sameHost = all.filter((other) => !other.label?.trim() && playlistHost(other) === host2);
+    if (sameHost.length < 2) return host2;
+    if (list.kind === "xtream") {
+      const user = getXtreamLogins().find((login) => login.id === list.xtreamLoginId)?.username?.trim();
+      if (user) return `${host2} \xB7 ${user}`;
+    }
+    return `${host2} (${sameHost.findIndex((other) => other.id === list.id) + 1})`;
+  }
+  var init_playlist_title = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-title.ts"() {
+      "use strict";
+      init_live_tv_data();
+    }
+  });
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
@@ -41984,6 +42015,8 @@ ${cue.text}`).join("\n\n")}
       init_plugin_sdk();
       EN2 = {
         categories: "Categories",
+        rename: "Rename",
+        renamePlaylist: "Playlist name (empty = server name)",
         curationSummary: "{groups} categories \xB7 {hidden} hidden \xB7 {merged} merged",
         showAll: "Show all",
         hideAll: "Hide all",
@@ -42739,6 +42772,8 @@ ${cue.text}`).join("\n\n")}
       };
       SV2 = {
         categories: "Kategorier",
+        rename: "Byt namn",
+        renamePlaylist: "Spellistans namn (tomt = serverns namn)",
         curationSummary: "{groups} kategorier \xB7 {hidden} dolda \xB7 {merged} ihopslagna",
         showAll: "Visa alla",
         hideAll: "D\xF6lj alla",
@@ -43449,36 +43484,6 @@ ${cue.text}`).join("\n\n")}
         sportRowHideScores: "D\xF6lj st\xE4llning",
         sportRowFollowNote: "Du f\xF6ljer {name}"
       };
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-title.ts
-  function hostOf2(url) {
-    try {
-      return new URL(url).host || url;
-    } catch {
-      return url;
-    }
-  }
-  function playlistHost(list) {
-    return list.kind === "m3u" && list.url ? hostOf2(list.url) : list.name;
-  }
-  function playlistTitle(list, all) {
-    const own = list.label?.trim();
-    if (own) return own;
-    const host2 = playlistHost(list);
-    const sameHost = all.filter((other) => !other.label?.trim() && playlistHost(other) === host2);
-    if (sameHost.length < 2) return host2;
-    if (list.kind === "xtream") {
-      const user = getXtreamLogins().find((login) => login.id === list.xtreamLoginId)?.username?.trim();
-      if (user) return `${host2} \xB7 ${user}`;
-    }
-    return `${host2} (${sameHost.findIndex((other) => other.id === list.id) + 1})`;
-  }
-  var init_playlist_title = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-title.ts"() {
-      "use strict";
-      init_live_tv_data();
     }
   });
 
@@ -54304,6 +54309,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
+  init_playlist_title();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
@@ -55515,6 +55521,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     onRemove,
     onEditChannels,
     onCategories,
+    onRename,
+    title,
     phone = false
   }) {
     const importable = list.kind === "m3u" || list.kind === "xtream";
@@ -55544,7 +55552,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         children: [
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: phone ? 8 : dp(10), minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
+              /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title }),
               list.needsReimport ? /* @__PURE__ */ jsx("span", { style: phone ? { flexShrink: 0, fontSize: 11, fontWeight: 600, minHeight: 22, padding: "0 8px", borderRadius: 999, background: MT.warnSoft, color: MT.warnText, display: "inline-flex", alignItems: "center" } : { flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: tt("needsReimport") }) : null
             ] }),
             /* @__PURE__ */ jsxs("div", { style: { fontSize: meta, color: phone ? MT.dim : TV2.dim }, children: [
@@ -55566,6 +55574,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               children: [
                 importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
                 importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-categories-${list.id}`, label: tt("categories"), onOk: () => onCategories(list) }) : null,
+                onRename ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-rename-${list.id}`, label: tt("rename"), onOk: () => onRename(list) }) : null,
                 list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
                 /* @__PURE__ */ jsxs(
                   "div",
@@ -55656,6 +55665,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         setProgress(null);
       }
     }
+    const askName = (list) => keyboard.ask(tt("renamePlaylist"), "", (value) => {
+      if (value.trim()) renameLiveTvList(list.id, value);
+    });
     const addUrl = () => keyboard.ask(tt("addM3u"), "", (value) => {
       const url = value.trim();
       if (!url) return;
@@ -55664,6 +55676,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const list = ensureM3uList(url);
       void runImport(list, existedBefore).then((ok) => {
         if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url]);
+        if (ok && !existedBefore) askName(list);
       });
     }, "url");
     const askXtream = (prefillServer, reuseLoginId) => keyboard.ask(tt("xtreamServer"), prefillServer, (serverValue) => {
@@ -55708,7 +55721,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       saveXtreamLogin(login);
       const source = xtreamPseudoUrl(login);
       const existedBefore = getLiveTvLists().some((entry) => entry.source === source);
-      await runImport(ensureXtreamList(login), existedBefore);
+      const list = ensureXtreamList(login);
+      if (await runImport(list, existedBefore) && !existedBefore) askName(list);
     }
     const orderRef = useRef([]);
     const ordered = useMemo(() => {
@@ -55737,6 +55751,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const onRemove = useCallback((list) => removeListAndSourceUrl(list), []);
     const [curation, setCuration] = useState(null);
     const onCategories = useCallback((list) => setCuration({ listId: list.id, mode: "settings" }), []);
+    const renameRef = useRef(() => {
+    });
+    renameRef.current = (list) => keyboard.ask(tt("renamePlaylist"), list.label ?? "", (value) => renameLiveTvList(list.id, value));
+    const onRename = useCallback((list) => renameRef.current(list), []);
     const [pickerListId, setPickerListId] = useState(null);
     const [members, setMembers] = useState(() => /* @__PURE__ */ new Set());
     const pickerList = pickerListId ? getLiveTvLists().find((entry) => entry.id === pickerListId) ?? null : null;
@@ -55801,6 +55819,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           onRemove,
           onEditChannels: openPicker,
           onCategories,
+          onRename: keyboard.available ? onRename : void 0,
+          title: playlistTitle(list, lists),
           phone
         },
         list.id
@@ -55923,6 +55943,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       host2 = new URL(login.base).host;
     } catch {
     }
+    const allLists = getLiveTvLists();
+    const ownList = allLists.find((entry) => entry.xtreamLoginId === login.id);
+    const title = ownList ? playlistTitle(ownList, allLists) : host2;
     const expiry = account ? formatExpiry(account.expDate, locale) : null;
     const meta = failed ? tt("xtreamAccountUnavailable") : account ? [account.status, expiry ? tt("xtreamExpires", { date: expiry }) : tt("xtreamNoExpiry"), account.maxConnections ? tt("xtreamMaxConnections", { count: account.maxConnections }) : null].filter((part) => Boolean(part)).join(" \xB7 ") : tt("refetching");
     return /* @__PURE__ */ jsxs(
@@ -55932,7 +55955,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
         children: [
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
-            /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
+            /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: failed ? "#fca5a5" : phone ? MT.dim : TV2.dim }, children: orphan ? `${tt("orphanLogins")} \xB7 ${meta}` : meta })
           ] }),
           phone ? /* @__PURE__ */ jsxs("div", { "data-list-actions": "", style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }, children: [
@@ -73030,7 +73053,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.16.3"
+      version: "0.16.4"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -73044,7 +73067,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.16.3",
+    version: "0.16.4",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
