@@ -38,7 +38,8 @@ import {
 import { recordChannelWatch } from './channel-history'
 import { channelSnapshot, runChannelCommand } from './couch-channel-player'
 import { channelKey } from './live-tv-data'
-import { fallBackToTs, resolveLivePlayUrl, shouldFallBackToTs } from './live-format-resolve'
+import { fallBackToTs, logLiveTv, msSinceAccountStreamEnded, noteLiveStreamEnded, redactLiveUrl, resolveLivePlayUrl, shouldFallBackToTs } from './live-format-resolve'
+import { HLS_DEMUXER_LAVF_O, HLS_RECOVERY_RESET_MS, hlsFailureAction, isHlsStalled, nextRecoveryStep, type HlsFailureReason } from './hls-recovery'
 
 /* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
    hookordningen är densamma i varje rendering. */
@@ -94,6 +95,11 @@ function isIosWebKitBrowser(): boolean {
 function isMobileBrowser(): boolean {
   if (typeof navigator === 'undefined') return false
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+}
+
+/** Samma villkor som `hasNativeSurface` i komponenten, läsbart före den. */
+function hasNativeSurfaceEngine(): boolean {
+  return isDesktopTauriEnv || isAndroidTauriEnv
 }
 
 function proxyUrl(url: string): string {
@@ -167,11 +173,41 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
    */
   const [hlsFallbacks, setHlsFallbacks] = useState(0)
   const playUrl = useMemo(() => resolveLivePlayUrl(channel.url), [channel.url, hlsFallbacks])
-  /** Första försöket var omskrivet till HLS och föll: ta om kanalen som TS. Sant = hanterat. */
-  const tryTsFallback = (reason: string): boolean => {
-    if (!shouldFallBackToTs(channel.url, playUrl, nativeAttempt)) return false
-    fallBackToTs(channel.url, reason)
-    setHlsFallbacks((n) => n + 1)
+  /**
+   * Återhämtningen för HLS ur liveformatet (`hls-recovery.ts`): ett stopp
+   * mitt i spelningen eller ett startfel stänger strömmen, väntar 3/6/12 s och
+   * öppnar samma `.m3u8` igen; efter tre misslyckade omtag spelas kanalen som
+   * TS. `reopenNonce` kör om öppningseffekten. Bara för HLS som VI valt (då
+   * finns ett TS att falla tillbaka på), bara på nativemotorerna och bara på
+   * direktvägen — proxyförsöket har sin egen trappa.
+   */
+  const [reopenNonce, setReopenNonce] = useState(0)
+  const recoveryRef = useRef({ failures: 0, played: false, pending: false, timer: 0, lastPos: -1, lastProgressAt: 0, reopenedAt: 0 })
+  const hlsRecoverable = hasNativeSurfaceEngine() && nativeAttempt === 0 && shouldFallBackToTs(channel.url, playUrl, 0)
+  /** Ett HLS-fel: trappan, TS direkt, eller (false) inte vårt — vanliga trappan tar det. */
+  const handleHlsFailure = (reason: HlsFailureReason): boolean => {
+    if (!hlsRecoverable) return false
+    const r = recoveryRef.current
+    if (r.pending) return true
+    const action = hlsFailureAction({ reason, failures: r.failures, playedBefore: r.played, msSinceAccountSession: msSinceAccountStreamEnded(channel.url) })
+    const step = nextRecoveryStep(r.failures)
+    if (action === 'fallback-ts' || step.kind === 'fallback-ts') {
+      const why = action === 'fallback-ts' ? reason : `${reason} after ${r.failures} reopens`
+      // Spelade HLS aldrig alls på kanalen tar resten av kontot TS direkt.
+      fallBackToTs(channel.url, why, { wholeAccount: !r.played })
+      setHlsFallbacks((n) => n + 1)
+      return true
+    }
+    r.failures += 1
+    r.pending = true
+    logLiveTv(`HLS ${reason} → reopen ${step.attempt}/3 in ${step.delayMs / 1000} s: ${redactLiveUrl(channel.url)}`)
+    // Gamla anslutningen stängs NU, inte efter väntan: på ett konto med en
+    // anslutning är det just den som ger 509 på nästa försök.
+    noteLiveStreamEnded(channel.url)
+    void engineClose().catch(() => {})
+    setLoading(true)
+    window.clearTimeout(r.timer)
+    r.timer = window.setTimeout(() => setReopenNonce((n) => n + 1), step.delayMs)
     return true
   }
   // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
@@ -244,16 +280,21 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     // HLS-spellista som en progressiv fil och föll på
     // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
     // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
-    (url: string, viaProxy: boolean) => {
+    async (url: string, viaProxy: boolean) => {
       const target = viaProxy ? hostProxyUrl(url) : url
       // HLS ur liveformatet: säg det rakt ut till media3 i stället för att
       // låta den gissa — panelen 302:ar `.m3u8` till en ändelselös /live/play/….
-      return isDroidEngine
-        ? openNativePlayer({ url: target, ...(viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {}) })
-        : openMpvPlayer({
-          url: target,
-          requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },
-        })
+      if (isDroidEngine) {
+        return openNativePlayer({ url: target, ...(viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {}) })
+      }
+      // HLS-demuxern utan parallella anslutningar (hls-recovery.ts). Sätts
+      // före VARJE öppning — tomt för allt annat — eftersom egenskapen lever
+      // kvar i mpv mellan filerna. Köas före loadfile i appens mpv-kö.
+      await mpvSetPropertyStrings([{ name: 'demuxer-lavf-o', value: isHlsPlayUrl(url) ? HLS_DEMUXER_LAVF_O : '' }]).catch(() => {})
+      return openMpvPlayer({
+        url: target,
+        requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },
+      })
     },
     [isDroidEngine, hostProxyUrl],
   )
@@ -607,6 +648,15 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       resetFileLoaded()
       resetPlaybackRestarted()
       resetFirstFrameRendered()
+      ;(mpv as { resetEnded?: () => void }).resetEnded?.()
+      // Ett väntande omtag är nu gjort; stoppvakten räknar från öppningen.
+      const recovery = recoveryRef.current
+      if (recovery.pending) {
+        recovery.pending = false
+        recovery.reopenedAt = Date.now()
+      }
+      recovery.lastProgressAt = Date.now()
+      recovery.lastPos = -1
 
       void engineClose()
         .catch(() => {})
@@ -649,7 +699,14 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         resizeObs?.disconnect()
         window.removeEventListener('resize', sync)
         window.removeEventListener('scroll', sync, true)
-        void engineClose()
+        // Panelen räknar en stängd ström en stund till (se hls-recovery.ts).
+        noteLiveStreamEnded(channel.url)
+        void engineClose().then(() => {
+          // Lämna inte HLS-demuxerns val kvar åt nästa fil i appens spelare.
+          if (engineKind === 'mpv' && isHlsPlayUrl(playUrl)) {
+            return mpvSetPropertyStrings([{ name: 'demuxer-lavf-o', value: '' }]).catch(() => {})
+          }
+        }).catch(() => {})
       }
     }
 
@@ -822,6 +879,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     channel.url,
     playUrl,
     nativeAttempt,
+    reopenNonce,
     portalEl,
     resetFileLoaded,
     resetFirstFrameRendered,
@@ -873,8 +931,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (!hasNativeSurface || !mpvLoadFailed) return
     if (handledFailTokenRef.current === mpvLoadFailedToken) return
     handledFailTokenRef.current = mpvLoadFailedToken
-    // HLS ur liveformatet föll: samma kanal som TS först, sedan trappan.
-    if (tryTsFallback('load-failed')) return
+    // HLS ur liveformatet föll: omtag med väntan eller TS (hls-recovery.ts).
+    if (handleHlsFailure('load-failed')) return
     // Andra försöket går genom värdens strömproxy. Laddläget står kvar: för
     // den som tittar är det fortfarande samma start.
     if (nativeFailureAction('load-failed', nativeAttempt, mpvTimePos) === 'retry-proxy') {
@@ -885,6 +943,57 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     setLoading(false)
     void engineClose().catch(() => {})
   }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos, playUrl])
+
+  // Nytt kanalval eller nytt format: återhämtningen börjar om.
+  useEffect(() => {
+    const r = recoveryRef.current
+    window.clearTimeout(r.timer)
+    recoveryRef.current = { failures: 0, played: false, pending: false, timer: 0, lastPos: -1, lastProgressAt: Date.now(), reopenedAt: 0 }
+  }, [channel.url, playUrl])
+  useEffect(() => () => window.clearTimeout(recoveryRef.current.timer), [])
+
+  // Framsteg: speltiden rör sig. Ett omtag som spelat ostört en halv minut nollar räknaren.
+  useEffect(() => {
+    const r = recoveryRef.current
+    if (mpvTimePos === r.lastPos) return
+    r.lastPos = mpvTimePos
+    const now = Date.now()
+    r.lastProgressAt = now
+    if (mpvTimePos > 0 && !r.pending) r.played = true
+    if (r.failures > 0 && r.reopenedAt > 0 && now - r.reopenedAt >= HLS_RECOVERY_RESET_MS) {
+      logLiveTv(`HLS recovered after ${r.failures} reopen(s): ${redactLiveUrl(channel.url)}`)
+      r.failures = 0
+      r.reopenedAt = 0
+    }
+  }, [mpvTimePos])
+  useEffect(() => {
+    if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
+      const r = recoveryRef.current
+      if (!r.pending) r.played = true
+    }
+  }, [mpvFirstFrameRendered, mpvPlaybackRestarted])
+
+  // STOPPVAKTEN MITT I SPELNINGEN. Startvakten nedan gäller bara starten;
+  // en HLS-omladdning som får 509 femton sekunder in gav tidigare en bild
+  // som stod still för alltid. Filslut på en livekanal är alltid ett stopp.
+  const handleHlsFailureRef = useRef(handleHlsFailure)
+  handleHlsFailureRef.current = handleHlsFailure
+  const stallInputsRef = useRef({ ended: false, paused: false })
+  stallInputsRef.current = { ended: Boolean(mpv.ended), paused: mpvPaused }
+  useEffect(() => {
+    if (!hlsRecoverable || loading || error) return
+    const check = () => {
+      const r = recoveryRef.current
+      if (!r.played || r.pending) return
+      const { ended, paused } = stallInputsRef.current
+      if (isHlsStalled({ now: Date.now(), lastProgressAt: r.lastProgressAt, ended, userPaused: paused })) {
+        handleHlsFailureRef.current('stall')
+      }
+    }
+    check()
+    const timer = window.setInterval(check, 1000)
+    return () => window.clearInterval(timer)
+  }, [hlsRecoverable, loading, error, mpv.ended])
 
   // Startvakten läser klockan genom en ref: en ren ljudkanal rapporterar
   // aldrig en bildruta, men dess speltid rör sig — och då spelar den.
@@ -897,13 +1006,15 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     // med innan tittaren ger upp. Sista försöket får hela budgeten.
     const budget = nativeAttempt === 0 ? MPV_FIRST_ATTEMPT_TIMEOUT_MS : MPV_STARTUP_TIMEOUT_MS
     const timeout = window.setTimeout(() => {
+      // Ett omtag väntar redan (strömmen är stängd med flit) — inget att vakta.
+      if (recoveryRef.current.pending) return
       const action = nativeFailureAction('no-start', nativeAttempt, timePosRef.current)
       if (action === 'settle') {
         setLoading(false)
         return
       }
       if (action === 'retry-proxy') {
-        if (tryTsFallback('no-start')) return
+        if (handleHlsFailure('no-start')) return
         setNativeAttempt(1)
         return
       }
@@ -912,7 +1023,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       void engineClose().catch(() => {})
     }, budget)
     return () => window.clearTimeout(timeout)
-  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt, playUrl])
+  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt, playUrl, reopenNonce])
 
   useEffect(() => {
     if (!hasNativeSurface) return

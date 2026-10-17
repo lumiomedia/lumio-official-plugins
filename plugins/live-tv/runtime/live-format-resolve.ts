@@ -83,7 +83,8 @@ export function resolveLivePlayUrl(url: string): string {
   const ctx = liveUrlContext(url)
   if (ctx.kind === null) return url
   if (ctx.login && ctx.format === 'auto') learnAllowedFormats(ctx.login)
-  return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) })
+  const key = accountKeyOf(url)
+  return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) || (key !== null && hlsBrokenAccounts.has(key)) })
 }
 
 /** Vad Auto blir för en lista just nu — till inställningsradens förklaring. */
@@ -117,14 +118,27 @@ export function redactLiveUrl(url: string): string {
  * HLS kom inte igång: minns det för kanalen resten av sessionen och logga
  * (konsolen + appens debug-logg, samma väg som ytdiagnostiken).
  */
-export function fallBackToTs(originalUrl: string, reason: string): void {
+export function fallBackToTs(originalUrl: string, reason: string, opts: { wholeAccount?: boolean } = {}): void {
   markHlsFailed(originalUrl)
-  const msg = `[live-tv] HLS fallback → TS (${reason}): ${redactLiveUrl(originalUrl)}`
+  // HLS spelade aldrig på kontot: nästa kanal på samma konto ska inte gå
+  // igenom samma väntan innan den också hamnar på TS.
+  if (opts.wholeAccount) {
+    const key = accountKeyOf(originalUrl)
+    if (key) hlsBrokenAccounts.add(key)
+  }
+  logLiveTv(`HLS fallback → TS (${reason}${opts.wholeAccount ? ', whole account' : ''}): ${redactLiveUrl(originalUrl)}`)
+}
+
+/** Konsolen + appens debug-logg (samma väg som ytdiagnostiken). Aldrig med konto i URL:en. */
+export function logLiveTv(text: string): void {
+  const msg = `[live-tv] ${text}`
   console.warn(msg)
   if (typeof fetch === 'function') {
     void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {})
   }
 }
+
+const hlsBrokenAccounts = new Set<string>()
 
 type LiveFormatTextKey = 'liveFormatAuto' | 'liveFormatAutoIs' | 'liveFormatTs' | 'liveFormatHls'
 
@@ -146,4 +160,34 @@ export function liveFormatOptionLabel(
 /** Listor där valet betyder något: Xtream, och M3U (där bara HLS skriver om). */
 export function listHasLiveFormat(list: Pick<LiveTvList, 'kind'>): boolean {
   return list.kind === 'xtream' || list.kind === 'm3u'
+}
+
+/**
+ * När en ström på ett Xtream-konto senast stängdes. Paneler med ett
+ * anslutningstak räknar en stängd ström en stund till — en HLS-start som får
+ * 509 strax efter går därför genom återhämtningstrappan (`hls-recovery.ts`)
+ * i stället för att genast falla tillbaka på TS.
+ */
+const accountStreamEndedAt = new Map<string, number>()
+
+function accountKeyOf(url: string): string | null {
+  const parsed = parseXtreamLiveUrl(url)
+  if (!parsed) return null
+  return `${normalizeXtreamBase(parsed.origin) ?? parsed.origin}|${decode(parsed.username)}`
+}
+
+export function noteLiveStreamEnded(url: string, now = Date.now()): void {
+  const key = accountKeyOf(url)
+  if (key) accountStreamEndedAt.set(key, now)
+}
+
+export function msSinceAccountStreamEnded(url: string, now = Date.now()): number | null {
+  const key = accountKeyOf(url)
+  const at = key ? accountStreamEndedAt.get(key) : undefined
+  return at === undefined ? null : Math.max(0, now - at)
+}
+
+export function __resetAccountSessionsForTests(): void {
+  accountStreamEndedAt.clear()
+  hlsBrokenAccounts.clear()
 }

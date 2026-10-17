@@ -17,7 +17,9 @@ import {
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { registerSurfaceCutout, unregisterSurfaceCutout } from './surface-cutouts'
 import { HOST_PROXY_MIME, hostProxyUrl } from '../live-tv-playback-fallback'
-import { fallBackToTs, resolveLivePlayUrl, shouldFallBackToTs } from '../live-format-resolve'
+import { fallBackToTs, noteLiveStreamEnded, resolveLivePlayUrl, shouldFallBackToTs } from '../live-format-resolve'
+import { HLS_DEMUXER_LAVF_O } from '../hls-recovery'
+import { isHlsPlayUrl } from '../live-format'
 
 export interface SurfaceSource { channel: M3uChannel; url: string }
 export interface VideoSurfaceOptions { muted: boolean; audio?: boolean; enabled?: boolean }
@@ -347,6 +349,8 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     const closeOnce = async () => {
       if (spent) return
       spent = true
+      // Panelen räknar en stängd ström en stund till (hls-recovery.ts).
+      if (closeSession) noteLiveStreamEnded(url)
       await closeSession?.().catch(() => {})
     }
 
@@ -403,6 +407,9 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       setLive(true)
       if (caps.engine === 'mpv') {
         closeSession = () => closeMpvPlayer()
+        // Samma demuxerval som spelaren (live-tv-player.tsx): inga parallella
+        // HLS-anslutningar, och tomt för allt annat.
+        await host.mpvSetPropertyStrings?.([{ name: 'demuxer-lavf-o', value: isHlsPlayUrl(playUrl) ? HLS_DEMUXER_LAVF_O : '' }])?.catch(() => {})
         await openMpvPlayer({ url: playUrl }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         await host.mpvSetPropertyStrings?.([{ name: 'mute', value: muted ? 'yes' : 'no' }])?.catch(() => {})
