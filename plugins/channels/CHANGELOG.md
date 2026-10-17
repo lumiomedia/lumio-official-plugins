@@ -1,3 +1,9 @@
+## 0.1.18
+
+- Skrivbord: Kanaler-sidan går ut över appkolumnens sidomarginaler (bredare tablå, som TV-läget).
+- TABLÅ och tidslinjens klockslag i samma ljusa färg som herons inforad.
+- Bannern för äldre värd: utan versionsnummer, placerad till höger om menyknappen.
+
 ## 0.1.17
 
 - En kanal som hamnar efter filens slut (filen kortare än tablåns plats, t.ex. ett avsnitt på en filmplats) öppnar inte längre samma fil om och om igen. En annan version provas en gång; finns ingen visas "Programmet är slut · Härnäst" och kanalen går live vid nästa programgräns. Filens verkliga längd sparas och gäller från nästa tablåbygge (kräver appen med onDurationKnown).

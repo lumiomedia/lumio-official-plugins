@@ -38,7 +38,7 @@ export const S = {
   zapNothingOn: { en: 'Nothing on air', sv: 'Inget sänds' },
   zapHint: { en: 'remote: ▲▼ · 0–9 · OK = info', sv: 'fjärr: ▲▼ · 0–9 · OK = info' },
   // Kanaler-sidan
-  pageHostTooOld: { en: 'Channels requires Lumio 0.1.625 or later for playback', sv: 'Kanaler kräver Lumio 0.1.625 eller senare för uppspelning' },
+  pageHostTooOld: { en: 'Playing channels requires a newer version of Lumio', sv: 'Uppspelning av kanaler kräver en nyare version av Lumio' },
   heroLive: { en: 'LIVE', sv: 'LIVE' },
   playerNoSignal: { en: 'No signal', sv: 'Ingen signal' },
   playerNoSignalRetry: { en: 'Trying again when the next programme starts at {time}', sv: 'Försöker igen när nästa program börjar {time}' },

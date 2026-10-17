@@ -129,7 +129,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
   const ring = fill && !isMobile ? dimS(10, isTv) : '0px'
   const header = (
     <div data-guide-axis="" style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, marginInline: ring }}>
-      <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textDim }}>
+      <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textSoft }}>
         {t('guideHeader')}
       </span>
       <div style={{ position: 'relative', height: '100%' }}>
@@ -138,7 +138,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
             key={tick}
             style={{
               position: 'absolute', bottom: dim(8, isTv), left: `${((tick - win.from) / (win.to - win.from)) * 100}%`,
-              fontFamily: FONT.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textDim, whiteSpace: 'nowrap',
+              fontFamily: FONT.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textSoft, whiteSpace: 'nowrap',
             }}
           >
             {formatClock(tick)}

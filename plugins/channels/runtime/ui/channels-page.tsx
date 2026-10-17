@@ -113,6 +113,31 @@ function useFillHeight(ref: { current: HTMLElement | null }, key: unknown): numb
   return height
 }
 
+/**
+ * Skrivbord: sidan går ut över appkolumnens sidomarginaler (som appens
+ * hem-hero, -mx-4/6/8) så tablån och heron får bredden som i TV-läget.
+ * Mäts från kolumnens padding, inte gissat. TV och mobil: ingen utdragning.
+ */
+function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): { left: number; right: number } {
+  const [bleed, setBleed] = useState({ left: 0, right: 0 })
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!active || !el || typeof window === 'undefined') { setBleed((b) => (b.left || b.right ? { left: 0, right: 0 } : b)); return }
+    const measure = () => {
+      const column = el.closest('[data-app-column]')
+      if (!column) return
+      const cs = getComputedStyle(column)
+      const left = parseFloat(cs.paddingLeft) || 0
+      const right = parseFloat(cs.paddingRight) || 0
+      setBleed((b) => (b.left === left && b.right === right ? b : { left, right }))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
+  return bleed
+}
+
 export function ChannelsPage({ params }: BrowsePageProps) {
   const t = useText()
   const { lang } = useLang()
@@ -227,6 +252,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   // TV: varje vy får sitt startfokus när den öppnas (sidan: vald kanals rad;
   // studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
   const viewRef = useRef<HTMLDivElement | null>(null)
+  const bleed = useColumnBleed(viewRef, !isTv && !isMobile)
   const view = player && sorted.length > 0 ? 'player' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
   useTvViewFocus(viewRef, isTv && view !== 'player', view)
   const fillHeight = useFillHeight(viewRef, view)
@@ -279,7 +305,8 @@ export function ChannelsPage({ params }: BrowsePageProps) {
       role="status"
       style={{
         position: 'relative', zIndex: 1,
-        padding: isTv ? `${tvu(10)} ${tvu(100)}` : '10px 16px', background: C.accentAlpha(0.14), borderBottom: `1px solid ${C.accentAlpha(0.35)}`,
+        // Skrivbord/mobil: till höger om appens runda menyknapp uppe till vänster.
+        padding: isTv ? `${tvu(10)} ${tvu(100)}` : isMobile ? '10px 16px 10px 76px' : '10px 16px 10px 112px', background: C.accentAlpha(0.14), borderBottom: `1px solid ${C.accentAlpha(0.35)}`,
         color: C.accentLight, fontFamily: FONT.ui, fontSize: fontSize(13, isTv), flexShrink: 0,
       }}
     >
@@ -320,7 +347,11 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     <div
       ref={viewRef}
       data-channels-page=""
-      style={{ height: fillHeight ?? 'var(--lumio-vh, 100vh)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      style={{
+        height: fillHeight ?? 'var(--lumio-vh, 100vh)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        // Skrivbord: ut över kolumnens sidomarginaler (bredare tablå, som TV-läget).
+        ...(bleed.left || bleed.right ? { marginLeft: -bleed.left, marginRight: -bleed.right } : null),
+      }}
     >
       {banner}
       <ChannelHero

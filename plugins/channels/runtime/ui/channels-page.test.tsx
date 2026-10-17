@@ -192,7 +192,7 @@ describe('Kanaler-sidan', () => {
     state.ready = false
     page({ play: 'live' })
     expect(screen.queryByTestId('player')).toBeNull()
-    expect(screen.getByRole('status').textContent).toContain('0.1.625')
+    expect(screen.getByRole('status').textContent).toMatch(/newer version|nyare version/)
     expect((screen.getByText('▶ Titta live') as HTMLButtonElement).disabled).toBe(true)
   })
 

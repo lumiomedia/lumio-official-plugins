@@ -20343,7 +20343,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -39980,7 +39979,7 @@ ${cue.text}`).join("\n\n")}
     zapNothingOn: { en: "Nothing on air", sv: "Inget s\xE4nds" },
     zapHint: { en: "remote: \u25B2\u25BC \xB7 0\u20139 \xB7 OK = info", sv: "fj\xE4rr: \u25B2\u25BC \xB7 0\u20139 \xB7 OK = info" },
     // Kanaler-sidan
-    pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
+    pageHostTooOld: { en: "Playing channels requires a newer version of Lumio", sv: "Uppspelning av kanaler kr\xE4ver en nyare version av Lumio" },
     heroLive: { en: "LIVE", sv: "LIVE" },
     playerNoSignal: { en: "No signal", sv: "Ingen signal" },
     playerNoSignalRetry: { en: "Trying again when the next programme starts at {time}", sv: "F\xF6rs\xF6ker igen n\xE4r n\xE4sta program b\xF6rjar {time}" },
@@ -42185,7 +42184,7 @@ ${cue.text}`).join("\n\n")}
     };
     const ring = fill3 && !isMobile ? dimS(10, isTv) : "0px";
     const header = /* @__PURE__ */ jsxs("div", { "data-guide-axis": "", style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, marginInline: ring }, children: [
-      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
+      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textSoft }, children: t("guideHeader") }),
       /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
         "span",
         {
@@ -42196,7 +42195,7 @@ ${cue.text}`).join("\n\n")}
             fontFamily: FONT3.mono,
             fontSize: fontSize(11, isTv),
             lineHeight: 1.2,
-            color: C.textDim,
+            color: C.textSoft,
             whiteSpace: "nowrap"
           },
           children: formatClock2(tick2)
@@ -45049,6 +45048,28 @@ ${cue.text}`).join("\n\n")}
     }, [key]);
     return height;
   }
+  function useColumnBleed(ref, active3) {
+    const [bleed, setBleed] = useState({ left: 0, right: 0 });
+    useLayoutEffect(() => {
+      const el = ref.current;
+      if (!active3 || !el || typeof window === "undefined") {
+        setBleed((b) => b.left || b.right ? { left: 0, right: 0 } : b);
+        return;
+      }
+      const measure = () => {
+        const column = el.closest("[data-app-column]");
+        if (!column) return;
+        const cs = getComputedStyle(column);
+        const left = parseFloat(cs.paddingLeft) || 0;
+        const right = parseFloat(cs.paddingRight) || 0;
+        setBleed((b) => b.left === left && b.right === right ? b : { left, right });
+      };
+      measure();
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }, [active3]);
+    return bleed;
+  }
   function ChannelsPage({ params }) {
     const t = useText();
     const { lang } = useLang();
@@ -45146,6 +45167,7 @@ ${cue.text}`).join("\n\n")}
     const playerRef = useRef(player);
     playerRef.current = player;
     const viewRef = useRef(null);
+    const bleed = useColumnBleed(viewRef, !isTv && !isMobile);
     const view = player && sorted.length > 0 ? "player" : studio ? `studio:${studio}` : selected ? "main" : "empty";
     useTvViewFocus(viewRef, isTv && view !== "player", view);
     const fillHeight = useFillHeight(viewRef, view);
@@ -45198,7 +45220,8 @@ ${cue.text}`).join("\n\n")}
         style: {
           position: "relative",
           zIndex: 1,
-          padding: isTv ? `${tvu(10)} ${tvu(100)}` : "10px 16px",
+          // Skrivbord/mobil: till höger om appens runda menyknapp uppe till vänster.
+          padding: isTv ? `${tvu(10)} ${tvu(100)}` : isMobile ? "10px 16px 10px 76px" : "10px 16px 10px 112px",
           background: C.accentAlpha(0.14),
           borderBottom: `1px solid ${C.accentAlpha(0.35)}`,
           color: C.accentLight,
@@ -45239,7 +45262,14 @@ ${cue.text}`).join("\n\n")}
         {
           ref: viewRef,
           "data-channels-page": "",
-          style: { height: fillHeight ?? "var(--lumio-vh, 100vh)", display: "flex", flexDirection: "column", overflow: "hidden" },
+          style: {
+            height: fillHeight ?? "var(--lumio-vh, 100vh)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            // Skrivbord: ut över kolumnens sidomarginaler (bredare tablå, som TV-läget).
+            ...bleed.left || bleed.right ? { marginLeft: -bleed.left, marginRight: -bleed.right } : null
+          },
           children: [
             banner,
             /* @__PURE__ */ jsx(
@@ -45398,7 +45428,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.17",
+    version: "0.1.18",
     description: S.description,
     preinstalled: false,
     register(ctx) {
