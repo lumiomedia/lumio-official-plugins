@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { LtBtn, LtCard, LtCheck, LtChevron, LtConfirm, LtOverflowMenu, UI, fmtInt, hostOf, useLtNarrow } from './settings-ui'
+import { LtBtn, LtCard, LtCheck, LtChevron, LtConfirm, LtOverflowMenu, LtTextRow, UI, fmtInt, useLtNarrow } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
 import { useXtreamAccountMeta } from './xtream-login-section'
 import { ServerCategoriesDialog, serverCategoriesLabel, useXtreamCategoryCount } from './server-categories'
 import { completeLogos } from './index-client'
-import { getXtreamLogins, isLogoFallbackEnabled, setLogoFallbackEnabled, updateLiveTvListEpg, type LiveTvList } from './live-tv-data'
+import { getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, renameLiveTvList, setLogoFallbackEnabled, updateLiveTvListEpg, type LiveTvList } from './live-tv-data'
+import { playlistTitle } from './playlist-title'
 
 /**
  * Kvittots tidsstämpel. Idag räcker klockslaget; är hämtningen äldre säger
@@ -24,10 +25,7 @@ export function formatFetchedAt(iso: string, locale: string): string {
     : then.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-/** Kortets rubrik: värden ur käll-URL:en för M3U, listnamnet (panelens värd) annars. */
-export function playlistHost(list: LiveTvList): string {
-  return list.kind === 'm3u' && list.url ? hostOf(list.url) : list.name
-}
+export { playlistHost } from './playlist-title'
 
 /**
  * Sammanfattningen `N categories · N hidden · N merged` (§3.1): kategorier =
@@ -88,7 +86,11 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
   const needsLogin = kind === 'xtream' && !login
   const account = useXtreamAccountMeta(login)
   const categoryTotal = useXtreamCategoryCount(login)
-  const host = playlistHost(list)
+  const allLists = getLiveTvLists()
+  const host = playlistTitle(list, allLists)
+  // Namnfältet: utkast tills det sparas, så varje tangenttryck inte skriver om listan.
+  const [nameDraft, setNameDraft] = useState(list.label ?? '')
+  const saveName = () => renameLiveTvList(list.id, nameDraft)
   /**
    * `completeLogos` sänder `emitIndexChanged()` själv vid ett lyckat svar
    * (index-client.ts) — den ropas INTE här igen, det hade blivit en dubbelsändning.
@@ -157,6 +159,19 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
       </button>
       {open ? (
       <>
+      <LtTextRow
+        label={h('playlistName')}
+        value={nameDraft}
+        onChange={setNameDraft}
+        placeholder={playlistTitle({ ...list, label: undefined }, allLists)}
+        fieldWidth={narrow ? 180 : 240}
+        button={h('save')}
+        onButton={saveName}
+        onEnter={saveName}
+        buttonDisabled={nameDraft.trim() === (list.label ?? '')}
+        first
+        testId={`playlist-name-${list.id}`}
+      />
       {needsLogin || account || list.needsReimport || (!busy && list.lastImportError) || list.truncated ? (
         <div style={{ minWidth: 0, marginTop: -8 }}>
           {needsLogin ? <p style={lineStyle}>{h('xtreamNeedsLogin')}</p> : null}

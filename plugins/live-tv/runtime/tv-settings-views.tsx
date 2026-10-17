@@ -10,7 +10,8 @@ import { useLiveTvSettings, type CurationTarget } from './live-tv-settings-secti
 import { useXtreamAccountMeta, useXtreamLoginForm } from './xtream-login-section'
 import { applyServerCategories, isCategorySelected, toggleCategory, useXtreamCategories, useXtreamCategoryCount } from './server-categories'
 import { completeLogos } from './index-client'
-import { curationSummary, formatFetchedAt, playlistHost } from './playlist-card'
+import { curationSummary, formatFetchedAt } from './playlist-card'
+import { playlistTitle } from './playlist-title'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { useTvText } from './tv/tv-strings'
@@ -20,6 +21,7 @@ import { listGroups } from './index-client'
 import { groupOrderLabelKey, nextGroupOrder, rawGroupOrderFor, sortGroups, withRawOrder } from './group-order'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import {
+  getLiveTvLists,
   getXtreamLogins,
   isLogoFallbackEnabled,
   markListCurationSeen,
@@ -30,6 +32,9 @@ import {
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
+
+/** Spellistans visningsnamn (eget namn, annars värd + konto). */
+const titleOf = (list: LiveTvList) => playlistTitle(list, getLiveTvLists())
 
 /* ------------------------------------------------------------ hjälpare */
 
@@ -142,7 +147,7 @@ export function TvSettingsPage() {
         <TvRow
           key={list.id}
           testId={`tv-playlist-row-${list.id}`}
-          label={playlistHost(list)}
+          label={titleOf(list)}
           hint={s.listProgress?.listId === list.id ? h('fetching') : h('playlistMeta', { kind: kindLabel(list, h), channels: fmtInt(list.channelCount ?? 0, locale), fetched: list.fetchedAt ? h('m3uFetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) }) : h('m3uNeverFetched') })}
           value={list.kind === 'custom' ? undefined : shortSummary(list, h)}
           caret
@@ -239,7 +244,7 @@ export function TvSettingsPage() {
       {s.curationList ? (
         <TvCategoriesPanel
           target={s.curationList}
-          crumb={openedList ? playlistHost(openedList) : undefined}
+          crumb={openedList ? titleOf(openedList) : undefined}
           onClose={() => s.setCurationList(null)}
         />
       ) : null}
@@ -276,7 +281,7 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
   const needsLogin = list.kind === 'xtream' && !login
   const account = useXtreamAccountMeta(login)
   const importable = list.kind === 'm3u' || list.kind === 'xtream'
-  const host = playlistHost(list)
+  const host = titleOf(list)
   const kind = kindLabel(list, h)
   const summary = curationSummary(list)
   const statusMeta = busy
@@ -516,7 +521,7 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
   const namingMembers = naming ? (naming.edit === null ? marked : (draft.merges[naming.edit]?.groups ?? [])) : []
 
   return (
-    <TvPanel title={h('categoriesTitle', { host: playlistHost(list) })} hint={h('categoriesBody')} crumb={crumb} onBack={dismiss} testId="tv-categories-panel">
+    <TvPanel title={h('categoriesTitle', { host: titleOf(list) })} hint={h('categoriesBody')} crumb={crumb} onBack={dismiss} testId="tv-categories-panel">
       <TvNote size="panel">{groups ? summary : h('listImportProgressUnknown')}</TvNote>
       {mode === 'after-import' ? <TvNote size="panel">{h('curationIntro')}</TvNote> : null}
       {marking ? (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { playlistTitle } from './playlist-title'
 import {
   closeMpvPlayer,
   getTvKeyboardPanel,
@@ -1308,7 +1309,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                         : neutralPillClass
                     }`}
                   >
-                    <span>{list.name}</span>
+                    <span>{playlistTitle(list, lists)}</span>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] tracking-[0.08em] ${
                       activeListId === list.id
                         ? 'bg-accent-400/15 text-accent-200'
@@ -1514,7 +1515,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                                   isInList ? 'bg-accent-400/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
                                 }`}
                               >
-                                <span className="truncate">{list.name}</span>
+                                <span className="truncate">{playlistTitle(list, lists)}</span>
                                 {isInList ? (
                                   <svg className="h-3.5 w-3.5 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="m20 6-11 11-5-5" />
@@ -1812,7 +1813,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                           }}
                           className={`${tvMenuItemClass} ${activeListId === list.id ? '!border-accent-400/50 !bg-accent-400/10 !text-accent-300' : ''}`}
                         >
-                          <span className="truncate">{list.name}</span>
+                          <span className="truncate">{playlistTitle(list, lists)}</span>
                           <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[12px] text-slate-400">{list.kind === 'custom' ? (list.channels ?? []).length : list.channelCount ?? 0}</span>
                         </button>
                       ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { playlistTitle } from './playlist-title'
 import {
   clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
@@ -691,7 +692,7 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   const groupCounts = useMemo(() => orderedGroups(channels, groupOrder), [channels, groupOrder])
   const groups = useMemo(() => groupCounts.map((g) => g.name), [groupCounts])
   const playlists = useMemo(
-    () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
+    () => lists.map((list) => ({ id: list.id, name: playlistTitle(list, lists), count: list.channelCount ?? list.channels?.length ?? 0 })),
     [lists],
   )
 

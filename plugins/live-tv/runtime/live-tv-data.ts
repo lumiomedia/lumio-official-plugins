@@ -81,6 +81,12 @@ export interface ListCuration {
 export interface LiveTvList {
   id: string
   name: string
+  /**
+   * Användarens eget namn på spellistan. Utan det visas värden (M3U-URL:ens
+   * eller Xtream-serverns) — och två konton på samma server blev två
+   * identiska rader som inte gick att skilja åt (testare 2026-10-17).
+   */
+  label?: string
   createdAt: string
   urlTvg: string | null
   epgUrls: string[]
@@ -284,9 +290,11 @@ function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamL
     : channels.length
   const groups = Array.isArray(entry.groups) ? sanitizeGroups(entry.groups) : computeGroups(channels)
 
+  const label = typeof entry.label === 'string' ? entry.label.trim().slice(0, 60) : ''
   return {
     id,
     name,
+    ...(label ? { label } : {}),
     ...classified,
     createdAt: String(entry.createdAt ?? ''),
     urlTvg: typeof entry.urlTvg === 'string' && entry.urlTvg.trim().length > 0 ? entry.urlTvg.trim() : null,
@@ -493,6 +501,18 @@ export function updateLiveTvListCuration(listId: string, curation: ListCuration 
       if (list.id !== listId) return list
       const { curation: _dropped, ...rest } = list
       return normalized ? { ...rest, curation: normalized, curationSeen: true } : { ...rest, curationSeen: true }
+    }),
+  )
+}
+
+/** Eget namn på en spellista; tomt tar bort det (värden visas igen). */
+export function renameLiveTvList(listId: string, label: string): void {
+  const clean = label.trim().slice(0, 60)
+  writeLists(
+    readLists().map((list) => {
+      if (list.id !== listId) return list
+      const { label: _old, ...rest } = list
+      return clean ? { ...rest, label: clean } : rest
     }),
   )
 }

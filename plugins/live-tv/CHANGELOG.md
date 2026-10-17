@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.3
+
+- Give a playlist its own name: open the playlist in Settings and type a name. Two accounts on the same server are no longer two identical rows; without a name they show the account's username, also in the playlist picker. Requires Lumio 0.1.625.
+
 ## 0.16.2
 
 - Tidier settings: Playlists, Programme guide, Behaviour, Library, Sport and Display are collapsible sections with a one-line summary. On phones only one section is open at a time; on computers several can be open.
