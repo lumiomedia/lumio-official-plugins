@@ -7,9 +7,14 @@
  * svarar 509 inom 18–45 s → "Failed to reload playlist" → svart bild. Den
  * URSPRUNGLIGA `.m3u8` svarar däremot varje gång.
  *
- * Appens proxy hämtar därför den ursprungliga adressen vid VARJE omladdning
- * och skriver om segmenten till absoluta adresser (segmenten hämtar spelaren
- * fortfarande direkt från panelen). Utan proxyn är rå HLS känt trasigt på
+ * Appens proxy hämtar därför den ursprungliga adressen vid VARJE omladdning.
+ * Segmenten går också genom appen (`/api/live-tv/hls/segment`): panelen kapar
+ * ibland ett segment mitt i och struntar i Range, så appen hämtar hela
+ * segmentet och tar om kapade hämtningar från byte 0 innan spelaren får det.
+ * Spellista och segment delar en anslutning till panelen. ffmpeg:s
+ * återanslutning (`stream-lavf-o` reconnect) slår appen av för proxyadresser
+ * i mpv_open — inställningen sätts där EFTER pluginets egna egenskaper, så
+ * pluginet kan inte göra det själv. Utan proxyn är rå HLS känt trasigt på
  * sådana paneler, så Auto väljer då TS (`live-format.ts`).
  *
  * Appen talar om att proxyn finns i `/api/app-info` → `features`. Svaret
