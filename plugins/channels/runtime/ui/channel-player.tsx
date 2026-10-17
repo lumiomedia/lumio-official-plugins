@@ -698,9 +698,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       <div data-channels-player="" onMouseMove={poke}>
         {/* Inställningskortet i ett eget lager ovanför värdspelaren (z 60): inne i
             spelarens överlägg revs det med spelaren vid varje byte — laddning,
-            svart, laddning igen (2026-10-17). Lagret lever över bytet. */}
+            svart, laddning igen (2026-10-17). Lagret lever över bytet.
+            data-cinema-overlay: appen döljer allt i body utom spelarens portal
+            medan mpv spelar (html.mpv-playing); biokvällens undantag släpper
+            igenom lagret — utan det syntes ingen laddning alls. */}
         {typeof document !== 'undefined'
-          ? createPortal(<div data-channels-tuning-layer="" style={{ position: 'fixed', inset: 0, zIndex: 61, pointerEvents: 'none' }}>{tuningCard}</div>, document.body)
+          ? createPortal(<div data-channels-tuning-layer="" data-cinema-overlay="" style={{ position: 'fixed', inset: 0, zIndex: 61, pointerEvents: 'none' }}>{tuningCard}</div>, document.body)
           : null}
         <Player
           // Ny visning = ny instans: initialTime läses bara vid montering, och

@@ -45126,7 +45126,7 @@ ${cue.text}`).join("\n\n")}
     if (onScreen && Player) {
       const { playable, slot, seq } = onScreen;
       return /* @__PURE__ */ jsxs("div", { "data-channels-player": "", onMouseMove: poke, children: [
-        typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(/* @__PURE__ */ jsx("div", { "data-channels-tuning-layer": "", style: { position: "fixed", inset: 0, zIndex: 61, pointerEvents: "none" }, children: tuningCard }), document.body) : null,
+        typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(/* @__PURE__ */ jsx("div", { "data-channels-tuning-layer": "", "data-cinema-overlay": "", style: { position: "fixed", inset: 0, zIndex: 61, pointerEvents: "none" }, children: tuningCard }), document.body) : null,
         /* @__PURE__ */ jsx(
           Player,
           {

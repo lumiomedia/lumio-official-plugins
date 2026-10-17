@@ -1,3 +1,7 @@
+## 0.1.30
+
+- Laddningen vid kanalbyte och start syns igen: lagret ovanför spelaren doldes av appen medan mpv spelade, så den gamla kanalens bild frös tills den nya startade.
+
 ## 0.1.29
 
 - Skrivbord: sidosvep på tablån (styrplatta, eller skift + hjul) flyttar tidsfönstret en halvtimme åt gången, som ◀▶ på TV. Bara tablån rör sig.
