@@ -41760,7 +41760,7 @@ ${cue.text}`).join("\n\n")}
     return `var(--st-${r}, ${tvu(TV_TYPE_U[r])})`;
   }
   var TV_HERO_TITLE = "2.25rem";
-  var TV_CONTENT_LEFT = 100;
+  var TV_CONTENT_LEFT = 60;
   var TV_CONTENT_RIGHT = 60;
   function tvHeroButton() {
     const k = "var(--tv-button-scale, 1)";
@@ -45428,7 +45428,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.18",
+    version: "0.1.19",
     description: S.description,
     preinstalled: false,
     register(ctx) {

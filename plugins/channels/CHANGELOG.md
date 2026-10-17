@@ -1,3 +1,7 @@
+## 0.1.19
+
+- TV: samma marginal (60) på båda sidor av heron och tablån.
+
 ## 0.1.18
 
 - Skrivbord: Kanaler-sidan går ut över appkolumnens sidomarginaler (bredare tablå, som TV-läget).
