@@ -20,7 +20,10 @@ import { getTvGlassMenu, useLang, useTvMode, type BrowsePageProps, type TvGlassM
 import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
-import { hostReady, readZapMemory } from '../host'
+import { hostReady, readZapMemory, resolver } from '../host'
+import { programmeAt } from '../model/schedule'
+import { allowsCatalog } from '../play/player-logic'
+import { warmPlayable } from '../play/warm'
 import { readCachedRundown, restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
 import { onAirNow, pickStartChannel } from './start-channel'
 import { ChannelGuide } from './channel-guide'
@@ -39,6 +42,8 @@ type Params = Record<string, string>
 const HALF_HOUR = 30 * 60_000
 /** TV: hur långt fram tidsaxeln kan rullas (halvtimmar). */
 const MAX_SHIFT = 46
+/** Heron står still så länge innan dess program förvärms (inte varje rad pekaren passerar). */
+const WARM_SETTLE_MS = 600
 
 /** Sparad tablå (synkront, utan uppslag) — null när cachen är kall. */
 function cachedRundown(channel: ChannelDef): PoolItem[] | null {
@@ -256,6 +261,22 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     setShift(next)
     return true
   }, [])
+  // Förvärmning: kanalen i heron (under pekaren, annars vald) — programmet
+  // just nu får filens huvud + index i appens cache, så Titta live bara
+  // behöver hoppet till läget. Aldrig strömuppslag (warm.ts).
+  const warmId = !isTv && !isMobile && hoverId ? hoverId : selected?.id ?? null
+  const warmRundown = warmId ? rundowns[warmId]?.rundown : undefined
+  useEffect(() => {
+    if (!warmId || !canPlay || !warmRundown || warmRundown.length === 0) return
+    const id = window.setTimeout(() => {
+      const c = sorted.find((x) => x.id === warmId)
+      if (!c) return
+      const slot = programmeAt(warmRundown, c.airWindow, Date.now())
+      if (slot.kind !== 'programme' || slot.item.play.type === 'stream') return
+      void resolver.resolve(slot.item, [], { allowCatalog: allowsCatalog(c) }).then((p) => { if (p) warmPlayable(p, slot.item.play.type) })
+    }, WARM_SETTLE_MS)
+    return () => window.clearTimeout(id)
+  }, [warmId, warmRundown]) // eslint-disable-line react-hooks/exhaustive-deps
   const onSelect = useCallback((id: string) => { autoPick.current = false; setSelectedId(id) }, [])
   const play = useCallback((id: string, mode: PlayMode, zap = false) => {
     if (!canPlay) return

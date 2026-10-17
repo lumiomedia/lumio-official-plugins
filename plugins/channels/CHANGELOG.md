@@ -1,3 +1,7 @@
+## 0.1.31
+
+- Snabbare kanalbyten: filens början och index förvärms för kanalen i heron, grannkanalerna (CH ▲▼) och nästa program — bibliotek (WebDAV, Plex, Jellyfin, Emby) och debrid-filer. Strömuppslag förvärms aldrig (leverantörens anropsgräns). Kräver appen med indexcachen.
+
 ## 0.1.30
 
 - Laddningen vid kanalbyte och start syns igen: lagret ovanför spelaren doldes av appen medan mpv spelade, så den gamla kanalens bild frös tills den nya startade.

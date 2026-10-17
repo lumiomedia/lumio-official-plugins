@@ -30,6 +30,7 @@ import { HIDE_HOST_CHROME_CSS, useHostControls, useHostMenuClearSpot, useHostTop
 import { C, FONT, glass, RADIUS } from './tokens'
 import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
+import { warmPlayable } from '../play/warm'
 import { useText } from './use-text'
 import { ZapOverlay } from './zap-overlay'
 
@@ -317,7 +318,11 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       // kommer är strömmen redan uppslagen.
       const after = Math.max(shown.deadline, shown.slot.stop) + 1000
       const next = programmeAt(rundown, channel.airWindow, after)
-      if (next.kind === 'programme') void resolver.resolve(next.item, [], { allowCatalog: allowsCatalog(channel) })
+      // Och filens huvud + index i förväg: bytet behöver bara hoppet till läget.
+      if (next.kind === 'programme') {
+        void resolver.resolve(next.item, [], { allowCatalog: allowsCatalog(channel) })
+          .then((p) => { if (p) warmPlayable(p, next.item.play.type) })
+      }
     }
   }, [now, localTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -351,7 +356,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     if (!framedNow) return
     const id = window.setTimeout(() => {
       const current = stateRef.current.request.channelId
-      for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current, cachedRundown, Date.now())) void resolver.resolve(item, [], { allowCatalog })
+      for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current, cachedRundown, Date.now())) {
+        void resolver.resolve(item, [], { allowCatalog }).then((p) => { if (p) warmPlayable(p, item.play.type) })
+      }
     }, NEIGHBOUR_PREFETCH_DELAY_MS)
     return () => window.clearTimeout(id)
   }, [framedNow, request.seq])

@@ -25021,12 +25021,14 @@
   function createAudioOnlyTracker(reloadAfterMs = SILENT_RELOAD_AFTER_AUDIO_MS) {
     let url = "";
     let firstPos = Number.NaN;
+    let lastPos = Number.NaN;
     let done = false;
     return {
       observe(o) {
         if (o.url !== url) {
           url = o.url;
           firstPos = Number.NaN;
+          lastPos = Number.NaN;
           done = false;
         }
         if (done) return false;
@@ -25035,7 +25037,9 @@
           return false;
         }
         if (!Number.isFinite(o.timePos) || o.timePos <= 0) return false;
-        if (!Number.isFinite(firstPos)) {
+        const step = o.timePos - lastPos;
+        lastPos = o.timePos;
+        if (!Number.isFinite(firstPos) || !(step >= 0 && step <= MAX_PLAY_STEP_S)) {
           firstPos = o.timePos;
           return false;
         }
@@ -25069,10 +25073,11 @@
       }
     };
   }
-  var PAST_END_SLACK_S;
+  var MAX_PLAY_STEP_S, PAST_END_SLACK_S;
   var init_player_silent_start = __esm({
     "lib/player-silent-start.ts"() {
       init_start_watchdog();
+      MAX_PLAY_STEP_S = 2;
       PAST_END_SLACK_S = 15;
     }
   });
@@ -43078,6 +43083,102 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-logic.ts
+  function startSeconds(slot, mode) {
+    if (mode === "start") return 0;
+    return Math.max(0, slot.minsIn * 60);
+  }
+  function stepChannel(channels, currentId, delta) {
+    const sorted = [...channels].sort((a, b) => a.number - b.number);
+    const index = sorted.findIndex((c) => c.id === currentId);
+    if (index < 0) return sorted[0];
+    return sorted[(index + delta + sorted.length) % sorted.length];
+  }
+  function nextBoundaryAction(input) {
+    if (input.now >= input.slotStop) return "advance";
+    if (!input.preloaded && input.slotStop - input.now <= input.preloadLeadMs) return "preload";
+    return "none";
+  }
+  function rememberZap(memory, nextId) {
+    if (memory.lastChannelId === nextId) return { lastChannelId: nextId, previousChannelId: memory.previousChannelId };
+    return { lastChannelId: nextId, previousChannelId: memory.lastChannelId };
+  }
+  var ZAP_RESOLVE_DELAY_MS = 300;
+  function resolveDelayMs(playType, channelChanged) {
+    return channelChanged && playType !== "library" ? ZAP_RESOLVE_DELAY_MS : 0;
+  }
+  var END_SLACK_S = 2;
+  var MIN_PLAYED_S2 = 60;
+  function endOfSourceAction(input) {
+    const { position, duration: duration2, startedAt } = input;
+    if (!Number.isFinite(duration2) || duration2 <= 0 || !Number.isFinite(position)) return null;
+    if (position < duration2 - END_SLACK_S) return null;
+    if (position - startedAt >= MIN_PLAYED_S2) return "ended";
+    return startedPastShortFile(startedAt, duration2, input.runtimeS) ? "ended" : "failed";
+  }
+  var PAST_END_SLACK_S2 = 15;
+  var SHORT_FILE_RATIO = 0.8;
+  function startedPastShortFile(startedAt, duration2, runtimeS) {
+    if (!Number.isFinite(duration2) || duration2 <= 0) return false;
+    if (startedAt < duration2 - PAST_END_SLACK_S2) return false;
+    return runtimeS == null || !(runtimeS > 0) || duration2 >= runtimeS * SHORT_FILE_RATIO;
+  }
+  var NEAR_BOUNDARY_MS = 18e4;
+  var allowsCatalog = (channel) => channel.sources.includes("vod");
+  var NEIGHBOUR_PREFETCH_DELAY_MS = 3e3;
+  function neighbourPrefetch(channels, currentId, rundownOf, now2) {
+    if (channels.length < 2) return [];
+    const ids = /* @__PURE__ */ new Set();
+    const out = [];
+    for (const delta of [1, -1]) {
+      const c = stepChannel(channels, currentId, delta);
+      if (c.id === currentId || ids.has(c.id)) continue;
+      ids.add(c.id);
+      const rundown = rundownOf(c);
+      if (!rundown || rundown.length === 0) continue;
+      const slot = programmeAt(rundown, c.airWindow, now2);
+      if (slot.kind !== "programme") continue;
+      if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
+    }
+    return out;
+  }
+  function pastEndAction(input) {
+    const { initialTime, duration: duration2, runtimeS } = input;
+    if (!Number.isFinite(duration2) || duration2 <= 0) return null;
+    if (!(initialTime >= duration2 - PAST_END_SLACK_S2)) return null;
+    return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/warm.ts
+  var WEBDAV_STREAM = "/api/webdav-library/stream?";
+  function warmUrlFor(playable, type, opts) {
+    if (type === "stream") return null;
+    const url = playable.url;
+    const at = url.indexOf(WEBDAV_STREAM);
+    if (at >= 0) return `/api/webdav-library/warm?${url.slice(at + WEBDAV_STREAM.length)}`;
+    if (opts.androidDirect) return null;
+    if (!/^https?:\/\//i.test(url)) return null;
+    const path = url.toLowerCase().split("?")[0];
+    if (path.endsWith(".m3u8") || path.endsWith(".mpd") || url.toLowerCase().includes("/live/")) return null;
+    const headers = playable.requestHeaders && Object.keys(playable.requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(playable.requestHeaders))}` : "";
+    return `/api/source-cache/warm?u=${encodeURIComponent(url)}${headers}`;
+  }
+  var WARM_TTL_MS = 30 * 6e4;
+  var warmed = /* @__PURE__ */ new Map();
+  function warmPlayable(playable, type, now2 = Date.now()) {
+    const androidDirect = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    const target2 = warmUrlFor(playable, type, { androidDirect });
+    if (!target2) return;
+    const at = warmed.get(target2);
+    if (at != null && now2 - at < WARM_TTL_MS) return;
+    warmed.set(target2, now2);
+    try {
+      void fetch(target2).catch(() => {
+      });
+    } catch {
+    }
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/start-channel.ts
   function onAirNow(channel, rundown, now2) {
     if (rundown == null) return isOnAir(channel.airWindow, now2);
@@ -43827,72 +43928,6 @@ ${cue.text}`).join("\n\n")}
   }
   function channelByNumber(channels, n) {
     return channels.find((c) => c.number === n) ?? null;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-logic.ts
-  function startSeconds(slot, mode) {
-    if (mode === "start") return 0;
-    return Math.max(0, slot.minsIn * 60);
-  }
-  function stepChannel(channels, currentId, delta) {
-    const sorted = [...channels].sort((a, b) => a.number - b.number);
-    const index = sorted.findIndex((c) => c.id === currentId);
-    if (index < 0) return sorted[0];
-    return sorted[(index + delta + sorted.length) % sorted.length];
-  }
-  function nextBoundaryAction(input) {
-    if (input.now >= input.slotStop) return "advance";
-    if (!input.preloaded && input.slotStop - input.now <= input.preloadLeadMs) return "preload";
-    return "none";
-  }
-  function rememberZap(memory, nextId) {
-    if (memory.lastChannelId === nextId) return { lastChannelId: nextId, previousChannelId: memory.previousChannelId };
-    return { lastChannelId: nextId, previousChannelId: memory.lastChannelId };
-  }
-  var ZAP_RESOLVE_DELAY_MS = 300;
-  function resolveDelayMs(playType, channelChanged) {
-    return channelChanged && playType !== "library" ? ZAP_RESOLVE_DELAY_MS : 0;
-  }
-  var END_SLACK_S = 2;
-  var MIN_PLAYED_S2 = 60;
-  function endOfSourceAction(input) {
-    const { position, duration: duration2, startedAt } = input;
-    if (!Number.isFinite(duration2) || duration2 <= 0 || !Number.isFinite(position)) return null;
-    if (position < duration2 - END_SLACK_S) return null;
-    if (position - startedAt >= MIN_PLAYED_S2) return "ended";
-    return startedPastShortFile(startedAt, duration2, input.runtimeS) ? "ended" : "failed";
-  }
-  var PAST_END_SLACK_S2 = 15;
-  var SHORT_FILE_RATIO = 0.8;
-  function startedPastShortFile(startedAt, duration2, runtimeS) {
-    if (!Number.isFinite(duration2) || duration2 <= 0) return false;
-    if (startedAt < duration2 - PAST_END_SLACK_S2) return false;
-    return runtimeS == null || !(runtimeS > 0) || duration2 >= runtimeS * SHORT_FILE_RATIO;
-  }
-  var NEAR_BOUNDARY_MS = 18e4;
-  var allowsCatalog = (channel) => channel.sources.includes("vod");
-  var NEIGHBOUR_PREFETCH_DELAY_MS = 3e3;
-  function neighbourPrefetch(channels, currentId, rundownOf, now2) {
-    if (channels.length < 2) return [];
-    const ids = /* @__PURE__ */ new Set();
-    const out = [];
-    for (const delta of [1, -1]) {
-      const c = stepChannel(channels, currentId, delta);
-      if (c.id === currentId || ids.has(c.id)) continue;
-      ids.add(c.id);
-      const rundown = rundownOf(c);
-      if (!rundown || rundown.length === 0) continue;
-      const slot = programmeAt(rundown, c.airWindow, now2);
-      if (slot.kind !== "programme") continue;
-      if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
-    }
-    return out;
-  }
-  function pastEndAction(input) {
-    const { initialTime, duration: duration2, runtimeS } = input;
-    if (!Number.isFinite(duration2) || duration2 <= 0) return null;
-    if (!(initialTime >= duration2 - PAST_END_SLACK_S2)) return null;
-    return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
@@ -44812,7 +44847,11 @@ ${cue.text}`).join("\n\n")}
         preloadedFor.current = shown.seq;
         const after = Math.max(shown.deadline, shown.slot.stop) + 1e3;
         const next2 = programmeAt(rundown, channel.airWindow, after);
-        if (next2.kind === "programme") void resolver.resolve(next2.item, [], { allowCatalog: allowsCatalog(channel) });
+        if (next2.kind === "programme") {
+          void resolver.resolve(next2.item, [], { allowCatalog: allowsCatalog(channel) }).then((p) => {
+            if (p) warmPlayable(p, next2.item.play.type);
+          });
+        }
       }
     }, [now2, localTick]);
     const [osdVisible, setOsdVisible] = useState(true);
@@ -44844,7 +44883,11 @@ ${cue.text}`).join("\n\n")}
       if (!framedNow) return;
       const id = window.setTimeout(() => {
         const current2 = stateRef.current.request.channelId;
-        for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current2, cachedRundown, Date.now())) void resolver.resolve(item, [], { allowCatalog });
+        for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current2, cachedRundown, Date.now())) {
+          void resolver.resolve(item, [], { allowCatalog }).then((p) => {
+            if (p) warmPlayable(p, item.play.type);
+          });
+        }
       }, NEIGHBOUR_PREFETCH_DELAY_MS);
       return () => window.clearTimeout(id);
     }, [framedNow, request.seq]);
@@ -46516,6 +46559,7 @@ ${cue.text}`).join("\n\n")}
   init_jsx_runtime_shim();
   var HALF_HOUR3 = 30 * 6e4;
   var MAX_SHIFT2 = 46;
+  var WARM_SETTLE_MS = 600;
   function cachedRundown2(channel) {
     return readCachedRundown(channel);
   }
@@ -46682,6 +46726,21 @@ ${cue.text}`).join("\n\n")}
       setShift(next2);
       return true;
     }, []);
+    const warmId = !isTv && !isMobile && hoverId ? hoverId : selected?.id ?? null;
+    const warmRundown = warmId ? rundowns[warmId]?.rundown : void 0;
+    useEffect(() => {
+      if (!warmId || !canPlay || !warmRundown || warmRundown.length === 0) return;
+      const id = window.setTimeout(() => {
+        const c = sorted.find((x) => x.id === warmId);
+        if (!c) return;
+        const slot = programmeAt(warmRundown, c.airWindow, Date.now());
+        if (slot.kind !== "programme" || slot.item.play.type === "stream") return;
+        void resolver.resolve(slot.item, [], { allowCatalog: allowsCatalog(c) }).then((p2) => {
+          if (p2) warmPlayable(p2, slot.item.play.type);
+        });
+      }, WARM_SETTLE_MS);
+      return () => window.clearTimeout(id);
+    }, [warmId, warmRundown]);
     const onSelect = useCallback((id) => {
       autoPick.current = false;
       setSelectedId(id);
