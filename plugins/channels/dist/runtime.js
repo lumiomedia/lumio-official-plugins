@@ -42230,7 +42230,7 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
-    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(14)} 0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : "0 2px 0 12px";
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : "0 12px";
     return /* @__PURE__ */ jsx(
       "section",
       {
@@ -45428,7 +45428,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.19",
+    version: "0.1.20",
     description: S.description,
     preinstalled: false,
     register(ctx) {

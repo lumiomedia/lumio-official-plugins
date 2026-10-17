@@ -1,3 +1,7 @@
+## 0.1.20
+
+- Tablån har samma marginal till vänster och höger (TV och skrivbord).
+
 ## 0.1.19
 
 - TV: samma marginal (60) på båda sidor av heron och tablån.
