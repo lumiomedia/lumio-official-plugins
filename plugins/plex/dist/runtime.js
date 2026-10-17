@@ -5,6 +5,7 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __esm = (fn, res) => function __init() {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
@@ -32,6 +33,7 @@
     mod
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // lib/stremio/timing.ts
   function markStreamPhase(phase, detail) {
@@ -433,6 +435,171 @@
     }
   });
 
+  // lib/storage-cache-keys.ts
+  var init_storage_cache_keys = __esm({
+    "lib/storage-cache-keys.ts"() {
+    }
+  });
+
+  // lib/storage-quota.ts
+  var lastEmptyPassAt;
+  var init_storage_quota = __esm({
+    "lib/storage-quota.ts"() {
+      "use client";
+      init_app_storage();
+      init_storage_cache_keys();
+      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
+    }
+  });
+
+  // lib/app-storage.ts
+  function ensureStore() {
+    if (store) return store;
+    const seeded = /* @__PURE__ */ new Map();
+    if (typeof window !== "undefined") {
+      const snapshot = window.__lumioNativeStorageSnapshot;
+      if (snapshot) {
+        if (nativeState === "unknown") nativeState = "durable";
+        for (const [key, value] of Object.entries(snapshot)) {
+          seeded.set(key, String(value));
+        }
+      }
+      try {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (key === null) continue;
+          const value = localStorage.getItem(key);
+          if (value !== null) seeded.set(key, value);
+        }
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const snapshot = window.__lumioNativeStorageSnapshot;
+        const snapRaw = snapshot?.["app_profiles"];
+        const localRaw = seeded.get("app_profiles");
+        const revOf = (raw) => {
+          if (!raw) return -1;
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return 0;
+            const rev = Number(parsed?.rev);
+            return Number.isFinite(rev) ? rev : 0;
+          } catch {
+            return -1;
+          }
+        };
+        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
+          seeded.set("app_profiles", snapRaw);
+          try {
+            localStorage.setItem("app_profiles", snapRaw);
+          } catch {
+          }
+        }
+      } catch {
+      }
+    }
+    store = seeded;
+    return seeded;
+  }
+  function getItem(key) {
+    if (typeof window === "undefined") return null;
+    return ensureStore().get(key) ?? null;
+  }
+  var nativeState, store;
+  var init_app_storage = __esm({
+    "lib/app-storage.ts"() {
+      "use client";
+      init_storage_quota();
+      init_storage_cache_keys();
+      nativeState = "unknown";
+      store = null;
+    }
+  });
+
+  // lib/android-source-cache.ts
+  function isAndroidUserAgent() {
+    return typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  }
+  function getAndroidSourceCache() {
+    if (typeof window === "undefined") return false;
+    return getItem(KEY_ANDROID_SOURCE_CACHE) === "1";
+  }
+  function androidStreamsDirect() {
+    return isAndroidUserAgent() && !getAndroidSourceCache();
+  }
+  var KEY_ANDROID_SOURCE_CACHE;
+  var init_android_source_cache = __esm({
+    "lib/android-source-cache.ts"() {
+      init_app_storage();
+      KEY_ANDROID_SOURCE_CACHE = "playback_android_source_cache";
+    }
+  });
+
+  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
+  var sdk, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
+  var init_profile_storage_shim = __esm({
+    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
+      sdk = globalThis.__lumioPluginRuntime?.sdk;
+      getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
+      getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
+      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
+      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
+      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
+    }
+  });
+
+  // lib/plugin-state.ts
+  function normalizeState(state2, fallback) {
+    return {
+      ...fallback,
+      ...state2,
+      installed: state2?.installed ?? fallback.installed,
+      active: state2?.active ?? fallback.active,
+      order: state2?.order ?? fallback.order,
+      sourceType: state2?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
+    };
+  }
+  function readAll() {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = getScopedStorageItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+  function getPluginPersistedState(pluginId, defaultOrder, defaults = {}) {
+    const all = readAll();
+    return normalizeState(all[pluginId], {
+      installed: true,
+      active: true,
+      sourceType: "builtin",
+      runtimeAvailable: true,
+      ...defaults,
+      order: defaults.order ?? defaultOrder
+    });
+  }
+  function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
+    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
+    return Boolean(state2.installed && state2.active);
+  }
+  var STORAGE_KEY;
+  var init_plugin_state = __esm({
+    "lib/plugin-state.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      STORAGE_KEY = "lumio:plugin-state";
+    }
+  });
+
   // lib/plugin-registry.ts
   var plugin_registry_exports = {};
   __export(plugin_registry_exports, {
@@ -445,7 +612,10 @@
     getHomeRows: () => getHomeRows,
     getHomeSources: () => getHomeSources,
     getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryFrame: () => getLibraryFrame,
     getLibraryProviders: () => getLibraryProviders,
+    getListSource: () => getListSource,
+    getListSources: () => getListSources,
     getMainMenuItems: () => getMainMenuItems,
     getManagedAuthConsumers: () => getManagedAuthConsumers,
     getMediaDetailsActions: () => getMediaDetailsActions,
@@ -462,6 +632,7 @@
     getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
     getSyncIdentityProviders: () => getSyncIdentityProviders,
     getTopbarItems: () => getTopbarItems,
+    getTrackers: () => getTrackers,
     hasStreamProviders: () => hasStreamProviders,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     registerPlugin: () => registerPlugin,
@@ -536,6 +707,15 @@
         if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
         authCapabilityProviders.push(provider);
       },
+      registerTracker(tracker) {
+        if (trackers.find((entry) => entry.id === tracker.id)) return;
+        trackers.push({ ...tracker, pluginId });
+      },
+      registerListSource(source) {
+        if (listSources.find((entry) => entry.id === source.id)) return;
+        listSources.push({ ...source, pluginId });
+        scheduleRegistryNotify();
+      },
       registerOverviewStatusProvider(provider) {
         if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
         overviewStatusProviders.push({ ...provider, pluginId });
@@ -565,7 +745,7 @@
       },
       registerBootstrap(bootstrap) {
         if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
+        bootstraps.push({ ...bootstrap, pluginId });
       },
       registerHero(hero) {
         if (heroes.find((entry) => entry.id === hero.id)) return;
@@ -577,6 +757,11 @@
           ...homeOverride,
           pluginId
         });
+      },
+      registerLibraryFrame(frame) {
+        if (libraryFrames.find((entry) => entry.id === frame.id)) return;
+        libraryFrames.push({ ...frame, pluginId });
+        scheduleRegistryNotify();
       },
       registerBrowsePage(page) {
         if (browsePages.find((entry) => entry.id === page.id)) return;
@@ -664,6 +849,15 @@
   function getAuthCapabilityProviders() {
     return authCapabilityProviders;
   }
+  function getTrackers() {
+    return trackers;
+  }
+  function getListSources() {
+    return listSources.filter((source) => !source.pluginId || isPluginEnabled(source.pluginId, 0, { installed: true, active: true }));
+  }
+  function getListSource(id) {
+    return getListSources().find((source) => source.id === id) ?? null;
+  }
   function getSettingsSections() {
     return settingsSections;
   }
@@ -680,10 +874,13 @@
     return homeSources;
   }
   function getBootstraps() {
-    return bootstraps;
+    return bootstraps.filter((entry) => !entry.pluginId || isPluginEnabled(entry.pluginId, 0, { installed: true, active: true }));
   }
   function getHeroes() {
     return heroes;
+  }
+  function getLibraryFrame(id) {
+    return libraryFrames.find((entry) => entry.id === id) ?? null;
   }
   function getHomeOverrides() {
     return homeOverrides;
@@ -726,10 +923,11 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, libraryFrames, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
+      init_plugin_state();
       streamProviders = [];
       libraryProviders = [];
       mediaStreamCatalogProviders = [];
@@ -751,15 +949,564 @@
       bootstraps = [];
       heroes = [];
       homeOverrides = [];
+      libraryFrames = [];
       browsePages = [];
       mainMenuItems = [];
       topbarItems = [];
       managedAuthConsumers = [];
+      trackers = [];
+      listSources = [];
       registeredPluginIds = /* @__PURE__ */ new Set();
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
       registryNotifyScheduled = false;
       ownedMainMenuItemIds = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/subtitle-legibility.ts
+  function isSubtitleFont(value) {
+    return typeof value === "string" && SUBTITLE_FONTS.includes(value);
+  }
+  function domSubtitleTypography(prefs) {
+    return {
+      fontFamily: prefs.font === "default" ? void 0 : `'${FAMILY[prefs.font]}', sans-serif`,
+      // 500 är vad överlägget alltid ritat med (font-medium).
+      fontWeight: prefs.bold ? 500 : 400,
+      letterSpacing: prefs.letterSpacing > 0 ? `${prefs.letterSpacing / 100}em` : void 0,
+      lineHeight: Math.round(BASE_LINE_HEIGHT * prefs.lineSpacing * 10) / 1e3
+    };
+  }
+  function assSubtitleTypography(prefs, fontSize, nativeFontSize) {
+    const factor = ASS_SIZE_FACTOR[prefs.font];
+    const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
+    const round1 = (value) => Math.round(value * 10) / 10;
+    return {
+      fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
+      bold: prefs.bold,
+      assFontSize: round1(fontSize * factor),
+      nativeFontSize: Math.round(nativeFontSize * factor),
+      assSpacing: round1(fontSize * em),
+      nativeSpacing: round1(nativeFontSize * em)
+    };
+  }
+  var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      SUBTITLE_FONTS = ["default", "atkinson", "opendyslexic"];
+      SUBTITLE_LETTER_SPACING_OPTIONS = [0, 4, 8, 12];
+      SUBTITLE_LINE_SPACING_OPTIONS = [100, 120, 140, 160];
+      DEFAULT_SUBTITLE_FONT = "default";
+      DEFAULT_SUBTITLE_LETTER_SPACING = 0;
+      DEFAULT_SUBTITLE_LINE_SPACING = 100;
+      DEFAULT_SUBTITLE_BOLD = true;
+      BASE_LINE_HEIGHT = 1.375;
+      DEFAULT_ASS_FONT = "Helvetica";
+      FAMILY = {
+        atkinson: "Atkinson Hyperlegible",
+        opendyslexic: "OpenDyslexic"
+      };
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
+  // lib/playback-settings.ts
+  function getStoredString(key, fallback = "") {
+    if (typeof window === "undefined") return fallback;
+    return getScopedStorageItem(key) ?? fallback;
+  }
+  function emitPlaybackSettingsChanged() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(PLAYBACK_SETTINGS_CHANGED_EVENT));
+  }
+  function onPlaybackSettingsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
+  }
+  function normalizeLanguageCode(value) {
+    if (!value) return null;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    return LANG3_TO_2[normalized] ?? normalized;
+  }
+  function getDefaultSubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getFallbackSubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_FALLBACK_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getDefaultAudioLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_AUDIO_LANGUAGE, "")) ?? "";
+  }
+  function getAudioOutputMode() {
+    const stored = getStoredString(KEY_AUDIO_OUTPUT_MODE, DEFAULT_AUDIO_OUTPUT_MODE);
+    return stored === "compatible" || stored === "best" ? stored : DEFAULT_AUDIO_OUTPUT_MODE;
+  }
+  function getDefaultSubtitleSize() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_SIZE;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_SIZE;
+  }
+  function setDefaultSubtitleSize(value) {
+    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE, String(value));
+    emitPlaybackSettingsChanged();
+  }
+  function getDefaultSubtitleVerticalPosition() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_VERTICAL_POSITION;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_VERTICAL_POSITION;
+  }
+  function setDefaultSubtitleVerticalPosition(value) {
+    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, String(value));
+    emitPlaybackSettingsChanged();
+  }
+  function getDefaultSubtitleOpacity() {
+    if (typeof window === "undefined") return DEFAULT_SUBTITLE_OPACITY;
+    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_OPACITY) ?? "", 10);
+    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_OPACITY;
+  }
+  function getSubtitleTextColor() {
+    return getStoredString(KEY_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_TEXT_COLOR);
+  }
+  function getSubtitleBackgroundColor() {
+    return getStoredString(KEY_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR);
+  }
+  function getSubtitleOutlineColor() {
+    return getStoredString(KEY_SUBTITLE_OUTLINE_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR);
+  }
+  function getDefaultAspectRatio() {
+    const stored = getStoredString(KEY_DEFAULT_ASPECT_RATIO, DEFAULT_ASPECT_RATIO);
+    return ASPECT_RATIO_MODES.includes(stored) ? stored : DEFAULT_ASPECT_RATIO;
+  }
+  function setDefaultAspectRatio(value) {
+    setScopedStorageItem(KEY_DEFAULT_ASPECT_RATIO, value);
+    emitPlaybackSettingsChanged();
+  }
+  function getRememberAspectRatio() {
+    if (typeof window === "undefined") return DEFAULT_REMEMBER_ASPECT_RATIO;
+    return (getScopedStorageItem(KEY_REMEMBER_ASPECT_RATIO) ?? "0") === "1";
+  }
+  function getSubtitleAutoSync() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_SUBTITLE_AUTO_SYNC) ?? "1") === "1";
+  }
+  function getMatchFrameRateMode() {
+    if (typeof window === "undefined") return "off";
+    const value = getScopedStorageItem(KEY_MATCH_FRAME_RATE);
+    return value === "vod" || value === "all" ? value : "off";
+  }
+  function shouldMatchFrameRate(kind) {
+    const mode = getMatchFrameRateMode();
+    return mode === "all" || mode === "vod" && kind === "vod";
+  }
+  function getAllowSoftwareVideoDecoding() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
+  }
+  function getAutoSkipIntro() {
+    if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
+    return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
+  }
+  function setAutoSkipIntro(value) {
+    setScopedStorageItem(KEY_AUTO_SKIP_INTRO, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getHideWatchedMoviesHome() {
+    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
+    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
+  }
+  function getStayFullscreenOnClose() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_STAY_FULLSCREEN_ON_CLOSE) ?? "0") === "1";
+  }
+  function getHideSkipButtonAfterSeconds() {
+    if (typeof window === "undefined") return 0;
+    const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
+    return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
+  }
+  function getControlsHideAfterSeconds() {
+    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
+    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
+    const parsed = Number.parseInt(raw, 10);
+    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
+  }
+  function getSubtitlesOffByDefault() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem("playback_subtitlesOffByDefault") === "1";
+  }
+  function getTrackBlockWords() {
+    if (typeof window === "undefined") return [];
+    const raw = getScopedStorageItem("playback_trackBlockWords") ?? "";
+    return raw.split(",").map((word) => word.trim().toLowerCase()).filter(Boolean);
+  }
+  function getDownloadDir() {
+    if (typeof window === "undefined") return "";
+    return getItem("lumio_download_dir") ?? "";
+  }
+  function getShowStreamQuality() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem("playback_showStreamQuality") !== "0";
+  }
+  function getShowTitleOnStart() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_SHOW_TITLE_ON_START) ?? "0") === "1";
+  }
+  function getSeriesNameFirst() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_SERIES_NAME_FIRST) ?? "1") === "1";
+  }
+  function getStillWatchingEnabled() {
+    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_ENABLED;
+    return (getScopedStorageItem(KEY_STILL_WATCHING_ENABLED) ?? "0") === "1";
+  }
+  function getStillWatchingMaxMinutes() {
+    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_MAX_MINUTES;
+    const raw = Number.parseInt(getScopedStorageItem(KEY_STILL_WATCHING_MAX_MINUTES) ?? "", 10);
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_STILL_WATCHING_MAX_MINUTES;
+    return raw;
+  }
+  function getUpgradeSubtitleWhenBetter() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_UPGRADE_SUBTITLE_WHEN_BETTER) ?? "1") === "1";
+  }
+  function getForcedSubtitlesWhenAudioMatches() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES) ?? "0") === "1";
+  }
+  function getDisableSubtitlesWhenAudioMatches() {
+    if (typeof window === "undefined") return DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES;
+    return (getScopedStorageItem(KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES) ?? "0") === "1";
+  }
+  function getExtraSubtitleLanguagesRaw() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_EXTRA_SUBTITLE_LANGUAGES) ?? "";
+  }
+  function getExtraSubtitleLanguages() {
+    return getExtraSubtitleLanguagesRaw().split(",").map((code) => code.trim().toLowerCase()).filter(Boolean);
+  }
+  function getRawMpvConf() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
+  }
+  function parseRawMpvConf(raw) {
+    return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
+      const eq = line.indexOf("=");
+      if (eq <= 0) return null;
+      const name = line.slice(0, eq).trim();
+      const value = line.slice(eq + 1).trim();
+      return name ? [name, value] : null;
+    }).filter((entry) => entry != null);
+  }
+  function getPreferEmbeddedSubtitles() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
+  }
+  function getExternalPlayerApp() {
+    if (typeof window === "undefined") return "VLC";
+    const stored = (getScopedStorageItem(KEY_EXTERNAL_PLAYER_APP) ?? "").trim();
+    return stored || "VLC";
+  }
+  function getAudioDelayMs() {
+    if (typeof window === "undefined") return 0;
+    const raw = Number(getStoredString(KEY_AUDIO_DELAY_MS, "0"));
+    if (!Number.isFinite(raw)) return 0;
+    return clampAudioDelayMs(raw);
+  }
+  function clampAudioDelayMs(value) {
+    const steg = Math.round(value / AUDIO_DELAY_STEP_MS) * AUDIO_DELAY_STEP_MS;
+    return Math.max(-AUDIO_DELAY_LIMIT_MS, Math.min(AUDIO_DELAY_LIMIT_MS, steg));
+  }
+  function setAudioDelayMs(value) {
+    setScopedStorageItem(KEY_AUDIO_DELAY_MS, String(clampAudioDelayMs(value)));
+    emitPlaybackSettingsChanged();
+  }
+  function getBluetoothAudioAutoOffset() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
+  }
+  function getExternalDisplayVideoOnly() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_EXTERNAL_DISPLAY_VIDEO_ONLY) !== "0";
+  }
+  function getNightMode() {
+    const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
+    return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
+  }
+  function setNightMode(value) {
+    setScopedStorageItem(KEY_NIGHT_MODE, value);
+    emitPlaybackSettingsChanged();
+  }
+  function getCreditsRecommendations() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS;
+    return (getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS) ?? "0") === "1";
+  }
+  function getCreditsThresholdMinutes() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
+    return Math.max(1, Math.min(6, raw));
+  }
+  function getCreditsRecommendationsTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    const raw = getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS_TV);
+    if (raw === null) return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
+    return raw === "1";
+  }
+  function getCreditsThresholdMinutesTv() {
+    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES_TV) ?? "");
+    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
+    return Math.max(1, Math.min(6, raw));
+  }
+  function getStatsHud() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STATS_HUD) === "1";
+  }
+  function setStatsHud(value) {
+    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getStripSdh() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
+  }
+  function setStripSdh(value) {
+    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getLearningMode() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_LEARNING_MODE) === "1";
+  }
+  function setLearningMode(value) {
+    setScopedStorageItem(KEY_LEARNING_MODE, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
+  function getSecondarySubtitleLanguage() {
+    return normalizeLanguageCode(getStoredString(KEY_SECONDARY_SUBTITLE_LANGUAGE, "")) ?? "";
+  }
+  function getSecondarySubtitleColor() {
+    return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
+  }
+  function getStoredOption(key, options, fallback) {
+    const raw = Number(getStoredString(key, ""));
+    return options.includes(raw) ? raw : fallback;
+  }
+  function getSubtitleLegibility() {
+    const font = getStoredString(KEY_SUBTITLE_FONT, DEFAULT_SUBTITLE_FONT);
+    const bold = getStoredString(KEY_SUBTITLE_BOLD, "");
+    return {
+      font: isSubtitleFont(font) ? font : DEFAULT_SUBTITLE_FONT,
+      letterSpacing: getStoredOption(KEY_SUBTITLE_LETTER_SPACING, SUBTITLE_LETTER_SPACING_OPTIONS, DEFAULT_SUBTITLE_LETTER_SPACING),
+      lineSpacing: getStoredOption(KEY_SUBTITLE_LINE_SPACING, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_LINE_SPACING),
+      bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
+    };
+  }
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var init_playback_settings = __esm({
+    "lib/playback-settings.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+      init_subtitle_legibility();
+      KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
+      KEY_FALLBACK_SUBTITLE_LANGUAGE = "playback_fallbackSubtitleLanguage";
+      KEY_DEFAULT_AUDIO_LANGUAGE = "playback_defaultAudioLanguage";
+      KEY_AUDIO_OUTPUT_MODE = "playback_audioOutputMode";
+      KEY_DEFAULT_SUBTITLE_SIZE = "playback_defaultSubtitleSize";
+      KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION = "playback_defaultSubtitleVerticalPosition";
+      KEY_DEFAULT_SUBTITLE_OPACITY = "playback_defaultSubtitleOpacity";
+      KEY_SUBTITLE_TEXT_COLOR = "playback_subtitleTextColor";
+      KEY_SUBTITLE_BACKGROUND_COLOR = "playback_subtitleBackgroundColor";
+      KEY_SUBTITLE_OUTLINE_COLOR = "playback_subtitleOutlineColor";
+      KEY_DEFAULT_ASPECT_RATIO = "playback_defaultAspectRatio";
+      KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
+      KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
+      KEY_SUBTITLE_AUTO_SYNC = "playback_subtitleAutoSync";
+      KEY_MATCH_FRAME_RATE = "playback_matchFrameRateMode";
+      KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
+      KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
+      KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
+      KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
+      KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
+      KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
+      KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
+      KEY_CREDITS_RECOMMENDATIONS_TV = "playback_creditsRecommendationsTv";
+      KEY_CREDITS_THRESHOLD_MINUTES_TV = "playback_creditsThresholdMinutesTv";
+      KEY_NIGHT_MODE = "playback_nightMode";
+      KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
+      KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
+      KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
+      KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
+      KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
+      KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
+      KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
+      HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
+      CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
+      CONTROLS_HIDE_DEFAULT_SECONDS = 3;
+      PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
+      LANG_NAMES = {
+        en: "English",
+        sv: "Svenska",
+        no: "Norsk",
+        da: "Dansk",
+        fi: "Suomi",
+        de: "Deutsch",
+        fr: "Fran\xE7ais",
+        es: "Espa\xF1ol",
+        it: "Italiano",
+        pt: "Portugu\xEAs",
+        nl: "Nederlands",
+        pl: "Polski",
+        ru: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+        ar: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
+        hi: "\u0939\u093F\u0928\u094D\u0926\u0940",
+        zh: "\u4E2D\u6587",
+        ja: "\u65E5\u672C\u8A9E",
+        ko: "\uD55C\uAD6D\uC5B4",
+        tr: "T\xFCrk\xE7e",
+        cs: "\u010Ce\u0161tina",
+        ro: "Rom\xE2n\u0103",
+        hu: "Magyar",
+        el: "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC",
+        he: "\u05E2\u05D1\u05E8\u05D9\u05EA",
+        uk: "\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430",
+        sr: "Srpski",
+        hr: "Hrvatski",
+        sk: "Sloven\u010Dina",
+        bg: "\u0411\u044A\u043B\u0433\u0430\u0440\u0441\u043A\u0438",
+        vi: "Ti\u1EBFng Vi\u1EC7t",
+        th: "\u0E44\u0E17\u0E22",
+        id: "Bahasa Indonesia"
+      };
+      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
+      ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
+      LANG3_TO_2 = {
+        eng: "en",
+        swe: "sv",
+        nor: "no",
+        dan: "da",
+        fin: "fi",
+        deu: "de",
+        ger: "de",
+        fra: "fr",
+        fre: "fr",
+        spa: "es",
+        ita: "it",
+        por: "pt",
+        nld: "nl",
+        dut: "nl",
+        pol: "pl",
+        rus: "ru",
+        ara: "ar",
+        hin: "hi",
+        zho: "zh",
+        chi: "zh",
+        jpn: "ja",
+        kor: "ko",
+        tur: "tr",
+        ces: "cs",
+        cze: "cs",
+        ron: "ro",
+        rum: "ro",
+        hun: "hu",
+        ell: "el",
+        gre: "el",
+        heb: "he",
+        ukr: "uk",
+        srp: "sr",
+        hrv: "hr",
+        slk: "sk",
+        bul: "bg",
+        vie: "vi",
+        tha: "th",
+        ind: "id"
+      };
+      DEFAULT_SUBTITLE_SIZE = 100;
+      DEFAULT_AUDIO_OUTPUT_MODE = "best";
+      DEFAULT_SUBTITLE_VERTICAL_POSITION = 5;
+      DEFAULT_SUBTITLE_OPACITY = 100;
+      DEFAULT_SUBTITLE_TEXT_COLOR = "#ffffff";
+      DEFAULT_SUBTITLE_BACKGROUND_COLOR = "transparent";
+      DEFAULT_SUBTITLE_OUTLINE_COLOR = "#000000";
+      DEFAULT_ASPECT_RATIO = "auto";
+      DEFAULT_REMEMBER_ASPECT_RATIO = false;
+      DEFAULT_AUTO_SKIP_INTRO = false;
+      DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
+      DEFAULT_STILL_WATCHING_ENABLED = false;
+      DEFAULT_STILL_WATCHING_MAX_MINUTES = 90;
+      DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
+      DEFAULT_CREDITS_RECOMMENDATIONS = false;
+      DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
+      DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
+      DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
+      DEFAULT_NIGHT_MODE = "off";
+      KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
+      KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
+      KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
+      KEY_RAW_MPV_CONF = "playback_rawMpvConf";
+      KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
+      KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
+      AUDIO_DELAY_STEP_MS = 50;
+      AUDIO_DELAY_LIMIT_MS = 2e3;
+      KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
+      BLUETOOTH_AUDIO_OFFSET_MS = -150;
+      KEY_STATS_HUD = "playback_statsHud";
+      KEY_STRIP_SDH = "playback_stripSdh";
+      KEY_LEARNING_MODE = "playback_learningMode";
+      KEY_SECONDARY_SUBTITLE_LANGUAGE = "playback_secondarySubtitleLanguage";
+      KEY_SECONDARY_SUBTITLE_COLOR = "playback_secondarySubtitleColor";
+      DEFAULT_SECONDARY_SUBTITLE_COLOR = "#e8d9a0";
+      KEY_SUBTITLE_FONT = "playback_subtitleFont";
+      KEY_SUBTITLE_LETTER_SPACING = "playback_subtitleLetterSpacing";
+      KEY_SUBTITLE_LINE_SPACING = "playback_subtitleLineSpacing";
+      KEY_SUBTITLE_BOLD = "playback_subtitleBold";
+    }
+  });
+
+  // lib/android-direct-stream.ts
+  function knownFinalUrl(url) {
+    const hit = finals.get(url);
+    if (!hit) return null;
+    if (Date.now() - hit.at > FINAL_URL_TTL_MS) {
+      finals.delete(url);
+      return null;
+    }
+    return hit.url;
+  }
+  async function registerPlayerTee(url) {
+    const controller = new AbortController();
+    const timer3 = setTimeout(() => controller.abort(), TEE_REGISTER_WAIT_MS);
+    try {
+      const r = await fetch("/api/source-tee/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ u: url }),
+        signal: controller.signal
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return typeof j.dir === "string" && j.dir.length > 0 ? j.dir : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer3);
+    }
+  }
+  var FINAL_URL_TTL_MS, finals, TEE_REGISTER_WAIT_MS;
+  var init_android_direct_stream = __esm({
+    "lib/android-direct-stream.ts"() {
+      FINAL_URL_TTL_MS = 30 * 60 * 1e3;
+      finals = /* @__PURE__ */ new Map();
+      TEE_REGISTER_WAIT_MS = 1500;
     }
   });
 
@@ -771,17 +1518,22 @@
       return other !== void 0 && track.id === other.id && track.lang === other.lang && track.title === other.title && track.channels === other.channels && track.codec === other.codec;
     });
   }
-  async function np(cmd) {
+  async function np(cmd, timeoutMs) {
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer3 = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : void 0;
     try {
       const res = await fetch("/api/native-player", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(cmd)
+        body: JSON.stringify(cmd),
+        signal: controller?.signal
       });
       if (!res.ok) return null;
       return await res.json();
     } catch {
       return null;
+    } finally {
+      if (timer3 !== void 0) window.clearTimeout(timer3);
     }
   }
   async function getDeviceCapabilities() {
@@ -796,10 +1548,6 @@
     }
     return deviceCapsPromise;
   }
-  function looksLikeDolbyVision(name) {
-    const separated = /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i;
-    return separated.test(name) || /dolby[.\s_-]?vision/i.test(name);
-  }
   function looksLikeLosslessAudio(name) {
     return /(true[.\s_-]?hd|atmos|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(name);
   }
@@ -811,21 +1559,30 @@
     if (looksLikeLosslessAudio(name) && !caps.trueHd && !caps.dts) {
       return { ok: false, reason: "DEVICE_NO_AUDIO_DECODER" };
     }
-    if (looksLikeDolbyVision(name) && !caps.dolbyVision) {
-      return { ok: false, reason: "DEVICE_NO_DOLBY_VISION" };
-    }
     return { ok: true };
   }
   async function openNativePlayer(opts) {
     const { closeAllAuxSurfaces: closeAllAuxSurfaces3 } = await Promise.resolve().then(() => (init_video_surfaces(), video_surfaces_exports));
     await closeAllAuxSurfaces3("primary-open");
-    const wrapped = sourceCacheUrl(opts.url) ?? opts.url;
+    const direct = androidStreamsDirect();
+    const cacheable = sourceCacheUrl(opts.url, opts.requestHeaders);
+    const wrapped = direct ? null : cacheable;
+    const finalUrl = direct && cacheable ? knownFinalUrl(opts.url) : null;
+    const teeDir = direct && cacheable ? await registerPlayerTee(opts.url) : null;
     await np({
       cmd: "open",
-      url: wrapped,
+      url: wrapped ?? finalUrl ?? opts.url,
+      ...teeDir ? { teeDir } : {},
       start: opts.start ?? 0,
       audioLang: opts.audioLang ?? "",
-      mimeType: opts.mimeType ?? ""
+      mimeType: opts.mimeType ?? "",
+      matchFrameRate: shouldMatchFrameRate(opts.kind ?? "live"),
+      // Läses vid varje start, inte när spelaren skapas: inställningen ska
+      // gälla nästa film utan omstart. Saknas fältet (plugins egen kopia av
+      // den här funktionen) gäller standarden, bara hårdvara.
+      allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
+      // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
+      ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
   }
   async function closeNativePlayer() {
@@ -849,8 +1606,8 @@
     const data = await np({ cmd: "getAudioOutput" });
     return { bluetooth: Boolean(data?.bluetooth), name: data?.name ?? null };
   }
-  async function nativeSetAudioDelay(ms) {
-    await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms))) });
+  async function nativeSetAudioDelay(ms2) {
+    await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms2))) });
   }
   async function nativeSetVideoTuning(t) {
     await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
@@ -872,6 +1629,12 @@
       w: Math.round(rect.width * scale),
       h: Math.round(rect.height * scale)
     });
+  }
+  function setNativeFineTime(on) {
+    fineTimeWanted = on;
+  }
+  function setNativeTimeGate(gate) {
+    timeGate = gate;
   }
   function useNativePlayer(enabled = true) {
     const [timePos, setTimePos] = useState(0);
@@ -897,18 +1660,23 @@
     const [externalDisplay, setExternalDisplay] = useState(false);
     const [stats, setStats] = useState(null);
     const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
+    const publishedTimeRef = useRef(0);
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
       let cancelled = false;
       const tick2 = async () => {
-        const s = await np({ cmd: "status" });
+        const s = await np({ cmd: "status" }, STATUS_TIMEOUT_MS);
         if (cancelled || !s || typeof s.timePos !== "number") return;
         const prev = prevRef.current;
-        setTimePos(s.timePos);
+        const published = publishedTimeRef.current;
+        if (fineTimeWanted || s.timePos < published || s.timePos - published >= 1 || timeGate !== null && timeGate(published, s.timePos)) {
+          setTimePos(s.timePos);
+          publishedTimeRef.current = s.timePos;
+        }
         prev.timePos = s.timePos;
         setDuration(s.duration);
-        const pending3 = pendingPauseRef.current;
-        if (pending3 && (s.paused === pending3.value || Date.now() > pending3.until)) pendingPauseRef.current = null;
+        const pending4 = pendingPauseRef.current;
+        if (pending4 && (s.paused === pending4.value || Date.now() > pending4.until)) pendingPauseRef.current = null;
         if (!pendingPauseRef.current) setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
@@ -953,13 +1721,19 @@
           }
         }
       };
-      const id = window.setInterval(() => {
-        void tick2();
-      }, 250);
-      void tick2();
+      let timer3;
+      const loop = async () => {
+        const startedAt = Date.now();
+        await tick2();
+        if (cancelled) return;
+        timer3 = window.setTimeout(() => {
+          void loop();
+        }, Math.max(0, STATUS_POLL_MS - (Date.now() - startedAt)));
+      };
+      void loop();
       return () => {
         cancelled = true;
-        window.clearInterval(id);
+        if (timer3 !== void 0) window.clearTimeout(timer3);
       };
     }, [enabled]);
     const seek = useCallback((time) => {
@@ -1049,15 +1823,22 @@
       stats
     };
   }
-  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise;
+  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_react_shim();
       init_tauri_mpv();
+      init_playback_settings();
+      init_android_source_cache();
+      init_android_direct_stream();
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
       deviceCapsCache = null;
       deviceCapsPromise = null;
+      fineTimeWanted = true;
+      timeGate = null;
+      STATUS_POLL_MS = 250;
+      STATUS_TIMEOUT_MS = 2e3;
     }
   });
 
@@ -1114,14 +1895,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners5 = /* @__PURE__ */ new Set();
+        const listeners7 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit4 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners5]) l(state2);
+          for (const l of [...listeners7]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1194,15 +1975,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners5.add(l);
-            return () => listeners5.delete(l);
+            listeners7.add(l);
+            return () => listeners7.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit4({ loadFailed: true });
-            listeners5.clear();
+            listeners7.clear();
           }
         };
       }
@@ -1230,10 +2011,10 @@
   }
   function teardownSharedListenerIfIdle() {
     if (dispatchersByRustId.size > 0) return;
-    const pending3 = sharedUnlisten;
-    if (!pending3) return;
+    const pending4 = sharedUnlisten;
+    if (!pending4) return;
     closingSharedListener = true;
-    void pending3.then((unlisten) => {
+    void pending4.then((unlisten) => {
       if (!closingSharedListener) return;
       sharedUnlisten = null;
       unlisten();
@@ -1256,17 +2037,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners5 = /* @__PURE__ */ new Set();
+    const listeners7 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners5]) listener(state2);
+      for (const listener of [...listeners7]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners5]) listener(next);
+      for (const listener of [...listeners7]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -1342,15 +2123,15 @@
         }
       },
       onState(listener) {
-        listeners5.add(listener);
+        listeners7.add(listener);
         return () => {
-          listeners5.delete(listener);
+          listeners7.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit4({ loadFailed: true });
-        listeners5.clear();
+        listeners7.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1413,11 +2194,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners5 = /* @__PURE__ */ new Set();
+    const listeners7 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners5]) listener(state2);
+      for (const listener of [...listeners7]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1457,7 +2238,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners5]) listener(next);
+          for (const listener of [...listeners7]) listener(next);
         });
       }, 250);
     }
@@ -1499,7 +2280,10 @@
           url: opts.url,
           mimeType: opts.mimeType ?? "",
           start: opts.start ?? 0,
-          muted: opts.muted
+          muted: opts.muted,
+          // Källans egna request-headers (Stremio proxyHeaders): spelaren
+          // sätter dem på varje begäran, HLS-segment inräknade.
+          ...opts.requestHeaders ? { headers: opts.requestHeaders } : {}
         });
         if (myGeneration !== generation) return;
         startPolling(surface, myGeneration);
@@ -1530,9 +2314,9 @@
         return false;
       },
       onState(listener) {
-        listeners5.add(listener);
+        listeners7.add(listener);
         return () => {
-          listeners5.delete(listener);
+          listeners7.delete(listener);
         };
       },
       async destroy(reason) {
@@ -1540,7 +2324,7 @@
         generation++;
         stopPolling();
         if (reason) emit4({ loadFailed: true });
-        listeners5.clear();
+        listeners7.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -1681,7 +2465,7 @@
     if (live.size + 1 >= engine.maxSurfaces()) return null;
     let id = 1;
     while (live.has(id)) id++;
-    const backend = engine.create(id);
+    const backend2 = engine.create(id);
     const holdsTransparency = isNativeEngine(kind);
     let releaseTransparency = null;
     const holdTransparentWebview = () => {
@@ -1698,7 +2482,7 @@
       open: async (o) => {
         holdTransparentWebview();
         try {
-          await backend.open(o);
+          await backend2.open(o);
         } catch (error) {
           dropTransparentWebview();
           throw error;
@@ -1706,27 +2490,27 @@
       },
       close: async () => {
         try {
-          await backend.close();
+          await backend2.close();
         } finally {
           dropTransparentWebview();
         }
       },
-      setBounds: (r) => backend.setBounds(r),
-      setMuted: (m) => backend.setMuted(m),
-      setPaused: (p) => backend.setPaused(p),
-      captureFrame: (k) => backend.captureFrame(k),
-      onState: (l) => backend.onState(l),
+      setBounds: (r) => backend2.setBounds(r),
+      setMuted: (m) => backend2.setMuted(m),
+      setPaused: (p) => backend2.setPaused(p),
+      captureFrame: (k) => backend2.captureFrame(k),
+      onState: (l) => backend2.onState(l),
       destroy: async (reason) => {
         if (live.get(id) === surface) live.delete(id);
         try {
-          await backend.destroy(reason);
+          await backend2.destroy(reason);
         } finally {
           dropTransparentWebview();
         }
       }
     };
     live.set(id, surface);
-    backend.onState((s) => {
+    backend2.onState((s) => {
       if (!s.closedByHost) return;
       if (live.get(id) === surface) live.delete(id);
       dropTransparentWebview();
@@ -1786,6 +2570,7 @@
     return `${window.location.origin}/api/source-cache?u=${encodeURIComponent(originalUrl)}${headerParam}`;
   }
   function warmSourceCache(originalUrl, requestHeaders) {
+    if (androidStreamsDirect()) return;
     const wrapped = sourceCacheUrl(originalUrl, requestHeaders);
     if (!wrapped) return;
     void fetch(wrapped, { headers: { Range: "bytes=0-1" } }).then((r) => r.body?.cancel()).catch(() => {
@@ -1830,6 +2615,9 @@
     markStreamPhase("mpv-open", { via });
     await (0, import_core2.invoke)("mpv_open", { args: { ...rest, url } });
     markStreamPhase("mpv-open-done");
+  }
+  async function mpvCaptureFrame(key) {
+    return (0, import_core2.invoke)("mpv_capture_frame", { key });
   }
   async function mpvSampleColor() {
     try {
@@ -1900,6 +2688,13 @@
   async function mpvRenderIsGpu() {
     try {
       return await (0, import_core2.invoke)("mpv_render_is_gpu");
+    } catch {
+      return false;
+    }
+  }
+  async function mpvDvGpuNextActive() {
+    try {
+      return await (0, import_core2.invoke)("mpv_dv_gpu_next_active");
     } catch {
       return false;
     }
@@ -2075,100 +2870,13 @@
       import_event2 = __toESM(require_event());
       init_react_shim();
       init_session_host();
+      init_android_source_cache();
       init_plugin_registry();
       isTauriEnv = detectTauriEnv();
       hasTauriIpc = typeof window !== "undefined" && Boolean(
         window.__TAURI_INTERNALS__ || window.__TAURI__
       );
       isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-    }
-  });
-
-  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfileId, getProfiles, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
-  var init_profile_storage_shim = __esm({
-    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
-      sdk = globalThis.__lumioPluginRuntime?.sdk;
-      getActiveProfileId = () => sdk.getActiveProfileId();
-      getProfiles = () => {
-        const p = sdk?.getActiveProfile?.();
-        return p ? [p] : [];
-      };
-      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
-      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
-      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
-      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
-    }
-  });
-
-  // lib/storage-quota.ts
-  var init_storage_quota = __esm({
-    "lib/storage-quota.ts"() {
-      "use client";
-      init_app_storage();
-    }
-  });
-
-  // lib/app-storage.ts
-  function ensureStore() {
-    if (store) return store;
-    const seeded = /* @__PURE__ */ new Map();
-    if (typeof window !== "undefined") {
-      const snapshot = window.__lumioNativeStorageSnapshot;
-      if (snapshot) {
-        for (const [key, value] of Object.entries(snapshot)) {
-          seeded.set(key, String(value));
-        }
-      }
-      try {
-        for (let index = 0; index < localStorage.length; index += 1) {
-          const key = localStorage.key(index);
-          if (key === null) continue;
-          const value = localStorage.getItem(key);
-          if (value !== null) seeded.set(key, value);
-        }
-      } catch {
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const snapshot = window.__lumioNativeStorageSnapshot;
-        const snapRaw = snapshot?.["app_profiles"];
-        const localRaw = seeded.get("app_profiles");
-        const revOf = (raw) => {
-          if (!raw) return -1;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return 0;
-            const rev = Number(parsed?.rev);
-            return Number.isFinite(rev) ? rev : 0;
-          } catch {
-            return -1;
-          }
-        };
-        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
-          seeded.set("app_profiles", snapRaw);
-          try {
-            localStorage.setItem("app_profiles", snapRaw);
-          } catch {
-          }
-        }
-      } catch {
-      }
-    }
-    store = seeded;
-    return seeded;
-  }
-  function getItem(key) {
-    if (typeof window === "undefined") return null;
-    return ensureStore().get(key) ?? null;
-  }
-  var store;
-  var init_app_storage = __esm({
-    "lib/app-storage.ts"() {
-      "use client";
-      init_storage_quota();
-      store = null;
     }
   });
 
@@ -2188,8 +2896,8 @@
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
     try {
-      const scoped = getScopedStorageItem(STORAGE_KEY);
-      const legacy = getItem(STORAGE_KEY);
+      const scoped = getScopedStorageItem(STORAGE_KEY2);
+      const legacy = getItem(STORAGE_KEY2);
       const value = scoped ?? legacy;
       if (value === "sv" || value === "en") return value;
     } catch {
@@ -2214,7 +2922,7 @@
     const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
-        setScopedStorageItem(STORAGE_KEY, l);
+        setScopedStorageItem(STORAGE_KEY2, l);
         setDetachedLang(l);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT));
@@ -2225,7 +2933,7 @@
     if (!detached) return ctx;
     return detachedValue;
   }
-  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY, DEFAULT_LANG;
+  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG;
   var init_i18n = __esm({
     "lib/i18n.tsx"() {
       "use strict";
@@ -2244,6 +2952,7 @@
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
           startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
+          startNextSourceWaiting: "The source didn\u2019t respond \u2014 waiting for more sources\u2026",
           startSlateNext: "The source sent no film \u2014 trying {stream}\u2026",
           startCancel: "Cancel",
           startNoSourceTitle: "No source started",
@@ -2446,6 +3155,8 @@
           showAllMovies: "Show all movies",
           showAllSeries: "Show all series",
           searchPlaceholder: "Search titles or cast names",
+          searchInLibrary: "Search in {name}",
+          searchInYourLibrary: "Search your library",
           searchTitlePlaceholder: "Search title",
           sampleData: "Sample data",
           tmdbLive: "TMDb live",
@@ -2466,7 +3177,6 @@
           liveTvStreamError: "Could not load stream.",
           liveTvStreamErrorHelp: "The stream may be geo-blocked, offline, or unsupported.",
           allCategories: "All categories",
-          sceneReleases: "Scene Releases",
           activeFiltersTitle: "Active filters",
           activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
           activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
@@ -2521,7 +3231,7 @@
           listenedAt: "at",
           streamAvailable: "Cached",
           streamDeviceUnsupported: "unsupported",
-          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio or Dolby Vision) \u2014 expect no sound, or no playback.",
+          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio, Dolby Vision, 4K or HDR) \u2014 expect no sound, no picture, or no playback.",
           streamDownload: "Download",
           startingMovie: "Starting movie...",
           findingMovie: "Finding movie...",
@@ -2549,6 +3259,8 @@
           movieWatchlistAdded: "My list \u2713",
           moreInfo: "More info",
           watchTrailer: "Watch Trailer",
+          shuffleEpisodes: "Shuffle",
+          shuffleEpisodesOn: "Shuffle on",
           openOnImdb: "Open on IMDb",
           seasons: "Seasons:",
           matchedOnTitle: "Matched on title:",
@@ -2579,6 +3291,7 @@
           allSources: "All sources",
           tvSearchTypeTab: "Type",
           tvSearchSpace: "Space",
+          tvSearchSystemKeyboard: "System keyboard",
           tvSearchDelete: "Delete",
           sourcesStillSearching: "Still searching:",
           sourceFilter: "Source",
@@ -2663,18 +3376,14 @@
           dtSeasonsN: "{n} seasons",
           settingsDetailsEyebrow: "Details page",
           sideMenuTitle: "Side menu",
-          sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
-          sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
-          sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
-          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the top bar on desktop and mobile.",
           menuPillPlaceTitle: "Menu pill position",
           menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
           menuPillTopLeft: "Top left",
           menuPillTopRight: "Top right",
           menuPillBottomLeft: "Bottom left",
           menuPillBottomRight: "Bottom right",
-          sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
           vlcToggleTitle: "Open streams directly in VLC",
@@ -2697,6 +3406,8 @@
           appUpdateNotesTitle: "What\u2019s new",
           appUpdatePromptInstall: "Update now",
           appUpdatePromptInstalling: "Updating\u2026",
+          appUpdateDownloading: "Downloading update",
+          appUpdateInstallingStep: "Installing\u2026",
           appUpdatePromptLater: "Not now",
           appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
           appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -2767,6 +3478,37 @@
           sortHighestTmdb: "Highest TMDb rating",
           sortNewest: "Newest to Oldest",
           sortOldest: "Oldest to Newest",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Browse",
+          browseSummary: "Showing {scope} on {services}, {sort}",
+          browseKindMovies: "movies",
+          browseKindSeries: "series",
+          browseKindTitles: "titles",
+          browseKindAnime: "anime",
+          browseScopeAll: "all {kind}",
+          browseScopeGenres: "{genres} {kind}",
+          browseScopeManyGenres: "{n} genres of {kind}",
+          browseGenresAnd: " and ",
+          browseYearFrom: "from {year}",
+          browseYearTo: "up to {year}",
+          browseYearRange: "from {min}\u2013{max}",
+          browseRatedAtLeast: "rated {n}+",
+          browseEveryService: "every service",
+          browseManyServices: "{n} services",
+          browseSortPopular: "most popular first",
+          browseSortRelevant: "most relevant first",
+          browseSortRating: "highest rated first",
+          browseSortNewest: "newest first",
+          browseSortOldest: "oldest first",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Showing {scope} in {services}, {sort}",
+          browseYourLibrary: "your library",
+          browseManySources: "{n} sources",
+          browseSortAdded: "recently added first",
+          browseSortTitle: "by title A\u2013Z",
+          sortRecentlyAdded: "Recently added",
+          sortTitleAZ: "Title A\u2013Z",
+          filterSource: "Source",
           // Results
           aboutResults: "About",
           results: "results",
@@ -2798,9 +3540,6 @@
           subtitleAlignedToReference: "Synced against a subtitle matching your file",
           subtitleHashMatch: "Matches your file",
           subtitleAlignedToAudio: "Synced against the full audio track",
-          subtitleAnchorApplied: "Synced from your tap",
-          subtitleAnchorDrift: "drift corrected too",
-          subtitleManualSync: "Sync by ear",
           vpSecondarySubFailed: "Could not load the second subtitle",
           vpSecondarySubMissing: "No {lang} subtitle found",
           learningModeTitle: "Learning mode",
@@ -2813,13 +3552,6 @@
           secondarySubtitleLanguageDesc: "Shown under the main subtitle when learning mode is on",
           secondarySubtitleColor: "Second subtitle colour",
           secondarySubtitleColorDesc: "Colour of the second line in learning mode",
-          subtitleManualSyncTapPrompt: "Press when you hear a line you recognise",
-          subtitleManualSyncTapButton: "I hear it now",
-          subtitleManualSyncPickPrompt: "Which line did you just hear?",
-          subtitleManualSyncSecondHint: "Repeat this later in the film to also correct drift.",
-          subtitleManualSyncNoCues: "No subtitle lines near this point.",
-          subtitleManualSyncApplying: "Applying your sync\u2026",
-          subtitleManualSyncRefining: "Fine-tuning against the audio\u2026",
           castTitle: "Play on another device",
           castScanning: "Looking for devices\u2026",
           castNoDevices: "No Chromecast or DLNA devices found.",
@@ -2837,7 +3569,6 @@
           castPairConfirm: "Pair",
           castPairing: "Pairing\u2026",
           castPairFailed: "Pairing failed. Try again.",
-          cancel2: "Cancel",
           subtitleAutoSyncNoReference: "Not certain enough from audio alone. Add an OpenSubtitles API key in Settings to sync against a subtitle matching your file.",
           subtitleAutoSyncFailed: "Could not auto-sync subtitles",
           subtitleAutoSyncDriftApplied: "drift corrected ({rate}s/min)",
@@ -2945,6 +3676,11 @@
           tvGreetingReleaseToday: "{title} is out now",
           tvGreetingReleaseTomorrow: "{title} arrives tomorrow",
           tvGreetingReleaseSoon: "{title} arrives in {days} days",
+          // Korta former när meddelandet inte ryms bredvid snabbmenyn (tv-clock.tsx).
+          tvGreetingResumeShort: "{minutes} min left \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Out now \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Tomorrow \xB7 {title}",
+          tvGreetingReleaseSoonShort: "In {days} days \xB7 {title}",
           tvGreetingNight: "Still up",
           settingsPageOverview: "Overview",
           settingsPageAccount: "Account & profiles",
@@ -3060,6 +3796,11 @@
           plEditorHiddenEmpty: "Nothing hidden \u2014 click a control and use the eye to hide it.",
           plEditorControl: "Control",
           plEditorOrder: "Order",
+          plEditorFixedPlace: "Has a fixed place in this layout \u2014 it can only be hidden.",
+          plEditorLayoutDesktop: "Desktop",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Phone, landscape",
+          plEditorLayoutPortrait: "Phone, portrait",
           plEditorVisible: "Visible",
           plTimeFormatTitle: "Time format on the seek bar",
           plTimeElapsedTotal: "Elapsed and total",
@@ -3077,6 +3818,64 @@
           plTime: "Time display",
           plSpacer: "Spacer (left/right split)",
           plSegmentBadges: "Intro/outro badges",
+          plEndsAt: "Ends {time}",
+          plGearTitle: "Settings",
+          plGearSkipIntros: "Skip intros & recaps",
+          plSpeedNormal: "Normal",
+          plChapters: "Chapters",
+          plChapterN: "Chapter {n}",
+          plCreditsChapter: "Credits",
+          shortcutsSaveMoment: "Keep this moment",
+          clipTitle: "Clip",
+          clipNew: "New clip",
+          clipZoomed: "Zoomed \xB7 4 min",
+          clipShare: "Share clip",
+          clipShareSection: "Share",
+          clipCopyLink: "Copy link",
+          clipCopyImage: "Copy image",
+          clipSaveFile: "Save file",
+          clipSaveMoment: "Save to moments",
+          clipFrom: "From {time}",
+          clipSendTo: "Send to {phone}",
+          clipPhoneGone: "The phone is no longer connected",
+          clipShowQr: "Show QR code for the link",
+          clipTvNote: "The TV only sends the in and out times. The phone renders and shares.",
+          clipTvCancel: "Cancel with Back",
+          clipTvStill: "Still \xB7 preview in the picture",
+          clipScanQr: "Scan with your phone",
+          clipTvBackCloses: "Back closes",
+          clipSentTo: "Sent to {phone} \xB7 {len} s",
+          clipFrame: "Frame {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 hold 5 s \xB7 OK next \xB7 Back cancels",
+          clipMomentSavedAt: "Moment saved \xB7 {time}",
+          clipSavePhotos: "Save to Photos",
+          clipCancel: "Cancel clip",
+          clipShareNow: "Share now",
+          clipTileLink: "Link",
+          clipTileSave: "Save",
+          clipTileMoment: "Moment",
+          clipSavedPhotos: "Saved to Photos",
+          clipSaveNeedsAndroid10: "Saving to Photos needs Android 10 \u2014 share it instead",
+          clipNewWithLength: "New clip \xB7 {len}",
+          clipRenderingIndeterminate: "Creating clip \u2026",
+          clipFormatStill: "Image",
+          clipRendering: "Creating clip \xB7 {pct} %",
+          clipFailed: "The clip couldn't be created",
+          clipLinkCopied: "Link copied",
+          clipImageCopied: "Image copied",
+          clipSaved: "Clip saved",
+          clipClose: "Close clip",
+          shortcutsClip: "Clip",
+          plMoments: "Moments",
+          plMomentKeep: "Keep this moment",
+          plMomentJump: "Jump",
+          plMomentRemove: "Remove moment",
+          plMomentsClear: "Clear moments",
+          plMomentsEmpty: "No moments yet",
+          plMomentSaved: "Moment kept at {time}",
+          plMomentExists: "There's a moment at {time} already",
+          plMomentUnavailable: "Moments can't be kept for this source",
           plMute: "Mute",
           plVolume: "Volume slider",
           plAudioDelay: "Audio delay",
@@ -3099,6 +3898,8 @@
           btAudioAutoOffset: "Compensate for Bluetooth latency",
           btAudioAutoOffsetDesc: "Wireless audio arrives 100\u2013300 ms late depending on codec. Added to your own delay when the output is wireless.",
           plFullscreen: "Fullscreen",
+          plPip: "Picture-in-picture",
+          plPipMobileOnly: "Phone only",
           plShow: "Show",
           plHide: "Hide",
           settingsTabTheme: "Theme",
@@ -3201,6 +4002,10 @@
           rtInverseTmDesc: "Expands SDR material toward HDR on capable displays.",
           rtHwdec: "Hardware acceleration",
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
+          allowSoftwareDecoding: "Allow software decoding",
+          allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          androidSourceCache: "Cache streams",
+          androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
           atEyebrow: "Audio tuning",
           atTitle: "Shape the sound",
@@ -3215,6 +4020,10 @@
           atDownmixDesc: "Folds 5.1/7.1 down to two channels \u2014 laptop speakers and headphones.",
           atEngineNote: "Requires the built-in desktop engine (mpv). Night mode composes on top.",
           vtTitle: "Picture adjustments",
+          vtScopeLabel: "Applies to",
+          vtScopeFilm: "Just this film",
+          vtScopeAll: "All films",
+          vtActive: "On",
           vtHint: "Applies live to an open player and to every playback that follows.",
           vtBrightness: "Brightness",
           vtContrast: "Contrast",
@@ -3226,6 +4035,7 @@
           vtPresetVivid: "Vivid",
           vtPresetCinema: "Cinema dark",
           vtPresetSharp: "Sharp",
+          vtPresetLabel: "Preset",
           vtEngineNote: "Gamma and sharpen require the built-in desktop engine; the browser player applies the rest.",
           sfTabSafety: "Safety",
           sfDisplayEyebrow: "Display",
@@ -3414,6 +4224,13 @@
           homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
           cardShapePoster: "Poster",
           cardShapeLandscape: "Landscape",
+          homeExpandCards: "Expand card on focus",
+          homeCardVhs: "VHS cases",
+          homeCardVhsAuto: "Follow Theme & scale",
+          homeCardVhsOn: "Turn on focus",
+          homeCardVhsShelf: "Turned on the shelf",
+          homeCardVhsOff: "Off",
+          homeExpandCardsHint: "The card in focus widens into a backdrop with logo and facts. Portrait cards only.",
           qrAddonOpen: "Add via phone",
           qrAddonTitle: "Scan with your phone",
           qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
@@ -3450,6 +4267,13 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          cardSheen: "Shine on cards",
+          cardSheenDesc: "A soft light sweeps across a card when you point at it or select it.",
+          vhsCards: "VHS cases",
+          vhsCardsDesc: "Cards turn like a VHS case and show the title on the spine: when you point at or select them, or all the time like a shelf, straightening up when selected.",
+          vhsModeOff: "Off",
+          vhsModeFocus: "Turn on focus",
+          vhsModeShelf: "Turned on the shelf",
           performanceMode: "Performance mode",
           performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
           heroActionsExpanded: "Always show action labels",
@@ -3556,6 +4380,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (optional)",
           profilePinEnterTitle: "Enter PIN for {name}",
+          slLockWith: "Lock with\u2026",
+          slEyebrow: "{title} \xB7 Series lock",
+          slCreateTitle: "Lock this series with\u2026",
+          slCreateLead: "None of you sees the next episode until the others have seen the previous one.",
+          slYou: "You",
+          slHasPin: "Has PIN",
+          slNoPin: "No PIN",
+          slMode: "Mode",
+          slTogether: "Together",
+          slTogetherHint: "You watch it together. An episode that counts as watched is marked for everyone, whichever profile was on.",
+          slSolo: "Separately",
+          slSoloHint: "Everyone watches on their own profile. Whoever is ahead waits for the others.",
+          slPinToggle: "Require PIN for Watch anyway",
+          slPinOff: "Off: anyone can choose Watch anyway right away.",
+          slPinOn: "Whoever chooses Watch anyway enters their profile PIN.",
+          slPinNone: "None of the selected profiles has a PIN.",
+          slPinPartialOne: "{names} has no PIN and can watch anyway without a code.",
+          slPinPartialMany: "{names} have no PIN and can watch anyway without a code.",
+          slPosMe: "You're on {code}",
+          slPosOther: "{name} is on {code}",
+          slPosMeNotStarted: "You haven't started",
+          slPosOtherNotStarted: "{name} hasn't started",
+          slWaitOne: "You'll wait until {name} has seen {code}.",
+          slWaitMany: "{ahead} will wait until {name} has caught up to {code}.",
+          slOthersWait: "{names} will wait until you've seen {code}.",
+          slSame: "You're on the same episode, {code}. Good start.",
+          slConfirm: "Lock series",
+          slCreatedTogether: "{title} is locked with {names}. You're watching it together.",
+          slCreatedSolo: "{title} is locked with {names}. You'll wait for each other.",
+          slMarker: "Locked with {names} \xB7 {mode}",
+          slManage: "Manage lock",
+          slParticipants: "Participants",
+          slSeenCode: "Seen {code}",
+          slNotStarted: "Not started",
+          slRemoveMember: "Remove",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Nobody has watched ahead yet.",
+          slDone: "Done",
+          slRemoveLock: "Remove lock",
+          slRemoveTitle: "Remove the lock?",
+          slRemoveText: "You'll each watch at your own pace again. Nothing you've watched changes.",
+          slKeep: "Keep the lock",
+          slRemoveLastTitle: "Remove {name}?",
+          slRemoveLastText: "A lock needs at least two. Removing {name} ends the lock on {title} and you'll watch at your own pace again.",
+          slRemovedToast: "The lock is removed. You're back to your own pace.",
+          slLockedTitle: "{code} is locked",
+          slLockedTextOne: "{names} hasn't seen {code} yet.",
+          slLockedTextMany: "{names} haven't seen {code} yet.",
+          slWatchAnyway: "Watch anyway",
+          slFootnote: "{names} will see that you watched ahead.",
+          slFootnotePin: "Watch anyway needs your PIN.",
+          slFootnoteNoPin: "You don't have a PIN, so no code is needed.",
+          slPinTitle: "Enter PIN for {name}",
+          slPinSubtitle: "to watch {code} anyway",
+          slContinueWaiting: "Waiting for {names} \xB7 {code}",
+          slContinueMetaLocked: "Series \xB7 {code} \xB7 Locked",
+          slNextLocked: "Next episode is locked. Waiting for {names}",
+          slClose: "Close",
+          slTogetherToast: "{code} marked as watched for {names}.",
+          slUnlockedToastOne: "{names} has seen {code}. You can carry on.",
+          slUnlockedToastMany: "{names} have seen {code}. You can carry on.",
+          slPlayCode: "Play {code}",
+          slAheadToast: "{name} watched {code} before you.",
+          slOkay: "Okay",
+          slOwnOverrideToast: "You watched {code} before {names}. {names} will see it.",
+          slWaitingForYouOne: "{names} is waiting for you. {next} opens when you've seen {code}.",
+          slWaitingForYouMany: "{names} are waiting for you. {next} opens when you've seen {code}.",
+          slEndedOne: "The lock on {title} has ended. {names} is no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slEndedMany: "The lock on {title} has ended. {names} are no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slNewSeasonOne: "{code} is waiting for {names}. Season {season} starts when {names} has seen {requires}.",
+          slNewSeasonMany: "{code} is waiting for {names}. Season {season} starts when {names} have seen {requires}.",
+          slFinishedTitle: "Finished together",
+          slFinishedText: "You've seen all {count} episodes. The lock isn't needed anymore.",
+          slMyLocksTitle: "Series locks",
+          slMyLocksLead: "Series you've locked with others",
+          slMyLocksEmpty: "Lock a series from its details page with Lock with\u2026",
+          slStatusWaiting: "You're waiting for {names}",
+          slStatusCanContinue: "You can carry on",
+          slStatusInStep: "You're in step",
+          slStatusWaitedOnOne: "{names} is waiting for you",
+          slStatusWaitedOnMany: "{names} are waiting for you",
+          slRowSeenAll: "Seen by everyone",
+          slRowMissingOne: "{names} hasn't seen it",
+          slRowMissingMany: "{names} haven't seen it",
+          slRowNext: "Up next",
+          slRowNextSeenByOne: "Up next \xB7 {names} has seen it",
+          slRowNextSeenByMany: "Up next \xB7 {names} have seen it",
+          slRowWaiting: "Waiting for {names}",
+          slRowLocked: "Locked",
+          slRowAheadOfYou: "{names} watched before you",
+          slRowOverrideMineOne: "You watched anyway \xB7 {names} hasn't seen it",
+          slRowOverrideMineMany: "You watched anyway \xB7 {names} haven't seen it",
+          slGroupMoreOne: "1 more episode waiting",
+          slGroupMoreMany: "{count} more episodes waiting",
+          slGroupMoreHint: "Open one at a time, in step with {names}.",
+          slGroupSeason: "All of season {season} is waiting",
+          slGroupSeasonHint: "Opens one episode at a time after {code}, in step with {names}.",
+          slShow: "Show",
+          slHide: "Hide",
+          slAnd: "and",
           profilePinSetTitle: "Choose a PIN for {name}",
           profilePinCurrentTitle: "Enter the current PIN for {name}",
           profilePinRemoveTitle: "Enter PIN to remove the lock for {name}",
@@ -4047,6 +4972,7 @@
           tvRowFailed: "Could not be loaded",
           tvRowNoRenderer: "Not available in TV mode yet",
           tvQuickPlay: "Play",
+          tvQuickSource: "Source: {source} \u203A",
           tvQuickMarkWatched: "Mark as watched",
           tvQuickUnmarkWatched: "Mark as unwatched",
           tvQuickMoreInfo: "More info",
@@ -4090,6 +5016,29 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestige Drama",
+          homeSourceMoment: "Right now (changes with the moment)",
+          homeSourceComingUp: "Calendar",
+          comingUpTitle: "Coming up",
+          comingUpSubtitle: "From series you follow \xB7 {n}",
+          comingUpAvailableOne: "1 episode available now",
+          comingUpAvailableMany: "{n} episodes available now",
+          comingUpNothingNew: "nothing new right now",
+          comingUpOpenCalendar: "Open calendar",
+          comingUpMissed: "Missed",
+          comingUpToday: "Today",
+          comingUpTomorrow: "Tomorrow",
+          comingUpEpisodesCount: "{n} episodes",
+          comingUpInDays: "in {n} days",
+          comingUpPillAvailable: "Available",
+          comingUpPillMissedAvailable: "Missed \xB7 Available",
+          comingUpPillTonight: "Tonight {time}",
+          comingUpPillWatched: "Watched",
+          comingUpTagPremiere: "Premiere",
+          comingUpTagFinale: "Finale",
+          comingUpShowMissedSetting: "Show missed episodes in Coming up",
+          comingUpShowMissedHint: "Episodes from yesterday you haven't watched yet.",
+          homeSourceMomentMovies: "Right now \xB7 Movies",
+          homeSourceMomentSeries: "Right now \xB7 Series",
           homeSourceAnimeMovies: "Anime Movies",
           homeSourceAnimeTopSeries: "Top Rated Anime",
           homeSourceStreamingServices: "Streaming",
@@ -4130,7 +5079,7 @@
           traktAutoRemoveMovies: "Remove watched movies from the watchlist",
           traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
           traktAutoUnfollowSeries: "Unfollow series you have finished",
-          traktAutoUnfollowSeriesHint: "Removes a series once you have watched its final season in full. Your watch history is kept, so a revived show can come back.",
+          traktAutoUnfollowSeriesHint: "Removes a series only when it has ended and you have watched the last episode. Ongoing series are never removed. Your watch history is kept, so a revived show can come back.",
           // Named per operation: a 420 on history and a 420 on the watchlist are
           // different caps with different fixes, and a bare code taught us nothing.
           traktHistoryRefused: "Trakt would not accept your watch history",
@@ -4259,6 +5208,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Remember aspect ratio",
           rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
+          matchFrameRate: "Match frame rate",
+          matchFrameRateDesc: "Switches the TV to the frame rate of what you watch, so motion stops juddering. The screen goes black for a moment when it switches.",
+          matchFrameRateOff: "Off",
+          matchFrameRateVod: "Films and series",
+          matchFrameRateAll: "Live TV too",
           autoSkipIntro: "Auto-skip intro",
           autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
           resumePromptEyebrow: "CONTINUE OR START OVER",
@@ -4289,6 +5243,9 @@
           exitAppTitle: "Quit Lumio?",
           exitAppConfirm: "Quit",
           quizMenuLabel: "Film quiz",
+          couchMenuLabel: "Couch mode",
+          couchOpenButton: "Open Couch mode",
+          couchOpenHint: "Control your TV or computer running Lumio from this phone. Both must be on the same wifi.",
           quizLobbyTitle: "Who knows their movies?",
           quizLobbyIntro: "Scan the code with your phone to join. The questions come from movies you have watched.",
           quizOrGoTo: "Or go to",
@@ -4343,6 +5300,104 @@
           quizCreateFailed: "Could not start the quiz. Try again in a moment.",
           quizClose: "Close",
           quizBankError: "Could not build questions. Check the connection and try again.",
+          matchMenuLabel: "Film Match",
+          matchLobbyTitle: "What are we watching?",
+          matchLobbyIntro: "Scan the code and swipe on your phone. When everyone says yes to the same film, it starts.",
+          matchPlayers: "Players",
+          matchPaired: "paired",
+          matchGuest: "Guest",
+          matchRoundLabel: "This round",
+          matchRoundDefault: "20 films from My List and similar titles",
+          matchStart: "Go",
+          matchStartOnPhone: "or press Go on {owner} phone",
+          matchMinTwo: "At least two players",
+          matchRoundEyebrow: "Round %1 \xB7 %2 films",
+          matchOngoing: "In progress",
+          matchSwipeTitle: "Swipe on your phones",
+          matchSwipeIntro: "When everyone says yes to the same film, it's a match. Nobody sees anyone else's answers.",
+          matchNoMatchYet: "No match yet",
+          matchDoneOf: "%1 of %2 have swiped them all",
+          matchPlayerLeft: "Left",
+          matchEyebrow: "Match",
+          matchYouChose: "You chose",
+          matchIt: "It's a match!",
+          matchAllYes: "Everyone said yes",
+          matchPickedBy: "{name} picked \xB7 %1 of %2 said yes",
+          matchStartsIn: "Starting in",
+          matchPreparing: "Getting the stream ready \u2026",
+          matchReady: "Ready",
+          matchPlayNow: "Play now",
+          matchNotThis: "Not this one",
+          matchStarting: "Starting \u2026",
+          matchNone: "No matches this time",
+          matchTop3Intro: "These are the films most of you said yes to. {name} picks on the phone, or pick here.",
+          matchTop3IntroHost: "These are the films most of you said yes to. Pick one here.",
+          matchRank1: "Most yes",
+          matchRank2: "Second",
+          matchRank3: "Third",
+          matchVotes: "%1 of %2 said yes",
+          matchNewRound: "New round",
+          matchCouldNotStart: "Couldn't start",
+          matchNoSource: "Couldn't find a source for {film}",
+          matchBackToCards: "Back to the cards in %1 s",
+          matchEndedTitle: "Film Match ended",
+          matchEndedBody: "The phones have been disconnected from the room.",
+          matchNewMatch: "New Film Match",
+          matchCloseTitle: "Close Film Match?",
+          matchCloseBody: "The phones will be disconnected from the room.",
+          matchKeepGoing: "Keep going",
+          matchCreateFailed: "Could not start Film Match. Try again in a moment.",
+          matchDeckEmpty: "Found no films \u2014 add films to My List and try again.",
+          matchJoinTitle: "What's your name?",
+          matchJoin: "Join",
+          matchWaitingFor: "Waiting for {name} to start",
+          matchUndo: "Undo",
+          matchLeft: "You left Film Match",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "PREDICT THE MATCH \xB7 {league}",
+          tipKickoff: "Kick-off {time}",
+          tipIn: "in {n} min",
+          tipScan: "Scan with the camera, or open Couch mode",
+          tipInSofa: "On the couch",
+          tipCount: "{n} of {m} have predicted",
+          tipHasTipped: "\u2713 Predicted",
+          tipTipping: "Predicting \u2026",
+          tipLobbyHint: "Predictions lock at kick-off. The score is not shown if spoiler protection is on.",
+          tipLockNow: "Lock now",
+          tipCancel: "Cancel",
+          tipPill: "Predict",
+          tipPillAgain: "Press down again",
+          tipManageOverline: "PREDICT THE MATCH",
+          tipShowLobby: "Show lobby",
+          tipRow: "PREDICTIONS",
+          tipFinal: "FULL TIME",
+          tipExact: "EXACT SCORE",
+          tipWinner: "RIGHT WINNER",
+          tipClosest: "CLOSEST OF THE REST",
+          tipDone: "Done",
+          tipSeason: "Season",
+          tipSeasonOverline: "COUCH SEASON \xB7 {n} MATCHES",
+          tipNewSeason: "New season",
+          tipNewSeasonConfirm: "Press again for a new season",
+          tipColName: "NAME",
+          tipColExact: "EXACT",
+          tipColWinner: "WINNER",
+          tipColTonight: "TONIGHT",
+          tipColPoints: "POINTS",
+          tipExactSub: "predicted {tip} \xB7 3 pts",
+          tipWon: "{team} won",
+          tipDraw: "Draw",
+          tipOneOff: "one goal off",
+          tipNOff: "{n} goals off",
+          tipPlusOne: "+1 pt",
+          tipNobody: "Nobody",
+          tipWhyExact: "Exact score",
+          tipWhyWinner: "Right winner",
+          tipWhyWinnerClosest: "Right winner \xB7 closest",
+          tipWhyClosest: "Closest",
+          tipWhyWrong: "Wrong winner",
+          tipCreateFailed: "Could not start Predict the match. Try again in a moment.",
+          matchEnded: "Film Match ended on the TV",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -4431,9 +5486,17 @@
           upgradeSubtitleWhenBetter: "Upgrade subtitles when better ones load",
           upgradeSubtitleWhenBetterDesc: "Swap to a higher-priority subtitle if one arrives after playback starts. Manual picks are never overridden.",
           ipDescRpdb: "Posters with the rating burned in, on every card. Free key at ratingposterdb.com.",
-          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Free key at mdblist.com.",
+          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Uses your MDBList login, or a free key.",
           ipRpdbHint: "With a key set, card posters swap to RPDB rated posters (IMDb-keyed).",
           ipMdblistHint: "Shown as extra badges next to the year on the details page.",
+          ipMdblistViaLogin: "Uses your MDBList login (Tracking services \u2192 Accounts) \u2014 no key needed.",
+          ipMdblistLoginHint: "Easier: connect MDBList under Tracking services \u2192 Accounts, then no key is needed.",
+          hpListChoose: "Choose a list",
+          hpListCategory: "Category",
+          hpListPasteLabel: "Or paste a link or id",
+          hpListLookup: "Find",
+          hpListNotFound: "Couldn't find that list",
+          hpListLoadError: "Couldn't load your lists",
           ratingBadgePosition: "Rating badge position",
           ratingBadgePositionDesc: "Which corner of the poster the score badge sits in.",
           badgePosTr: "Top right",
@@ -4477,6 +5540,21 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          dailyPosterTitle: "Poster of the day",
+          dailyPosterHint: "Your lock screen shows a poster from your watchlist, changed every morning at 6.",
+          dailyPosterToggleTitle: "Poster of the day on the lock screen",
+          dailyPosterToggleDesc: "A quiet morning notification opens the title. When you turn it off, the lock screen shows your home screen wallpaper \u2014 the previous lock screen image can\u2019t be restored. Some manufacturers (Xiaomi, Oppo) may override the lock screen.",
+          dailyPosterOn: "On",
+          dailyPosterOff: "Off",
+          dailyPosterRunNowTitle: "Change now",
+          dailyPosterRunNowDesc: "Pick the next poster right away.",
+          dailyPosterRunNow: "Change now",
+          dailyPosterQueued: "The lock screen changes in a moment.",
+          dailyPosterEmpty: "Your watchlist has no titles with a poster yet.",
+          dailyPosterError: "Could not change: {e}",
+          dailyPosterNotAllowed: "This phone doesn\u2019t let apps change the wallpaper (manufacturer or work policy).",
+          dailyPosterNotificationTitle: "Poster of the day",
+          dailyPosterChannelName: "Poster of the day",
           hapticsTitle: "Feel the bass",
           hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
           hapticsHostToggleTitle: "Allow Feel the bass from a phone",
@@ -4590,6 +5668,7 @@
           plShortMusic: "Music",
           plShortZoom: "Zoom",
           plShortCast: "Cast",
+          plShortPip: "PiP",
           plShortFullscreen: "Fullscreen",
           plShortMore: "More",
           recapFound: "Recap",
@@ -4644,6 +5723,21 @@
           defaultAudioTrackDesc: "Tries to choose the language automatically when multiple audio tracks exist.",
           disableSubtitlesWhenAudioMatches: "Turn off subtitles when audio matches",
           disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
+          subtitleAutoSyncSetting: "Sync subtitles automatically",
+          subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
+          subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
+          subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
+          subtitleLanguageDetected: "language detected",
+          subtitleAutoSyncUndo: "Undo",
+          subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
+          subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
+          subtitleAutoSyncAmbiguous: "Auto-sync: couldn't tell for sure \u2014 left as is",
+          subtitleAutoSyncChecking: "Auto-sync: checking\u2026",
+          subtitleAutoSyncNoTextTracks: "Auto-sync: this file has no text subtitles to sync against",
+          subtitleAutoSyncReadingTracks: "Auto-sync: reading the file's subtitles\u2026",
+          subtitleAutoSyncFetchFailed: "Auto-sync: couldn't fetch the subtitles \u2014 left as is",
+          subtitleAutoSyncRefined: "Subtitle sync refined ({offset})",
           subtitleSize: "Subtitle size",
           subtitleSizeDesc: "Used by default for new movies and episodes.",
           subtitleVerticalPositionDesc: "How high above the controls bar the subtitles are placed.",
@@ -4657,8 +5751,23 @@
           subtitleOutlineColorDesc: "Used for the text outline/shadow.",
           resetSubtitleAppearance: "Reset subtitle appearance",
           resetSubtitleAppearanceDesc: "Restores size, position, opacity, colors, background, and outline to defaults.",
-          subtitlePreviewText: "This is how your subtitles will look",
+          subtitlePreviewText: "This is how your subtitles\nwill look",
           subtitlePreviewCaption: "Preview of the default look",
+          subtitleFont: "Font",
+          subtitleFontDesc: "Easier-to-read fonts for subtitles. Picking one also widens the letter spacing, which helps the most. Picture-based subtitles (PGS/VobSub from Blu-ray and DVD) keep their own look.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (recommended)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Letter spacing",
+          subtitleLetterSpacingDesc: "The setting that helps most with dyslexia: letters that sit close together crowd each other. Wider or Widest is a good start.",
+          subtitleLineSpacing: "Line spacing",
+          subtitleLineSpacingDesc: "Space between the lines of a two-line subtitle. In the desktop app it only applies in learning mode \u2014 the built-in player cannot change it.",
+          subtitleSpacingNormal: "Normal",
+          subtitleSpacingWide: "Wide",
+          subtitleSpacingWider: "Wider",
+          subtitleSpacingWidest: "Widest",
+          subtitleBold: "Bold text",
+          subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
           skipIntro: "Skip intro",
           originalFirst: "Original / first",
           noFallback: "No fallback",
@@ -4992,6 +6101,13 @@
           coreStreamsHidden: "{count} streams hidden by quality filters",
           coreStreamsSelectEpisode: "Pick an episode to see its streams.",
           coreStreamsSource: "Source",
+          streamSourceAllSources: "All sources",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} ep",
+          streamSourceSeriesHint: "Applies to every episode in this series",
+          streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
+          streamSourceFallback: "E{episode} isn't in {source} \u2014 showing {fallback}",
           coreStreamsCached: "Cached",
           coreStreamsLoading: "Checking sources\u2026",
           streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
@@ -5051,6 +6167,8 @@
           continueLayoutGrid: "Grid",
           /* Settings → Display → Continue watching */
           cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+          cwFramesTitle: "Scene preview on hover",
+          cwFramesDesc: "Saves a frame when you pause or leave a title and shows it when you hover over the card (or focus it on TV).",
           cwModeRows: "Side-scrolling rows",
           cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
           cwModeGrid: "Grid",
@@ -5306,12 +6424,75 @@
           hpUpload: "Upload",
           hpHomeEyebrow: "Home page",
           hpSearchFieldTitle: "Search field",
+          startPageTitle: "Start page",
+          startPageHint: "The page the app opens on when it starts. Applies to this kind of device (TV, computer or phone). If the page is no longer available, the app opens on Home.",
+          startPageGroupBuiltIn: "Built-in",
+          startPageGroupPages: "Custom pages",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Top row",
-          hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+          hpTopSlotHint: "What sits at the top centre: a search field, the quick menu or nothing. Movies, Series and the other filter pages always show their filters in a Browse row under the hero.",
+          qmEyebrow: "Quick menu",
+          qmShow: "Show quick menu",
+          qmStyle: "Style",
+          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 7.",
+          qmScrollsTen: "Scrolls \xB7 up to 10 items",
+          qmUpToSix: "Up to 7 items",
+          qmItems: "Items",
+          qmItemsHint: "Pages in the quick menu, in order.",
+          qmItemsPanelHint: "OK on an item to move or remove it.",
+          qmAddPage: "Add page",
+          qmSlotsLeft: "{n} slots left",
+          qmFull: "{style} holds 7. Horizon and Sentence hold 10.",
+          qmHiddenWarn: "{n} items are hidden with {style}. Pick a scrolling style or remove items.",
+          qmHidden: "Hidden",
+          qmReset: "Reset to default",
+          qmOffTitle: "Off",
+          qmOffHint: "Turn it on by choosing Quick menu under Top row.",
+          qmUse: "Use quick menu",
+          qmStyleCurrent: "Style: {style}",
+          qmStyleWhere: "Change the style, or switch to search or filters, under Top row.",
+          hpTopSlotQuick: "Quick menu",
+          qmStyle_horizon: "Horizon",
+          qmStyle_initials: "Initials",
+          qmStyle_constellation: "Constellation",
+          qmStyle_dark: "Dusk",
+          "qmStyle_focus-depth": "Depth of field",
+          qmStyle_sentence: "Sentence",
+          qmStyle_viewfinder: "Viewfinder",
+          qmStyle_tracking: "Tracking",
+          qmStyle_numbers: "Number keys",
+          qmStyle_italic: "Italic",
+          qmSentenceLead: "Show me",
+          qmSentence_search: "to search",
+          qmSentence_movies: "movies",
+          qmSentence_series: "series",
+          qmSentence_continue: "where I left off",
+          qmSentence_live: "live TV",
+          qmSentence_home: "home",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "my watchlist",
+          qmSentence_calendar: "the calendar",
+          qmSentence_releases: "new releases",
+          qmSourceBuiltIn: "Built-in",
+          qmSourceCustomPage: "Custom page",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Position {i} of {n}",
+          qmHiddenWith: "hidden with {style}",
+          qmDone: "Done",
+          qmGroupFilters: "Filters",
+          qmGroupSearch: "Search",
+          qmGroupOther: "Other",
+          qmNew: "New",
+          qmUpTo10: "up to 10",
+          qmResetHint: "Restores the default items for this menu. The style stays.",
+          qmSectionHint: "Shortcuts centred at the top of the home screen.",
+          qmItemsCount: "{n} of {max}",
+          qmHiddenCount: "{n} hidden",
           hpTopSlotFilterPages: "Filters where they apply",
           hpTopSlotFilterAll: "Filters on every page",
           hpTopSlotSearch: "Search field",
-          hpTopSlotNone: "Nothing (filters sit above the grid)",
+          hpTopSlotNone: "Nothing",
           hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
           hpSearchStaysHint: "Search remains available in the top menu",
           hpSearchTopChosenHint: "The search field sits in the top row (see Top row above), so the large field is hidden.",
@@ -5761,6 +6942,61 @@
           profGxConstellations: "Constellations",
           profGxZones: "Dark zones",
           settingsPageProfilePage: "Profile page",
+          settingsPagePairedPhones: "Paired phones",
+          couchEyebrow: "COUCH MODE",
+          couchTitle: "Phones that control Lumio",
+          couchHint: "Your phone becomes a remote, shows info about what's playing and sends ratings to the profile's Trakt. Home network only.",
+          couchPairNew: "Pair new phone",
+          couchColPhone: "PHONE",
+          couchColProfile: "PROFILE",
+          couchColLastSeen: "LAST CONNECTED",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID APP",
+          couchSubPwa: "iPhone \xB7 launched from the home screen",
+          couchSubAndroid: "Lumio for Android \xB7 Feel the bass",
+          couchRemove: "Remove",
+          couchCancel: "Cancel",
+          couchRemoveConfirm: "Remove {name}? The phone stops working right away and has to be paired again with a new code.",
+          couchFootnote: "The profile decides whose Trakt account ratings and history go to. Feel the bass is only available on phones with Lumio for Android.",
+          couchHapticsTitle: "Feel the bass",
+          couchHapticsHint: "The phone vibrates in time with the film's bass hits. Moved here from Playback.",
+          couchHapticsSensHint: "How faint the bass hits that count.",
+          couchHapticsStrength: "Strength",
+          couchHapticsSync: "Early / late",
+          couchHapticsSyncHint: "Shift the vibration if it arrives too early or too late.",
+          couchHapticsLegacy: "Re-pair with Couch mode to control Feel the bass here",
+          couchHapticsLiveHint: "Strength and timing apply when Couch mode is open on the phone.",
+          couchEmptyTitle: "No phones paired yet",
+          couchDialogInstr: "**Scan with the phone camera** and open the page \u2014 on iPhone, add it to the Home Screen. **Lumio app on Android:** open Couch mode, pick this computer and enter the code.",
+          couchWaiting: "Waiting for the phone \u2026",
+          couchClosesIn: "Closes in {time}",
+          couchNewCode: "New code",
+          couchPaired: "{name} is paired",
+          couchPairedSub: "Profile {profile} \xB7 closes by itself",
+          couchExpiredTitle: "The code has expired",
+          couchExpiredBody: "The code window is only open for two minutes so nobody else on the network can pair. Get a new code and try again.",
+          couchNewBadge: "New",
+          couchPortError: "Port 3012 is busy: {error}",
+          couchBundleMissing: "The phone page is missing from this app build.",
+          couchTvPairHint: "Shows a code and a QR code for two minutes",
+          couchTvEyebrow: "PHONES",
+          couchTvSubAndroid: "Android app \xB7 Profile {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profile {profile}",
+          couchTvNoProfile: "no profile",
+          couchTvDetailSub: "{kind} \xB7 Last connected: {when}",
+          couchTvKindAndroid: "Android app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "CODE",
+          couchTvCodeInstr: "iPhone: scan the QR code. Android: enter the code in the app.",
+          couchTvWaiting: "Waiting for the phone",
+          couchTvClosesIn: "Closes in {time}",
+          couchTvClose: "Close",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "No Trakt",
+          couchTvRemovePhone: "Remove the phone",
+          couchTvRemoveTitle: "Remove {name}?",
+          couchTvRemoveBody: "The phone stops working right away and has to be paired again with a new code. Ratings already sent to Trakt stay.",
+          couchTvEmptyHint: "No phones paired yet",
           ppWeatherGroup: "Weather in the diary",
           ppWeatherToggle: "Record the weather",
           ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
@@ -5848,6 +7084,7 @@
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
           startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
+          startNextSourceWaiting: "K\xE4llan svarade inte \u2014 v\xE4ntar in fler k\xE4llor\u2026",
           startSlateNext: "K\xE4llan skickade ingen film \u2014 provar {stream}\u2026",
           startCancel: "Avbryt",
           startNoSourceTitle: "Ingen k\xE4lla startade",
@@ -6047,6 +7284,8 @@
           showAllMovies: "Visa alla filmer",
           showAllSeries: "Visa alla serier",
           searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
+          searchInLibrary: "S\xF6k i {name}",
+          searchInYourLibrary: "S\xF6k i ditt bibliotek",
           searchTitlePlaceholder: "S\xF6k titel",
           sampleData: "Exempeldata",
           tmdbLive: "TMDb live",
@@ -6067,7 +7306,6 @@
           liveTvStreamError: "Kunde inte ladda str\xF6mmen.",
           liveTvStreamErrorHelp: "Str\xF6mmen kan vara geoblockerad, offline eller ej st\xF6dd.",
           allCategories: "Alla kategorier",
-          sceneReleases: "Scene-releaser",
           activeFiltersTitle: "Aktiva filter",
           activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
           activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
@@ -6122,7 +7360,7 @@
           listenedAt: "vid",
           streamAvailable: "Cachad",
           streamDeviceUnsupported: "st\xF6ds ej",
-          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud eller Dolby Vision) \u2014 r\xE4kna med inget ljud, eller ingen uppspelning.",
+          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud, Dolby Vision, 4K eller HDR) \u2014 r\xE4kna med inget ljud, ingen bild eller ingen uppspelning.",
           streamDownload: "Ladda ned",
           startingMovie: "Startar film...",
           findingMovie: "Hittar film...",
@@ -6150,6 +7388,8 @@
           movieWatchlistAdded: "Min lista \u2713",
           moreInfo: "Mer info",
           watchTrailer: "Se trailer",
+          shuffleEpisodes: "Blanda",
+          shuffleEpisodesOn: "Blandar",
           openOnImdb: "\xD6ppna p\xE5 IMDb",
           seasons: "S\xE4songer:",
           matchedOnTitle: "Matchad p\xE5 titel:",
@@ -6180,6 +7420,7 @@
           allSources: "Alla k\xE4llor",
           tvSearchTypeTab: "Skriv",
           tvSearchSpace: "Mellanslag",
+          tvSearchSystemKeyboard: "Systemets tangentbord",
           tvSearchDelete: "Radera",
           sourcesStillSearching: "S\xF6ker fortfarande:",
           sourceFilter: "K\xE4lla",
@@ -6264,18 +7505,14 @@
           dtSeasonsN: "{n} s\xE4songer",
           settingsDetailsEyebrow: "Detaljsidan",
           sideMenuTitle: "Sidomeny",
-          sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
-          sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
-          sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
-          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter toppraden p\xE5 skrivbord och mobil.",
           menuPillPlaceTitle: "Menypillrets placering",
           menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
           menuPillTopLeft: "Uppe till v\xE4nster",
           menuPillTopRight: "Uppe till h\xF6ger",
           menuPillBottomLeft: "Nere till v\xE4nster",
           menuPillBottomRight: "Nere till h\xF6ger",
-          sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
           vlcToggleTitle: "\xD6ppna streams direkt i VLC",
@@ -6298,6 +7535,8 @@
           appUpdateNotesTitle: "Nyheter i den h\xE4r versionen",
           appUpdatePromptInstall: "Uppdatera nu",
           appUpdatePromptInstalling: "Uppdaterar\u2026",
+          appUpdateDownloading: "Laddar ner uppdateringen",
+          appUpdateInstallingStep: "Installerar\u2026",
           appUpdatePromptLater: "Inte nu",
           appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
           appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
@@ -6368,6 +7607,37 @@
           sortHighestTmdb: "H\xF6gst TMDb-betyg",
           sortNewest: "Nyast till \xE4ldst",
           sortOldest: "\xC4ldst till nyast",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Bl\xE4ddra",
+          browseSummary: "Visar {scope} p\xE5 {services}, {sort}",
+          browseKindMovies: "filmer",
+          browseKindSeries: "serier",
+          browseKindTitles: "titlar",
+          browseKindAnime: "animetitlar",
+          browseScopeAll: "alla {kind}",
+          browseScopeGenres: "{kind} inom {genres}",
+          browseScopeManyGenres: "{kind} inom {n} genrer",
+          browseGenresAnd: " och ",
+          browseYearFrom: "fr\xE5n {year}",
+          browseYearTo: "till och med {year}",
+          browseYearRange: "fr\xE5n {min}\u2013{max}",
+          browseRatedAtLeast: "med betyg {n}+",
+          browseEveryService: "alla tj\xE4nster",
+          browseManyServices: "{n} tj\xE4nster",
+          browseSortPopular: "mest popul\xE4ra f\xF6rst",
+          browseSortRelevant: "mest relevanta f\xF6rst",
+          browseSortRating: "h\xF6gst betyg f\xF6rst",
+          browseSortNewest: "nyast f\xF6rst",
+          browseSortOldest: "\xE4ldst f\xF6rst",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Visar {scope} i {services}, {sort}",
+          browseYourLibrary: "ditt bibliotek",
+          browseManySources: "{n} k\xE4llor",
+          browseSortAdded: "senast tillagda f\xF6rst",
+          browseSortTitle: "efter titel A\u2013\xD6",
+          sortRecentlyAdded: "Senast tillagda",
+          sortTitleAZ: "Titel A\u2013\xD6",
+          filterSource: "K\xE4lla",
           // Results
           aboutResults: "Ungef\xE4r",
           results: "resultat",
@@ -6399,9 +7669,6 @@
           subtitleAlignedToReference: "Synkad mot en undertext som matchar din fil",
           subtitleHashMatch: "Matchar din fil",
           subtitleAlignedToAudio: "Synkad mot hela ljudsp\xE5ret",
-          subtitleAnchorApplied: "Synkad fr\xE5n din markering",
-          subtitleAnchorDrift: "drift korrigerad ocks\xE5",
-          subtitleManualSync: "Synka p\xE5 geh\xF6r",
           vpSecondarySubFailed: "Kunde inte ladda andraspr\xE5ket",
           vpSecondarySubMissing: "Inget undertextsp\xE5r p\xE5 {lang} hittades",
           learningModeTitle: "Inl\xE4rningsl\xE4ge",
@@ -6414,13 +7681,6 @@
           secondarySubtitleLanguageDesc: "Visas under huvudtexten n\xE4r inl\xE4rningsl\xE4get \xE4r p\xE5",
           secondarySubtitleColor: "Andraspr\xE5kets f\xE4rg",
           secondarySubtitleColorDesc: "F\xE4rg p\xE5 den andra raden i inl\xE4rningsl\xE4get",
-          subtitleManualSyncTapPrompt: "Tryck n\xE4r du h\xF6r en replik du k\xE4nner igen",
-          subtitleManualSyncTapButton: "Jag h\xF6r den nu",
-          subtitleManualSyncPickPrompt: "Vilken rad h\xF6rde du nyss?",
-          subtitleManualSyncSecondHint: "G\xF6r om det senare i filmen f\xF6r att \xE4ven r\xE4tta driften.",
-          subtitleManualSyncNoCues: "Inga undertextrader n\xE4ra den h\xE4r punkten.",
-          subtitleManualSyncApplying: "Till\xE4mpar din synkning\u2026",
-          subtitleManualSyncRefining: "Finjusterar mot ljudet\u2026",
           castTitle: "Spela p\xE5 annan enhet",
           castScanning: "S\xF6ker efter enheter\u2026",
           castNoDevices: "Inga Chromecast- eller DLNA-enheter hittades.",
@@ -6438,7 +7698,6 @@
           castPairConfirm: "Parkoppla",
           castPairing: "Parkopplar\u2026",
           castPairFailed: "Parkopplingen misslyckades. F\xF6rs\xF6k igen.",
-          cancel2: "Avbryt",
           subtitleAutoSyncNoReference: "Inte s\xE4ker nog utifr\xE5n bara ljudet. L\xE4gg in en OpenSubtitles API-nyckel i Inst\xE4llningar f\xF6r att synka mot en undertext som matchar din fil.",
           subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
           subtitleAutoSyncDriftApplied: "drift korrigerad ({rate}s/min)",
@@ -6545,6 +7804,10 @@
           tvGreetingReleaseToday: "{title} finns nu",
           tvGreetingReleaseTomorrow: "{title} sl\xE4pps imorgon",
           tvGreetingReleaseSoon: "{title} sl\xE4pps om {days} dagar",
+          tvGreetingResumeShort: "{minutes} min kvar \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Nu \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Imorgon \xB7 {title}",
+          tvGreetingReleaseSoonShort: "Om {days} dagar \xB7 {title}",
           tvGreetingNight: "Fortfarande vaken",
           settingsPageOverview: "\xD6versikt",
           settingsPageAccount: "Konto & profiler",
@@ -6660,6 +7923,11 @@
           plEditorHiddenEmpty: "Inget dolt \u2014 klicka p\xE5 en kontroll och anv\xE4nd \xF6gat f\xF6r att d\xF6lja den.",
           plEditorControl: "Kontroll",
           plEditorOrder: "Ordning",
+          plEditorFixedPlace: "Har en fast plats i det h\xE4r lagret \u2014 den kan bara d\xF6ljas.",
+          plEditorLayoutDesktop: "Skrivbord",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Telefon, liggande",
+          plEditorLayoutPortrait: "Telefon, st\xE5ende",
           plEditorVisible: "Synlig",
           plTimeFormatTitle: "Tidsformat p\xE5 s\xF6kraden",
           plTimeElapsedTotal: "F\xF6rfluten och total",
@@ -6677,6 +7945,64 @@
           plTime: "Tidsvisning",
           plSpacer: "Mellanrum (v\xE4nster/h\xF6ger-delning)",
           plSegmentBadges: "Intro/outro-m\xE4rken",
+          plEndsAt: "Slutar {time}",
+          plGearTitle: "Inst\xE4llningar",
+          plGearSkipIntros: "Hoppa \xF6ver intro och recap",
+          plSpeedNormal: "Normal",
+          plChapters: "Kapitel",
+          plChapterN: "Kapitel {n}",
+          plCreditsChapter: "Eftertexter",
+          shortcutsSaveMoment: "Spara \xF6gonblick",
+          clipTitle: "Klipp",
+          clipNew: "Nytt klipp",
+          clipZoomed: "Inzoomat \xB7 4 min",
+          clipShare: "Dela klipp",
+          clipShareSection: "Dela",
+          clipCopyLink: "Kopiera l\xE4nk",
+          clipCopyImage: "Kopiera bild",
+          clipSaveFile: "Spara fil",
+          clipSaveMoment: "Spara bland \xF6gonblick",
+          clipFrom: "Fr\xE5n {time}",
+          clipSendTo: "Skicka till {phone}",
+          clipPhoneGone: "Telefonen \xE4r inte l\xE4ngre ansluten",
+          clipShowQr: "Visa QR-kod f\xF6r l\xE4nken",
+          clipTvNote: "TV:n skickar bara in- och ut-tid. Telefonen renderar och delar.",
+          clipTvCancel: "Avbryt med Bak\xE5t",
+          clipTvStill: "Stillbild \xB7 f\xF6rhandsvisning i bilden",
+          clipScanQr: "Skanna med telefonen",
+          clipTvBackCloses: "Bak\xE5t st\xE4nger",
+          clipSentTo: "Skickat till {phone} \xB7 {len} s",
+          clipFrame: "Bildruta {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 h\xE5ll 5 s \xB7 OK n\xE4sta \xB7 Bak\xE5t avbryter",
+          clipMomentSavedAt: "\xD6gonblick sparat \xB7 {time}",
+          clipSavePhotos: "Spara i Bilder",
+          clipCancel: "Avbryt klipp",
+          clipShareNow: "Dela nu",
+          clipTileLink: "L\xE4nk",
+          clipTileSave: "Spara",
+          clipTileMoment: "\xD6gonblick",
+          clipSavedPhotos: "Sparat i Bilder",
+          clipSaveNeedsAndroid10: "Spara i Bilder kr\xE4ver Android 10 \u2014 dela i st\xE4llet",
+          clipNewWithLength: "Nytt klipp \xB7 {len}",
+          clipRenderingIndeterminate: "Skapar klipp \u2026",
+          clipFormatStill: "Bild",
+          clipRendering: "Skapar klipp \xB7 {pct} %",
+          clipFailed: "Klippet kunde inte skapas",
+          clipLinkCopied: "L\xE4nk kopierad",
+          clipImageCopied: "Bild kopierad",
+          clipSaved: "Klippet sparat",
+          clipClose: "St\xE4ng klipp",
+          shortcutsClip: "Klipp",
+          plMoments: "\xD6gonblick",
+          plMomentKeep: "Spara detta \xF6gonblick",
+          plMomentJump: "Hoppa",
+          plMomentRemove: "Ta bort \xF6gonblick",
+          plMomentsClear: "Rensa \xF6gonblick",
+          plMomentsEmpty: "Inga \xF6gonblick \xE4n",
+          plMomentSaved: "\xD6gonblick sparat vid {time}",
+          plMomentExists: "Det finns redan ett \xF6gonblick vid {time}",
+          plMomentUnavailable: "\xD6gonblick kan inte sparas f\xF6r den h\xE4r k\xE4llan",
           plMute: "Ljud av",
           plVolume: "Volymreglage",
           plAudioDelay: "Ljudf\xF6rdr\xF6jning",
@@ -6699,6 +8025,8 @@
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
           btAudioAutoOffsetDesc: "Tr\xE5dl\xF6st ljud kommer 100\u2013300 ms f\xF6r sent beroende p\xE5 kodek. L\xE4ggs p\xE5 din egen f\xF6rdr\xF6jning n\xE4r utg\xE5ngen \xE4r tr\xE5dl\xF6s.",
           plFullscreen: "Helsk\xE4rm",
+          plPip: "Bild-i-bild",
+          plPipMobileOnly: "Bara mobil",
           plShow: "Visa",
           plHide: "D\xF6lj",
           settingsTabTheme: "Tema",
@@ -6801,6 +8129,10 @@
           rtInverseTmDesc: "Expanderar SDR-material mot HDR p\xE5 kapabla sk\xE4rmar.",
           rtHwdec: "H\xE5rdvaruacceleration",
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
+          allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
+          allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          androidSourceCache: "Mellanlagra str\xF6mmar",
+          androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
           atEyebrow: "Ljudjustering",
           atTitle: "Forma ljudet",
@@ -6815,6 +8147,10 @@
           atDownmixDesc: "F\xE4ller ihop 5.1/7.1 till tv\xE5 kanaler \u2014 laptoph\xF6gtalare och h\xF6rlurar.",
           atEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv). Nattl\xE4get l\xE4ggs ovanp\xE5.",
           vtTitle: "Bildjusteringar",
+          vtScopeLabel: "G\xE4ller",
+          vtScopeFilm: "Bara den h\xE4r filmen",
+          vtScopeAll: "Alla filmer",
+          vtActive: "P\xE5",
           vtHint: "G\xE4ller live i en \xF6ppen spelare och f\xF6r all uppspelning fram\xE5t.",
           vtBrightness: "Ljusstyrka",
           vtContrast: "Kontrast",
@@ -6826,6 +8162,7 @@
           vtPresetVivid: "Levande",
           vtPresetCinema: "Bio-m\xF6rkt",
           vtPresetSharp: "Skarp",
+          vtPresetLabel: "F\xF6rval",
           vtEngineNote: "Gamma och sk\xE4rpa kr\xE4ver den inbyggda desktop-motorn; webbspelaren till\xE4mpar resten.",
           sfTabSafety: "S\xE4kerhet",
           sfDisplayEyebrow: "Visning",
@@ -7011,6 +8348,13 @@
           homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
           cardShapePoster: "St\xE5ende",
           cardShapeLandscape: "Liggande",
+          homeExpandCards: "F\xE4ll ut kort vid fokus",
+          homeCardVhs: "VHS-fodral",
+          homeCardVhsAuto: "F\xF6lj Tema & skala",
+          homeCardVhsOn: "Vrids vid fokus",
+          homeCardVhsShelf: "Vridna i hyllan",
+          homeCardVhsOff: "Av",
+          homeExpandCardsHint: "Kortet i fokus breddas till en bakgrundsbild med logga och fakta. Bara st\xE5ende kort.",
           qrAddonOpen: "L\xE4gg till via mobilen",
           qrAddonTitle: "Skanna med mobilen",
           qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
@@ -7047,6 +8391,13 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          cardSheen: "Bl\xE4nk p\xE5 korten",
+          cardSheenDesc: "Ett mjukt ljus sveper \xF6ver ett kort n\xE4r du pekar p\xE5 det eller v\xE4ljer det.",
+          vhsCards: "VHS-fodral",
+          vhsCardsDesc: "Korten vrids som ett VHS-fodral med titeln p\xE5 ryggen: n\xE4r du pekar p\xE5 eller v\xE4ljer dem, eller hela tiden som i en hylla och r\xE4tas upp n\xE4r de v\xE4ljs.",
+          vhsModeOff: "Av",
+          vhsModeFocus: "Vrids vid fokus",
+          vhsModeShelf: "Vridna i hyllan",
           performanceMode: "Prestandal\xE4ge",
           performanceModeDesc: "F\xF6r svagare tv-boxar: tar bort osk\xE4rpa och skuggor bakom menyer och kort, och l\xE5ter inte heron spela trailern av sig sj\xE4lv. Inget f\xF6rsvinner ur gr\xE4nssnittet.",
           heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
@@ -7151,6 +8502,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (valfritt)",
           profilePinEnterTitle: "Ange PIN f\xF6r {name}",
+          slLockWith: "L\xE5s med\u2026",
+          slEyebrow: "{title} \xB7 Seriel\xE5s",
+          slCreateTitle: "L\xE5s serien med\u2026",
+          slCreateLead: "Ingen av er ser n\xE4sta avsnitt f\xF6rr\xE4n de andra har sett det f\xF6reg\xE5ende.",
+          slYou: "Du",
+          slHasPin: "Har PIN",
+          slNoPin: "Ingen PIN",
+          slMode: "L\xE4ge",
+          slTogether: "Tillsammans",
+          slTogetherHint: "Ni ser serien ihop. Ett avsnitt som r\xE4knas som sett markeras f\xF6r alla, oavsett vems profil som var p\xE5.",
+          slSolo: "Var f\xF6r sig",
+          slSoloHint: "Var och en tittar p\xE5 sin egen profil. Den som ligger f\xF6re v\xE4ntar in de andra.",
+          slPinToggle: "Kr\xE4v PIN f\xF6r Titta \xE4nd\xE5",
+          slPinOff: "Av: alla kan v\xE4lja Titta \xE4nd\xE5 direkt.",
+          slPinOn: "Den som v\xE4ljer Titta \xE4nd\xE5 anger sin profil-PIN.",
+          slPinNone: "Ingen av de valda profilerna har en PIN.",
+          slPinPartialOne: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPinPartialMany: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPosMe: "Du \xE4r p\xE5 {code}",
+          slPosOther: "{name} \xE4r p\xE5 {code}",
+          slPosMeNotStarted: "Du har inte b\xF6rjat",
+          slPosOtherNotStarted: "{name} har inte b\xF6rjat",
+          slWaitOne: "Du f\xE5r v\xE4nta tills {name} har sett {code}.",
+          slWaitMany: "{ahead} f\xE5r v\xE4nta tills {name} har kommit ikapp till {code}.",
+          slOthersWait: "{names} f\xE5r v\xE4nta tills du har sett {code}.",
+          slSame: "Ni \xE4r p\xE5 samma avsnitt, {code}. Bra start.",
+          slConfirm: "L\xE5s serien",
+          slCreatedTogether: "{title} \xE4r l\xE5st med {names}. Ni ser den tillsammans.",
+          slCreatedSolo: "{title} \xE4r l\xE5st med {names}. Ni v\xE4ntar in varandra.",
+          slMarker: "L\xE5st med {names} \xB7 {mode}",
+          slManage: "Hantera l\xE5s",
+          slParticipants: "Deltagare",
+          slSeenCode: "Har sett {code}",
+          slNotStarted: "Har inte b\xF6rjat",
+          slRemoveMember: "Ta bort",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Ingen har tittat \xE4nd\xE5 \xE4n.",
+          slDone: "Klar",
+          slRemoveLock: "Ta bort l\xE5s",
+          slRemoveTitle: "Ta bort l\xE5set?",
+          slRemoveText: "Ni tittar i egen takt igen. Inget ni har sett \xE4ndras.",
+          slKeep: "Beh\xE5ll l\xE5set",
+          slRemoveLastTitle: "Ta bort {name}?",
+          slRemoveLastText: "Ett l\xE5s beh\xF6ver minst tv\xE5. Tar du bort {name} upph\xF6r l\xE5set p\xE5 {title}, och ni tittar i egen takt igen.",
+          slRemovedToast: "L\xE5set \xE4r borttaget. Ni tittar i egen takt igen.",
+          slLockedTitle: "{code} \xE4r l\xE5st",
+          slLockedTextOne: "{names} har inte sett {code} \xE4n.",
+          slLockedTextMany: "{names} har inte sett {code} \xE4n.",
+          slWatchAnyway: "Titta \xE4nd\xE5",
+          slFootnote: "{names} ser att du tittade f\xF6re.",
+          slFootnotePin: "Titta \xE4nd\xE5 kr\xE4ver din PIN.",
+          slFootnoteNoPin: "Du har ingen PIN, s\xE5 ingen kod beh\xF6vs.",
+          slPinTitle: "Ange PIN f\xF6r {name}",
+          slPinSubtitle: "f\xF6r att titta p\xE5 {code} \xE4nd\xE5",
+          slContinueWaiting: "V\xE4ntar p\xE5 {names} \xB7 {code}",
+          slContinueMetaLocked: "Serie \xB7 {code} \xB7 L\xE5st",
+          slNextLocked: "N\xE4sta avsnitt \xE4r l\xE5st. V\xE4ntar p\xE5 {names}",
+          slClose: "St\xE4ng",
+          slTogetherToast: "{code} markerat som sett f\xF6r {names}.",
+          slUnlockedToastOne: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slUnlockedToastMany: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slPlayCode: "Spela {code}",
+          slAheadToast: "{name} tittade p\xE5 {code} f\xF6re dig.",
+          slOkay: "Okej",
+          slOwnOverrideToast: "Du tittade p\xE5 {code} f\xF6re {names}. {names} f\xE5r se det.",
+          slWaitingForYouOne: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slWaitingForYouMany: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slEndedOne: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slEndedMany: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slNewSeasonOne: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slNewSeasonMany: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slFinishedTitle: "Klart ihop",
+          slFinishedText: "Ni har sett alla {count} avsnitt. L\xE5set beh\xF6vs inte l\xE4ngre.",
+          slMyLocksTitle: "Seriel\xE5s",
+          slMyLocksLead: "Serier du har l\xE5st med andra",
+          slMyLocksEmpty: "L\xE5s en serie fr\xE5n dess detaljsida med L\xE5s med\u2026",
+          slStatusWaiting: "Du v\xE4ntar p\xE5 {names}",
+          slStatusCanContinue: "Du kan forts\xE4tta",
+          slStatusInStep: "Ni \xE4r i fas",
+          slStatusWaitedOnOne: "{names} v\xE4ntar p\xE5 dig",
+          slStatusWaitedOnMany: "{names} v\xE4ntar p\xE5 dig",
+          slRowSeenAll: "Sett av alla",
+          slRowMissingOne: "{names} har inte sett",
+          slRowMissingMany: "{names} har inte sett",
+          slRowNext: "N\xE4sta",
+          slRowNextSeenByOne: "N\xE4sta \xB7 {names} har sett",
+          slRowNextSeenByMany: "N\xE4sta \xB7 {names} har sett",
+          slRowWaiting: "V\xE4ntar p\xE5 {names}",
+          slRowLocked: "L\xE5st",
+          slRowAheadOfYou: "{names} tittade f\xF6re dig",
+          slRowOverrideMineOne: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slRowOverrideMineMany: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slGroupMoreOne: "1 avsnitt till v\xE4ntar",
+          slGroupMoreMany: "{count} avsnitt till v\xE4ntar",
+          slGroupMoreHint: "\xD6ppnas ett i taget, i takt med {names}.",
+          slGroupSeason: "Hela s\xE4song {season} v\xE4ntar",
+          slGroupSeasonHint: "\xD6ppnas ett avsnitt i taget efter {code}, i takt med {names}.",
+          slShow: "Visa",
+          slHide: "D\xF6lj",
+          slAnd: "och",
           profilePinSetTitle: "V\xE4lj PIN f\xF6r {name}",
           profilePinCurrentTitle: "Ange nuvarande PIN f\xF6r {name}",
           profilePinRemoveTitle: "Ange PIN f\xF6r att ta bort l\xE5set f\xF6r {name}",
@@ -7639,6 +9091,7 @@
           tvRowFailed: "Kunde inte h\xE4mtas",
           tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
           tvQuickPlay: "Spela",
+          tvQuickSource: "K\xE4lla: {source} \u203A",
           tvQuickMarkWatched: "Markera som sedd",
           tvQuickUnmarkWatched: "Markera som osedd",
           tvQuickMoreInfo: "Mer info",
@@ -7682,6 +9135,29 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestigedrama",
+          homeSourceMoment: "Just nu (byter efter stund)",
+          homeSourceComingUp: "Kalender",
+          comingUpTitle: "Kommer snart",
+          comingUpSubtitle: "Fr\xE5n serier du f\xF6ljer \xB7 {n}",
+          comingUpAvailableOne: "1 avsnitt tillg\xE4ngligt nu",
+          comingUpAvailableMany: "{n} avsnitt tillg\xE4ngliga nu",
+          comingUpNothingNew: "inget nytt just nu",
+          comingUpOpenCalendar: "\xD6ppna kalender",
+          comingUpMissed: "Missade",
+          comingUpToday: "Idag",
+          comingUpTomorrow: "Imorgon",
+          comingUpEpisodesCount: "{n} avsnitt",
+          comingUpInDays: "om {n} dagar",
+          comingUpPillAvailable: "Tillg\xE4nglig",
+          comingUpPillMissedAvailable: "Missad \xB7 Tillg\xE4nglig",
+          comingUpPillTonight: "Ikv\xE4ll {time}",
+          comingUpPillWatched: "Sedd",
+          comingUpTagPremiere: "Premi\xE4r",
+          comingUpTagFinale: "Final",
+          comingUpShowMissedSetting: "Visa missade avsnitt i Kommer snart",
+          comingUpShowMissedHint: "Avsnitt fr\xE5n ig\xE5r som du inte har sett \xE4n.",
+          homeSourceMomentMovies: "Just nu \xB7 Filmer",
+          homeSourceMomentSeries: "Just nu \xB7 Serier",
           homeSourceAnimeMovies: "Animefilmer",
           homeSourceAnimeTopSeries: "H\xF6gst betygsatt anime",
           homeSourceStreamingServices: "Streaming",
@@ -7720,7 +9196,7 @@
           traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
           traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
           traktAutoUnfollowSeries: "Avf\xF6lj serier du sett klart",
-          traktAutoUnfollowSeriesHint: "Tar bort en serie n\xE4r du sett hela sista s\xE4songen. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
+          traktAutoUnfollowSeriesHint: "Tar bara bort en serie n\xE4r den \xE4r helt avslutad och du sett sista avsnittet. P\xE5g\xE5ende serier tas aldrig bort. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
           traktHistoryRefused: "Trakt tog inte emot din sedd-historik",
           traktHistoryRefusedBody: "Bevakningslistan synkade som den ska \u2014 det h\xE4r g\xE4ller bara sedd-historiken. Trakt har ett tak p\xE5 100 000 uppspelningar. Din lokala historik \xE4r intakt och Lumio p\xE5verkas inte.",
           traktRejectedBy: "Avvisat av Trakt",
@@ -7847,6 +9323,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Kom ih\xE5g bildformat",
           rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
+          matchFrameRate: "Matcha bildfrekvens",
+          matchFrameRateDesc: "Byter TV:n till bildfrekvensen i det du tittar p\xE5, s\xE5 att r\xF6relser inte hackar. Sk\xE4rmen blir svart en kort stund n\xE4r den byter.",
+          matchFrameRateOff: "Av",
+          matchFrameRateVod: "Filmer och serier",
+          matchFrameRateAll: "\xC4ven live-TV",
           autoSkipIntro: "Auto-skippa intro",
           autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
           resumePromptEyebrow: "FORTS\xC4TT ELLER B\xD6RJA OM",
@@ -7877,6 +9358,9 @@
           exitAppTitle: "Avsluta Lumio?",
           exitAppConfirm: "Avsluta",
           quizMenuLabel: "Filmquiz",
+          couchMenuLabel: "Soffl\xE4ge",
+          couchOpenButton: "\xD6ppna Soffl\xE4ge",
+          couchOpenHint: "Styr TV:n eller datorn som k\xF6r Lumio fr\xE5n den h\xE4r telefonen. B\xE5da m\xE5ste vara p\xE5 samma wifi.",
           quizLobbyTitle: "Vem kan sin film?",
           quizLobbyIntro: "Skanna koden med telefonen f\xF6r att vara med. Fr\xE5gorna kommer ur filmer ni har sett.",
           quizOrGoTo: "Eller g\xE5 till",
@@ -7931,6 +9415,104 @@
           quizCreateFailed: "Kunde inte starta quizet. F\xF6rs\xF6k igen om en stund.",
           quizClose: "St\xE4ng",
           quizBankError: "Kunde inte bygga fr\xE5gor. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          matchMenuLabel: "Filmmatch",
+          matchLobbyTitle: "Vad ska vi se?",
+          matchLobbyIntro: "Skanna koden och svep p\xE5 telefonen. N\xE4r alla har sagt ja till samma film startar den.",
+          matchPlayers: "Deltagare",
+          matchPaired: "kopplad",
+          matchGuest: "G\xE4st",
+          matchRoundLabel: "Omg\xE5ngen",
+          matchRoundDefault: "20 filmer ur Min lista och liknande titlar",
+          matchStart: "K\xF6r",
+          matchStartOnPhone: "eller tryck K\xF6r p\xE5 {owner} telefon",
+          matchMinTwo: "Minst tv\xE5 deltagare",
+          matchRoundEyebrow: "Omg\xE5ng %1 \xB7 %2 filmer",
+          matchOngoing: "P\xE5g\xE5r",
+          matchSwipeTitle: "Svep p\xE5 telefonen",
+          matchSwipeIntro: "N\xE4r alla har sagt ja till samma film blir det match. Ingen f\xE5r se vad de andra har svarat.",
+          matchNoMatchYet: "Ingen match \xE4n",
+          matchDoneOf: "%1 av %2 har svept klart",
+          matchPlayerLeft: "L\xE4mnade",
+          matchEyebrow: "Match",
+          matchYouChose: "Ni valde",
+          matchIt: "Match!",
+          matchAllYes: "Alla sa ja",
+          matchPickedBy: "{name} valde \xB7 %1 av %2 sa ja",
+          matchStartsIn: "Startar om",
+          matchPreparing: "G\xF6r i ordning str\xF6mmen \u2026",
+          matchReady: "Redo",
+          matchPlayNow: "Spela nu",
+          matchNotThis: "Inte den",
+          matchStarting: "Startar \u2026",
+          matchNone: "Inga matchningar den h\xE4r g\xE5ngen",
+          matchTop3Intro: "Det h\xE4r \xE4r filmerna som flest sa ja till. {name} v\xE4ljer p\xE5 telefonen, eller v\xE4lj h\xE4r.",
+          matchTop3IntroHost: "Det h\xE4r \xE4r filmerna som flest sa ja till. V\xE4lj h\xE4r.",
+          matchRank1: "Flest ja",
+          matchRank2: "Tv\xE5a",
+          matchRank3: "Trea",
+          matchVotes: "%1 av %2 sa ja",
+          matchNewRound: "Ny omg\xE5ng",
+          matchCouldNotStart: "Kunde inte starta",
+          matchNoSource: "Hittade ingen k\xE4lla f\xF6r {film}",
+          matchBackToCards: "Tillbaka till korten om %1 s",
+          matchEndedTitle: "Filmmatch avslutades",
+          matchEndedBody: "Telefonerna har kopplats fr\xE5n rummet.",
+          matchNewMatch: "Ny Filmmatch",
+          matchCloseTitle: "St\xE4nga Filmmatch?",
+          matchCloseBody: "Telefonerna kopplas fr\xE5n rummet.",
+          matchKeepGoing: "Forts\xE4tt",
+          matchCreateFailed: "Kunde inte starta Filmmatch. F\xF6rs\xF6k igen om en stund.",
+          matchDeckEmpty: "Hittade inga filmer \u2014 l\xE4gg till filmer i Min lista och f\xF6rs\xF6k igen.",
+          matchJoinTitle: "Vad heter du?",
+          matchJoin: "G\xE5 med",
+          matchWaitingFor: "V\xE4ntar p\xE5 att {name} k\xF6r ig\xE5ng",
+          matchUndo: "\xC5ngra",
+          matchLeft: "Du l\xE4mnade Filmmatch",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "TIPPA MATCHEN \xB7 {league}",
+          tipKickoff: "Avspark {time}",
+          tipIn: "om {n} min",
+          tipScan: "Skanna med kameran, eller \xF6ppna Soffl\xE4ge",
+          tipInSofa: "I soffan",
+          tipCount: "{n} av {m} har tippat",
+          tipHasTipped: "\u2713 Har tippat",
+          tipTipping: "Tippar \u2026",
+          tipLobbyHint: "Tipsen l\xE5ses vid avspark. St\xE4llningen visas inte om spoilerskyddet \xE4r p\xE5.",
+          tipLockNow: "L\xE5s nu",
+          tipCancel: "Avbryt",
+          tipPill: "Tippa",
+          tipPillAgain: "Tryck ned igen",
+          tipManageOverline: "TIPPA MATCHEN",
+          tipShowLobby: "Visa lobbyn",
+          tipRow: "TIPS",
+          tipFinal: "SLUT",
+          tipExact: "R\xC4TT RESULTAT",
+          tipWinner: "R\xC4TT VINNARE",
+          tipClosest: "N\xC4RMAST AV \xD6VRIGA",
+          tipDone: "Klar",
+          tipSeason: "S\xE4songen",
+          tipSeasonOverline: "S\xC4SONG I SOFFAN \xB7 {n} MATCHER",
+          tipNewSeason: "Ny s\xE4song",
+          tipNewSeasonConfirm: "Tryck igen f\xF6r ny s\xE4song",
+          tipColName: "NAMN",
+          tipColExact: "R\xC4TT RES.",
+          tipColWinner: "R\xC4TT VINN.",
+          tipColTonight: "IKV\xC4LL",
+          tipColPoints: "PO\xC4NG",
+          tipExactSub: "tippade {tip} \xB7 3 p",
+          tipWon: "{team} vann",
+          tipDraw: "Oavgjort",
+          tipOneOff: "ett m\xE5l ifr\xE5n",
+          tipNOff: "{n} m\xE5l ifr\xE5n",
+          tipPlusOne: "+1 p",
+          tipNobody: "Ingen",
+          tipWhyExact: "R\xE4tt resultat",
+          tipWhyWinner: "R\xE4tt vinnare",
+          tipWhyWinnerClosest: "R\xE4tt vinnare \xB7 n\xE4rmast",
+          tipWhyClosest: "N\xE4rmast",
+          tipWhyWrong: "Fel vinnare",
+          tipCreateFailed: "Kunde inte starta Tippa matchen. F\xF6rs\xF6k igen om en stund.",
+          matchEnded: "Filmmatch avslutades p\xE5 TV:n",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -8019,9 +9601,17 @@
           upgradeSubtitleWhenBetter: "Uppgradera undertext n\xE4r b\xE4ttre laddas",
           upgradeSubtitleWhenBetterDesc: "Byt till en h\xF6gre prioriterad undertext om en dyker upp efter uppspelningsstart. Manuella val skrivs aldrig \xF6ver.",
           ipDescRpdb: "Posters med betyget inbr\xE4nt, p\xE5 varje kort. Gratis nyckel p\xE5 ratingposterdb.com.",
-          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Gratis nyckel p\xE5 mdblist.com.",
+          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Anv\xE4nder din MDBList-inloggning, eller en gratis nyckel.",
           ipRpdbHint: "Med nyckel satt byts kortens posters till RPDB:s betygsposters (IMDb-nycklade).",
           ipMdblistHint: "Visas som extra badges bredvid \xE5rtalet p\xE5 detaljsidan.",
+          ipMdblistViaLogin: "Anv\xE4nder din MDBList-inloggning (Sp\xE5rningstj\xE4nster \u2192 Konton) \u2014 ingen nyckel beh\xF6vs.",
+          ipMdblistLoginHint: "Enklare: anslut MDBList under Sp\xE5rningstj\xE4nster \u2192 Konton, d\xE5 beh\xF6vs ingen nyckel.",
+          hpListChoose: "V\xE4lj en lista",
+          hpListCategory: "Kategori",
+          hpListPasteLabel: "Eller klistra in l\xE4nk eller id",
+          hpListLookup: "H\xE4mta",
+          hpListNotFound: "Hittade ingen s\xE5dan lista",
+          hpListLoadError: "Kunde inte h\xE4mta dina listor",
           ratingBadgePosition: "Betygsbadgens position",
           ratingBadgePositionDesc: "Vilket h\xF6rn av postern betygsbadgen sitter i.",
           badgePosTr: "Uppe till h\xF6ger",
@@ -8062,6 +9652,21 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          dailyPosterTitle: "Dagens affisch",
+          dailyPosterHint: "L\xE5ssk\xE4rmen visar en affisch ur din watchlist och byts varje morgon kl. 6.",
+          dailyPosterToggleTitle: "Dagens affisch p\xE5 l\xE5ssk\xE4rmen",
+          dailyPosterToggleDesc: "En tyst morgonavisering \xF6ppnar titeln. N\xE4r du st\xE4nger av visar l\xE5ssk\xE4rmen hemsk\xE4rmens bakgrund \u2014 den tidigare l\xE5ssk\xE4rmsbilden g\xE5r inte att f\xE5 tillbaka. Vissa tillverkare (Xiaomi, Oppo) kan skriva \xF6ver l\xE5ssk\xE4rmen.",
+          dailyPosterOn: "P\xE5",
+          dailyPosterOff: "Av",
+          dailyPosterRunNowTitle: "Byt nu",
+          dailyPosterRunNowDesc: "V\xE4lj n\xE4sta affisch direkt.",
+          dailyPosterRunNow: "Byt nu",
+          dailyPosterQueued: "L\xE5ssk\xE4rmen byts om en liten stund.",
+          dailyPosterEmpty: "Watchlisten har inga titlar med affisch \xE4n.",
+          dailyPosterError: "Det gick inte: {e}",
+          dailyPosterNotAllowed: "Telefonen l\xE5ter inte appar byta bakgrund (tillverkaren eller en jobbpolicy).",
+          dailyPosterNotificationTitle: "Dagens affisch",
+          dailyPosterChannelName: "Dagens affisch",
           hapticsTitle: "K\xE4nn basen",
           hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
           hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
@@ -8171,6 +9776,7 @@
           plShortMusic: "Musik",
           plShortZoom: "Zoom",
           plShortCast: "Casta",
+          plShortPip: "Bild-i-bild",
           plShortFullscreen: "Fullsk\xE4rm",
           plShortMore: "Mer",
           recapFound: "Recap",
@@ -8225,6 +9831,21 @@
           defaultAudioTrackDesc: "F\xF6rs\xF6ker v\xE4lja spr\xE5k automatiskt n\xE4r flera ljudsp\xE5r finns.",
           disableSubtitlesWhenAudioMatches: "St\xE4ng av textning n\xE4r ljudspr\xE5ket matchar",
           disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
+          subtitleAutoSyncSetting: "Synka undertexter automatiskt",
+          subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
+          subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
+          subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
+          subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
+          subtitleAutoSyncUndo: "\xC5ngra",
+          subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
+          subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
+          subtitleAutoSyncAmbiguous: "Autosynk: kunde inte avg\xF6ra s\xE4kert \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncChecking: "Autosynk: kontrollerar\u2026",
+          subtitleAutoSyncNoTextTracks: "Autosynk: filen har inga textundertexter att synka mot",
+          subtitleAutoSyncReadingTracks: "Autosynk: l\xE4ser in filens undertexter\u2026",
+          subtitleAutoSyncFetchFailed: "Autosynk: kunde inte h\xE4mta undertexten \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncRefined: "Undertextsynken finjusterad ({offset})",
           subtitleSize: "Textstorlek",
           subtitleSizeDesc: "Anv\xE4nds som standard f\xF6r nya filmer och avsnitt.",
           subtitleVerticalPositionDesc: "Hur h\xF6gt \xF6ver kontrollbaren textningen placeras.",
@@ -8238,8 +9859,23 @@
           subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
           resetSubtitleAppearance: "\xC5terst\xE4ll textutseende",
           resetSubtitleAppearanceDesc: "\xC5terst\xE4ller storlek, position, opacitet, f\xE4rger, bakgrund och kontur till standard.",
-          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
+          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning\natt se ut",
           subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
+          subtitleFont: "Typsnitt",
+          subtitleFontDesc: "L\xE4ttl\xE4sta typsnitt f\xF6r undertexter. V\xE4ljer du ett blir teckenavst\xE5ndet ocks\xE5 luftigare, och det \xE4r det som hj\xE4lper mest. Bildbaserade undertexter (PGS/VobSub fr\xE5n Blu-ray och dvd) beh\xE5ller sitt eget utseende.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (rekommenderas)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Teckenavst\xE5nd",
+          subtitleLetterSpacingDesc: "Det reglage som hj\xE4lper mest vid dyslexi: bokst\xE4ver som st\xE5r t\xE4tt tr\xE4ngs med varandra. Luftigare eller Luftigast \xE4r en bra b\xF6rjan.",
+          subtitleLineSpacing: "Radavst\xE5nd",
+          subtitleLineSpacingDesc: "Luft mellan raderna i en tv\xE5radig undertext. I skrivbordsappen g\xE4ller det bara i inl\xE4rningsl\xE4get \u2014 den inbyggda spelaren kan inte \xE4ndra det.",
+          subtitleSpacingNormal: "Normalt",
+          subtitleSpacingWide: "Luftigt",
+          subtitleSpacingWider: "Luftigare",
+          subtitleSpacingWidest: "Luftigast",
+          subtitleBold: "Fet text",
+          subtitleBoldDesc: "St\xE4ngs av n\xE4r du v\xE4ljer ett l\xE4ttl\xE4st typsnitt, som l\xE4ses b\xE4st i normal vikt.",
           skipIntro: "Skippa intro",
           originalFirst: "Original / f\xF6rsta",
           noFallback: "Ingen fallback",
@@ -8571,6 +10207,13 @@
           coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
           coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
           coreStreamsSource: "K\xE4lla",
+          streamSourceAllSources: "Alla k\xE4llor",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} avs",
+          streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
+          streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
+          streamSourceFallback: "E{episode} finns inte i {source} \u2014 visar {fallback}",
           coreStreamsCached: "Cachad",
           coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
           streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
@@ -8629,6 +10272,8 @@
           continueLayoutRows: "Rader",
           continueLayoutGrid: "Rutn\xE4t",
           cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+          cwFramesTitle: "Scenbild vid hovring",
+          cwFramesDesc: "Sparar en bildruta n\xE4r du pausar eller l\xE4mnar en titel och visar den n\xE4r du h\xE5ller muspekaren \xF6ver kortet (eller fokuserar det p\xE5 TV).",
           cwModeRows: "Rullande rader",
           cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
           cwModeGrid: "Rutn\xE4t",
@@ -8884,12 +10529,75 @@
           hpUpload: "Ladda upp",
           hpHomeEyebrow: "Startsida",
           hpSearchFieldTitle: "S\xF6kf\xE4lt",
+          startPageTitle: "Startsida",
+          startPageHint: "Sidan appen \xF6ppnar p\xE5 n\xE4r den startar. G\xE4ller den h\xE4r sortens enhet (TV, dator eller telefon). Finns sidan inte l\xE4ngre \xF6ppnas Hem.",
+          startPageGroupBuiltIn: "Inbyggda",
+          startPageGroupPages: "Egna sidor",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Toppraden",
-          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: ett s\xF6kf\xE4lt, snabbmenyn eller ingenting. Filmer, Serier och de andra filtersidorna visar alltid filtren i en Bl\xE4ddra-rad under heron.",
+          qmEyebrow: "Snabbmeny",
+          qmShow: "Visa snabbmeny",
+          qmStyle: "Stil",
+          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 7.",
+          qmScrollsTen: "Scrollar \xB7 upp till 10 poster",
+          qmUpToSix: "Upp till 7 poster",
+          qmItems: "Poster",
+          qmItemsHint: "Sidor i snabbmenyn, i ordning.",
+          qmItemsPanelHint: "OK p\xE5 en post f\xF6r att flytta eller ta bort den.",
+          qmAddPage: "L\xE4gg till sida",
+          qmSlotsLeft: "{n} platser kvar",
+          qmFull: "{style} rymmer 7. Horisont och Mening rymmer 10.",
+          qmHiddenWarn: "{n} poster d\xF6ljs med {style}. V\xE4lj en stil som scrollar eller ta bort poster.",
+          qmHidden: "Dold",
+          qmReset: "\xC5terst\xE4ll standard",
+          qmOffTitle: "Av",
+          qmOffHint: "Sl\xE5 p\xE5 genom att v\xE4lja Snabbmeny under Toppraden.",
+          qmUse: "Anv\xE4nd snabbmeny",
+          qmStyleCurrent: "Stil: {style}",
+          qmStyleWhere: "Byt stil, eller v\xE4xla till s\xF6k eller filter, under Toppraden.",
+          hpTopSlotQuick: "Snabbmeny",
+          qmStyle_horizon: "Horisont",
+          qmStyle_initials: "Initialer",
+          qmStyle_constellation: "Stj\xE4rnbild",
+          qmStyle_dark: "M\xF6rkret",
+          "qmStyle_focus-depth": "Sk\xE4rpedjup",
+          qmStyle_sentence: "Mening",
+          qmStyle_viewfinder: "S\xF6karen",
+          qmStyle_tracking: "Sp\xE4rrning",
+          qmStyle_numbers: "Sifferknappar",
+          qmStyle_italic: "Kursiv",
+          qmSentenceLead: "Visa mig",
+          qmSentence_search: "s\xF6ka",
+          qmSentence_movies: "filmer",
+          qmSentence_series: "serier",
+          qmSentence_continue: "d\xE4r jag slutade",
+          qmSentence_live: "live-tv",
+          qmSentence_home: "hem",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "min bevakningslista",
+          qmSentence_calendar: "kalendern",
+          qmSentence_releases: "nya sl\xE4pp",
+          qmSourceBuiltIn: "Inbyggd",
+          qmSourceCustomPage: "Egen sida",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Plats {i} av {n}",
+          qmHiddenWith: "dold med {style}",
+          qmDone: "Klar",
+          qmGroupFilters: "Filter",
+          qmGroupSearch: "S\xF6k",
+          qmGroupOther: "\xD6vrigt",
+          qmNew: "Ny",
+          qmUpTo10: "upp till 10",
+          qmResetHint: "\xC5terst\xE4ller standardposterna f\xF6r den h\xE4r menyn. Stilen ligger kvar.",
+          qmSectionHint: "Genv\xE4gar centrerade h\xF6gst upp p\xE5 startsidan.",
+          qmItemsCount: "{n} av {max}",
+          qmHiddenCount: "{n} dolda",
           hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
           hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
           hpTopSlotSearch: "S\xF6kf\xE4lt",
-          hpTopSlotNone: "Ingenting (filtren ligger vid rutn\xE4tet)",
+          hpTopSlotNone: "Ingenting",
           hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
           hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
           hpSearchTopChosenHint: "S\xF6kf\xE4ltet ligger i toppraden (se Toppraden ovan), s\xE5 det stora f\xE4ltet \xE4r dolt.",
@@ -9339,6 +11047,61 @@
           profGxConstellations: "Stj\xE4rnbilder",
           profGxZones: "M\xF6rka zoner",
           settingsPageProfilePage: "Profilsida",
+          settingsPagePairedPhones: "Kopplade telefoner",
+          couchEyebrow: "SOFFL\xC4GE",
+          couchTitle: "Telefoner som styr Lumio",
+          couchHint: "Telefonen blir fj\xE4rrkontroll, visar info om det som spelas och skickar betyg till profilens Trakt. Bara p\xE5 hemman\xE4tet.",
+          couchPairNew: "Koppla ny telefon",
+          couchColPhone: "TELEFON",
+          couchColProfile: "PROFIL",
+          couchColLastSeen: "SENAST ANSLUTEN",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID-APP",
+          couchSubPwa: "iPhone \xB7 startas fr\xE5n hemsk\xE4rmen",
+          couchSubAndroid: "Lumio-appen f\xF6r Android \xB7 K\xE4nn basen",
+          couchRemove: "Ta bort",
+          couchCancel: "Avbryt",
+          couchRemoveConfirm: "Ta bort {name}? Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod.",
+          couchFootnote: "Profilen styr vems Trakt-konto betyg och historik hamnar p\xE5. K\xE4nn basen finns bara f\xF6r telefoner med Lumio-appen f\xF6r Android.",
+          couchHapticsTitle: "K\xE4nn basen",
+          couchHapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar. Flyttad hit fr\xE5n Uppspelning.",
+          couchHapticsSensHint: "Hur svaga bassm\xE4llar som r\xE4knas.",
+          couchHapticsStrength: "Styrka",
+          couchHapticsSync: "F\xF6re / efter",
+          couchHapticsSyncHint: "Flytta vibrationen om den kommer f\xF6r tidigt eller sent.",
+          couchHapticsLegacy: "Koppla om med Soffl\xE4ge f\xF6r att styra K\xE4nn basen h\xE4r",
+          couchHapticsLiveHint: "Styrka och f\xF6re/efter g\xE4ller n\xE4r Soffl\xE4ge \xE4r \xF6ppet p\xE5 telefonen.",
+          couchEmptyTitle: "Inga telefoner kopplade \xE4n",
+          couchDialogInstr: "**Skanna med telefonens kamera** och \xF6ppna sidan \u2014 p\xE5 iPhone l\xE4gger du den p\xE5 hemsk\xE4rmen. **Lumio-appen p\xE5 Android:** \xF6ppna Soffl\xE4ge, v\xE4lj den h\xE4r datorn och ange koden.",
+          couchWaiting: "V\xE4ntar p\xE5 telefonen \u2026",
+          couchClosesIn: "St\xE4ngs om {time}",
+          couchNewCode: "Ny kod",
+          couchPaired: "{name} \xE4r kopplad",
+          couchPairedSub: "Profil {profile} \xB7 st\xE4ngs av sig sj\xE4lv",
+          couchExpiredTitle: "Koden har g\xE5tt ut",
+          couchExpiredBody: "Kodf\xF6nstret \xE4r bara \xF6ppet i tv\xE5 minuter, s\xE5 ingen annan p\xE5 n\xE4tet kan koppla sig. Ta fram en ny kod och f\xF6rs\xF6k igen.",
+          couchNewBadge: "Ny",
+          couchPortError: "Port 3012 \xE4r upptagen: {error}",
+          couchBundleMissing: "Telefonsidan saknas i den h\xE4r appversionen.",
+          couchTvPairHint: "Visar en kod och en QR-kod i tv\xE5 minuter",
+          couchTvEyebrow: "TELEFONER",
+          couchTvSubAndroid: "Android-app \xB7 Profil {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profil {profile}",
+          couchTvNoProfile: "ingen profil",
+          couchTvDetailSub: "{kind} \xB7 Senast ansluten: {when}",
+          couchTvKindAndroid: "Android-app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "KOD",
+          couchTvCodeInstr: "iPhone: skanna QR-koden. Android: ange koden i appen.",
+          couchTvWaiting: "V\xE4ntar p\xE5 telefonen",
+          couchTvClosesIn: "St\xE4ngs om {time}",
+          couchTvClose: "St\xE4ng",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "Ingen Trakt",
+          couchTvRemovePhone: "Ta bort telefonen",
+          couchTvRemoveTitle: "Ta bort {name}?",
+          couchTvRemoveBody: "Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod. Betyg som redan skickats till Trakt finns kvar.",
+          couchTvEmptyHint: "Inga telefoner kopplade \xE4n",
           ppWeatherGroup: "V\xE4der i dagboken",
           ppWeatherToggle: "Spara v\xE4dret",
           ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
@@ -9426,7 +11189,7 @@
       };
       LangContext = createContext(detachedLangContextValue);
       LANG_CHANGED_EVENT = "lumio-app-lang-changed";
-      STORAGE_KEY = "app_lang";
+      STORAGE_KEY2 = "app_lang";
       DEFAULT_LANG = "en";
     }
   });
@@ -9452,6 +11215,355 @@
     }
   });
 
+  // lib/player-layout.ts
+  function readPlayerChromeViewport() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "desktop";
+    if (window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "desktop";
+    if (window.matchMedia(LANDSCAPE_PHONE_QUERY).matches) return "landscape";
+    return "portrait";
+  }
+  function defaultLayout() {
+    return {
+      order: [...PLAYER_CONTROL_IDS],
+      hidden: [],
+      timeFormat: "elapsed-total",
+      volumeStyle: "slider",
+      seekBarStyle: "flat",
+      seekBarHeight: "standard",
+      seekBarColor: "accent",
+      seekBarDot: true
+    };
+  }
+  function getPlayerLayout() {
+    if (typeof window === "undefined") return defaultLayout();
+    try {
+      const raw = getScopedStorageItem(LAYOUT_KEY);
+      if (!raw) return defaultLayout();
+      const parsed = JSON.parse(raw);
+      const known = new Set(PLAYER_CONTROL_IDS);
+      const order = (Array.isArray(parsed.order) ? parsed.order : []).filter(
+        (id) => known.has(id)
+      );
+      for (const id of PLAYER_CONTROL_IDS) {
+        if (order.includes(id)) continue;
+        const defaultIndex = PLAYER_CONTROL_IDS.indexOf(id);
+        let insertAt = order.length;
+        for (let i = defaultIndex - 1; i >= 0; i--) {
+          const at = order.indexOf(PLAYER_CONTROL_IDS[i]);
+          if (at >= 0) {
+            insertAt = at + 1;
+            break;
+          }
+          if (i === 0) insertAt = 0;
+        }
+        order.splice(insertAt, 0, id);
+      }
+      const hidden = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
+        (id) => known.has(id) && id !== "playPause"
+      );
+      const timeFormat = parsed.timeFormat === "remaining" || parsed.timeFormat === "elapsed" ? parsed.timeFormat : "elapsed-total";
+      const volumeStyle = parsed.volumeStyle === "stepper" || parsed.volumeStyle === "icon" ? parsed.volumeStyle : "slider";
+      const seekBarStyle = parsed.seekBarStyle === "glass" || parsed.seekBarStyle === "pinstripe" ? parsed.seekBarStyle : "flat";
+      const seekBarHeight = parsed.seekBarHeight === "slim" || parsed.seekBarHeight === "chunky" ? parsed.seekBarHeight : "standard";
+      const seekBarColor = parsed.seekBarColor === "white" || parsed.seekBarColor === "red" || parsed.seekBarColor === "amber" ? parsed.seekBarColor : "accent";
+      const seekBarDot = parsed.seekBarDot !== false;
+      return { order, hidden, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
+    } catch {
+      return defaultLayout();
+    }
+  }
+  function onPlayerLayoutChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT, listener);
+    return () => window.removeEventListener(EVENT, listener);
+  }
+  function seekBarAppearance(layout) {
+    return {
+      heightClass: layout.seekBarHeight === "slim" ? "h-1" : layout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5",
+      // Färgen ligger i variabeln, inte i en klass: hela spelarlagret läser samma
+      // värde, och förhandsvisningen sätter den på sin egen låda.
+      fillClass: "bg-[rgb(var(--player-accent))]",
+      overlayClass: layout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : layout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "",
+      dot: layout.seekBarDot
+    };
+  }
+  function playerAccentRgb(layout, themeAccentRgb2) {
+    switch (layout.seekBarColor) {
+      case "white":
+        return "255 255 255";
+      case "red":
+        return "239 68 68";
+      case "amber":
+        return "251 191 36";
+      default:
+        return themeAccentRgb2;
+    }
+  }
+  function themeAccentRgb() {
+    if (typeof document === "undefined") return "244 132 95";
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
+  }
+  var PLAYER_CONTROL_IDS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, DESKTOP_CONTROL_ZONES, PHONE_ROW_ORDER, LANDSCAPE_ROW_BUDGET, PHONE_DEDICATED_IDS, LAYOUT_KEY, EVENT;
+  var init_player_layout = __esm({
+    "lib/player-layout.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      PLAYER_CONTROL_IDS = [
+        "playPause",
+        "seekBack",
+        "seekForward",
+        "time",
+        "spacer",
+        "subtitles",
+        "pip",
+        "cast",
+        "clip",
+        "audioTrack",
+        "aspect",
+        "cropZoom",
+        "audioOutput",
+        "segmentBadges",
+        "mute",
+        "volume",
+        "wiki",
+        "soundtrack",
+        "tuning",
+        "barcodeStrip",
+        "audioDelay",
+        "nextEpisode",
+        "switchStream",
+        "chapters",
+        "moments",
+        "sleepTimer",
+        "companions",
+        "more",
+        "fullscreen"
+      ];
+      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
+      LANDSCAPE_PHONE_QUERY = "(max-height: 519px) and (orientation: landscape)";
+      DESKTOP_CONTROL_ZONES = {
+        // Statusraden ("Slutar 22:41 • Intro") direkt efter volymen, som i
+        // referensen — i mitten lämnade den en stor tom yta (Jerry 2026-10-03).
+        left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"], ["segmentBadges"]],
+        center: [],
+        right: [
+          // Bildformat, zoom, sömntimer och barcode-remsan bor i kugghjulet
+          // (`more`) sedan 2026-10-03 — GEAR_CONTROL_IDS nedan.
+          ["subtitles", "audioTrack", "tuning"],
+          ["chapters", "moments", "wiki", "soundtrack", "cast", "clip"],
+          ["companions", "more", "fullscreen"]
+        ]
+      };
+      PHONE_ROW_ORDER = {
+        landscape: ["subtitles", "audioTrack", "tuning", "chapters", "moments", "clip", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"],
+        portrait: ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "clip", "wiki", "soundtrack", "companions"]
+      };
+      LANDSCAPE_ROW_BUDGET = 6;
+      PHONE_DEDICATED_IDS = {
+        landscape: ["nextEpisode", "pip", "cast"],
+        portrait: ["pip", "cast", "fullscreen"]
+      };
+      LAYOUT_KEY = "player_layout";
+      EVENT = "lumio-player-layout-changed";
+    }
+  });
+
+  // lib/pip.ts
+  function notify() {
+    for (const fn of listeners) fn();
+  }
+  function isTvDocument() {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function backend() {
+    if (backendOverride) return backendOverride;
+    if (typeof window === "undefined" || isTvDocument()) return "none";
+    if (isAndroidTauriEnv) return "droid";
+    if (!isClientSession()) return "none";
+    if (typeof window.matchMedia === "function" && window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "none";
+    return "web";
+  }
+  function setActive(next) {
+    if (active === next) return;
+    active = next;
+    if (typeof document !== "undefined" && backend() === "droid") {
+      if (next) document.documentElement.setAttribute("data-pip", "on");
+      else document.documentElement.removeAttribute("data-pip");
+    }
+    notify();
+  }
+  function sendConfig(enabled) {
+    const reg = current;
+    void np({
+      cmd: "pipConfig",
+      enabled,
+      kind: reg?.actions.prevNextKind ?? "seek",
+      playing: enabled && reg ? reg.actions.isPlaying() : false
+    });
+  }
+  function webSupports(video) {
+    if (!video) return false;
+    if (typeof video.webkitSupportsPresentationMode === "function") {
+      return video.webkitSupportsPresentationMode("picture-in-picture");
+    }
+    return typeof video.requestPictureInPicture === "function";
+  }
+  function resolveDroidSupport() {
+    if (droidPipSupported !== null || droidPipResolving) return;
+    droidPipResolving = getDeviceCapabilities().then((caps) => caps?.pip === true, () => false).then((ok) => {
+      droidPipResolving = null;
+      droidPipSupported = ok;
+      if (ok && current && backend() === "droid") sendConfig(true);
+      notify();
+    });
+  }
+  function canPip(video) {
+    const b = backend();
+    if (b === "droid") return current !== null && droidPipSupported === true;
+    if (b === "web") return webSupports(video);
+    return false;
+  }
+  async function enterPip(video) {
+    const b = backend();
+    try {
+      if (b === "droid") {
+        if (!current) return false;
+        const res = await np({ cmd: "pipEnter" });
+        return Boolean(res?.ok);
+      }
+      if (b === "web") {
+        const v = video;
+        if (!v || !webSupports(v)) return false;
+        const std = v.requestPictureInPicture;
+        if (typeof std === "function") {
+          await std.call(v);
+          return true;
+        }
+        v.webkitSetPresentationMode?.("picture-in-picture");
+        return true;
+      }
+    } catch (e) {
+      console.warn("[pip] kunde inte g\xE5 in i PiP", e);
+    }
+    return false;
+  }
+  function attachWeb(video, actions) {
+    const onEnter = () => setActive(true);
+    const onLeave = () => {
+      const wasActive = active;
+      setActive(false);
+      if (wasActive && video.paused && document.visibilityState === "hidden") actions.onClosed();
+    };
+    const onWebkitMode = () => {
+      if (video.webkitPresentationMode === "picture-in-picture") onEnter();
+      else if (active) onLeave();
+    };
+    video.setAttribute("autopictureinpicture", "");
+    video.addEventListener("enterpictureinpicture", onEnter);
+    video.addEventListener("leavepictureinpicture", onLeave);
+    video.addEventListener("webkitpresentationmodechanged", onWebkitMode);
+    return () => {
+      video.removeAttribute("autopictureinpicture");
+      video.removeEventListener("enterpictureinpicture", onEnter);
+      video.removeEventListener("leavepictureinpicture", onLeave);
+      video.removeEventListener("webkitpresentationmodechanged", onWebkitMode);
+    };
+  }
+  function registerPip(actions, video) {
+    const b = backend();
+    current?.detach();
+    const v = video ?? null;
+    const reg = { actions, video: v, detach: () => {
+    } };
+    current = reg;
+    if (b === "droid") {
+      if (droidPipSupported === null) resolveDroidSupport();
+      else if (droidPipSupported) sendConfig(true);
+      notify();
+    } else if (b === "web" && v) {
+      reg.detach = attachWeb(v, actions);
+    }
+    return () => {
+      if (current !== reg) return;
+      reg.detach();
+      current = null;
+      if (b === "droid" && droidPipSupported === true) sendConfig(false);
+      setActive(false);
+      notify();
+    };
+  }
+  function notifyPipPlaying(_playing) {
+    if (!current || backend() !== "droid" || droidPipSupported !== true) return;
+    sendConfig(true);
+  }
+  function isPipActive() {
+    return active;
+  }
+  function subscribe(fn) {
+    listeners.add(fn);
+    return () => {
+      listeners.delete(fn);
+    };
+  }
+  function usePipMode() {
+    return useSyncExternalStore(subscribe, isPipActive, () => false);
+  }
+  function usePipAvailable(video) {
+    return useSyncExternalStore(subscribe, () => canPip(video), () => false);
+  }
+  function onNative(msg) {
+    const reg = current;
+    if (!reg) return false;
+    if (msg.mode === "on") {
+      setActive(true);
+      return true;
+    }
+    if (msg.mode === "off") {
+      setActive(false);
+      return true;
+    }
+    if (msg.mode === "closed") {
+      setActive(false);
+      reg.actions.onClosed();
+      return true;
+    }
+    switch (msg.action) {
+      case "prev":
+        reg.actions.onPrev();
+        return true;
+      case "next":
+        reg.actions.onNext();
+        return true;
+      case "playPause":
+        reg.actions.onPlayPause();
+        return true;
+    }
+    return false;
+  }
+  var backendOverride, current, active, listeners, droidPipSupported, droidPipResolving;
+  var init_pip = __esm({
+    "lib/pip.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tauri_native_player();
+      init_session_host();
+      init_player_layout();
+      backendOverride = null;
+      current = null;
+      active = false;
+      listeners = /* @__PURE__ */ new Set();
+      droidPipSupported = null;
+      droidPipResolving = null;
+      if (typeof window !== "undefined") {
+        ;
+        window.__lumioPip = onNative;
+      }
+    }
+  });
+
   // lib/library/mode.ts
   function normalizeIds(ids) {
     const list = Array.isArray(ids) ? ids : typeof ids === "string" && ids ? [ids] : [];
@@ -9471,6 +11583,9 @@
     const mode = getLibraryMode();
     return mode ? mode.sourceIds.join(",") : void 0;
   }
+  function framedLibraryScopeActive() {
+    return Boolean(libraryScope?.frame);
+  }
   function getStoredLibraryMode() {
     if (typeof window === "undefined") return null;
     try {
@@ -9486,22 +11601,22 @@
   function setLibraryMode(mode) {
     const ids = mode ? normalizeIds(mode.sourceIds) : [];
     setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT2));
   }
   function onLibraryModeChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT, listener);
-    return () => window.removeEventListener(EVENT, listener);
+    window.addEventListener(EVENT2, listener);
+    return () => window.removeEventListener(EVENT2, listener);
   }
-  var KEY, EVENT, libraryScope;
+  var KEY, EVENT2, libraryScope;
   var init_mode = __esm({
     "lib/library/mode.ts"() {
       "use client";
       init_react_shim();
       init_profile_storage_shim();
       KEY = "library_mode_v1";
-      EVENT = "lumio-library-mode";
+      EVENT2 = "lumio-library-mode";
       libraryScope = null;
     }
   });
@@ -9512,29 +11627,43 @@
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_INDEX_CHANGED_EVENT));
   }
   async function loadLibraryIdSets(force = false) {
-    if (cache2 && !force) return cache2;
-    if (inflight) return inflight;
-    inflight = (async () => {
+    const key = librarySourceParam() ?? "";
+    if (cache2 && cacheKey === key && !force) return cache2;
+    if (inflight && inflightKey === key) return inflight;
+    inflightKey = key;
+    let run = null;
+    run = (async () => {
       try {
-        const sourceParam = librarySourceParam();
+        const sourceParam = key || void 0;
         const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
-        if (!response.ok) return cache2 ?? EMPTY;
+        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY;
         const payload = await response.json();
-        cache2 = {
+        const next = {
           movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
           series: { tmdb: new Set(payload.series.tmdb), imdb: new Set(payload.series.imdb) },
           total: payload.total,
           loadedAt: Date.now()
         };
-        for (const listener of listeners) listener();
-        return cache2;
+        if ((librarySourceParam() ?? "") === key) {
+          cache2 = next;
+          cacheKey = key;
+          for (const listener of listeners2) listener();
+        }
+        return next;
       } catch {
-        return cache2 ?? EMPTY;
+        return cache2 && cacheKey === key ? cache2 : EMPTY;
       } finally {
-        inflight = null;
+        if (inflight === run) {
+          inflight = null;
+          inflightKey = null;
+        }
       }
     })();
-    return inflight;
+    inflight = run;
+    return run;
+  }
+  function cachedLibraryIdSetsFor(key) {
+    return cache2 && cacheKey === key ? cache2 : null;
   }
   function tmdbIdOf(item) {
     const match = /^(?:movie|tv)-(\d+)$/.exec(item.id);
@@ -9546,34 +11675,42 @@
     if (tmdb != null && bucket.tmdb.has(tmdb)) return true;
     return Boolean(item.imdbId && bucket.imdb.has(item.imdbId));
   }
+  function modeKey(mode) {
+    return mode ? mode.sourceIds.join(",") : null;
+  }
   function useLibraryIdSets() {
     const [mode, setMode] = useState(() => getLibraryMode());
-    const [sets, setSets] = useState(() => getLibraryMode() ? cache2 : null);
+    const key = modeKey(mode);
+    const [state2, setState] = useState(() => {
+      const cached = key != null ? cachedLibraryIdSetsFor(key) : null;
+      return key != null && cached ? { key, sets: cached } : null;
+    });
     useEffect(() => onLibraryModeChanged(() => setMode(getLibraryMode())), []);
     useEffect(() => {
-      if (!mode) {
-        setSets(null);
+      if (key == null) {
+        setState(null);
         return;
       }
       let cancelled = false;
       const sync = () => {
         void loadLibraryIdSets(true).then((next) => {
-          if (!cancelled) setSets(next);
+          if (!cancelled) setState({ key, sets: next });
         });
       };
       sync();
       const onChanged = () => sync();
       window.addEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
-      listeners.add(onChanged);
+      listeners2.add(onChanged);
       return () => {
         cancelled = true;
         window.removeEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
-        listeners.delete(onChanged);
+        listeners2.delete(onChanged);
       };
-    }, [mode]);
-    return mode ? sets : null;
+    }, [key]);
+    if (key == null) return null;
+    return state2 && state2.key === key ? state2.sets : LIBRARY_ID_SETS_LOADING;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, cache2, inflight, listeners;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -9587,9 +11724,17 @@
         total: 0,
         loadedAt: 0
       };
+      LIBRARY_ID_SETS_LOADING = {
+        movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        total: 0,
+        loadedAt: 0
+      };
       cache2 = null;
+      cacheKey = null;
       inflight = null;
-      listeners = /* @__PURE__ */ new Set();
+      inflightKey = null;
+      listeners2 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -9656,10 +11801,32 @@
   });
 
   // lib/tv-scene.ts
+  function tvSceneScale() {
+    if (typeof document === "undefined") return 1;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale");
+    const value = parseFloat(raw);
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+  function tvSceneHeight() {
+    if (typeof document === "undefined") return TV_SCENE_HEIGHT_PX;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-h");
+    const value = parseFloat(raw);
+    return Number.isFinite(value) && value > 0 ? value : TV_SCENE_HEIGHT_PX;
+  }
+  function tvSceneWidth() {
+    if (typeof document === "undefined") return TV_SCENE_MIN_WIDTH_PX;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-w");
+    const value = parseFloat(raw);
+    if (Number.isFinite(value) && value > 0) return value;
+    return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
+  }
+  var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX;
   var init_tv_scene = __esm({
     "lib/tv-scene.ts"() {
       "use strict";
       "use client";
+      TV_SCENE_HEIGHT_PX = 1080;
+      TV_SCENE_MIN_WIDTH_PX = 1280;
     }
   });
 
@@ -9858,7 +12025,7 @@
 
   // lib/library/scan.ts
   function getActiveLibraryScan() {
-    return active;
+    return active2;
   }
   function onLibraryScanChanged(listener) {
     scanListeners.add(listener);
@@ -9866,8 +12033,8 @@
       scanListeners.delete(listener);
     };
   }
-  function setActive(next) {
-    active = next;
+  function setActive2(next) {
+    active2 = next;
     for (const listener of scanListeners) listener(next);
   }
   function cancelLibraryScan() {
@@ -9884,14 +12051,14 @@
     const forward = () => controller.abort();
     if (outer?.aborted) controller.abort();
     else outer?.addEventListener("abort", forward, { once: true });
-    setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    setActive2({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
       return await runLibraryScanInner(provider, source, {
         ...options,
         signal: controller.signal,
         onProgress: (progress) => {
-          setActive({ sourceId: source.id, progress });
+          setActive2({ sourceId: source.id, progress });
           onProgress?.(progress);
         }
       });
@@ -9899,7 +12066,7 @@
       outer?.removeEventListener("abort", forward);
       activeController = null;
       running = false;
-      setActive(null);
+      setActive2(null);
     }
   }
   async function runLibraryScanInner(provider, source, options) {
@@ -9947,7 +12114,7 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running, active, scanListeners, activeController;
+  var running, active2, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
@@ -9955,7 +12122,7 @@
       init_ids();
       init_name_match();
       running = false;
-      active = null;
+      active2 = null;
       scanListeners = /* @__PURE__ */ new Set();
       activeController = null;
     }
@@ -9972,10 +12139,69 @@
     }
   });
 
+  // lib/key-hold.ts
+  function sameKey(entry, event) {
+    if (entry.keyCode > 0 && event.keyCode !== void 0 && event.keyCode > 0) return entry.keyCode === event.keyCode;
+    return entry.key === event.key;
+  }
+  function install() {
+    if (installed || typeof window === "undefined") return;
+    installed = true;
+    window.addEventListener("keyup", (event) => {
+      held = held.filter((entry) => !sameKey(entry, event));
+    }, true);
+    window.addEventListener("blur", () => {
+      held = [];
+    });
+  }
+  function nativeOf(event) {
+    const native = event.nativeEvent;
+    return native && typeof native === "object" ? native : event;
+  }
+  function noteKeyDown(event, now2 = Date.now()) {
+    const identity = nativeOf(event);
+    const cached = answered.get(identity);
+    if (cached) return cached;
+    install();
+    const keyCode = event.keyCode ?? 0;
+    let entry = held.find((candidate) => sameKey(candidate, event));
+    if (entry && now2 - entry.last > KEY_HOLD_STALE_MS) {
+      held = held.filter((candidate) => candidate !== entry);
+      entry = void 0;
+    }
+    let state2;
+    if (entry) {
+      entry.last = now2;
+      state2 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
+    } else {
+      held.push({ key: event.key, keyCode, since: now2, last: now2 });
+      state2 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
+    }
+    answered.set(identity, state2);
+    return state2;
+  }
+  function heldLongerThan(state2, ms2) {
+    return state2.repeat && state2.heldMs > ms2;
+  }
+  function tvSeekStepSeconds(state2) {
+    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  }
+  var KEY_HOLD_STALE_MS, held, installed, answered;
+  var init_key_hold = __esm({
+    "lib/key-hold.ts"() {
+      "use strict";
+      KEY_HOLD_STALE_MS = 1600;
+      held = [];
+      installed = false;
+      answered = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
   // lib/tv-hold.ts
   var init_tv_hold = __esm({
     "lib/tv-hold.ts"() {
       "use strict";
+      init_key_hold();
     }
   });
 
@@ -10015,10 +12241,19 @@
     }
   });
 
+  // lib/home-background-settings.ts
+  var init_home_background_settings = __esm({
+    "lib/home-background-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
   // lib/home-override-settings.ts
   function emitChanged() {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(EVENT2));
+    window.dispatchEvent(new CustomEvent(EVENT3));
   }
   function getHomeOverridePluginId() {
     if (typeof window === "undefined") return null;
@@ -10042,9 +12277,9 @@
   function tryEnableHomeOverridePlugin(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return { ok: true };
-    const current = getHomeOverridePluginId();
-    if (current && current !== normalized) {
-      return { ok: false, activePluginId: current };
+    const current2 = getHomeOverridePluginId();
+    if (current2 && current2 !== normalized) {
+      return { ok: false, activePluginId: current2 };
     }
     setHomeOverridePluginId(normalized);
     return { ok: true };
@@ -10053,21 +12288,21 @@
     if (typeof window === "undefined") return () => {
     };
     const wrapped = () => listener();
-    window.addEventListener(EVENT2, wrapped);
+    window.addEventListener(EVENT3, wrapped);
     const offProfile = onProfileChanged(wrapped);
     return () => {
-      window.removeEventListener(EVENT2, wrapped);
+      window.removeEventListener(EVENT3, wrapped);
       offProfile();
     };
   }
-  var KEY2, EVENT2;
+  var KEY2, EVENT3;
   var init_home_override_settings = __esm({
     "lib/home-override-settings.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
       KEY2 = "custom_home_override_plugin";
-      EVENT2 = "lumio-home-override-changed";
+      EVENT3 = "lumio-home-override-changed";
     }
   });
 
@@ -10145,7 +12380,7 @@
   }
   function emitChanged2() {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT3));
+      window.dispatchEvent(new CustomEvent(EVENT4));
     }
   }
   function setTraktAuth(auth) {
@@ -10165,7 +12400,7 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(SCROBBLE_KEY) !== "0";
   }
-  var AUTH_KEY, EVENT3, SCROBBLE_KEY;
+  var AUTH_KEY, EVENT4, SCROBBLE_KEY;
   var init_trakt_storage = __esm({
     "lib/trakt-storage.ts"() {
       "use strict";
@@ -10173,7 +12408,7 @@
       init_profile_storage_shim();
       init_spoiler_settings();
       AUTH_KEY = "trakt_auth";
-      EVENT3 = "lumio-trakt-auth-changed";
+      EVENT4 = "lumio-trakt-auth-changed";
       SCROBBLE_KEY = "trakt_scrobble_enabled";
     }
   });
@@ -10181,6 +12416,7 @@
   // lib/movie-watchlist.ts
   var init_movie_watchlist = __esm({
     "lib/movie-watchlist.ts"() {
+      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -10197,10 +12433,9 @@
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
   }
-  function read() {
-    if (typeof window === "undefined") return {};
+  function parseStored(raw) {
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY3) ?? "{}");
+      const parsed = JSON.parse(raw);
       const out = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "string" && value.trim().length > 0) out[key] = value;
@@ -10211,10 +12446,21 @@
       return {};
     }
   }
+  function readShared() {
+    if (typeof window === "undefined") return {};
+    const raw = getScopedStorageItem(KEY3) ?? "{}";
+    if (parsedCache && parsedCache.raw === raw) return parsedCache.data;
+    const data = parseStored(raw);
+    parsedCache = { raw, data };
+    return data;
+  }
+  function read() {
+    return { ...readShared() };
+  }
   function write(data) {
     setScopedStorageItem(KEY3, JSON.stringify(data));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT4));
+      window.dispatchEvent(new CustomEvent(EVENT5));
     }
   }
   function timestampOf(value) {
@@ -10227,7 +12473,7 @@
     const source = options?.source ?? "local";
     let next;
     if (watched) {
-      next = options?.watchedAt ?? (source === "trakt" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
+      next = options?.watchedAt ?? (source !== "local" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
     }
     if (previous === next || !watched && previous === void 0) return;
     if (next === void 0) delete data[key];
@@ -10248,24 +12494,25 @@
     }
   }
   function getWatchedForSeries(tmdbId) {
-    const data = read();
+    const data = readShared();
     const prefix = `${tmdbId}-`;
     return new Set(Object.keys(data).filter((k) => k.startsWith(prefix)));
   }
   function onWatchedEpisodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT4, listener);
-    return () => window.removeEventListener(EVENT4, listener);
+    window.addEventListener(EVENT5, listener);
+    return () => window.removeEventListener(EVENT5, listener);
   }
-  var KEY3, EVENT4, DETAIL_EVENT;
+  var KEY3, EVENT5, DETAIL_EVENT, parsedCache;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
       KEY3 = "watched_episodes";
-      EVENT4 = "lumio-watched-episodes-changed";
+      EVENT5 = "lumio-watched-episodes-changed";
       DETAIL_EVENT = "lumio-watched-episode-mutated";
+      parsedCache = null;
     }
   });
 
@@ -10347,8 +12594,8 @@
     const title = entry.title ?? null;
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
-    const current = readEntries();
-    const next = current.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
+    const current2 = readEntries();
+    const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
       imdbId,
@@ -10422,14 +12669,26 @@
     }
   });
 
-  // lib/watchlist-auto-remove.ts
-  var init_watchlist_auto_remove = __esm({
-    "lib/watchlist-auto-remove.ts"() {
+  // lib/watchlist-merge.ts
+  var init_watchlist_merge = __esm({
+    "lib/watchlist-merge.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/mutation-source.ts
+  var init_mutation_source = __esm({
+    "lib/mutation-source.ts"() {
       "use strict";
       "use client";
-      init_watchlist();
-      init_watched_movies();
-      init_watched_episodes();
+    }
+  });
+
+  // lib/rating-sources.ts
+  var init_rating_sources = __esm({
+    "lib/rating-sources.ts"() {
+      "use strict";
+      "use client";
       init_profile_storage_shim();
     }
   });
@@ -10438,9 +12697,1137 @@
   var isAndroidTauri;
   var init_open_external = __esm({
     "lib/open-external.ts"() {
+      "use strict";
       "use client";
       init_tauri_mpv();
       isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
+  // ../../node_modules/qrcode.react/lib/esm/index.js
+  function generatePath(modules, margin = 0) {
+    const ops = [];
+    modules.forEach(function(row, y) {
+      let start2 = null;
+      row.forEach(function(cell, x) {
+        if (!cell && start2 !== null) {
+          ops.push(
+            `M${start2 + margin} ${y + margin}h${x - start2}v1H${start2 + margin}z`
+          );
+          start2 = null;
+          return;
+        }
+        if (x === row.length - 1) {
+          if (!cell) {
+            return;
+          }
+          if (start2 === null) {
+            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
+          } else {
+            ops.push(
+              `M${start2 + margin},${y + margin} h${x + 1 - start2}v1H${start2 + margin}z`
+            );
+          }
+          return;
+        }
+        if (cell && start2 === null) {
+          start2 = x;
+        }
+      });
+    });
+    return ops.join("");
+  }
+  function excavateModules(modules, excavation) {
+    return modules.slice().map((row, y) => {
+      if (y < excavation.y || y >= excavation.y + excavation.h) {
+        return row;
+      }
+      return row.map((cell, x) => {
+        if (x < excavation.x || x >= excavation.x + excavation.w) {
+          return cell;
+        }
+        return false;
+      });
+    });
+  }
+  function getImageSettings(cells, size, margin, imageSettings) {
+    if (imageSettings == null) {
+      return null;
+    }
+    const numCells = cells.length + margin * 2;
+    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
+    const scale = numCells / size;
+    const w = (imageSettings.width || defaultSize) * scale;
+    const h = (imageSettings.height || defaultSize) * scale;
+    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
+    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
+    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
+    let excavation = null;
+    if (imageSettings.excavate) {
+      let floorX = Math.floor(x);
+      let floorY = Math.floor(y);
+      let ceilW = Math.ceil(w + x - floorX);
+      let ceilH = Math.ceil(h + y - floorY);
+      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
+    }
+    const crossOrigin = imageSettings.crossOrigin;
+    return { x, y, h, w, excavation, opacity, crossOrigin };
+  }
+  function getMarginSize(includeMargin, marginSize) {
+    if (marginSize != null) {
+      return Math.max(Math.floor(marginSize), 0);
+    }
+    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
+  }
+  function useQRCode({
+    value,
+    level,
+    minVersion,
+    includeMargin,
+    marginSize,
+    imageSettings,
+    size,
+    boostLevel
+  }) {
+    let qrcode = react_shim_default.useMemo(() => {
+      const values = Array.isArray(value) ? value : [value];
+      const segments = values.reduce((accum, v) => {
+        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
+        return accum;
+      }, []);
+      return qrcodegen_default.QrCode.encodeSegments(
+        segments,
+        ERROR_LEVEL_MAP[level],
+        minVersion,
+        void 0,
+        void 0,
+        boostLevel
+      );
+    }, [value, level, minVersion, boostLevel]);
+    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
+      let cells2 = qrcode.getModules();
+      const margin2 = getMarginSize(includeMargin, marginSize);
+      const numCells2 = cells2.length + margin2 * 2;
+      const calculatedImageSettings2 = getImageSettings(
+        cells2,
+        size,
+        margin2,
+        imageSettings
+      );
+      return {
+        cells: cells2,
+        margin: margin2,
+        numCells: numCells2,
+        calculatedImageSettings: calculatedImageSettings2
+      };
+    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
+    return {
+      qrcode,
+      margin,
+      cells,
+      numCells,
+      calculatedImageSettings
+    };
+  }
+  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
+  var init_esm = __esm({
+    "../../node_modules/qrcode.react/lib/esm/index.js"() {
+      init_react_shim();
+      __defProp2 = Object.defineProperty;
+      __getOwnPropSymbols = Object.getOwnPropertySymbols;
+      __hasOwnProp2 = Object.prototype.hasOwnProperty;
+      __propIsEnum = Object.prototype.propertyIsEnumerable;
+      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+      __spreadValues = (a, b) => {
+        for (var prop in b || (b = {}))
+          if (__hasOwnProp2.call(b, prop))
+            __defNormalProp2(a, prop, b[prop]);
+        if (__getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(b)) {
+            if (__propIsEnum.call(b, prop))
+              __defNormalProp2(a, prop, b[prop]);
+          }
+        return a;
+      };
+      __objRest = (source, exclude) => {
+        var target2 = {};
+        for (var prop in source)
+          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
+            target2[prop] = source[prop];
+        if (source != null && __getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(source)) {
+            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
+              target2[prop] = source[prop];
+          }
+        return target2;
+      };
+      ((qrcodegen2) => {
+        const _QrCode = class _QrCode2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code with the given version number,
+          // error correction level, data codeword bytes, and mask number.
+          // This is a low-level API that most users should not use directly.
+          // A mid-level API is the encodeSegments() function.
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
+            this.errorCorrectionLevel = errorCorrectionLevel;
+            this.modules = [];
+            this.isFunction = [];
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version value out of range");
+            if (msk < -1 || msk > 7)
+              throw new RangeError("Mask value out of range");
+            this.size = version3 * 4 + 17;
+            let row = [];
+            for (let i = 0; i < this.size; i++)
+              row.push(false);
+            for (let i = 0; i < this.size; i++) {
+              this.modules.push(row.slice());
+              this.isFunction.push(row.slice());
+            }
+            this.drawFunctionPatterns();
+            const allCodewords = this.addEccAndInterleave(dataCodewords);
+            this.drawCodewords(allCodewords);
+            if (msk == -1) {
+              let minPenalty = 1e9;
+              for (let i = 0; i < 8; i++) {
+                this.applyMask(i);
+                this.drawFormatBits(i);
+                const penalty = this.getPenaltyScore();
+                if (penalty < minPenalty) {
+                  msk = i;
+                  minPenalty = penalty;
+                }
+                this.applyMask(i);
+              }
+            }
+            assert(0 <= msk && msk <= 7);
+            this.mask = msk;
+            this.applyMask(msk);
+            this.drawFormatBits(msk);
+            this.isFunction = [];
+          }
+          /*-- Static factory functions (high level) --*/
+          // Returns a QR Code representing the given Unicode text string at the given error correction level.
+          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
+          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
+          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
+          // ecl argument if it can be done without increasing the version.
+          static encodeText(text, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text);
+            return _QrCode2.encodeSegments(segs, ecl);
+          }
+          // Returns a QR Code representing the given binary data at the given error correction level.
+          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
+          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
+          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
+          static encodeBinary(data, ecl) {
+            const seg = qrcodegen2.QrSegment.makeBytes(data);
+            return _QrCode2.encodeSegments([seg], ecl);
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a QR Code representing the given segments with the given encoding parameters.
+          // The smallest possible QR Code version within the given range is automatically
+          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
+          // may be higher than the ecl argument if it can be done without increasing the
+          // version. The mask number is either between 0 to 7 (inclusive) to force that
+          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
+          // This function allows the user to create a custom sequence of segments that switches
+          // between modes (such as alphanumeric and byte) to encode text in less space.
+          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
+          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
+            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
+              throw new RangeError("Invalid value");
+            let version3;
+            let dataUsedBits;
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
+              if (usedBits <= dataCapacityBits2) {
+                dataUsedBits = usedBits;
+                break;
+              }
+              if (version3 >= maxVersion)
+                throw new RangeError("Data too long");
+            }
+            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
+                ecl = newEcl;
+            }
+            let bb = [];
+            for (const seg of segs) {
+              appendBits(seg.mode.modeBits, 4, bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
+              for (const b of seg.getData())
+                bb.push(b);
+            }
+            assert(bb.length == dataUsedBits);
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+            assert(bb.length <= dataCapacityBits);
+            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
+            appendBits(0, (8 - bb.length % 8) % 8, bb);
+            assert(bb.length % 8 == 0);
+            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
+              appendBits(padByte, 8, bb);
+            let dataCodewords = [];
+            while (dataCodewords.length * 8 < bb.length)
+              dataCodewords.push(0);
+            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
+          }
+          /*-- Accessor methods --*/
+          // Returns the color of the module (pixel) at the given coordinates, which is false
+          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
+          // If the given coordinates are out of bounds, then false (light) is returned.
+          getModule(x, y) {
+            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
+          }
+          // Modified to expose modules for easy access
+          getModules() {
+            return this.modules;
+          }
+          /*-- Private helper methods for constructor: Drawing function modules --*/
+          // Reads this object's version field, and draws and marks all function modules.
+          drawFunctionPatterns() {
+            for (let i = 0; i < this.size; i++) {
+              this.setFunctionModule(6, i, i % 2 == 0);
+              this.setFunctionModule(i, 6, i % 2 == 0);
+            }
+            this.drawFinderPattern(3, 3);
+            this.drawFinderPattern(this.size - 4, 3);
+            this.drawFinderPattern(3, this.size - 4);
+            const alignPatPos = this.getAlignmentPatternPositions();
+            const numAlign = alignPatPos.length;
+            for (let i = 0; i < numAlign; i++) {
+              for (let j = 0; j < numAlign; j++) {
+                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
+                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
+              }
+            }
+            this.drawFormatBits(0);
+            this.drawVersion();
+          }
+          // Draws two copies of the format bits (with its own error correction code)
+          // based on the given mask and this object's error correction level field.
+          drawFormatBits(mask) {
+            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
+            let rem = data;
+            for (let i = 0; i < 10; i++)
+              rem = rem << 1 ^ (rem >>> 9) * 1335;
+            const bits = (data << 10 | rem) ^ 21522;
+            assert(bits >>> 15 == 0);
+            for (let i = 0; i <= 5; i++)
+              this.setFunctionModule(8, i, getBit(bits, i));
+            this.setFunctionModule(8, 7, getBit(bits, 6));
+            this.setFunctionModule(8, 8, getBit(bits, 7));
+            this.setFunctionModule(7, 8, getBit(bits, 8));
+            for (let i = 9; i < 15; i++)
+              this.setFunctionModule(14 - i, 8, getBit(bits, i));
+            for (let i = 0; i < 8; i++)
+              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
+            for (let i = 8; i < 15; i++)
+              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
+            this.setFunctionModule(8, this.size - 8, true);
+          }
+          // Draws two copies of the version bits (with its own error correction code),
+          // based on this object's version field, iff 7 <= version <= 40.
+          drawVersion() {
+            if (this.version < 7)
+              return;
+            let rem = this.version;
+            for (let i = 0; i < 12; i++)
+              rem = rem << 1 ^ (rem >>> 11) * 7973;
+            const bits = this.version << 12 | rem;
+            assert(bits >>> 18 == 0);
+            for (let i = 0; i < 18; i++) {
+              const color = getBit(bits, i);
+              const a = this.size - 11 + i % 3;
+              const b = Math.floor(i / 3);
+              this.setFunctionModule(a, b, color);
+              this.setFunctionModule(b, a, color);
+            }
+          }
+          // Draws a 9*9 finder pattern including the border separator,
+          // with the center module at (x, y). Modules can be out of bounds.
+          drawFinderPattern(x, y) {
+            for (let dy = -4; dy <= 4; dy++) {
+              for (let dx = -4; dx <= 4; dx++) {
+                const dist = Math.max(Math.abs(dx), Math.abs(dy));
+                const xx = x + dx;
+                const yy = y + dy;
+                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
+                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
+              }
+            }
+          }
+          // Draws a 5*5 alignment pattern, with the center module
+          // at (x, y). All modules must be in bounds.
+          drawAlignmentPattern(x, y) {
+            for (let dy = -2; dy <= 2; dy++) {
+              for (let dx = -2; dx <= 2; dx++)
+                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
+            }
+          }
+          // Sets the color of a module and marks it as a function module.
+          // Only used by the constructor. Coordinates must be in bounds.
+          setFunctionModule(x, y, isDark) {
+            this.modules[y][x] = isDark;
+            this.isFunction[y][x] = true;
+          }
+          /*-- Private helper methods for constructor: Codewords and masking --*/
+          // Returns a new byte string representing the given data with the appropriate error correction
+          // codewords appended to it, based on this object's version and error correction level.
+          addEccAndInterleave(data) {
+            const ver = this.version;
+            const ecl = this.errorCorrectionLevel;
+            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
+              throw new RangeError("Invalid argument");
+            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
+            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
+            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
+            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
+            let blocks = [];
+            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
+            for (let i = 0, k = 0; i < numBlocks; i++) {
+              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
+              k += dat.length;
+              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
+              if (i < numShortBlocks)
+                dat.push(0);
+              blocks.push(dat.concat(ecc));
+            }
+            let result = [];
+            for (let i = 0; i < blocks[0].length; i++) {
+              blocks.forEach((block, j) => {
+                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
+                  result.push(block[i]);
+              });
+            }
+            assert(result.length == rawCodewords);
+            return result;
+          }
+          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
+          // data area of this QR Code. Function modules need to be marked off before this is called.
+          drawCodewords(data) {
+            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
+              throw new RangeError("Invalid argument");
+            let i = 0;
+            for (let right = this.size - 1; right >= 1; right -= 2) {
+              if (right == 6)
+                right = 5;
+              for (let vert = 0; vert < this.size; vert++) {
+                for (let j = 0; j < 2; j++) {
+                  const x = right - j;
+                  const upward = (right + 1 & 2) == 0;
+                  const y = upward ? this.size - 1 - vert : vert;
+                  if (!this.isFunction[y][x] && i < data.length * 8) {
+                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
+                    i++;
+                  }
+                }
+              }
+            }
+            assert(i == data.length * 8);
+          }
+          // XORs the codeword modules in this QR Code with the given mask pattern.
+          // The function modules must be marked and the codeword bits must be drawn
+          // before masking. Due to the arithmetic of XOR, calling applyMask() with
+          // the same mask value a second time will undo the mask. A final well-formed
+          // QR Code needs exactly one (not zero, two, etc.) mask applied.
+          applyMask(mask) {
+            if (mask < 0 || mask > 7)
+              throw new RangeError("Mask value out of range");
+            for (let y = 0; y < this.size; y++) {
+              for (let x = 0; x < this.size; x++) {
+                let invert;
+                switch (mask) {
+                  case 0:
+                    invert = (x + y) % 2 == 0;
+                    break;
+                  case 1:
+                    invert = y % 2 == 0;
+                    break;
+                  case 2:
+                    invert = x % 3 == 0;
+                    break;
+                  case 3:
+                    invert = (x + y) % 3 == 0;
+                    break;
+                  case 4:
+                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
+                    break;
+                  case 5:
+                    invert = x * y % 2 + x * y % 3 == 0;
+                    break;
+                  case 6:
+                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  case 7:
+                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  default:
+                    throw new Error("Unreachable");
+                }
+                if (!this.isFunction[y][x] && invert)
+                  this.modules[y][x] = !this.modules[y][x];
+              }
+            }
+          }
+          // Calculates and returns the penalty score based on state of this QR Code's current modules.
+          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
+          getPenaltyScore() {
+            let result = 0;
+            for (let y = 0; y < this.size; y++) {
+              let runColor = false;
+              let runX = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let x = 0; x < this.size; x++) {
+                if (this.modules[y][x] == runColor) {
+                  runX++;
+                  if (runX == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runX > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runX, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runX = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let x = 0; x < this.size; x++) {
+              let runColor = false;
+              let runY = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let y = 0; y < this.size; y++) {
+                if (this.modules[y][x] == runColor) {
+                  runY++;
+                  if (runY == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runY > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runY, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runY = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let y = 0; y < this.size - 1; y++) {
+              for (let x = 0; x < this.size - 1; x++) {
+                const color = this.modules[y][x];
+                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
+                  result += _QrCode2.PENALTY_N2;
+              }
+            }
+            let dark = 0;
+            for (const row of this.modules)
+              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
+            const total = this.size * this.size;
+            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
+            assert(0 <= k && k <= 9);
+            result += k * _QrCode2.PENALTY_N4;
+            assert(0 <= result && result <= 2568888);
+            return result;
+          }
+          /*-- Private helper functions --*/
+          // Returns an ascending list of positions of alignment patterns for this version number.
+          // Each position is in the range [0,177), and are used on both the x and y axes.
+          // This could be implemented as lookup table of 40 variable-length lists of integers.
+          getAlignmentPatternPositions() {
+            if (this.version == 1)
+              return [];
+            else {
+              const numAlign = Math.floor(this.version / 7) + 2;
+              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
+              let result = [6];
+              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
+                result.splice(1, 0, pos);
+              return result;
+            }
+          }
+          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
+          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
+          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
+          static getNumRawDataModules(ver) {
+            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version number out of range");
+            let result = (16 * ver + 128) * ver + 64;
+            if (ver >= 2) {
+              const numAlign = Math.floor(ver / 7) + 2;
+              result -= (25 * numAlign - 10) * numAlign - 55;
+              if (ver >= 7)
+                result -= 36;
+            }
+            assert(208 <= result && result <= 29648);
+            return result;
+          }
+          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
+          // QR Code of the given version number and error correction level, with remainder bits discarded.
+          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
+          static getNumDataCodewords(ver, ecl) {
+            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+          }
+          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
+          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
+          static reedSolomonComputeDivisor(degree) {
+            if (degree < 1 || degree > 255)
+              throw new RangeError("Degree out of range");
+            let result = [];
+            for (let i = 0; i < degree - 1; i++)
+              result.push(0);
+            result.push(1);
+            let root = 1;
+            for (let i = 0; i < degree; i++) {
+              for (let j = 0; j < result.length; j++) {
+                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
+                if (j + 1 < result.length)
+                  result[j] ^= result[j + 1];
+              }
+              root = _QrCode2.reedSolomonMultiply(root, 2);
+            }
+            return result;
+          }
+          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
+          static reedSolomonComputeRemainder(data, divisor) {
+            let result = divisor.map((_) => 0);
+            for (const b of data) {
+              const factor = b ^ result.shift();
+              result.push(0);
+              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
+            }
+            return result;
+          }
+          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
+          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
+          static reedSolomonMultiply(x, y) {
+            if (x >>> 8 != 0 || y >>> 8 != 0)
+              throw new RangeError("Byte out of range");
+            let z = 0;
+            for (let i = 7; i >= 0; i--) {
+              z = z << 1 ^ (z >>> 7) * 285;
+              z ^= (y >>> i & 1) * x;
+            }
+            assert(z >>> 8 == 0);
+            return z;
+          }
+          // Can only be called immediately after a light run is added, and
+          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
+          finderPenaltyCountPatterns(runHistory) {
+            const n = runHistory[1];
+            assert(n <= this.size * 3);
+            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
+            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
+          }
+          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
+          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
+            if (currentRunColor) {
+              this.finderPenaltyAddHistory(currentRunLength, runHistory);
+              currentRunLength = 0;
+            }
+            currentRunLength += this.size;
+            this.finderPenaltyAddHistory(currentRunLength, runHistory);
+            return this.finderPenaltyCountPatterns(runHistory);
+          }
+          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
+          finderPenaltyAddHistory(currentRunLength, runHistory) {
+            if (runHistory[0] == 0)
+              currentRunLength += this.size;
+            runHistory.pop();
+            runHistory.unshift(currentRunLength);
+          }
+        };
+        _QrCode.MIN_VERSION = 1;
+        _QrCode.MAX_VERSION = 40;
+        _QrCode.PENALTY_N1 = 3;
+        _QrCode.PENALTY_N2 = 3;
+        _QrCode.PENALTY_N3 = 40;
+        _QrCode.PENALTY_N4 = 10;
+        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Low
+          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+          // Medium
+          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Quartile
+          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
+          // High
+        ];
+        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+          // Low
+          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+          // Medium
+          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
+          // Quartile
+          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
+          // High
+        ];
+        let QrCode = _QrCode;
+        qrcodegen2.QrCode = _QrCode;
+        function appendBits(val, len, bb) {
+          if (len < 0 || len > 31 || val >>> len != 0)
+            throw new RangeError("Value out of range");
+          for (let i = len - 1; i >= 0; i--)
+            bb.push(val >>> i & 1);
+        }
+        function getBit(x, i) {
+          return (x >>> i & 1) != 0;
+        }
+        function assert(cond) {
+          if (!cond)
+            throw new Error("Assertion error");
+        }
+        const _QrSegment = class _QrSegment2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code segment with the given attributes and data.
+          // The character count (numChars) must agree with the mode and the bit buffer length,
+          // but the constraint isn't checked. The given bit buffer is cloned and stored.
+          constructor(mode, numChars, bitData) {
+            this.mode = mode;
+            this.numChars = numChars;
+            this.bitData = bitData;
+            if (numChars < 0)
+              throw new RangeError("Invalid argument");
+            this.bitData = bitData.slice();
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a segment representing the given binary data encoded in
+          // byte mode. All input byte arrays are acceptable. Any text string
+          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
+          static makeBytes(data) {
+            let bb = [];
+            for (const b of data)
+              appendBits(b, 8, bb);
+            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
+          }
+          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
+          static makeNumeric(digits) {
+            if (!_QrSegment2.isNumeric(digits))
+              throw new RangeError("String contains non-numeric characters");
+            let bb = [];
+            for (let i = 0; i < digits.length; ) {
+              const n = Math.min(digits.length - i, 3);
+              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
+              i += n;
+            }
+            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
+          }
+          // Returns a segment representing the given text string encoded in alphanumeric mode.
+          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
+          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static makeAlphanumeric(text) {
+            if (!_QrSegment2.isAlphanumeric(text))
+              throw new RangeError("String contains unencodable characters in alphanumeric mode");
+            let bb = [];
+            let i;
+            for (i = 0; i + 2 <= text.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
+              appendBits(temp, 11, bb);
+            }
+            if (i < text.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
+          }
+          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
+          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
+          static makeSegments(text) {
+            if (text == "")
+              return [];
+            else if (_QrSegment2.isNumeric(text))
+              return [_QrSegment2.makeNumeric(text)];
+            else if (_QrSegment2.isAlphanumeric(text))
+              return [_QrSegment2.makeAlphanumeric(text)];
+            else
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
+          }
+          // Returns a segment representing an Extended Channel Interpretation
+          // (ECI) designator with the given assignment value.
+          static makeEci(assignVal) {
+            let bb = [];
+            if (assignVal < 0)
+              throw new RangeError("ECI assignment value out of range");
+            else if (assignVal < 1 << 7)
+              appendBits(assignVal, 8, bb);
+            else if (assignVal < 1 << 14) {
+              appendBits(2, 2, bb);
+              appendBits(assignVal, 14, bb);
+            } else if (assignVal < 1e6) {
+              appendBits(6, 3, bb);
+              appendBits(assignVal, 21, bb);
+            } else
+              throw new RangeError("ECI assignment value out of range");
+            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
+          }
+          // Tests whether the given string can be encoded as a segment in numeric mode.
+          // A string is encodable iff each character is in the range 0 to 9.
+          static isNumeric(text) {
+            return _QrSegment2.NUMERIC_REGEX.test(text);
+          }
+          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
+          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
+          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static isAlphanumeric(text) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
+          }
+          /*-- Methods --*/
+          // Returns a new copy of the data bits of this segment.
+          getData() {
+            return this.bitData.slice();
+          }
+          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
+          // the given version. The result is infinity if a segment has too many characters to fit its length field.
+          static getTotalBits(segs, version3) {
+            let result = 0;
+            for (const seg of segs) {
+              const ccbits = seg.mode.numCharCountBits(version3);
+              if (seg.numChars >= 1 << ccbits)
+                return Infinity;
+              result += 4 + ccbits + seg.bitData.length;
+            }
+            return result;
+          }
+          // Returns a new array of bytes representing the given string encoded in UTF-8.
+          static toUtf8ByteArray(str) {
+            str = encodeURI(str);
+            let result = [];
+            for (let i = 0; i < str.length; i++) {
+              if (str.charAt(i) != "%")
+                result.push(str.charCodeAt(i));
+              else {
+                result.push(parseInt(str.substring(i + 1, i + 3), 16));
+                i += 2;
+              }
+            }
+            return result;
+          }
+        };
+        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
+        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
+        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+        let QrSegment = _QrSegment;
+        qrcodegen2.QrSegment = _QrSegment;
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrCode;
+        ((QrCode2) => {
+          const _Ecc = class _Ecc {
+            // The QR Code can tolerate about 30% erroneous codewords
+            /*-- Constructor and fields --*/
+            constructor(ordinal, formatBits) {
+              this.ordinal = ordinal;
+              this.formatBits = formatBits;
+            }
+          };
+          _Ecc.LOW = new _Ecc(0, 1);
+          _Ecc.MEDIUM = new _Ecc(1, 0);
+          _Ecc.QUARTILE = new _Ecc(2, 3);
+          _Ecc.HIGH = new _Ecc(3, 2);
+          let Ecc = _Ecc;
+          QrCode2.Ecc = _Ecc;
+        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrSegment;
+        ((QrSegment2) => {
+          const _Mode = class _Mode {
+            /*-- Constructor and fields --*/
+            constructor(modeBits, numBitsCharCount) {
+              this.modeBits = modeBits;
+              this.numBitsCharCount = numBitsCharCount;
+            }
+            /*-- Method --*/
+            // (Package-private) Returns the bit width of the character count field for a segment in
+            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
+            numCharCountBits(ver) {
+              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
+            }
+          };
+          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
+          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
+          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
+          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
+          _Mode.ECI = new _Mode(7, [0, 0, 0]);
+          let Mode = _Mode;
+          QrSegment2.Mode = _Mode;
+        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      qrcodegen_default = qrcodegen;
+      ERROR_LEVEL_MAP = {
+        L: qrcodegen_default.QrCode.Ecc.LOW,
+        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
+        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
+        H: qrcodegen_default.QrCode.Ecc.HIGH
+      };
+      DEFAULT_SIZE = 128;
+      DEFAULT_LEVEL = "L";
+      DEFAULT_BGCOLOR = "#FFFFFF";
+      DEFAULT_FGCOLOR = "#000000";
+      DEFAULT_INCLUDEMARGIN = false;
+      DEFAULT_MINVERSION = 1;
+      SPEC_MARGIN_SIZE = 4;
+      DEFAULT_MARGIN_SIZE = 0;
+      DEFAULT_IMG_SCALE = 0.1;
+      SUPPORTS_PATH2D = (function() {
+        try {
+          new Path2D().addPath(new Path2D());
+        } catch (e) {
+          return false;
+        }
+        return true;
+      })();
+      QRCodeCanvas = react_shim_default.forwardRef(
+        function QRCodeCanvas2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            marginSize,
+            imageSettings
+          } = _a, extraProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
+          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
+          const _canvas = react_shim_default.useRef(null);
+          const _image = react_shim_default.useRef(null);
+          const setCanvasRef = react_shim_default.useCallback(
+            (node) => {
+              _canvas.current = node;
+              if (typeof forwardedRef === "function") {
+                forwardedRef(node);
+              } else if (forwardedRef) {
+                forwardedRef.current = node;
+              }
+            },
+            [forwardedRef]
+          );
+          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          react_shim_default.useEffect(() => {
+            if (_canvas.current != null) {
+              const canvas2 = _canvas.current;
+              const ctx = canvas2.getContext("2d");
+              if (!ctx) {
+                return;
+              }
+              let cellsToDraw = cells;
+              const image = _image.current;
+              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
+              if (haveImageToRender) {
+                if (calculatedImageSettings.excavation != null) {
+                  cellsToDraw = excavateModules(
+                    cells,
+                    calculatedImageSettings.excavation
+                  );
+                }
+              }
+              const pixelRatio = window.devicePixelRatio || 1;
+              canvas2.height = canvas2.width = size * pixelRatio;
+              const scale = size / numCells * pixelRatio;
+              ctx.scale(scale, scale);
+              ctx.fillStyle = bgColor;
+              ctx.fillRect(0, 0, numCells, numCells);
+              ctx.fillStyle = fgColor;
+              if (SUPPORTS_PATH2D) {
+                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
+              } else {
+                cells.forEach(function(row, rdx) {
+                  row.forEach(function(cell, cdx) {
+                    if (cell) {
+                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
+                    }
+                  });
+                });
+              }
+              if (calculatedImageSettings) {
+                ctx.globalAlpha = calculatedImageSettings.opacity;
+              }
+              if (haveImageToRender) {
+                ctx.drawImage(
+                  image,
+                  calculatedImageSettings.x + margin,
+                  calculatedImageSettings.y + margin,
+                  calculatedImageSettings.w,
+                  calculatedImageSettings.h
+                );
+              }
+            }
+          });
+          react_shim_default.useEffect(() => {
+            setIsImageLoaded(false);
+          }, [imgSrc]);
+          const canvasStyle = __spreadValues({ height: size, width: size }, style);
+          let img = null;
+          if (imgSrc != null) {
+            img = /* @__PURE__ */ react_shim_default.createElement(
+              "img",
+              {
+                src: imgSrc,
+                key: imgSrc,
+                style: { display: "none" },
+                onLoad: () => {
+                  setIsImageLoaded(true);
+                },
+                ref: _image,
+                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
+            "canvas",
+            __spreadValues({
+              style: canvasStyle,
+              height: size,
+              width: size,
+              ref: setCanvasRef,
+              role: "img"
+            }, otherProps)
+          ), img);
+        }
+      );
+      QRCodeCanvas.displayName = "QRCodeCanvas";
+      QRCodeSVG = react_shim_default.forwardRef(
+        function QRCodeSVG2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            title,
+            marginSize,
+            imageSettings
+          } = _a, otherProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "title",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          let cellsToDraw = cells;
+          let image = null;
+          if (imageSettings != null && calculatedImageSettings != null) {
+            if (calculatedImageSettings.excavation != null) {
+              cellsToDraw = excavateModules(
+                cells,
+                calculatedImageSettings.excavation
+              );
+            }
+            image = /* @__PURE__ */ react_shim_default.createElement(
+              "image",
+              {
+                href: imageSettings.src,
+                height: calculatedImageSettings.h,
+                width: calculatedImageSettings.w,
+                x: calculatedImageSettings.x + margin,
+                y: calculatedImageSettings.y + margin,
+                preserveAspectRatio: "none",
+                opacity: calculatedImageSettings.opacity,
+                crossOrigin: calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          const fgPath = generatePath(cellsToDraw, margin);
+          return /* @__PURE__ */ react_shim_default.createElement(
+            "svg",
+            __spreadValues({
+              height: size,
+              width: size,
+              viewBox: `0 0 ${numCells} ${numCells}`,
+              ref: forwardedRef,
+              role: "img"
+            }, otherProps),
+            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
+            /* @__PURE__ */ react_shim_default.createElement(
+              "path",
+              {
+                fill: bgColor,
+                d: `M0,0 h${numCells}v${numCells}H0z`,
+                shapeRendering: "crispEdges"
+              }
+            ),
+            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
+            image
+          );
+        }
+      );
+      QRCodeSVG.displayName = "QRCodeSVG";
+    }
+  });
+
+  // lib/playback-start-gate.ts
+  var init_playback_start_gate = __esm({
+    "lib/playback-start-gate.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/watchlist-auto-remove.ts
+  var FULL_SWEEP_INTERVAL_MS;
+  var init_watchlist_auto_remove = __esm({
+    "lib/watchlist-auto-remove.ts"() {
+      "use strict";
+      "use client";
+      init_watchlist();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      FULL_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1e3;
     }
   });
 
@@ -10454,420 +13841,6 @@
       init_open_external();
       init_trakt_storage();
       init_jsx_runtime_shim();
-    }
-  });
-
-  // lib/playback-settings.ts
-  function getStoredString(key, fallback = "") {
-    if (typeof window === "undefined") return fallback;
-    return getScopedStorageItem(key) ?? fallback;
-  }
-  function emitPlaybackSettingsChanged() {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new Event(PLAYBACK_SETTINGS_CHANGED_EVENT));
-  }
-  function onPlaybackSettingsChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-    return () => window.removeEventListener(PLAYBACK_SETTINGS_CHANGED_EVENT, listener);
-  }
-  function normalizeLanguageCode(value) {
-    if (!value) return null;
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return null;
-    return LANG3_TO_2[normalized] ?? normalized;
-  }
-  function getDefaultSubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getFallbackSubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_FALLBACK_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getDefaultAudioLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_DEFAULT_AUDIO_LANGUAGE, "")) ?? "";
-  }
-  function getAudioOutputMode() {
-    const stored = getStoredString(KEY_AUDIO_OUTPUT_MODE, DEFAULT_AUDIO_OUTPUT_MODE);
-    return stored === "compatible" || stored === "best" ? stored : DEFAULT_AUDIO_OUTPUT_MODE;
-  }
-  function getDefaultSubtitleSize() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_SIZE;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_SIZE;
-  }
-  function setDefaultSubtitleSize(value) {
-    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_SIZE, String(value));
-    emitPlaybackSettingsChanged();
-  }
-  function getDefaultSubtitleVerticalPosition() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_VERTICAL_POSITION;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_VERTICAL_POSITION;
-  }
-  function setDefaultSubtitleVerticalPosition(value) {
-    setScopedStorageItem(KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, String(value));
-    emitPlaybackSettingsChanged();
-  }
-  function getDefaultSubtitleOpacity() {
-    if (typeof window === "undefined") return DEFAULT_SUBTITLE_OPACITY;
-    const raw = parseInt(getScopedStorageItem(KEY_DEFAULT_SUBTITLE_OPACITY) ?? "", 10);
-    return Number.isFinite(raw) ? raw : DEFAULT_SUBTITLE_OPACITY;
-  }
-  function getSubtitleTextColor() {
-    return getStoredString(KEY_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_TEXT_COLOR);
-  }
-  function getSubtitleBackgroundColor() {
-    return getStoredString(KEY_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR);
-  }
-  function getSubtitleOutlineColor() {
-    return getStoredString(KEY_SUBTITLE_OUTLINE_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR);
-  }
-  function getDefaultAspectRatio() {
-    const stored = getStoredString(KEY_DEFAULT_ASPECT_RATIO, DEFAULT_ASPECT_RATIO);
-    return ASPECT_RATIO_MODES.includes(stored) ? stored : DEFAULT_ASPECT_RATIO;
-  }
-  function setDefaultAspectRatio(value) {
-    setScopedStorageItem(KEY_DEFAULT_ASPECT_RATIO, value);
-    emitPlaybackSettingsChanged();
-  }
-  function getRememberAspectRatio() {
-    if (typeof window === "undefined") return DEFAULT_REMEMBER_ASPECT_RATIO;
-    return (getScopedStorageItem(KEY_REMEMBER_ASPECT_RATIO) ?? "0") === "1";
-  }
-  function getAutoSkipIntro() {
-    if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
-    return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
-  }
-  function getHideWatchedMoviesHome() {
-    if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
-    return (getScopedStorageItem(KEY_HIDE_WATCHED_MOVIES_HOME) ?? "0") === "1";
-  }
-  function getStayFullscreenOnClose() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_STAY_FULLSCREEN_ON_CLOSE) ?? "0") === "1";
-  }
-  function getHideSkipButtonAfterSeconds() {
-    if (typeof window === "undefined") return 0;
-    const parsed = Number.parseInt(getScopedStorageItem(KEY_HIDE_SKIP_BUTTON_AFTER) ?? "", 10);
-    return HIDE_SKIP_BUTTON_OPTIONS.includes(parsed) ? parsed : 0;
-  }
-  function getControlsHideAfterSeconds() {
-    if (typeof window === "undefined") return CONTROLS_HIDE_DEFAULT_SECONDS;
-    const raw = getScopedStorageItem(KEY_CONTROLS_HIDE_AFTER);
-    if (raw === null) return CONTROLS_HIDE_DEFAULT_SECONDS;
-    const parsed = Number.parseInt(raw, 10);
-    return CONTROLS_HIDE_OPTIONS.includes(parsed) ? parsed : CONTROLS_HIDE_DEFAULT_SECONDS;
-  }
-  function getSubtitlesOffByDefault() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem("playback_subtitlesOffByDefault") === "1";
-  }
-  function getTrackBlockWords() {
-    if (typeof window === "undefined") return [];
-    const raw = getScopedStorageItem("playback_trackBlockWords") ?? "";
-    return raw.split(",").map((word) => word.trim().toLowerCase()).filter(Boolean);
-  }
-  function getDownloadDir() {
-    if (typeof window === "undefined") return "";
-    return getItem("lumio_download_dir") ?? "";
-  }
-  function getShowStreamQuality() {
-    if (typeof window === "undefined") return true;
-    return getScopedStorageItem("playback_showStreamQuality") !== "0";
-  }
-  function getShowTitleOnStart() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_SHOW_TITLE_ON_START) ?? "0") === "1";
-  }
-  function getSeriesNameFirst() {
-    if (typeof window === "undefined") return true;
-    return (getScopedStorageItem(KEY_SERIES_NAME_FIRST) ?? "1") === "1";
-  }
-  function getStillWatchingEnabled() {
-    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_ENABLED;
-    return (getScopedStorageItem(KEY_STILL_WATCHING_ENABLED) ?? "0") === "1";
-  }
-  function getStillWatchingMaxMinutes() {
-    if (typeof window === "undefined") return DEFAULT_STILL_WATCHING_MAX_MINUTES;
-    const raw = Number.parseInt(getScopedStorageItem(KEY_STILL_WATCHING_MAX_MINUTES) ?? "", 10);
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_STILL_WATCHING_MAX_MINUTES;
-    return raw;
-  }
-  function getUpgradeSubtitleWhenBetter() {
-    if (typeof window === "undefined") return true;
-    return (getScopedStorageItem(KEY_UPGRADE_SUBTITLE_WHEN_BETTER) ?? "1") === "1";
-  }
-  function getForcedSubtitlesWhenAudioMatches() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES) ?? "0") === "1";
-  }
-  function getDisableSubtitlesWhenAudioMatches() {
-    if (typeof window === "undefined") return DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES;
-    return (getScopedStorageItem(KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES) ?? "0") === "1";
-  }
-  function getExtraSubtitleLanguagesRaw() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_EXTRA_SUBTITLE_LANGUAGES) ?? "";
-  }
-  function getExtraSubtitleLanguages() {
-    return getExtraSubtitleLanguagesRaw().split(",").map((code) => code.trim().toLowerCase()).filter(Boolean);
-  }
-  function getRawMpvConf() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
-  }
-  function parseRawMpvConf(raw) {
-    return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
-      const eq = line.indexOf("=");
-      if (eq <= 0) return null;
-      const name = line.slice(0, eq).trim();
-      const value = line.slice(eq + 1).trim();
-      return name ? [name, value] : null;
-    }).filter((entry) => entry != null);
-  }
-  function getPreferEmbeddedSubtitles() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
-  }
-  function getExternalPlayerApp() {
-    if (typeof window === "undefined") return "VLC";
-    const stored = (getScopedStorageItem(KEY_EXTERNAL_PLAYER_APP) ?? "").trim();
-    return stored || "VLC";
-  }
-  function getAudioDelayMs() {
-    if (typeof window === "undefined") return 0;
-    const raw = Number(getStoredString(KEY_AUDIO_DELAY_MS, "0"));
-    if (!Number.isFinite(raw)) return 0;
-    return clampAudioDelayMs(raw);
-  }
-  function clampAudioDelayMs(value) {
-    const steg = Math.round(value / AUDIO_DELAY_STEP_MS) * AUDIO_DELAY_STEP_MS;
-    return Math.max(-AUDIO_DELAY_LIMIT_MS, Math.min(AUDIO_DELAY_LIMIT_MS, steg));
-  }
-  function setAudioDelayMs(value) {
-    setScopedStorageItem(KEY_AUDIO_DELAY_MS, String(clampAudioDelayMs(value)));
-    emitPlaybackSettingsChanged();
-  }
-  function getBluetoothAudioAutoOffset() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_BT_AUTO_OFFSET) === "1";
-  }
-  function getExternalDisplayVideoOnly() {
-    if (typeof window === "undefined") return true;
-    return getScopedStorageItem(KEY_EXTERNAL_DISPLAY_VIDEO_ONLY) !== "0";
-  }
-  function getNightMode() {
-    const stored = getStoredString(KEY_NIGHT_MODE, DEFAULT_NIGHT_MODE);
-    return NIGHT_MODE_OPTIONS.includes(stored) ? stored : DEFAULT_NIGHT_MODE;
-  }
-  function setNightMode(value) {
-    setScopedStorageItem(KEY_NIGHT_MODE, value);
-    emitPlaybackSettingsChanged();
-  }
-  function getCreditsRecommendations() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS;
-    return (getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS) ?? "0") === "1";
-  }
-  function getCreditsThresholdMinutes() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES;
-    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES) ?? "");
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES;
-    return Math.max(1, Math.min(6, raw));
-  }
-  function getCreditsRecommendationsTv() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
-    const raw = getScopedStorageItem(KEY_CREDITS_RECOMMENDATIONS_TV);
-    if (raw === null) return DEFAULT_CREDITS_RECOMMENDATIONS_TV;
-    return raw === "1";
-  }
-  function getCreditsThresholdMinutesTv() {
-    if (typeof window === "undefined") return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
-    const raw = Number.parseFloat(getScopedStorageItem(KEY_CREDITS_THRESHOLD_MINUTES_TV) ?? "");
-    if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CREDITS_THRESHOLD_MINUTES_TV;
-    return Math.max(1, Math.min(6, raw));
-  }
-  function getStatsHud() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_STATS_HUD) === "1";
-  }
-  function setStatsHud(value) {
-    setScopedStorageItem(KEY_STATS_HUD, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getStripSdh() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_STRIP_SDH) === "1";
-  }
-  function setStripSdh(value) {
-    setScopedStorageItem(KEY_STRIP_SDH, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getLearningMode() {
-    if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_LEARNING_MODE) === "1";
-  }
-  function setLearningMode(value) {
-    setScopedStorageItem(KEY_LEARNING_MODE, value ? "1" : "0");
-    emitPlaybackSettingsChanged();
-  }
-  function getSecondarySubtitleLanguage() {
-    return normalizeLanguageCode(getStoredString(KEY_SECONDARY_SUBTITLE_LANGUAGE, "")) ?? "";
-  }
-  function getSecondarySubtitleColor() {
-    return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
-  }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR;
-  var init_playback_settings = __esm({
-    "lib/playback-settings.ts"() {
-      "use strict";
-      init_app_storage();
-      init_profile_storage_shim();
-      KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
-      KEY_FALLBACK_SUBTITLE_LANGUAGE = "playback_fallbackSubtitleLanguage";
-      KEY_DEFAULT_AUDIO_LANGUAGE = "playback_defaultAudioLanguage";
-      KEY_AUDIO_OUTPUT_MODE = "playback_audioOutputMode";
-      KEY_DEFAULT_SUBTITLE_SIZE = "playback_defaultSubtitleSize";
-      KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION = "playback_defaultSubtitleVerticalPosition";
-      KEY_DEFAULT_SUBTITLE_OPACITY = "playback_defaultSubtitleOpacity";
-      KEY_SUBTITLE_TEXT_COLOR = "playback_subtitleTextColor";
-      KEY_SUBTITLE_BACKGROUND_COLOR = "playback_subtitleBackgroundColor";
-      KEY_SUBTITLE_OUTLINE_COLOR = "playback_subtitleOutlineColor";
-      KEY_DEFAULT_ASPECT_RATIO = "playback_defaultAspectRatio";
-      KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
-      KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
-      KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
-      KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
-      KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
-      KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = "playback_disableSubtitlesWhenAudioMatches";
-      KEY_CREDITS_RECOMMENDATIONS = "playback_creditsRecommendations";
-      KEY_CREDITS_THRESHOLD_MINUTES = "playback_creditsThresholdMinutes";
-      KEY_CREDITS_RECOMMENDATIONS_TV = "playback_creditsRecommendationsTv";
-      KEY_CREDITS_THRESHOLD_MINUTES_TV = "playback_creditsThresholdMinutesTv";
-      KEY_NIGHT_MODE = "playback_nightMode";
-      KEY_AUDIO_DELAY_MS = "playback_audioDelayMs";
-      KEY_BT_AUTO_OFFSET = "playback_btAudioAutoOffset";
-      KEY_STAY_FULLSCREEN_ON_CLOSE = "playback_stayFullscreenOnClose";
-      KEY_HIDE_SKIP_BUTTON_AFTER = "playback_hideSkipButtonAfterSeconds";
-      KEY_CONTROLS_HIDE_AFTER = "playback_controlsHideAfterSeconds";
-      KEY_SHOW_TITLE_ON_START = "playback_showTitleOnStart";
-      KEY_SERIES_NAME_FIRST = "playback_seriesNameFirst";
-      HIDE_SKIP_BUTTON_OPTIONS = [0, 5, 10, 30];
-      CONTROLS_HIDE_OPTIONS = [0, 2, 3, 5, 10];
-      CONTROLS_HIDE_DEFAULT_SECONDS = 3;
-      PLAYBACK_SETTINGS_CHANGED_EVENT = "lumio-playback-settings-changed";
-      LANG_NAMES = {
-        en: "English",
-        sv: "Svenska",
-        no: "Norsk",
-        da: "Dansk",
-        fi: "Suomi",
-        de: "Deutsch",
-        fr: "Fran\xE7ais",
-        es: "Espa\xF1ol",
-        it: "Italiano",
-        pt: "Portugu\xEAs",
-        nl: "Nederlands",
-        pl: "Polski",
-        ru: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
-        ar: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
-        hi: "\u0939\u093F\u0928\u094D\u0926\u0940",
-        zh: "\u4E2D\u6587",
-        ja: "\u65E5\u672C\u8A9E",
-        ko: "\uD55C\uAD6D\uC5B4",
-        tr: "T\xFCrk\xE7e",
-        cs: "\u010Ce\u0161tina",
-        ro: "Rom\xE2n\u0103",
-        hu: "Magyar",
-        el: "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC",
-        he: "\u05E2\u05D1\u05E8\u05D9\u05EA",
-        uk: "\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430",
-        sr: "Srpski",
-        hr: "Hrvatski",
-        sk: "Sloven\u010Dina",
-        bg: "\u0411\u044A\u043B\u0433\u0430\u0440\u0441\u043A\u0438",
-        vi: "Ti\u1EBFng Vi\u1EC7t",
-        th: "\u0E44\u0E17\u0E22",
-        id: "Bahasa Indonesia"
-      };
-      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
-      ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
-      LANG3_TO_2 = {
-        eng: "en",
-        swe: "sv",
-        nor: "no",
-        dan: "da",
-        fin: "fi",
-        deu: "de",
-        ger: "de",
-        fra: "fr",
-        fre: "fr",
-        spa: "es",
-        ita: "it",
-        por: "pt",
-        nld: "nl",
-        dut: "nl",
-        pol: "pl",
-        rus: "ru",
-        ara: "ar",
-        hin: "hi",
-        zho: "zh",
-        chi: "zh",
-        jpn: "ja",
-        kor: "ko",
-        tur: "tr",
-        ces: "cs",
-        cze: "cs",
-        ron: "ro",
-        rum: "ro",
-        hun: "hu",
-        ell: "el",
-        gre: "el",
-        heb: "he",
-        ukr: "uk",
-        srp: "sr",
-        hrv: "hr",
-        slk: "sk",
-        bul: "bg",
-        vie: "vi",
-        tha: "th",
-        ind: "id"
-      };
-      DEFAULT_SUBTITLE_SIZE = 100;
-      DEFAULT_AUDIO_OUTPUT_MODE = "best";
-      DEFAULT_SUBTITLE_VERTICAL_POSITION = 5;
-      DEFAULT_SUBTITLE_OPACITY = 100;
-      DEFAULT_SUBTITLE_TEXT_COLOR = "#ffffff";
-      DEFAULT_SUBTITLE_BACKGROUND_COLOR = "transparent";
-      DEFAULT_SUBTITLE_OUTLINE_COLOR = "#000000";
-      DEFAULT_ASPECT_RATIO = "auto";
-      DEFAULT_REMEMBER_ASPECT_RATIO = false;
-      DEFAULT_AUTO_SKIP_INTRO = false;
-      DEFAULT_HIDE_WATCHED_MOVIES_HOME = false;
-      DEFAULT_STILL_WATCHING_ENABLED = false;
-      DEFAULT_STILL_WATCHING_MAX_MINUTES = 90;
-      DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES = false;
-      DEFAULT_CREDITS_RECOMMENDATIONS = false;
-      DEFAULT_CREDITS_THRESHOLD_MINUTES = 3;
-      DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
-      DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
-      DEFAULT_NIGHT_MODE = "off";
-      KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
-      KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
-      KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
-      KEY_RAW_MPV_CONF = "playback_rawMpvConf";
-      KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
-      KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
-      AUDIO_DELAY_STEP_MS = 50;
-      AUDIO_DELAY_LIMIT_MS = 2e3;
-      KEY_EXTERNAL_DISPLAY_VIDEO_ONLY = "playback_external_display_video_only";
-      BLUETOOTH_AUDIO_OFFSET_MS = -150;
-      KEY_STATS_HUD = "playback_statsHud";
-      KEY_STRIP_SDH = "playback_stripSdh";
-      KEY_LEARNING_MODE = "playback_learningMode";
-      KEY_SECONDARY_SUBTITLE_LANGUAGE = "playback_secondarySubtitleLanguage";
-      KEY_SECONDARY_SUBTITLE_COLOR = "playback_secondarySubtitleColor";
-      DEFAULT_SECONDARY_SUBTITLE_COLOR = "#e8d9a0";
     }
   });
 
@@ -10894,23 +13867,10 @@
     }
   });
 
-  // lib/plugin-state.ts
-  var init_plugin_state = __esm({
-    "lib/plugin-state.ts"() {
-      init_profile_storage_shim();
-    }
-  });
-
   // lib/media-stream/filters.ts
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
       init_profile_storage_shim();
-    }
-  });
-
-  // lib/playback-start-gate.ts
-  var init_playback_start_gate = __esm({
-    "lib/playback-start-gate.ts"() {
     }
   });
 
@@ -11017,6 +13977,7 @@
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -11039,6 +14000,7 @@
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -11710,6 +14672,17 @@
           /* @__PURE__ */ jsx("circle", { cx: "18", cy: "15", r: "3" }),
           /* @__PURE__ */ jsx("path", { d: "M10 18V7l11-3v11" })
         ] });
+      case "pip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+          /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
+        ] });
+      case "clip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "6", r: "3" }),
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "18", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" })
+        ] });
       case "cast":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
@@ -11735,19 +14708,77 @@
       case "fullscreen":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) });
       case "more":
-        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: [
-          /* @__PURE__ */ jsx("circle", { cx: "5", cy: "12", r: "1.7" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.7" }),
-          /* @__PURE__ */ jsx("circle", { cx: "19", cy: "12", r: "1.7" })
-        ] });
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.71 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61l-2.01-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z" }) });
+      case "moments":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M6 3h12v18l-6-4.5L6 21z" }) });
+      case "chapters":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M4 6h10M4 12h16M4 18h7" }) });
       default:
         return null;
     }
   }
+  function gearRowIcon(name, cls) {
+    const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+    switch (name) {
+      case "speed":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M12 14l4-4" }),
+          /* @__PURE__ */ jsx("path", { d: "M3.3 17a9 9 0 1 1 17.4 0" })
+        ] });
+      case "aspect":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M7 10v4M17 10v4" })
+        ] });
+      case "zoom":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: /* @__PURE__ */ jsx("path", { d: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" }) });
+      case "sleep":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "13", r: "8" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 9v4l2.5 2.5M9 2h6" })
+        ] });
+      case "night":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" }) });
+      case "moments":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: /* @__PURE__ */ jsx("path", { d: "M6 3h12v18l-6-4.5L6 21z" }) });
+      case "link":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
+          /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
+        ] });
+      case "skip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z" }),
+          /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
+        ] });
+      case "barcode":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: /* @__PURE__ */ jsx("path", { d: "M4 5v14M8 5v14M11 5v14M15 5v14M18 5v14M21 5v14" }) });
+      case "stats":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2" }) });
+      case "advanced":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" }),
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "6", r: "1.5", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("circle", { cx: "15", cy: "12", r: "1.5", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("circle", { cx: "7", cy: "18", r: "1.5", fill: "currentColor" })
+        ] });
+      case "dv":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
+        ] });
+    }
+  }
+  function clipUploadIcon(cls) {
+    return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" }) });
+  }
+  var playerIconButtonClass, playerLabelButtonClass;
   var init_player_control_icons = __esm({
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
+      playerIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     }
   });
 
@@ -11755,6 +14786,14 @@
   function findActiveCueText(cues, time) {
     const cue = cues.find((c) => time >= c.start && time <= c.end);
     return cue?.text ?? null;
+  }
+  function cueIndexChanged(cues, from, to, toCueTime) {
+    if (cues.length === 0) return false;
+    const at = (t) => {
+      const ct = toCueTime(t);
+      return cues.findIndex((c) => ct >= c.start && ct <= c.end);
+    };
+    return at(from) !== at(to);
   }
   function isSecondaryCandidateAllowed(option, primaryId, allowEmbedded) {
     if (option.id === primaryId) return false;
@@ -11820,10 +14859,6 @@
       setScopedStorageItem(KEY5, JSON.stringify(store2));
     } catch {
     }
-  }
-  function nextPlaybackSpeed(current) {
-    const index = PLAYBACK_SPEED_OPTIONS.indexOf(current);
-    return PLAYBACK_SPEED_OPTIONS[(index + 1) % PLAYBACK_SPEED_OPTIONS.length];
   }
   var PLAYBACK_SPEED_OPTIONS, KEY5, MAX_ENTRIES;
   var init_playback_speed_store = __esm({
@@ -12462,8 +15497,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners5 = this.listeners[event$1];
-              listeners5.splice(listeners5.indexOf(handler), 1);
+              const listeners7 = this.listeners[event$1];
+              listeners7.splice(listeners7.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -12492,8 +15527,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners5 = this.listeners[event$1];
-              listeners5.splice(listeners5.indexOf(handler), 1);
+              const listeners7 = this.listeners[event$1];
+              listeners7.splice(listeners7.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -14057,7 +17092,7 @@
         }).then(mapMonitor);
       }
       async function availableMonitors() {
-        return core.invoke("plugin:window|available_monitors").then((ms) => ms.map(mapMonitor));
+        return core.invoke("plugin:window|available_monitors").then((ms2) => ms2.map(mapMonitor));
       }
       async function cursorPosition() {
         return core.invoke("plugin:window|cursor_position").then((v) => new dpi.PhysicalPosition(v));
@@ -14166,6 +17201,80 @@
     }
   });
 
+  // lib/sync/webdav-credentials.ts
+  function getWebdavConfig() {
+    const raw = getScopedStorageItem(SYNC_WEBDAV_CONFIG_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.baseUrl !== "string" || typeof parsed.username !== "string" || typeof parsed.password !== "string") return null;
+      return { baseUrl: parsed.baseUrl, username: parsed.username, password: parsed.password };
+    } catch {
+      return null;
+    }
+  }
+  var SYNC_WEBDAV_CONFIG_KEY;
+  var init_webdav_credentials = __esm({
+    "lib/sync/webdav-credentials.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SYNC_WEBDAV_CONFIG_KEY = "sync_webdav_config";
+    }
+  });
+
+  // lib/continue-frames.ts
+  function getContinueFramesEnabled() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY6) !== "0";
+  }
+  function continueFrameKey(ref) {
+    const profile = getActiveProfileId() ?? "";
+    return playerFrameId(`cw:${profile}:${ref.id}:${ref.season ?? ""}:${ref.episode ?? ""}`);
+  }
+  function deleteContinueFrame(ref) {
+    if (typeof fetch !== "function") return;
+    const key = continueFrameKey(ref);
+    try {
+      void fetch(`${ENDPOINT}?key=${key}`, { method: "DELETE" }).catch(() => {
+      });
+      const config = getWebdavConfig();
+      if (config) {
+        void fetch(`${ENDPOINT}/remote-delete`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ config, key })
+        }).catch(() => {
+        });
+      }
+    } catch {
+    }
+  }
+  async function pushContinueFrame(ref) {
+    const config = getWebdavConfig();
+    if (!config) return false;
+    try {
+      const res = await fetch(`${ENDPOINT}/push`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ config, key: continueFrameKey(ref) })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+  var KEY6, ENDPOINT;
+  var init_continue_frames = __esm({
+    "lib/continue-frames.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_player_frame_id();
+      init_webdav_credentials();
+      KEY6 = "continue_watching_frames_v1";
+      ENDPOINT = "/api/player-frame";
+    }
+  });
+
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
@@ -14189,7 +17298,7 @@
   function read3() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY6) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY7) ?? "[]");
     } catch {
       return [];
     }
@@ -14205,28 +17314,23 @@
   function sortByWatchedAtDesc(entries) {
     return [...entries].sort((a, b) => watchedAtMs(b) - watchedAtMs(a));
   }
-  function isSameProgressTarget(left, right) {
-    const leftSanitized = sanitizeEntry(left);
-    const rightSanitized = sanitizeEntry(right);
-    if ((leftSanitized.season ?? null) !== (rightSanitized.season ?? null) || (leftSanitized.episode ?? null) !== (rightSanitized.episode ?? null)) {
-      return false;
-    }
-    if (entryKey(leftSanitized.id, leftSanitized.season, leftSanitized.episode) === entryKey(rightSanitized.id, rightSanitized.season, rightSanitized.episode)) {
-      return true;
-    }
-    if (leftSanitized.type !== rightSanitized.type) return false;
-    if (leftSanitized.tmdbId && rightSanitized.tmdbId && leftSanitized.tmdbId === rightSanitized.tmdbId) return true;
-    if (leftSanitized.imdbId && rightSanitized.imdbId && leftSanitized.imdbId === rightSanitized.imdbId) return true;
-    const leftTitleKey = normalizeTitleKey(leftSanitized.title);
-    const rightTitleKey = normalizeTitleKey(rightSanitized.title);
-    return Boolean(
-      leftTitleKey && rightTitleKey && leftTitleKey === rightTitleKey && leftSanitized.year != null && rightSanitized.year != null && leftSanitized.year === rightSanitized.year
-    );
+  function progressTargetKeys(entry) {
+    const se = `${entry.season ?? null}|${entry.episode ?? null}`;
+    const keys2 = [`${se}|id|${entry.id}`];
+    const typed = `${se}|${entry.type}`;
+    if (entry.tmdbId) keys2.push(`${typed}|tmdb|${entry.tmdbId}`);
+    if (entry.imdbId) keys2.push(`${typed}|imdb|${entry.imdbId}`);
+    const titleKey = normalizeTitleKey(entry.title);
+    if (titleKey && entry.year != null) keys2.push(`${typed}|title|${titleKey}|${entry.year}`);
+    return keys2;
   }
   function dedupeProgressEntries(entries) {
     const deduped = [];
+    const seen = /* @__PURE__ */ new Set();
     for (const entry of entries.map(sanitizeEntry)) {
-      if (deduped.some((existingEntry) => isSameProgressTarget(existingEntry, entry))) continue;
+      const keys2 = progressTargetKeys(entry);
+      if (keys2.some((key) => seen.has(key))) continue;
+      for (const key of keys2) seen.add(key);
       deduped.push(entry);
     }
     return deduped;
@@ -14266,51 +17370,103 @@
   function appendHistoryEntry(entry) {
     const sanitized = sanitizeEntry(entry);
     const incomingKey = historyDedupeKey(sanitized);
-    const filtered = readHistory().filter((existing) => historyDedupeKey(existing) !== incomingKey);
-    const next = [sanitized, ...filtered].slice(0, HISTORY_MAX);
+    const current2 = readHistory();
+    const previous = current2.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
+      ...previous,
+      posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
+      backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
+    } : sanitized;
+    const filtered = current2.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next);
+  }
+  function flushHistoryMirror() {
+    const mirror = historyMirror;
+    if (!mirror?.pending) return;
+    if (mirror.timer) clearTimeout(mirror.timer);
+    const entry = mirror.pending;
+    mirror.pending = null;
+    mirror.timer = null;
+    mirror.at = Date.now();
+    appendHistoryEntry(entry);
+  }
+  function mirrorToHistory(entry) {
+    const key = historyDedupeKey(entry);
+    const now2 = Date.now();
+    if (historyMirror && historyMirror.key !== key) flushHistoryMirror();
+    if (!historyMirror || historyMirror.key !== key || now2 - historyMirror.at >= HISTORY_MIRROR_MIN_GAP_MS) {
+      if (historyMirror?.timer) clearTimeout(historyMirror.timer);
+      appendHistoryEntry(entry);
+      historyMirror = { key, at: now2, pending: null, timer: null };
+      return;
+    }
+    historyMirror.pending = entry;
+    if (!historyMirror.timer) {
+      historyMirror.timer = setTimeout(flushHistoryMirror, HISTORY_MIRROR_MIN_GAP_MS - (now2 - historyMirror.at));
+    }
+  }
+  function deleteFramesForDropped(before, after) {
+    const kept = new Set(after.map((entry) => entryKey(entry.id, entry.season, entry.episode)));
+    for (const entry of before) {
+      if (entry.type === "audiobook") continue;
+      if (!kept.has(entryKey(entry.id, entry.season, entry.episode))) deleteContinueFrame(entry);
+    }
   }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read3()])).slice(0, MAX);
-    setScopedStorageItem(KEY6, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
-    appendHistoryEntry(sanitizedEntry);
+    const before = read3();
+    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
+    setScopedStorageItem(KEY7, JSON.stringify(list));
+    deleteFramesForDropped(before, list);
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
+    mirrorToHistory(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
   }
   function removeStreamProgress(id, season, episode) {
     const key = entryKey(id, season, episode);
     const prefixedMovieKey = entryKey(id.startsWith("movie-") ? id : `movie-${id}`, season, episode);
     const prefixedTvKey = entryKey(id.startsWith("tv-") ? id : `tv-${id}`, season, episode);
-    const list = read3().filter((entry) => {
+    const before = read3();
+    const list = before.filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY6, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT5));
+    setScopedStorageItem(KEY7, JSON.stringify(list));
+    deleteFramesForDropped(before, list);
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
   }
-  var EVENT5, KEY6, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT6, KEY7, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
+      init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
-      EVENT5 = "lumio-stream-progress-changed";
+      EVENT6 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT5));
+            window.dispatchEvent(new CustomEvent(EVENT6));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
         });
       }
-      KEY6 = "stream_progress_list";
+      KEY7 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
       HISTORY_MAX = 200;
+      HISTORY_MIRROR_MIN_GAP_MS = 6e4;
+      historyMirror = null;
+      if (typeof window !== "undefined") {
+        window.addEventListener("pagehide", flushHistoryMirror);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") flushHistoryMirror();
+        });
+      }
     }
   });
 
@@ -14520,15 +17676,19 @@
 
   // lib/watch-journal/player-open.ts
   function setPlayerOpen(value) {
+    if (open === value) return;
     open = value;
+    for (const listener of listeners3) listener();
   }
   function isPlayerOpen() {
     return open;
   }
-  var open;
+  var open, listeners3;
   var init_player_open = __esm({
     "lib/watch-journal/player-open.ts"() {
+      init_react_shim();
       open = false;
+      listeners3 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -14552,12 +17712,12 @@
     if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
     return { code: c.weather_code, tempC: c.temperature_2m };
   }
-  function schedule(ms) {
+  function schedule(ms2) {
     if (timer) return;
     timer = setTimeout(() => {
       timer = null;
       void drain();
-    }, ms);
+    }, ms2);
   }
   async function drain() {
     const nowMs = Date.now();
@@ -14744,6 +17904,10 @@
   function armSleepTimer(mode, nowMs) {
     return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
   }
+  function sleepTimerRemainingMs(state2, nowMs) {
+    if (typeof state2.mode !== "number" || state2.armedAtMs == null) return null;
+    return Math.max(0, state2.armedAtMs + state2.mode * 6e4 - nowMs);
+  }
   function sleepTimerDue(state2, c) {
     if (state2.mode === "off" || state2.armedAtMs == null) return false;
     if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
@@ -14833,7 +17997,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY7);
+      const stored = getScopedStorageItem(KEY8);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -14855,7 +18019,7 @@
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY7, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
+    setScopedStorageItem(KEY8, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -14868,14 +18032,14 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY7, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY8, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY7 = "barcode_settings_v1";
+      KEY8 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
-        enabled: true,
+        enabled: false,
         showStripInPlayer: true,
         columns: 160,
         scope: "movies",
@@ -14971,7 +18135,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -15096,9 +18259,9 @@
   }
   function recordColumn(meta, columns, i, color) {
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
-    const current = items.get(meta.id) ?? createBarcode(meta, columns, now2);
-    const next = withColumn(current, i, color, now2);
-    if (next === current && items.has(meta.id)) return;
+    const current2 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
+    const next = withColumn(current2, i, color, now2);
+    if (next === current2 && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
     schedule2(meta.id);
@@ -15178,9 +18341,9 @@
   function isAbortError(error) {
     return error instanceof DOMException && error.name === "AbortError";
   }
-  function sleep(ms) {
+  function sleep(ms2) {
     return new Promise((resolve) => {
-      window.setTimeout(resolve, ms);
+      window.setTimeout(resolve, ms2);
     });
   }
   async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
@@ -15596,6 +18759,16 @@
       return null;
     }
   }
+  function posterRuntime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  }
+  function posterReleaseDate(iso, lang) {
+    const d = /* @__PURE__ */ new Date(`${iso}T12:00:00Z`);
+    if (Number.isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat(lang === "sv" ? "sv-SE" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
+  }
   var SYNOPSIS_MAX;
   var init_barcode_poster = __esm({
     "lib/barcode/barcode-poster.ts"() {
@@ -15609,11 +18782,11 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending3 = inflight4.get(b.id);
-    if (pending3) return pending3;
+    const pending4 = inflight4.get(b.id);
+    if (pending4) return pending4;
     const task = chain.then(async () => {
-      const current = getBarcode(b.id);
-      if (current && current.meta !== void 0) return current.meta;
+      const current2 = getBarcode(b.id);
+      if (current2 && current2.meta !== void 0) return current2.meta;
       const meta = await fetchPosterMeta(b.tmdbId);
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
@@ -15894,9 +19067,9 @@
         useEffect(() => {
           if (!state2.id) return;
           const id = state2.id;
-          const read5 = () => setBarcode(getBarcode(id));
-          read5();
-          return onBarcodesChanged(read5);
+          const read7 = () => setBarcode(getBarcode(id));
+          read7();
+          return onBarcodesChanged(read7);
         }, [state2.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
@@ -15965,19 +19138,361 @@
       const detail = event.detail;
       if (detail?.action) listener(detail.action);
     };
-    listeners2 += 1;
-    window.addEventListener(EVENT6, handler);
+    listeners4 += 1;
+    window.addEventListener(EVENT7, handler);
     return () => {
-      listeners2 -= 1;
-      window.removeEventListener(EVENT6, handler);
+      listeners4 -= 1;
+      window.removeEventListener(EVENT7, handler);
     };
   }
-  var EVENT6, listeners2;
+  var EVENT7, listeners4;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
-      EVENT6 = "lumio-media-key";
-      listeners2 = 0;
+      init_key_hold();
+      EVENT7 = "lumio-media-key";
+      listeners4 = 0;
+    }
+  });
+
+  // lib/core-streams/stream-utils.ts
+  function streamResolution(name) {
+    const normalized = name.toLowerCase();
+    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
+    if (normalized.includes("1440p")) return 1440;
+    if (normalized.includes("1080p")) return 1080;
+    if (normalized.includes("720p")) return 720;
+    if (normalized.includes("480p")) return 480;
+    return null;
+  }
+  function parseSizeBytes(text) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
+    if (!match) return null;
+    const value = Number.parseFloat(match[1].replace(",", "."));
+    const unit = SIZE_UNITS[match[2].toLowerCase()];
+    if (!Number.isFinite(value) || !unit) return null;
+    return Math.round(value * unit);
+  }
+  function getStreamSizeBytes(stream) {
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    if (cachedFileBytes > 0) return cachedFileBytes;
+    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
+    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
+  }
+  function formatSize(bytes) {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
+    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+    return `${Math.round(bytes / 1024)} kB`;
+  }
+  function langFlag(code) {
+    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
+  }
+  function getStreamAudioLanguages(stream) {
+    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
+    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
+  }
+  function isInformationalStream(stream) {
+    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
+    if (stream.infoHash && !stream.directUrl) return false;
+    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
+  }
+  function streamLooksDolbyVision(stream) {
+    const text = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text) || /dolby[.\s_-]?vision/i.test(text);
+  }
+  function streamLooksLosslessAudio(stream) {
+    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
+  }
+  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+      STREAM_LANGUAGE_PATTERNS = [
+        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
+        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
+        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
+        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
+        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
+        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
+        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
+        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
+        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
+        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
+        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
+        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
+        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
+        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
+        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
+        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
+      ];
+      LANG_FLAGS = {
+        en: "\u{1F1EC}\u{1F1E7}",
+        sv: "\u{1F1F8}\u{1F1EA}",
+        no: "\u{1F1F3}\u{1F1F4}",
+        da: "\u{1F1E9}\u{1F1F0}",
+        fi: "\u{1F1EB}\u{1F1EE}",
+        de: "\u{1F1E9}\u{1F1EA}",
+        fr: "\u{1F1EB}\u{1F1F7}",
+        es: "\u{1F1EA}\u{1F1F8}",
+        it: "\u{1F1EE}\u{1F1F9}",
+        pt: "\u{1F1F5}\u{1F1F9}",
+        nl: "\u{1F1F3}\u{1F1F1}",
+        pl: "\u{1F1F5}\u{1F1F1}",
+        ru: "\u{1F1F7}\u{1F1FA}",
+        tr: "\u{1F1F9}\u{1F1F7}",
+        ja: "\u{1F1EF}\u{1F1F5}",
+        ko: "\u{1F1F0}\u{1F1F7}",
+        zh: "\u{1F1E8}\u{1F1F3}",
+        hi: "\u{1F1EE}\u{1F1F3}",
+        ar: "\u{1F1F8}\u{1F1E6}",
+        cs: "\u{1F1E8}\u{1F1FF}",
+        hu: "\u{1F1ED}\u{1F1FA}",
+        ro: "\u{1F1F7}\u{1F1F4}",
+        uk: "\u{1F1FA}\u{1F1E6}",
+        el: "\u{1F1EC}\u{1F1F7}",
+        he: "\u{1F1EE}\u{1F1F1}",
+        th: "\u{1F1F9}\u{1F1ED}",
+        vi: "\u{1F1FB}\u{1F1F3}",
+        id: "\u{1F1EE}\u{1F1E9}"
+      };
+      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
+      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var lookup_exports = {};
+  __export(lookup_exports, {
+    isFreshSource: () => isFreshSource,
+    lookupCoreStreams: () => lookupCoreStreams,
+    lookupSource: () => lookupSource,
+    markSourceCooldown: () => markSourceCooldown,
+    rememberFreshSources: () => rememberFreshSources,
+    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
+    sourceInCooldown: () => sourceInCooldown,
+    sourceStreamUrl: () => sourceStreamUrl,
+    streamTargetKey: () => streamTargetKey
+  });
+  function streamTargetKey(target2) {
+    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
+  }
+  function sourceStreamUrl(addon, target2) {
+    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
+  }
+  function sourceInCooldown(addon, now2 = Date.now()) {
+    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
+    if (!until) return false;
+    if (now2 >= until) {
+      cooldownUntil.delete(canonicalAddonUrl(addon.url));
+      return false;
+    }
+    return true;
+  }
+  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
+    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
+  }
+  function looksRateLimited(message) {
+    return /\b429\b|rate.?limit|too many requests/i.test(message);
+  }
+  function tagSource(streams, addon) {
+    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
+  }
+  function keepPlayable(streams) {
+    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
+  }
+  function rememberFreshSources(streams, now2 = Date.now()) {
+    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
+    if (freshSources.size > 2e3) {
+      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
+    }
+  }
+  function isFreshSource(url, now2 = Date.now()) {
+    const at = freshSources.get(url);
+    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
+  }
+  async function fetchViaApi(addon, target2, timeoutMs, signal) {
+    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
+    if (target2.type === "series" && target2.season != null && target2.episode != null) {
+      params.set("season", String(target2.season));
+      params.set("episode", String(target2.episode));
+    }
+    const controller = new AbortController();
+    const onAbort = () => controller.abort();
+    signal?.addEventListener("abort", onAbort);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    try {
+      const response = await fetch(`/api/streams?${params}`, {
+        headers: {
+          "x-source-manifest-url": addon.url,
+          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      if (payload.error) throw new Error(payload.error);
+      return payload.streams ?? [];
+    } finally {
+      clearTimeout(timer3);
+      signal?.removeEventListener("abort", onAbort);
+    }
+  }
+  async function fetchViaDesktop(addon, target2, timeoutMs) {
+    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
+    if (!streams) return null;
+    return streams.map((stream) => ({
+      ...stream,
+      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
+      cachedFiles: stream.cachedFiles ?? []
+    }));
+  }
+  async function lookupSource(addon, target2, options = {}) {
+    const timeoutMs = options.timeoutMs ?? 12e3;
+    const startedAt = Date.now();
+    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
+    const attempt = async () => {
+      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
+      try {
+        let raw = null;
+        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
+        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
+        const streams = keepPlayable(tagSource(raw, addon));
+        rememberFreshSources(streams);
+        const ms2 = Date.now() - startedAt;
+        return {
+          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
+          streams
+        };
+      } catch (error) {
+        const ms2 = Date.now() - startedAt;
+        const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
+        }
+        if (looksRateLimited(message)) markSourceCooldown(addon);
+        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
+      }
+    };
+    const first = await attempt();
+    const kind = first.report.outcome.kind;
+    if ((kind === "error" || kind === "timeout") && !sourceInCooldown(addon)) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      const second = await attempt();
+      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
+    }
+    return first;
+  }
+  function memoKey(target2) {
+    return `${target2.type}:${streamTargetKey(target2)}`;
+  }
+  function resetCoreStreamLookupMemo() {
+    inflight5.clear();
+    memo2.clear();
+  }
+  async function lookupCoreStreams(target2, options = {}) {
+    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
+    const key = memoKey(target2);
+    const replay = (result) => {
+      if (options.onSource) {
+        const bySource = /* @__PURE__ */ new Map();
+        for (const stream of result.streams) {
+          const name = stream.source ?? "";
+          bySource.set(name, [...bySource.get(name) ?? [], stream]);
+        }
+        for (const report of result.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
+      }
+      return result;
+    };
+    const cached = memo2.get(key);
+    if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
+    const pending4 = inflight5.get(key);
+    if (pending4) return pending4.then(replay);
+    const run = lookupCoreStreamsUncached(target2, options).then((result) => {
+      const answered2 = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
+      const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
+      if (answered2 && !framedSkip) {
+        memo2.set(key, { at: Date.now(), result });
+      }
+      return result;
+    }).finally(() => inflight5.delete(key));
+    inflight5.set(key, run);
+    return run;
+  }
+  async function lookupCoreStreamsUncached(target2, options = {}) {
+    const addons = options.addons ?? getEnabledCoreStreamAddons();
+    if (addons.length === 0) return { streams: [], reports: [] };
+    const seen = /* @__PURE__ */ new Set();
+    const merged = [];
+    const reports = [];
+    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
+      const { report, streams } = await lookupSource(addon, target2, options);
+      reports.push(report);
+      const fresh = [];
+      for (const stream of streams) {
+        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(stream);
+        fresh.push(stream);
+      }
+      if (options.signal?.aborted) return;
+      options.onSource?.(report, fresh);
+    });
+    return { streams: merged, reports };
+  }
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      cooldownUntil = /* @__PURE__ */ new Map();
+      COOLDOWN_MS = 9e4;
+      FRESH_SOURCE_MS = 10 * 6e4;
+      freshSources = /* @__PURE__ */ new Map();
+      RETRY_DELAY_MS = 700;
+      MEMO_TTL_MS = 45e3;
+      inflight5 = /* @__PURE__ */ new Map();
+      memo2 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/core-streams/prepare.ts
+  var init_prepare = __esm({
+    "lib/core-streams/prepare.ts"() {
+      "use strict";
+      init_filters();
+      init_stream_utils();
+    }
+  });
+
+  // lib/core-streams/playback.ts
+  var SLATE_MIN_BYTES, DIRECT_START_MAX_AGE_MS;
+  var init_playback = __esm({
+    "lib/core-streams/playback.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_session_host();
+      init_lookup();
+      init_prepare();
+      init_stream_utils();
+      SLATE_MIN_BYTES = 256 * 1024;
+      DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
     }
   });
 
@@ -15993,7 +19508,39 @@
   var init_resume_playback = __esm({
     "lib/resume-playback.ts"() {
       init_plugin_registry();
+      init_android_direct_stream();
       init_session_host();
+      init_playback_settings();
+      init_stream_utils();
+      init_playback();
+    }
+  });
+
+  // lib/subtitle-autopick.ts
+  function nextSubtitlePreference(current2, picked, manual) {
+    if (!manual) return current2;
+    return picked ? { mode: "language", language: picked.language } : { mode: "off" };
+  }
+  function orderAutoPickLanguages(args) {
+    const settings = args.settingsLanguages.map((lang) => args.normalize(lang)).filter((lang, index, values) => Boolean(lang) && values.indexOf(lang) === index);
+    const chosen = args.preference.mode === "language" ? args.normalize(args.preference.language) : null;
+    return chosen ? [chosen, ...settings.filter((lang) => lang !== chosen)] : settings;
+  }
+  function pickAutoSubtitle(args) {
+    const searchOrder = args.preferEmbedded ? [...args.options.filter(args.isEmbedded), ...args.options.filter((o) => !args.isEmbedded(o))] : args.options;
+    for (const lang of args.languages) {
+      const hit = searchOrder.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
+      if (hit) return hit;
+    }
+    if (args.addonCount > 0) return null;
+    return args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
+  }
+  function isUntagged(language) {
+    const value = (language ?? "").trim().toLowerCase();
+    return value === "" || value === "und";
+  }
+  var init_subtitle_autopick = __esm({
+    "lib/subtitle-autopick.ts"() {
     }
   });
 
@@ -16071,150 +19618,101 @@
     }
   });
 
-  // lib/player-layout.ts
-  function defaultLayout() {
+  // lib/scrobble-fanout.ts
+  function buildTrackerEvent(action, identity, progressPercent, opts) {
     return {
-      order: [...PLAYER_CONTROL_IDS],
-      hidden: [],
-      timeFormat: "elapsed-total",
-      volumeStyle: "slider",
-      seekBarStyle: "flat",
-      seekBarHeight: "standard",
-      seekBarColor: "accent",
-      seekBarDot: true
+      action,
+      mediaType: identity.mediaType,
+      tmdbId: identity.tmdbId != null && identity.tmdbId !== "" ? String(identity.tmdbId) : null,
+      imdbId: identity.imdbId ?? null,
+      season: identity.season ?? null,
+      episode: identity.episode ?? null,
+      progress: Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10)),
+      pulse: opts?.pulse === true
     };
   }
-  function getPlayerLayout() {
-    if (typeof window === "undefined") return defaultLayout();
-    try {
-      const raw = getScopedStorageItem(LAYOUT_KEY);
-      if (!raw) return defaultLayout();
-      const parsed = JSON.parse(raw);
-      const known = new Set(PLAYER_CONTROL_IDS);
-      const order = (Array.isArray(parsed.order) ? parsed.order : []).filter(
-        (id) => known.has(id)
-      );
-      for (const id of PLAYER_CONTROL_IDS) {
-        if (order.includes(id)) continue;
-        const defaultIndex = PLAYER_CONTROL_IDS.indexOf(id);
-        let insertAt = order.length;
-        for (let i = defaultIndex - 1; i >= 0; i--) {
-          const at = order.indexOf(PLAYER_CONTROL_IDS[i]);
-          if (at >= 0) {
-            insertAt = at + 1;
-            break;
-          }
-          if (i === 0) insertAt = 0;
+  function trackerEventKey(event) {
+    if (!event.tmdbId && !event.imdbId) return null;
+    if (event.mediaType === "episode" && (event.season == null || event.episode == null)) return null;
+    return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
+  }
+  async function scrobbleAll(action, identity, progressPercent, opts) {
+    const event = buildTrackerEvent(action, identity, progressPercent, opts);
+    const key = trackerEventKey(event);
+    const now2 = Date.now();
+    const duplicate = key !== null && key === lastTrackerKey && now2 - lastTrackerAt < DUPLICATE_WINDOW_MS2;
+    if (key !== null && !duplicate) {
+      lastTrackerKey = key;
+      lastTrackerAt = now2;
+    }
+    const active3 = key === null || duplicate ? [] : getTrackers().filter((tracker) => !tracker.pluginId || isPluginEnabled(tracker.pluginId, 0, { installed: true, active: true }));
+    await Promise.all([
+      scrobble(action, identity, progressPercent),
+      ...active3.map(async (tracker) => {
+        try {
+          await tracker.scrobble?.(event);
+        } catch (error) {
+          console.warn(`[scrobble] tracker ${tracker.id} kastade`, error);
         }
-        order.splice(insertAt, 0, id);
-      }
-      const hidden = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
-        (id) => known.has(id) && id !== "playPause"
-      );
-      const timeFormat = parsed.timeFormat === "remaining" || parsed.timeFormat === "elapsed" ? parsed.timeFormat : "elapsed-total";
-      const volumeStyle = parsed.volumeStyle === "stepper" || parsed.volumeStyle === "icon" ? parsed.volumeStyle : "slider";
-      const seekBarStyle = parsed.seekBarStyle === "glass" || parsed.seekBarStyle === "pinstripe" ? parsed.seekBarStyle : "flat";
-      const seekBarHeight = parsed.seekBarHeight === "slim" || parsed.seekBarHeight === "chunky" ? parsed.seekBarHeight : "standard";
-      const seekBarColor = parsed.seekBarColor === "white" || parsed.seekBarColor === "red" || parsed.seekBarColor === "amber" ? parsed.seekBarColor : "accent";
-      const seekBarDot = parsed.seekBarDot !== false;
-      return { order, hidden, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
-    } catch {
-      return defaultLayout();
-    }
+      })
+    ]);
   }
-  function onPlayerLayoutChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(EVENT7, listener);
-    return () => window.removeEventListener(EVENT7, listener);
-  }
-  function seekBarAppearance(layout) {
-    return {
-      heightClass: layout.seekBarHeight === "slim" ? "h-1" : layout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5",
-      // Färgen ligger i variabeln, inte i en klass: hela spelarlagret läser samma
-      // värde, och förhandsvisningen sätter den på sin egen låda.
-      fillClass: "bg-[rgb(var(--player-accent))]",
-      overlayClass: layout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : layout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "",
-      dot: layout.seekBarDot
-    };
-  }
-  function playerAccentRgb(layout, themeAccentRgb2) {
-    switch (layout.seekBarColor) {
-      case "white":
-        return "255 255 255";
-      case "red":
-        return "239 68 68";
-      case "amber":
-        return "251 191 36";
-      default:
-        return themeAccentRgb2;
-    }
-  }
-  function themeAccentRgb() {
-    if (typeof document === "undefined") return "244 132 95";
-    return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
-  }
-  var PLAYER_CONTROL_IDS, LAYOUT_KEY, EVENT7;
-  var init_player_layout = __esm({
-    "lib/player-layout.ts"() {
+  var DUPLICATE_WINDOW_MS2, lastTrackerKey, lastTrackerAt;
+  var init_scrobble_fanout = __esm({
+    "lib/scrobble-fanout.ts"() {
       "use client";
-      init_profile_storage_shim();
-      PLAYER_CONTROL_IDS = [
-        "playPause",
-        "seekBack",
-        "seekForward",
-        "time",
-        "spacer",
-        "subtitles",
-        "cast",
-        "audioTrack",
-        "aspect",
-        "cropZoom",
-        "audioOutput",
-        "segmentBadges",
-        "mute",
-        "volume",
-        "wiki",
-        "soundtrack",
-        "tuning",
-        "barcodeStrip",
-        "audioDelay",
-        "nextEpisode",
-        "switchStream",
-        "sleepTimer",
-        "companions",
-        "more",
-        "fullscreen"
-      ];
-      LAYOUT_KEY = "player_layout";
-      EVENT7 = "lumio-player-layout-changed";
+      init_plugin_registry();
+      init_plugin_state();
+      init_trakt_scrobble();
+      DUPLICATE_WINDOW_MS2 = 5e3;
+      lastTrackerKey = "";
+      lastTrackerAt = -Infinity;
     }
   });
 
   // lib/video-tuning.ts
+  function getVideoTuningScope() {
+    return filmTuning ? "film" : "all";
+  }
+  function setFilmVideoTuning(tuning) {
+    filmTuning = { ...tuning };
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+  }
+  function clearFilmVideoTuning() {
+    if (!filmTuning) return;
+    filmTuning = null;
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+  }
+  function isVideoTuningActive(tuning) {
+    return Object.keys(DEFAULT_TUNING).some((key) => tuning[key] !== DEFAULT_TUNING[key]);
+  }
   function getVideoTuning() {
+    if (filmTuning) return { ...filmTuning };
+    return getStoredVideoTuning();
+  }
+  function getStoredVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY8);
+      const raw = getScopedStorageItem(KEY9);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
-      const clamp = (v, lo, hi, dflt) => {
+      const clamp2 = (v, lo, hi, dflt) => {
         const n = Number(v);
         return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
       };
       return {
-        brightness: clamp(parsed.brightness, -50, 50, 0),
-        contrast: clamp(parsed.contrast, -50, 50, 0),
-        saturation: clamp(parsed.saturation, -50, 50, 0),
-        gamma: clamp(parsed.gamma, -50, 50, 0),
-        sharpen: clamp(parsed.sharpen, 0, 2, 0)
+        brightness: clamp2(parsed.brightness, -50, 50, 0),
+        contrast: clamp2(parsed.contrast, -50, 50, 0),
+        saturation: clamp2(parsed.saturation, -50, 50, 0),
+        gamma: clamp2(parsed.gamma, -50, 50, 0),
+        sharpen: clamp2(parsed.sharpen, 0, 2, 0)
       };
     } catch {
       return { ...DEFAULT_TUNING };
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY8, JSON.stringify(tuning));
+    setScopedStorageItem(KEY9, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
   }
   function onVideoTuningChanged(listener) {
@@ -16280,7 +19778,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY8, EVENT8, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY9, EVENT8, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -16293,8 +19791,9 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY8 = "video_tuning";
+      KEY9 = "video_tuning";
       EVENT8 = "lumio-video-tuning-changed";
+      filmTuning = null;
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
         toneMapping: "auto",
@@ -16313,7 +19812,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY9);
+      const raw = getScopedStorageItem(KEY10);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -16327,7 +19826,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY9, JSON.stringify(tuning));
+    setScopedStorageItem(KEY10, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function onAudioTuningChanged(listener) {
@@ -16343,7 +19842,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY9, EVENT9;
+  var DEFAULT_AUDIO_TUNING, KEY10, EVENT9;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -16354,7 +19853,7 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY9 = "audio_tuning";
+      KEY10 = "audio_tuning";
       EVENT9 = "lumio-audio-tuning-changed";
     }
   });
@@ -16377,10 +19876,12 @@
       }
     );
   }
-  function PlayerTuningPanel({ onClose }) {
+  function PlayerTuningPanel({ onClose, surface }) {
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
+    const panelRef = useRef(null);
+    const droid = isAndroidTauriEnv;
     const [tuning, setTuningState] = useState(() => getVideoTuning());
     const [render, setRenderState] = useState(() => getRenderTuning());
     const [audio, setAudioState] = useState(() => getAudioTuning());
@@ -16389,9 +19890,21 @@
       setRenderState(getRenderTuning());
     }), []);
     useEffect(() => onAudioTuningChanged(() => setAudioState(getAudioTuning())), []);
+    const [scope, setScope] = useState(() => getVideoTuningScope() === "film" || !isVideoTuningActive(getStoredVideoTuning()) ? "film" : "all");
     function apply(next) {
       setTuningState(next);
-      setVideoTuning(next);
+      if (scope === "film") setFilmVideoTuning(next);
+      else setVideoTuning(next);
+    }
+    function changeScope(next) {
+      if (next === scope) return;
+      setScope(next);
+      if (next === "all") {
+        setVideoTuning(tuning);
+        clearFilmVideoTuning();
+      } else {
+        setFilmVideoTuning(tuning);
+      }
     }
     function applyRender(next) {
       setRenderState(next);
@@ -16409,15 +19922,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
-        const btn = closeRef.current;
+        const btn = panelRef.current?.querySelector("[data-init]") ?? null;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -16438,6 +19951,92 @@
         onStep(e.key === "ArrowRight" ? 1 : -1);
       }
     } : {};
+    if (isTv) {
+      const presets = presetsFor(droid);
+      const presetAt = presets.findIndex(([, preset]) => matchesPreset(preset.patch));
+      const stepPreset = (dir) => {
+        const next = presets[((presetAt < 0 ? 0 : presetAt) + dir + presets.length) % presets.length];
+        if (next) apply({ ...DEFAULT_TUNING, ...next[1].patch });
+      };
+      const stepTone = (dir) => {
+        const at = TONE_MAPPINGS.indexOf(render.toneMapping);
+        applyRender({ ...render, toneMapping: TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length] });
+      };
+      const stepKeys = (onStep) => ({
+        onKeyDown: (e) => {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          e.stopPropagation();
+          onStep(e.key === "ArrowRight" ? 1 : -1);
+        }
+      });
+      const value = (text) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text });
+      const toggle = (key, label, on, flip) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, "data-f": "1", onClick: flip, className: TV_ROW, children: [
+        /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: label }),
+        /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
+      ] }, key);
+      return /* @__PURE__ */ jsxs("div", { ...surface, ref: panelRef, onClick: (e) => e.stopPropagation(), onMouseMove: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("vtTitle") }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            "data-f": "1",
+            "data-init": "",
+            className: TV_ROW,
+            onClick: () => changeScope(scope === "film" ? "all" : "film"),
+            ...stepKeys(() => changeScope(scope === "film" ? "all" : "film")),
+            children: [
+              /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("vtScopeLabel") }),
+              value(t(scope === "film" ? "vtScopeFilm" : "vtScopeAll"))
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepPreset(1), ...stepKeys(stepPreset), children: [
+          /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("vtPresetLabel") }),
+          value(presetAt >= 0 ? t(presets[presetAt][1].labelKey) : "\u2013")
+        ] }),
+        dialsFor(droid).map(({ key, labelKey, min, max, step }) => {
+          const remoteStep = key === "sharpen" ? 0.1 : Math.max(step, 5);
+          const stepDial = (dir) => apply({ ...tuning, [key]: Math.min(max, Math.max(min, Number((tuning[key] + dir * remoteStep).toFixed(2)))) });
+          const v = tuning[key];
+          return /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepDial(1), ...stepKeys(stepDial), children: [
+            /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t(labelKey) }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "relative h-1 w-20 flex-none rounded-full bg-white/20", children: /* @__PURE__ */ jsx("span", { className: "absolute inset-y-0 left-0 rounded-full bg-[rgb(var(--player-accent))]", style: { width: `${(v - min) / (max - min) * 100}%` } }) }),
+            /* @__PURE__ */ jsx("span", { className: "w-12 flex-none text-right text-[13px] tabular-nums text-slate-400", children: key === "sharpen" ? v.toFixed(2) : v > 0 ? `+${v}` : String(v) })
+          ] }, key);
+        }),
+        droid ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("atEyebrow") }),
+          AUDIO_TOGGLES.map(([key, labelKey]) => toggle(key, t(labelKey), audio[key], () => applyAudio({ ...audio, [key]: !audio[key] }))),
+          /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("rtEyebrow") }),
+          /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: () => stepTone(1), ...stepKeys(stepTone), children: [
+            /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("rtToneMapping") }),
+            value(render.toneMapping)
+          ] }),
+          [
+            ["inverseToneMapping", "rtInverseTm"],
+            ["hwdec", "rtHwdec"],
+            ["interpolation", "rtInterpolation"],
+            ["anime4k", "rtAnime4k"],
+            ["largeBuffer", "rtBuffer"]
+          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] })))
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            "data-f": "1",
+            className: `${TV_ROW} mt-1 border-t border-white/[0.08]`,
+            onClick: () => {
+              apply({ ...DEFAULT_TUNING });
+              applyRender({ ...DEFAULT_RENDER_TUNING });
+            },
+            children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("shortcutsReset") })
+          }
+        )
+      ] });
+    }
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -16458,7 +20057,23 @@
             /* @__PURE__ */ jsx("p", { className: "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400", children: t("vtTitle") }),
             /* @__PURE__ */ jsx("button", { type: "button", ref: closeRef, ...isTv ? { "data-f": "", "data-init": "" } : {}, onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
           ] }),
-          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: Object.entries(TUNING_PRESETS).map(([id, preset]) => /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs("div", { className: "mb-3", children: [
+            /* @__PURE__ */ jsx("p", { className: "mb-1.5 text-[10.5px] text-slate-400", children: t("vtScopeLabel") }),
+            /* @__PURE__ */ jsx("div", { className: "flex gap-1.5", role: "radiogroup", "aria-label": t("vtScopeLabel"), children: ["film", "all"].map((option) => /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                role: "radio",
+                "aria-checked": scope === option,
+                ...isTv ? { "data-f": "" } : {},
+                onClick: () => changeScope(option),
+                className: `flex-1 rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${scope === option ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+                children: t(option === "film" ? "vtScopeFilm" : "vtScopeAll")
+              },
+              option
+            )) })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: presetsFor(droid).map(([id, preset]) => /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
@@ -16469,7 +20084,7 @@
             },
             id
           )) }),
-          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: DIALS.map(({ key, labelKey, min, max, step }) => (
+          /* @__PURE__ */ jsx("div", { className: "space-y-2.5", children: dialsFor(droid).map(({ key, labelKey, min, max, step }) => (
             // TV: HELA raden är stationen (reglaget går inte att dra med
             // fjärrkontroll) — vänster/höger stegar värdet, upp/ner byter rad.
             /* @__PURE__ */ jsxs(
@@ -16501,65 +20116,67 @@
               key
             )
           )) }),
-          /* @__PURE__ */ jsx(MiniHeader, { children: t("atEyebrow") }),
-          /* @__PURE__ */ jsx("div", { className: "space-y-2", children: AUDIO_TOGGLES.map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-            /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
-            /* @__PURE__ */ jsx(MiniToggle, { tv: isTv, checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
-          ] }, key)) }),
-          /* @__PURE__ */ jsx(MiniHeader, { children: t("rtEyebrow") }),
-          /* @__PURE__ */ jsxs("div", { className: "space-y-2.5", children: [
-            /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: ["light", "balanced", "max"].map((profile) => /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                ...isTv ? { "data-f": "" } : {},
-                onClick: () => applyRender({ ...render, profile }),
-                className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${render.profile === profile ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
-                children: t(profile === "light" ? "rtProfileLight" : profile === "max" ? "rtProfileMax" : "rtProfileBalanced")
-              },
-              profile
-            )) }),
-            /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: "flex items-center justify-between gap-2 rounded-lg",
-                ...tvRow((dir) => {
-                  const at = TONE_MAPPINGS.indexOf(render.toneMapping);
-                  const next = TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length];
-                  applyRender({ ...render, toneMapping: next });
-                }),
-                children: [
-                  /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
-                  /* @__PURE__ */ jsx(
-                    "select",
-                    {
-                      value: render.toneMapping,
-                      tabIndex: isTv ? -1 : void 0,
-                      onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
-                      className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
-                      children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
-                    }
-                  )
-                ]
-              }
-            ),
-            [
-              ["inverseToneMapping", "rtInverseTm"],
-              ["hwdec", "rtHwdec"],
-              ["interpolation", "rtInterpolation"],
-              ["anime4k", "rtAnime4k"],
-              ["largeBuffer", "rtBuffer"]
-            ].map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+          droid ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx(MiniHeader, { children: t("atEyebrow") }),
+            /* @__PURE__ */ jsx("div", { className: "space-y-2", children: AUDIO_TOGGLES.map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
               /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
-              /* @__PURE__ */ jsx(
-                MiniToggle,
+              /* @__PURE__ */ jsx(MiniToggle, { tv: isTv, checked: audio[key], onChange: () => applyAudio({ ...audio, [key]: !audio[key] }) })
+            ] }, key)) }),
+            /* @__PURE__ */ jsx(MiniHeader, { children: t("rtEyebrow") }),
+            /* @__PURE__ */ jsxs("div", { className: "space-y-2.5", children: [
+              /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: ["light", "balanced", "max"].map((profile) => /* @__PURE__ */ jsx(
+                "button",
                 {
-                  tv: isTv,
-                  checked: Boolean(render[key]),
-                  onChange: () => applyRender({ ...render, [key]: !render[key] })
+                  type: "button",
+                  ...isTv ? { "data-f": "" } : {},
+                  onClick: () => applyRender({ ...render, profile }),
+                  className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${render.profile === profile ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+                  children: t(profile === "light" ? "rtProfileLight" : profile === "max" ? "rtProfileMax" : "rtProfileBalanced")
+                },
+                profile
+              )) }),
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  className: "flex items-center justify-between gap-2 rounded-lg",
+                  ...tvRow((dir) => {
+                    const at = TONE_MAPPINGS.indexOf(render.toneMapping);
+                    const next = TONE_MAPPINGS[(at + dir + TONE_MAPPINGS.length) % TONE_MAPPINGS.length];
+                    applyRender({ ...render, toneMapping: next });
+                  }),
+                  children: [
+                    /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t("rtToneMapping") }),
+                    /* @__PURE__ */ jsx(
+                      "select",
+                      {
+                        value: render.toneMapping,
+                        tabIndex: isTv ? -1 : void 0,
+                        onChange: (e) => applyRender({ ...render, toneMapping: e.target.value }),
+                        className: "cursor-pointer rounded-lg border border-white/10 bg-transparent px-2 py-1 text-[11px] text-slate-200 outline-none hover:text-white",
+                        children: TONE_MAPPINGS.map((mode) => /* @__PURE__ */ jsx("option", { value: mode, className: "bg-slate-900", children: mode }, mode))
+                      }
+                    )
+                  ]
                 }
-              )
-            ] }, key))
+              ),
+              [
+                ["inverseToneMapping", "rtInverseTm"],
+                ["hwdec", "rtHwdec"],
+                ["interpolation", "rtInterpolation"],
+                ["anime4k", "rtAnime4k"],
+                ["largeBuffer", "rtBuffer"]
+              ].map(([key, labelKey]) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                /* @__PURE__ */ jsx("span", { className: "text-[11px] text-slate-300", children: t(labelKey) }),
+                /* @__PURE__ */ jsx(
+                  MiniToggle,
+                  {
+                    tv: isTv,
+                    checked: Boolean(render[key]),
+                    onChange: () => applyRender({ ...render, [key]: !render[key] })
+                  }
+                )
+              ] }, key))
+            ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "mt-4 flex items-center justify-between", children: [
             /* @__PURE__ */ jsx(
@@ -16582,7 +20199,7 @@
       }
     );
   }
-  var DIALS, AUDIO_TOGGLES;
+  var DIALS, AUDIO_TOGGLES, ANDROID_DIALS, dialsFor, presetsFor, TV_ROW, TV_LABEL;
   var init_player_tuning_panel = __esm({
     "components/player/player-tuning-panel.tsx"() {
       "use client";
@@ -16591,6 +20208,7 @@
       init_tv_focus_shim();
       init_video_tuning();
       init_audio_tuning();
+      init_tauri_native_player();
       init_jsx_runtime_shim();
       DIALS = [
         { key: "brightness", labelKey: "vtBrightness", min: -50, max: 50, step: 1 },
@@ -16605,6 +20223,11 @@
         ["voiceClarity", "atVoice"],
         ["downmixStereo", "atDownmix"]
       ];
+      ANDROID_DIALS = /* @__PURE__ */ new Set(["brightness", "contrast", "saturation"]);
+      dialsFor = (droid) => droid ? DIALS.filter((d) => ANDROID_DIALS.has(d.key)) : DIALS;
+      presetsFor = (droid) => Object.entries(TUNING_PRESETS).filter(([, preset]) => !droid || Object.keys(preset.patch).every((k) => ANDROID_DIALS.has(k)));
+      TV_ROW = "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)]";
+      TV_LABEL = "flex-1 text-left text-sm leading-tight";
     }
   });
 
@@ -16674,24 +20297,24 @@
       again = true;
       return;
     }
-    if (listeners3.size === 0) return;
+    if (listeners5.size === 0) return;
     inFlight = true;
     latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
     inFlight = false;
-    listeners3.forEach((l) => l(latest));
+    listeners5.forEach((l) => l(latest));
     if (again) {
       again = false;
       void tick();
       return;
     }
-    if (listeners3.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
+    if (listeners5.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
-    listeners3.add(listener);
+    listeners5.add(listener);
     listener(latest);
     if (!timer2 && !inFlight) void tick();
     return () => {
-      listeners3.delete(listener);
+      listeners5.delete(listener);
     };
   }
   function useHapticsHostStatus() {
@@ -16699,7 +20322,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners3, timer2, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners5, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -16709,11 +20332,28 @@
       POLL_MS = 1e3;
       unsupportedReason = null;
       lastSent = "";
-      listeners3 = /* @__PURE__ */ new Set();
+      listeners5 = /* @__PURE__ */ new Set();
       timer2 = null;
       latest = null;
       inFlight = false;
       again = false;
+    }
+  });
+
+  // lib/player-menu-anchor.ts
+  function anchoredMenuGeometry(rect, space, menuWidth = 0) {
+    const top2 = rect.top / space.scale;
+    const rightEdge = rect.right / space.scale;
+    const right = Math.round(Math.max(4, space.width - rightEdge));
+    const maxRight = Math.round(Math.max(4, space.width - menuWidth - 4));
+    return {
+      bottom: Math.round(space.height - top2 + 8),
+      right: Math.min(right, maxRight),
+      maxHeight: Math.max(160, Math.round(top2 - 16))
+    };
+  }
+  var init_player_menu_anchor = __esm({
+    "lib/player-menu-anchor.ts"() {
     }
   });
 
@@ -16765,8 +20405,8 @@
     }
   }
   function positionExtra(startSeconds) {
-    const ms = Math.round((startSeconds ?? 0) * 1e3);
-    return ms > 0 ? `;l.position=${ms}` : "";
+    const ms2 = Math.round((startSeconds ?? 0) * 1e3);
+    return ms2 > 0 ? `;l.position=${ms2}` : "";
   }
   function openInVlc(url, startSeconds) {
     if (typeof window === "undefined") return false;
@@ -16895,8 +20535,8 @@
         return buildFallbackResult(params);
       }
     })().finally(() => {
-      const active2 = inflightByKey.get(key);
-      if (active2 === request) inflightByKey.delete(key);
+      const active3 = inflightByKey.get(key);
+      if (active3 === request) inflightByKey.delete(key);
     });
     inflightByKey.set(key, request);
     return request;
@@ -16909,302 +20549,6 @@
       SOUNDTRACK_TTL_MS = 10 * 60 * 1e3;
       cachedByKey = /* @__PURE__ */ new Map();
       inflightByKey = /* @__PURE__ */ new Map();
-    }
-  });
-
-  // lib/core-streams/stream-utils.ts
-  function parseSizeBytes(text) {
-    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
-    if (!match) return null;
-    const value = Number.parseFloat(match[1].replace(",", "."));
-    const unit = SIZE_UNITS[match[2].toLowerCase()];
-    if (!Number.isFinite(value) || !unit) return null;
-    return Math.round(value * unit);
-  }
-  function getStreamSizeBytes(stream) {
-    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
-    if (cachedFileBytes > 0) return cachedFileBytes;
-    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
-    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
-  }
-  function formatSize(bytes) {
-    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
-    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
-    return `${Math.round(bytes / 1024)} kB`;
-  }
-  function langFlag(code) {
-    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
-  }
-  function getStreamAudioLanguages(stream) {
-    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
-    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
-  }
-  function isInformationalStream(stream) {
-    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
-    if (stream.infoHash && !stream.directUrl) return false;
-    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
-  }
-  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
-      STREAM_LANGUAGE_PATTERNS = [
-        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
-        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
-        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
-        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
-        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
-        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
-        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
-        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
-        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
-        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
-        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
-        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
-        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
-        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
-        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
-        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
-      ];
-      LANG_FLAGS = {
-        en: "\u{1F1EC}\u{1F1E7}",
-        sv: "\u{1F1F8}\u{1F1EA}",
-        no: "\u{1F1F3}\u{1F1F4}",
-        da: "\u{1F1E9}\u{1F1F0}",
-        fi: "\u{1F1EB}\u{1F1EE}",
-        de: "\u{1F1E9}\u{1F1EA}",
-        fr: "\u{1F1EB}\u{1F1F7}",
-        es: "\u{1F1EA}\u{1F1F8}",
-        it: "\u{1F1EE}\u{1F1F9}",
-        pt: "\u{1F1F5}\u{1F1F9}",
-        nl: "\u{1F1F3}\u{1F1F1}",
-        pl: "\u{1F1F5}\u{1F1F1}",
-        ru: "\u{1F1F7}\u{1F1FA}",
-        tr: "\u{1F1F9}\u{1F1F7}",
-        ja: "\u{1F1EF}\u{1F1F5}",
-        ko: "\u{1F1F0}\u{1F1F7}",
-        zh: "\u{1F1E8}\u{1F1F3}",
-        hi: "\u{1F1EE}\u{1F1F3}",
-        ar: "\u{1F1F8}\u{1F1E6}",
-        cs: "\u{1F1E8}\u{1F1FF}",
-        hu: "\u{1F1ED}\u{1F1FA}",
-        ro: "\u{1F1F7}\u{1F1F4}",
-        uk: "\u{1F1FA}\u{1F1E6}",
-        el: "\u{1F1EC}\u{1F1F7}",
-        he: "\u{1F1EE}\u{1F1F1}",
-        th: "\u{1F1F9}\u{1F1ED}",
-        vi: "\u{1F1FB}\u{1F1F3}",
-        id: "\u{1F1EE}\u{1F1E9}"
-      };
-      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
-      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
-    }
-  });
-
-  // lib/core-streams/lookup.ts
-  var lookup_exports = {};
-  __export(lookup_exports, {
-    isFreshSource: () => isFreshSource,
-    lookupCoreStreams: () => lookupCoreStreams,
-    lookupSource: () => lookupSource,
-    markSourceCooldown: () => markSourceCooldown,
-    rememberFreshSources: () => rememberFreshSources,
-    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
-    sourceInCooldown: () => sourceInCooldown,
-    sourceStreamUrl: () => sourceStreamUrl,
-    streamTargetKey: () => streamTargetKey
-  });
-  function streamTargetKey(target2) {
-    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
-  }
-  function sourceStreamUrl(addon, target2) {
-    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
-  }
-  function sourceInCooldown(addon, now2 = Date.now()) {
-    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
-    if (!until) return false;
-    if (now2 >= until) {
-      cooldownUntil.delete(canonicalAddonUrl(addon.url));
-      return false;
-    }
-    return true;
-  }
-  function markSourceCooldown(addon, ms = COOLDOWN_MS, now2 = Date.now()) {
-    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms);
-  }
-  function looksRateLimited(message) {
-    return /\b429\b|rate.?limit|too many requests/i.test(message);
-  }
-  function tagSource(streams, addon) {
-    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
-  }
-  function keepPlayable(streams) {
-    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
-  }
-  function rememberFreshSources(streams, now2 = Date.now()) {
-    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
-    if (freshSources.size > 2e3) {
-      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
-    }
-  }
-  function isFreshSource(url, now2 = Date.now()) {
-    const at = freshSources.get(url);
-    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
-  }
-  async function fetchViaApi(addon, target2, timeoutMs, signal) {
-    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
-    if (target2.type === "series" && target2.season != null && target2.episode != null) {
-      params.set("season", String(target2.season));
-      params.set("episode", String(target2.episode));
-    }
-    const controller = new AbortController();
-    const onAbort = () => controller.abort();
-    signal?.addEventListener("abort", onAbort);
-    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
-    try {
-      const response = await fetch(`/api/streams?${params}`, {
-        headers: {
-          "x-source-manifest-url": addon.url,
-          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
-        },
-        signal: controller.signal
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      if (payload.error) throw new Error(payload.error);
-      return payload.streams ?? [];
-    } finally {
-      clearTimeout(timer3);
-      signal?.removeEventListener("abort", onAbort);
-    }
-  }
-  async function fetchViaDesktop(addon, target2, timeoutMs) {
-    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
-    if (!streams) return null;
-    return streams.map((stream) => ({
-      ...stream,
-      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
-      cachedFiles: stream.cachedFiles ?? []
-    }));
-  }
-  async function lookupSource(addon, target2, options = {}) {
-    const timeoutMs = options.timeoutMs ?? 12e3;
-    const startedAt = Date.now();
-    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
-    const attempt = async () => {
-      try {
-        let raw = null;
-        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
-        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
-        const streams = keepPlayable(tagSource(raw, addon));
-        rememberFreshSources(streams);
-        const ms = Date.now() - startedAt;
-        return {
-          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms } : { kind: "empty", ms } },
-          streams
-        };
-      } catch (error) {
-        const ms = Date.now() - startedAt;
-        const message = error instanceof Error ? error.message : String(error);
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return { report: { addon, outcome: { kind: "timeout", ms } }, streams: [] };
-        }
-        if (looksRateLimited(message)) markSourceCooldown(addon);
-        return { report: { addon, outcome: { kind: "error", message, ms } }, streams: [] };
-      }
-    };
-    const first = await attempt();
-    const kind = first.report.outcome.kind;
-    if ((kind === "error" || kind === "timeout") && !sourceInCooldown(addon)) {
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-      const second = await attempt();
-      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
-    }
-    return first;
-  }
-  function memoKey(target2) {
-    return `${target2.type}:${streamTargetKey(target2)}`;
-  }
-  function resetCoreStreamLookupMemo() {
-    inflight5.clear();
-    memo2.clear();
-  }
-  async function lookupCoreStreams(target2, options = {}) {
-    const key = memoKey(target2);
-    const replay = (result) => {
-      if (options.onSource) {
-        const bySource = /* @__PURE__ */ new Map();
-        for (const stream of result.streams) {
-          const name = stream.source ?? "";
-          bySource.set(name, [...bySource.get(name) ?? [], stream]);
-        }
-        for (const report of result.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
-      }
-      return result;
-    };
-    const cached = memo2.get(key);
-    if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending3 = inflight5.get(key);
-    if (pending3) return pending3.then(replay);
-    const run = lookupCoreStreamsUncached(target2, options).then((result) => {
-      if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
-        memo2.set(key, { at: Date.now(), result });
-      }
-      return result;
-    }).finally(() => inflight5.delete(key));
-    inflight5.set(key, run);
-    return run;
-  }
-  async function lookupCoreStreamsUncached(target2, options = {}) {
-    const addons = options.addons ?? getEnabledCoreStreamAddons();
-    if (addons.length === 0) return { streams: [], reports: [] };
-    const seen = /* @__PURE__ */ new Set();
-    const merged = [];
-    const reports = [];
-    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
-      const { report, streams } = await lookupSource(addon, target2, options);
-      reports.push(report);
-      const fresh = [];
-      for (const stream of streams) {
-        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(stream);
-        fresh.push(stream);
-      }
-      if (options.signal?.aborted) return;
-      options.onSource?.(report, fresh);
-    });
-    return { streams: merged, reports };
-  }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
-  var init_lookup = __esm({
-    "lib/core-streams/lookup.ts"() {
-      "use client";
-      init_core_addons();
-      init_addon_url();
-      init_plugin_sdk();
-      init_async_utils();
-      init_stream_utils();
-      cooldownUntil = /* @__PURE__ */ new Map();
-      COOLDOWN_MS = 9e4;
-      FRESH_SOURCE_MS = 10 * 6e4;
-      freshSources = /* @__PURE__ */ new Map();
-      RETRY_DELAY_MS = 700;
-      MEMO_TTL_MS = 45e3;
-      inflight5 = /* @__PURE__ */ new Map();
-      memo2 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -17374,8 +20718,8 @@
   });
 
   // lib/opensubtitles/os-client.ts
-  function sleep2(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  function sleep2(ms2) {
+    return new Promise((resolve) => setTimeout(resolve, ms2));
   }
   function pruneCache(now2 = Date.now()) {
     for (const [key, entry] of resultCache) {
@@ -17400,10 +20744,10 @@
     if (osApiKey) searchParams.set("os_api_key", osApiKey);
     if (osApiKey && mediaUrl) searchParams.set("media_url", mediaUrl);
     const url = `/api/subtitles?${searchParams.toString()}`;
-    const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
-    const cached = resultCache.get(cacheKey);
+    const cacheKey2 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
+    const cached = resultCache.get(cacheKey2);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight7.get(cacheKey);
+    const running2 = inflight7.get(cacheKey2);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -17454,15 +20798,15 @@
         release: s.release
       }));
       pruneCache();
-      resultCache.set(cacheKey, {
+      resultCache.set(cacheKey2, {
         expiresAt: Date.now() + (subtitles.length > 0 ? NON_EMPTY_CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
         subtitles
       });
       return subtitles;
     })().finally(() => {
-      inflight7.delete(cacheKey);
+      inflight7.delete(cacheKey2);
     });
-    inflight7.set(cacheKey, request);
+    inflight7.set(cacheKey2, request);
     return request;
   }
   var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
@@ -17858,15 +21202,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -17880,7 +21224,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
+        className: "person-sidebar-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -17954,6 +21298,7 @@
   function PlayerWikiPanel({ tmdbId, mediaType, imdbId, onClose, onBack }) {
     const isTv = useTvMode();
     const closeRef = useRef(null);
+    const contentRef = useRef(null);
     const [data, setData] = useState(null);
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -18005,15 +21350,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -18027,7 +21372,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-[80] flex w-full flex-col overflow-hidden sm:w-[min(340px,88vw)]",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
@@ -18053,13 +21398,14 @@
                 type: "button",
                 ref: closeRef,
                 ...isTv ? { "data-f": "", "data-init": "" } : {},
+                onFocus: isTv ? () => contentRef.current?.scrollTo({ top: 0 }) : void 0,
                 onClick: onClose,
                 className: "flex h-9 w-9 items-center justify-center rounded-full bg-[#fcfcff14] text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
                 children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex-1 overflow-y-auto overscroll-contain", ...isTv ? { "data-scroll": "" } : {}, children: [
+          /* @__PURE__ */ jsxs("div", { ref: contentRef, className: "flex-1 overflow-y-auto overscroll-contain", ...isTv ? { "data-scroll": "" } : {}, children: [
             loading2 && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
             error && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               "Could not load info",
@@ -18120,7 +21466,7 @@
                       className: "flex flex-col items-center text-center transition hover:opacity-80 active:opacity-60",
                       title: actor.name,
                       children: [
-                        /* @__PURE__ */ jsx("div", { className: "mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
+                        /* @__PURE__ */ jsx("div", { className: "vp-cast-photo relative mb-1.5 h-16 w-16 overflow-hidden rounded-full bg-white/[0.05] ring-1 ring-transparent transition hover:ring-white/20", children: actor.profileUrl ? /* @__PURE__ */ jsx("img", { src: actor.profileUrl, alt: actor.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center text-xl text-slate-600", children: actor.name.charAt(0) }) }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[11px] font-medium text-slate-200", children: actor.name }),
                         /* @__PURE__ */ jsx("p", { className: "w-full truncate text-[10px] text-slate-500", children: actor.character })
                       ]
@@ -18215,15 +21561,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -18234,10 +21580,32 @@
         cancelled = true;
       };
     }, [isTv, title, year]);
+    const embedBoxRef = useRef(null);
+    const [embedBox, setEmbedBox] = useState(null);
+    useEffect(() => {
+      const el = embedBoxRef.current;
+      if (!isTv || !el) return;
+      const measure = () => setEmbedBox({ w: el.clientWidth, h: el.clientHeight });
+      measure();
+      const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+      ro?.observe(el);
+      return () => ro?.disconnect();
+    }, [isTv, state2]);
+    const wanted = 1.25 / (tvSceneScale() || 1);
+    const embedZoom = isTv && embedBox && embedBox.w > 0 ? Math.min(wanted, embedBox.w / SPOTIFY_MIN_LAYOUT_PX) : 1;
+    const embedZoomStyle = !isTv || !embedBox ? {} : {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: embedBox.w / embedZoom,
+      height: embedBox.h / embedZoom,
+      transform: `scale(${embedZoom})`,
+      transformOrigin: "top left"
+    };
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col overflow-hidden",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col overflow-hidden",
         style: { background: "rgb(var(--base-950) / 0.96)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.07)" },
         onClick: (e) => e.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
@@ -18288,8 +21656,12 @@
              * kompakta spelare och panelen slutade en bit ner i stället för att
              * fylla nedåt (Jerry 2026-09-08). Raden `1fr` är alltid uträknad, så
              * iframen får sin höjd redan i första layouten.
+             *
+             * Kolumnen låses till panelens bredd (`minmax(0,1fr)`): annars blåste
+             * albumtitelns radlängd upp den bredare än panelen, och Spotify-
+             * rutan — som mäts — blev lika bred och klipptes vid panelkanten.
              */
-            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-rows-[auto_1fr]", children: [
+            /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr]", children: [
               /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3", children: [
                 result.coverUrl && /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
                 /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
@@ -18309,14 +21681,24 @@
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsx(
+              isTv ? /* @__PURE__ */ jsx("div", { ref: embedBoxRef, className: "relative min-h-0 min-w-0 overflow-hidden", children: /* @__PURE__ */ jsx(
                 "iframe",
                 {
                   src: result.embedUrl,
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
                   className: "h-full w-full min-h-0",
-                  style: { border: "none", display: "block" },
+                  style: { border: "none", display: "block", ...embedZoomStyle },
+                  title: result.albumName ?? t("soundtrack")
+                }
+              ) }) : /* @__PURE__ */ jsx(
+                "iframe",
+                {
+                  src: result.embedUrl,
+                  allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
+                  loading: "lazy",
+                  className: "h-full w-full min-h-0",
+                  style: { border: "none", display: "block", ...embedZoomStyle },
                   title: result.albumName ?? t("soundtrack")
                 }
               )
@@ -18326,15 +21708,18 @@
       }
     );
   }
+  var SPOTIFY_MIN_LAYOUT_PX;
   var init_player_soundtrack_panel = __esm({
     "components/player/player-soundtrack-panel.tsx"() {
       "use client";
       init_react_shim();
+      init_tv_scene();
       init_i18n();
       init_tv_focus_shim();
       init_fetch_client();
       init_soundtrack_request_cache();
       init_jsx_runtime_shim();
+      SPOTIFY_MIN_LAYOUT_PX = 520;
     }
   });
 
@@ -18371,7 +21756,7 @@
     return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -18485,7 +21870,7 @@
       "div",
       {
         "data-player-streams-panel": "",
-        className: "absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-full flex-col overflow-hidden sm:w-[340px]",
         style: {
           background: "rgb(var(--base-950) / 0.96)",
           backdropFilter: "blur(12px)",
@@ -18571,6 +21956,149 @@
     }
   });
 
+  // lib/couch/host-trakt.ts
+  var init_host_trakt = __esm({
+    "lib/couch/host-trakt.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/couch/sport-protocol.ts
+  var init_sport_protocol = __esm({
+    "lib/couch/sport-protocol.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/couch/host-bridge.ts
+  function registerCouchPlayer(handlers) {
+    const token = /* @__PURE__ */ Symbol("couch-player");
+    players = [...players, { token, handlers }];
+    notifyCouchState();
+    return () => {
+      if (!players.some((p) => p.token === token)) return;
+      players = players.filter((p) => p.token !== token);
+      notifyCouchState();
+    };
+  }
+  function buildStateBody(acks) {
+    let player = null;
+    try {
+      player = top()?.handlers.snapshot() ?? null;
+    } catch {
+      player = null;
+    }
+    let sport = null;
+    try {
+      sport = sportSurface?.surface.snapshot() ?? null;
+    } catch {
+      sport = null;
+    }
+    return { state: { player, surfaces: { sport }, tip: tipSummary }, acks };
+  }
+  function notifyCouchState() {
+    if (!post || flushQueued2) return;
+    flushQueued2 = true;
+    queueMicrotask(() => {
+      flushQueued2 = false;
+      const acks = pendingAcks;
+      pendingAcks = [];
+      post?.(buildStateBody(acks));
+    });
+  }
+  var sportSurface, tipSummary, players, top, pendingAcks, flushQueued2, post;
+  var init_host_bridge = __esm({
+    "lib/couch/host-bridge.ts"() {
+      init_host_trakt();
+      init_sport_protocol();
+      sportSurface = null;
+      tipSummary = null;
+      players = [];
+      top = () => players[players.length - 1] ?? null;
+      pendingAcks = [];
+      flushQueued2 = false;
+      post = null;
+    }
+  });
+
+  // lib/couch/player-snapshot.ts
+  function streamKey(s) {
+    return s.directUrl ?? `${s.infoHash}:${s.fileIdx ?? 0}`;
+  }
+  function describeStream(s) {
+    const bytes = getStreamSizeBytes(s);
+    const resolution = streamResolution(s.name);
+    return {
+      key: streamKey(s),
+      label: s.title || s.name,
+      resolution: resolution ? `${resolution}p` : void 0,
+      hdr: streamLooksDolbyVision(s) ? "DV" : void 0,
+      audio: streamLooksLosslessAudio(s) ? "Lossless" : void 0,
+      size: bytes ? formatSize(bytes) : void 0,
+      source: s.source || s.name
+    };
+  }
+  function sleepStateFor(mode, nowMs) {
+    if (mode === "off") return DISARMED;
+    const m = mode === "end" ? "end" : Number(mode);
+    return armSleepTimer(m, nowMs);
+  }
+  function couchSleep(state2, nowMs, pos, dur) {
+    if (state2.mode === "off") return { mode: "off" };
+    if (state2.mode === "end") {
+      const left = Math.max(0, dur - pos - SLEEP_END_MARGIN_S);
+      return { mode: "end", endsAt: nowMs + left * 1e3 };
+    }
+    const remaining = sleepTimerRemainingMs(state2, nowMs);
+    const mode = String(state2.mode);
+    return remaining == null ? { mode } : { mode, endsAt: nowMs + remaining };
+  }
+  function nextEpisodeOf(ep) {
+    if (!ep || ep.current == null) return void 0;
+    const i = ep.items.findIndex((e) => e.number === ep.current);
+    const next = i >= 0 ? ep.items[i + 1] : void 0;
+    return next ? { season: ep.seasonNumber, episode: next.number, title: next.title } : void 0;
+  }
+  function couchVolume(volume, muted) {
+    if (muted) return 0;
+    return Math.max(0, Math.min(100, Math.round(volume * 100)));
+  }
+  function audioLabel(t) {
+    const label = t.title || t.language || "\u2014";
+    const layout = t.channels == null ? "" : t.channels >= 8 ? " 7.1" : t.channels >= 6 ? " 5.1" : t.channels === 1 ? " 1.0" : " 2.0";
+    const format = `${t.codec.toUpperCase()}${layout}`.trim();
+    return { label, format: format || void 0 };
+  }
+  function positionJumped(last2, pos, now2, playing) {
+    if (!last2) return false;
+    const expected = last2.playing ? last2.pos + Math.max(0, now2 - last2.at) / 1e3 : last2.pos;
+    return Math.abs(pos - expected) > 2;
+  }
+  function selectableStreams(streams) {
+    return streams.filter((s) => !!s.directUrl);
+  }
+  function pushCue(buffer, cue, now2) {
+    const text = cue.text.trim();
+    if (!text) return buffer;
+    const last2 = buffer[buffer.length - 1];
+    if (last2 && last2.text === text) return buffer;
+    const base = last2 && last2.start > cue.start ? [] : buffer;
+    const kept = base.filter((c) => c.start >= now2 - SAID_WINDOW_S);
+    kept.push({ text, start: cue.start });
+    return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
+  }
+  var SAID_WINDOW_S, SAID_MAX_CUES;
+  var init_player_snapshot = __esm({
+    "lib/couch/player-snapshot.ts"() {
+      init_stream_utils();
+      init_sleep_timer();
+      SAID_WINDOW_S = 30;
+      SAID_MAX_CUES = 40;
+    }
+  });
+
   // lib/homekit-client.ts
   async function emitHomeKitEvent(input) {
     try {
@@ -18586,6 +22114,129 @@
   var init_homekit_client = __esm({
     "lib/homekit-client.ts"() {
       "use client";
+    }
+  });
+
+  // lib/continue-frame-capture.ts
+  async function captureContinueFrame(engine, ref, video) {
+    const key = continueFrameKey(ref);
+    try {
+      if (engine === "mpv") {
+        await mpvCaptureFrame(key);
+        return true;
+      }
+      if (engine === "droid") {
+        const res = await np({ cmd: "captureFrame", path: `/api/player-frame?key=${key}` });
+        return res?.started === true;
+      }
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return false;
+      const scale = Math.min(1, 640 / video.videoWidth);
+      const canvas2 = document.createElement("canvas");
+      canvas2.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas2.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas2.getContext("2d");
+      if (!context) return false;
+      context.drawImage(video, 0, 0, canvas2.width, canvas2.height);
+      const blob = await new Promise((resolve) => canvas2.toBlob(resolve, "image/jpeg", 0.82));
+      if (!blob) return false;
+      const response = await fetch(`/api/player-frame?key=${key}`, { method: "PUT", body: blob, headers: { "content-type": "image/jpeg" } });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+  var init_continue_frame_capture = __esm({
+    "lib/continue-frame-capture.ts"() {
+      "use client";
+      init_continue_frames();
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/use-continue-frame-capture.ts
+  function shouldCaptureContinueFrame(input) {
+    if (!input.armed || input.skip || !input.enabled || !input.hasRef) return false;
+    return input.now - input.lastAt >= CONTINUE_FRAME_MIN_GAP_MS;
+  }
+  function useContinueFrameCapture(options) {
+    const latest2 = useRef(options);
+    latest2.current = options;
+    const lastAtRef = useRef(0);
+    const captureNow = useCallback(() => {
+      const now2 = latest2.current;
+      const at = Date.now();
+      const go = shouldCaptureContinueFrame({
+        armed: now2.armed,
+        skip: now2.shouldSkip(),
+        enabled: getContinueFramesEnabled(),
+        hasRef: now2.ref !== null,
+        lastAt: lastAtRef.current,
+        now: at
+      });
+      if (!go || !now2.ref) return;
+      lastAtRef.current = at;
+      const ref = now2.ref;
+      const engine2 = now2.engine;
+      void captureContinueFrame(engine2, ref, now2.videoRef.current).then((ok) => {
+        if (!ok) return;
+        window.setTimeout(() => {
+          void pushContinueFrame(ref);
+        }, engine2 === "none" ? 0 : CONTINUE_FRAME_PUSH_DELAY_MS);
+      }).catch(() => {
+      });
+    }, []);
+    const wasPlayingRef = useRef(false);
+    const { playing, armed, engine } = options;
+    useEffect(() => {
+      if (!armed) {
+        wasPlayingRef.current = false;
+        return;
+      }
+      if (wasPlayingRef.current && !playing) captureNow();
+      wasPlayingRef.current = playing;
+      if (!playing) return;
+      if (engine === "droid") {
+        const syncLeaveFrame = () => {
+          const now2 = latest2.current;
+          const take = now2.ref !== null && getContinueFramesEnabled() && !now2.shouldSkip();
+          const path = take && now2.ref ? `/api/player-frame?key=${continueFrameKey(now2.ref)}` : null;
+          void np({ cmd: "setLeaveFrame", path });
+          return path;
+        };
+        syncLeaveFrame();
+        const interval2 = window.setInterval(syncLeaveFrame, CONTINUE_FRAME_PERIOD_MS);
+        const onHidden = () => {
+          const ref = latest2.current.ref;
+          if (document.visibilityState === "hidden" && ref) {
+            window.setTimeout(() => {
+              void pushContinueFrame(ref);
+            }, CONTINUE_FRAME_PUSH_DELAY_MS);
+          }
+        };
+        document.addEventListener("visibilitychange", onHidden);
+        return () => {
+          window.clearInterval(interval2);
+          document.removeEventListener("visibilitychange", onHidden);
+          void np({ cmd: "setLeaveFrame", path: null });
+        };
+      }
+      const interval = window.setInterval(captureNow, CONTINUE_FRAME_PERIOD_MS);
+      return () => window.clearInterval(interval);
+    }, [playing, armed, engine, captureNow]);
+    return captureNow;
+  }
+  var CONTINUE_FRAME_MIN_GAP_MS, CONTINUE_FRAME_PERIOD_MS, CONTINUE_FRAME_PUSH_DELAY_MS;
+  var init_use_continue_frame_capture = __esm({
+    "lib/use-continue-frame-capture.ts"() {
+      "use client";
+      init_react_shim();
+      init_continue_frames();
+      init_continue_frame_capture();
+      init_tauri_native_player();
+      CONTINUE_FRAME_MIN_GAP_MS = 1500;
+      CONTINUE_FRAME_PERIOD_MS = 6e4;
+      CONTINUE_FRAME_PUSH_DELAY_MS = 2500;
     }
   });
 
@@ -18632,7 +22283,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY10);
+      const raw = getScopedStorageItem(KEY11);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -18650,17 +22301,30 @@
   function matchesShortcut(commandId, eventKey) {
     return normalizeShortcutKey(eventKey) === getShortcutKey(commandId);
   }
-  var KEY10, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS;
+  function isTextEntryTarget(el) {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === "TEXTAREA") return true;
+    if (el.tagName !== "INPUT") return false;
+    const type = (el.type || "text").toLowerCase();
+    return !NON_TEXT_INPUT_TYPES.has(type);
+  }
+  function hasCommandModifier(e) {
+    return e.metaKey || e.ctrlKey || e.altKey;
+  }
+  var KEY11, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY10 = "keyboard_shortcuts";
+      KEY11 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
         { id: "seekForward", category: "player", defaultKey: "ArrowRight", labelKey: "shortcutsSeekForward" },
         { id: "mute", category: "player", defaultKey: "m", labelKey: "shortcutsMute" },
         { id: "fullscreen", category: "player", defaultKey: "f", labelKey: "shortcutsToggleFullscreen" },
+        { id: "saveMoment", category: "player", defaultKey: "b", labelKey: "shortcutsSaveMoment" },
+        { id: "clip", category: "player", defaultKey: "c", labelKey: "shortcutsClip" },
         { id: "subtitleCycle", category: "tracks", defaultKey: "s", labelKey: "shortcutsSubtitleCycle" },
         { id: "secondarySubtitleCycle", category: "tracks", defaultKey: "d", labelKey: "shortcutsSecondarySubtitleCycle" },
         { id: "subtitleDelayBack", category: "tracks", defaultKey: "z", labelKey: "shortcutsSubtitleDelayBack" },
@@ -18672,14 +22336,15 @@
         (acc, command) => ({ ...acc, [command.id]: command.defaultKey }),
         {}
       );
+      NON_TEXT_INPUT_TYPES = /* @__PURE__ */ new Set(["range", "checkbox", "radio", "button", "submit", "reset", "file", "color", "image"]);
     }
   });
 
   // lib/player-reveal-hold.ts
   function state() {
     const g = globalThis;
-    if (!g[KEY11]) g[KEY11] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY11];
+    if (!g[KEY12]) g[KEY12] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY12];
   }
   function isPlayerRevealHeld() {
     return state().holders > 0;
@@ -18687,16 +22352,59 @@
   function markPlayerReadyToReveal() {
     if (state().holders > 0) state().ready = true;
   }
-  function captureUserMutedOnce(current) {
+  function captureUserMutedOnce(current2) {
     const s = state();
-    if (s.userMuted === null) s.userMuted = current;
+    if (s.userMuted === null) s.userMuted = current2;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY11;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY12;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY11 = "__lumioRevealHold";
+      KEY12 = "__lumioRevealHold";
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+    }
+  });
+
+  // lib/player-silent-start.ts
+  function createAudioOnlyTracker(reloadAfterMs = SILENT_RELOAD_AFTER_AUDIO_MS) {
+    let url = "";
+    let firstPos = Number.NaN;
+    let done = false;
+    return {
+      observe(o) {
+        if (o.url !== url) {
+          url = o.url;
+          firstPos = Number.NaN;
+          done = false;
+        }
+        if (done) return false;
+        if (o.firstFrame) {
+          done = true;
+          return false;
+        }
+        if (!Number.isFinite(o.timePos) || o.timePos <= 0) return false;
+        if (!Number.isFinite(firstPos)) {
+          firstPos = o.timePos;
+          return false;
+        }
+        if ((o.timePos - firstPos) * 1e3 < reloadAfterMs) return false;
+        done = true;
+        return true;
+      }
+    };
+  }
+  var init_player_silent_start = __esm({
+    "lib/player-silent-start.ts"() {
+      init_start_watchdog();
     }
   });
 
@@ -18727,7 +22435,7 @@
       onInteract();
     }, [onInteract]);
     const count = recommendations.length;
-    const current = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
+    const current2 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
     const step = useCallback((direction) => {
       markInteracted();
       setIndex((value) => {
@@ -18764,15 +22472,15 @@
       return () => window.removeEventListener("keydown", onKey);
     }, [step]);
     const metaParts = useMemo(() => {
-      if (!current) return [];
+      if (!current2) return [];
       const parts = [];
-      const genres = current.item.genres?.slice(0, 3) ?? [];
+      const genres = current2.item.genres?.slice(0, 3) ?? [];
       if (genres.length > 0) parts.push(genres.join(" / "));
-      if (current.item.year) parts.push(String(current.item.year));
+      if (current2.item.year) parts.push(String(current2.item.year));
       return parts;
-    }, [current]);
-    if (!current) return null;
-    const backdrop = current.item.backdropUrl ?? current.item.posterUrl ?? null;
+    }, [current2]);
+    if (!current2) return null;
+    const backdrop = current2.item.backdropUrl ?? current2.item.posterUrl ?? null;
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -18835,29 +22543,29 @@
           ] }, panelIndex)),
           /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
-            current.logoUrl && !failedLogos.has(current.logoUrl) ? /* @__PURE__ */ jsx(
+            current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
               {
-                src: current.logoUrl,
-                alt: current.heading,
+                src: current2.logoUrl,
+                alt: current2.heading,
                 className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
-                onError: () => setFailedLogos((prev) => new Set(prev).add(current.logoUrl))
+                onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
               }
-            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current.heading }),
-            (metaParts.length > 0 || current.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
+            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current2.heading }),
+            (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
               metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsx("span", { children: part })
               ] }, part)),
-              current.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+              current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
                   /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
-                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current.item.ratings.imdb })
+                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
                 ] })
               ] })
             ] }),
-            current.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current.item.overview }),
+            current2.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current2.item.overview }),
             /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
               /* @__PURE__ */ jsxs(
                 "button",
@@ -18867,12 +22575,12 @@
                   "data-init": "",
                   onClick: () => {
                     markInteracted();
-                    current.onPrimary();
+                    current2.onPrimary();
                   },
                   className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
                   children: [
                     /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                    current.primaryLabel
+                    current2.primaryLabel
                   ]
                 }
               ),
@@ -19130,7 +22838,7 @@
   function readStore() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(STORAGE_KEY2);
+      const raw = getScopedStorageItem(STORAGE_KEY3);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -19147,7 +22855,7 @@
           delete store2[key];
         });
       }
-      setScopedStorageItem(STORAGE_KEY2, JSON.stringify(store2));
+      setScopedStorageItem(STORAGE_KEY3, JSON.stringify(store2));
     } catch {
     }
   }
@@ -19165,6 +22873,15 @@
     const series = store2[mediaKey];
     return series && Number.isFinite(series.d) ? series.d : null;
   }
+  function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
+    const store2 = readStore();
+    const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
+    if (season != null && episode != null) {
+      const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
+      if (exact) return exact;
+    }
+    return pick2(store2[mediaKey]);
+  }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
     const store2 = readStore();
     const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
@@ -19172,18 +22889,649 @@
       if (exactKey) delete store2[exactKey];
       delete store2[mediaKey];
     } else {
-      const entry = { d: delay, t: Date.now() };
+      const entry = { d: delay, t: Date.now(), u: 1 };
       if (exactKey) store2[exactKey] = entry;
       store2[mediaKey] = entry;
     }
     writeStore(store2);
   }
-  var STORAGE_KEY2, MAX_ENTRIES2;
+  var STORAGE_KEY3, MAX_ENTRIES2;
   var init_subtitle_delay_store = __esm({
     "lib/subtitle-delay-store.ts"() {
       init_profile_storage_shim();
-      STORAGE_KEY2 = "lumio_subtitle_delays_v1";
+      STORAGE_KEY3 = "lumio_subtitle_delays_v1";
       MAX_ENTRIES2 = 400;
+    }
+  });
+
+  // lib/subtitle-sync/client.ts
+  async function post2(path, body, signal) {
+    try {
+      const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+      if (!res.ok) return { status: "no_fit", reason: `http_${res.status}` };
+      return await res.json();
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      return { status: "no_fit", reason: "network" };
+    }
+  }
+  function requestSubtitleSync(body, signal) {
+    return post2("/api/subtitles/sync", body, signal);
+  }
+  function requestAudioVerification(jobId, url, signal) {
+    return post2("/api/subtitles/sync/verify-audio", { jobId, url }, signal);
+  }
+  async function fetchEmbeddedTrackLanguages(url, fileName, extra) {
+    try {
+      const res = await fetch("/api/subtitles/sync/tracks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.tracks) ? data.tracks : [];
+    } catch {
+      return [];
+    }
+  }
+  async function prefetchSubtitleSyncIndex(url, fileName, extra) {
+    await fetch("/api/subtitles/sync/prefetch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) }).catch(() => {
+    });
+  }
+  var init_client2 = __esm({
+    "lib/subtitle-sync/client.ts"() {
+    }
+  });
+
+  // lib/subtitle-sync/loop.ts
+  function awaitsReferenceAudioCheck(r) {
+    return (r.status === "synced" || r.status === "already_synced") && r.provisional === true && r.reason === "rac_pending";
+  }
+  function nextWaitPlayedS(r, pendingRetries, played) {
+    const floor = Math.max(1, r.retryAfterPlayedS ?? 0);
+    if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) {
+      if (pendingRetries >= PENDING_RETRY_PLAYED_S.length) return null;
+      return Math.max(PENDING_RETRY_PLAYED_S[pendingRetries] - played, floor);
+    }
+    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) {
+      if (r.retryAfterPlayedS === void 0) return null;
+      const wait = Math.max(PROVISIONAL_RECHECK_PLAYED_S, floor);
+      return played + wait <= PROVISIONAL_RECHECK_UNTIL_PLAYED_S ? wait : null;
+    }
+    return null;
+  }
+  async function driveSync(deps) {
+    let played = 0;
+    let pendingRetries = 0;
+    for (; ; ) {
+      const r = await deps.request();
+      const wait = nextWaitPlayedS(r, pendingRetries, played);
+      await deps.onResult(r, wait === null);
+      if (wait === null) return r;
+      if (!await deps.waitPlayed(wait)) return null;
+      played += wait;
+      if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) pendingRetries++;
+    }
+  }
+  var PENDING_RETRY_PLAYED_S, PROVISIONAL_RECHECK_PLAYED_S, PROVISIONAL_RECHECK_UNTIL_PLAYED_S;
+  var init_loop = __esm({
+    "lib/subtitle-sync/loop.ts"() {
+      PENDING_RETRY_PLAYED_S = [30, 60, 120, 300];
+      PROVISIONAL_RECHECK_PLAYED_S = 300;
+      PROVISIONAL_RECHECK_UNTIL_PLAYED_S = 1800;
+    }
+  });
+
+  // lib/subtitle-sync/plan.ts
+  function subtitleLangGroup(value) {
+    const normalized = normalizeLanguageCode(value) ?? "und";
+    const [base] = normalized.split(/[-_]/);
+    return normalizeLanguageCode(base) ?? normalized;
+  }
+  function buildCandidates(selected, all, max = 4) {
+    const lang = subtitleLangGroup(selected.lang3);
+    const sameLang = (c) => subtitleLangGroup(c.lang3) === lang;
+    const same = all.filter((c) => c.id !== selected.id && sameLang(c));
+    const rank = (c) => c.hashMatch ? 0 : 1;
+    const targets = same.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
+    const references = all.filter((c) => c.id !== selected.id && !sameLang(c) && c.hashMatch);
+    return [...targets, ...references];
+  }
+  function outcomeMessageKey(r) {
+    if (r.status === "no_reference") return r.reason === "no_text_tracks" ? "subtitleAutoSyncNoTextTracks" : "subtitleAutoSyncNoReferenceInFile";
+    if (r.status === "no_fit") {
+      const fetchFailed = !!r.reason && (FETCH_REASONS.has(r.reason) || r.reason.startsWith("http_"));
+      return fetchFailed ? "subtitleAutoSyncFetchFailed" : "subtitleAutoSyncNoFit";
+    }
+    if (r.status === "ambiguous") return "subtitleAutoSyncAmbiguous";
+    return null;
+  }
+  function isFinalOutcome(r) {
+    if (r.status === "reference_pending") return false;
+    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) return false;
+    return true;
+  }
+  function withdrawsProvisional(r, applied) {
+    return applied && r.status === "no_fit" && (r.reason === "text_veto" || r.reason === "anchor_veto");
+  }
+  function formatCorrection(ms2) {
+    const sign = ms2 < 0 ? "\u2212" : "+";
+    const abs = Math.abs(ms2);
+    if (abs >= 6e4) {
+      const secs = Math.round(abs / 1e3);
+      return `${sign}${Math.floor(secs / 60)} min ${secs % 60} s`;
+    }
+    return `${sign}${(abs / 1e3).toFixed(1).replace(".", ",")} s`;
+  }
+  function createSyncGuard() {
+    let current2 = 0;
+    return { begin: () => ++current2, isCurrent: (token) => token === current2 };
+  }
+  function playedDelta(last2, now2) {
+    const d = now2 - last2;
+    return d > 0 && d < 3 ? d : 0;
+  }
+  function createAttemptLedger() {
+    const seen = /* @__PURE__ */ new Set();
+    return {
+      has: (url, subId) => seen.has(`${url}|${subId}`),
+      mark: (url, subId) => {
+        seen.add(`${url}|${subId}`);
+      }
+    };
+  }
+  function userDelayBlocks(ctx) {
+    return ctx.savedDelay !== null || ctx.currentDelay !== (ctx.inheritedDelay ?? 0) || ctx.hasDrift;
+  }
+  function isRunValid(ctx) {
+    return ctx.current && !ctx.userBlocked && ctx.enabled && !ctx.optedOut;
+  }
+  function syncIdentity(a) {
+    const out = {};
+    const name = a.fileName?.trim();
+    if (name) out.fileName = name;
+    const title = a.title?.trim();
+    if (title) out.title = title;
+    if (typeof a.year === "number" && a.year > 0) out.year = a.year;
+    if (typeof a.season === "number" && a.season >= 0) out.season = a.season;
+    if (typeof a.episode === "number" && a.episode >= 0) out.episode = a.episode;
+    return out;
+  }
+  function safeDecode(v) {
+    try {
+      return decodeURIComponent(v);
+    } catch {
+      return v;
+    }
+  }
+  function releaseSegment(url) {
+    let u = url;
+    if (u.startsWith("/api/proxy-stream?url=")) {
+      const v = u.slice("/api/proxy-stream?url=".length).split("&")[0];
+      u = safeDecode(v);
+    }
+    const wrapped = u.split("/api/source-cache?")[1]?.split("&").find((kv) => kv.startsWith("u="));
+    if (wrapped) u = safeDecode(wrapped.slice(2));
+    const path = u.split(/[?#]/)[0];
+    const seg = safeDecode(path.slice(path.lastIndexOf("/") + 1));
+    const lower = seg.trim().toLowerCase();
+    const dot = lower.lastIndexOf(".");
+    const ext = dot >= 0 ? lower.slice(dot + 1) : "";
+    const tokens = lower.split(".").filter((t) => t.trim() !== "").length;
+    return MEDIA_EXTENSIONS.includes(ext) || tokens >= 3 ? seg : null;
+  }
+  function effectiveName(url, id) {
+    if (id.fileName) return id.fileName;
+    const seg = releaseSegment(url);
+    if (seg) return seg;
+    if (!id.title) return "";
+    let name = id.title;
+    if (id.year) name += ` (${id.year})`;
+    if (id.season !== void 0 && id.episode !== void 0) name += ` S${String(id.season).padStart(2, "0")}E${String(id.episode).padStart(2, "0")}`;
+    return name;
+  }
+  function prefetchKey(url, id) {
+    return `${url}
+${effectiveName(url, id)}`;
+  }
+  var PENDING_MESSAGE_KEY, FETCH_REASONS, MEDIA_EXTENSIONS;
+  var init_plan = __esm({
+    "lib/subtitle-sync/plan.ts"() {
+      "use strict";
+      init_playback_settings();
+      PENDING_MESSAGE_KEY = "subtitleAutoSyncReadingTracks";
+      FETCH_REASONS = /* @__PURE__ */ new Set(["fetch", "timeout", "network"]);
+      MEDIA_EXTENSIONS = ["mkv", "mp4", "m4v", "avi", "mov", "webm", "wmv", "mpg", "mpeg", "ts", "m2ts"];
+    }
+  });
+
+  // lib/subtitle-sync/opt-out.ts
+  function read5() {
+    try {
+      const parsed = JSON.parse(getScopedStorageItem(STORAGE_KEY4) ?? "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function isAutoSyncOptedOut(mediaKey, subtitleId) {
+    return `${mediaKey}|${subtitleId}` in read5();
+  }
+  function setAutoSyncOptOut(mediaKey, subtitleId) {
+    const store2 = read5();
+    const key = `${mediaKey}|${subtitleId}`;
+    delete store2[key];
+    const next = Math.max(0, ...Object.values(store2)) + 1;
+    store2[key] = next;
+    const keys2 = Object.keys(store2).sort((a, b) => store2[a] - store2[b]);
+    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES3))) delete store2[k];
+    setScopedStorageItem(STORAGE_KEY4, JSON.stringify(store2));
+  }
+  var STORAGE_KEY4, MAX_ENTRIES3;
+  var init_opt_out = __esm({
+    "lib/subtitle-sync/opt-out.ts"() {
+      init_profile_storage_shim();
+      STORAGE_KEY4 = "lumio_subtitle_autosync_optout_v1";
+      MAX_ENTRIES3 = 200;
+    }
+  });
+
+  // lib/subtitle-sync/user-delay.ts
+  function bindingSavedDelay(entry) {
+    return entry && entry.userSet ? entry.delay : null;
+  }
+  function inheritedDelay(entry) {
+    return entry && !entry.userSet ? entry.delay : null;
+  }
+  function clearsInheritedDelay(inherited, current2) {
+    return inherited !== null && inherited !== 0 && current2 === inherited;
+  }
+  function persistAfterRestore(pending4, subDelay) {
+    if (pending4 === null) return { skip: false, pending: null };
+    if (subDelay !== pending4) return { skip: true, pending: pending4 };
+    return { skip: true, pending: null };
+  }
+  function waitsForPlayback(reason) {
+    return reason === "not-first-frame" || reason === "no-url" || reason === "no-subtitle";
+  }
+  function autoSyncSkipReason(g) {
+    if (!g.hasSelection) return "no-subtitle";
+    if (!g.enabled) return "setting";
+    if (g.isLive) return "live";
+    if (g.source !== "opensubtitles") return g.source === "external" ? "external" : "embedded";
+    if (g.ledgerHit) return "ledger";
+    if (g.optedOut) return "opt-out";
+    if (g.savedDelay !== null) return "saved-delay";
+    if (userDelayBlocks({ savedDelay: null, currentDelay: g.currentDelay, hasDrift: g.hasDrift, inheritedDelay: g.inheritedDelay })) return "manual-delay";
+    if (!g.firstFrame) return "not-first-frame";
+    if (!g.hasUrl) return "no-url";
+    return null;
+  }
+  var init_user_delay = __esm({
+    "lib/subtitle-sync/user-delay.ts"() {
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/diag.ts
+  function fileLabel(url, id) {
+    const name = effectiveName(url, id).split(/[?#]/)[0].trim();
+    return name ? name.slice(0, 120) : "-";
+  }
+  function subLabel(id) {
+    const clean = id.split(/[?#]/)[0];
+    const tail = clean.slice(clean.lastIndexOf("/") + 1) || "-";
+    return tail.slice(0, 40);
+  }
+  function describeSkip(reason, ctx) {
+    const delay = ctx.delay !== void 0 && ctx.delay !== null ? ` f\xF6rdr\xF6jning=${ctx.delay}s` : "";
+    return `${CLIENT_PREFIX} ${waitsForPlayback(reason) ? "v\xE4ntar" : "hoppar \xF6ver"}: ${reason} fil=${ctx.file} undertext=${ctx.sub} k\xE4lla=${ctx.source}${delay}`;
+  }
+  function describeResult(r, attempt) {
+    const parts = [`${CLIENT_PREFIX} svar #${attempt} status=${r.status}`];
+    if (r.reason) parts.push(`sk\xE4l=${r.reason}`);
+    if (r.subtitleId) parts.push(`undertext=${subLabel(r.subtitleId)}`);
+    if (typeof r.correctionMs === "number") parts.push(`offset=${r.correctionMs}ms`);
+    if (r.provisional) parts.push("provisoriskt");
+    if (typeof r.retryAfterPlayedS === "number") parts.push(`igen-om=${r.retryAfterPlayedS}s`);
+    return parts.join(" ");
+  }
+  function logSubsyncClient(line) {
+    if (typeof fetch !== "function") return;
+    try {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+      });
+    } catch {
+    }
+  }
+  var CLIENT_PREFIX;
+  var init_diag = __esm({
+    "lib/subtitle-sync/diag.ts"() {
+      init_plan();
+      init_user_delay();
+      CLIENT_PREFIX = "[subsync-klient]";
+    }
+  });
+
+  // components/player/use-subtitle-auto-sync.ts
+  function useSubtitleAutoSync(args) {
+    const latest2 = useRef(args);
+    latest2.current = args;
+    const guardRef = useRef(createSyncGuard());
+    const abortRef = useRef(null);
+    const handledTokenRef = useRef(args.selectionToken);
+    const prefetchedUrlRef = useRef(null);
+    const ledgerRef = useRef(createAttemptLedger());
+    const inFlightRef = useRef(false);
+    const loggedSkipRef = useRef(null);
+    useEffect(() => {
+      if (!args.firstFrameRendered || !args.mediaUrl || args.isLive) return;
+      const identity = syncIdentity({ fileName: args.fileName, title: args.title, year: args.year, season: args.season, episode: args.episode });
+      const key = prefetchKey(args.mediaUrl, identity);
+      if (prefetchedUrlRef.current === key || !getSubtitleAutoSync()) return;
+      const mediaUrl = args.mediaUrl;
+      const send = () => {
+        prefetchedUrlRef.current = key;
+        const { fileName, ...extra } = identity;
+        logSubsyncClient(`${CLIENT_PREFIX} f\xF6rh\xE4mtning skickad fil=${fileLabel(mediaUrl, identity)}`);
+        void prefetchSubtitleSyncIndex(mediaUrl, fileName, extra);
+      };
+      if (!androidStreamsDirect()) {
+        send();
+        return;
+      }
+      const timer3 = setTimeout(send, ANDROID_PREFETCH_DELAY_MS);
+      return () => clearTimeout(timer3);
+    }, [args.firstFrameRendered, args.mediaUrl, args.isLive, args.fileName, args.title, args.year, args.season, args.episode]);
+    useEffect(() => {
+      guardRef.current.begin();
+      return () => {
+        guardRef.current.begin();
+        abortRef.current?.abort();
+        abortRef.current = null;
+        if (inFlightRef.current) {
+          inFlightRef.current = false;
+          latest2.current.setStatus({ type: "idle" });
+        }
+      };
+    }, [args.selected?.id, args.mediaUrl]);
+    useEffect(() => {
+      if (args.selectionToken === handledTokenRef.current) return;
+      const a = latest2.current;
+      const sel = a.selected;
+      const key = a.mediaKey ?? `file:${a.fileName ?? a.mediaUrl}`;
+      const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
+      const file = fileLabel(a.mediaUrl, identity);
+      const savedDelay = () => {
+        const l = latest2.current;
+        return bindingSavedDelay(l.mediaKey ? getSavedSubtitleDelayEntry(l.mediaKey, l.season ?? null, l.episode ?? null) : null);
+      };
+      const userBlocked = () => {
+        const u2 = latest2.current.getUserDelayState();
+        return userDelayBlocks({ savedDelay: savedDelay(), currentDelay: u2.currentDelay, hasDrift: u2.hasDrift, inheritedDelay: u2.inheritedDelay });
+      };
+      const u = a.getUserDelayState();
+      const saved = savedDelay();
+      const reason = autoSyncSkipReason({
+        enabled: getSubtitleAutoSync(),
+        isLive: a.isLive,
+        hasSelection: !!sel,
+        source: sel?.source ?? "",
+        ledgerHit: !!sel && ledgerRef.current.has(a.mediaUrl, sel.id),
+        optedOut: !!sel && isAutoSyncOptedOut(key, sel.id),
+        savedDelay: saved,
+        inheritedDelay: u.inheritedDelay,
+        currentDelay: u.currentDelay,
+        hasDrift: u.hasDrift,
+        firstFrame: a.firstFrameRendered,
+        hasUrl: !!a.mediaUrl
+      });
+      if (reason) {
+        const logKey = `${args.selectionToken}|${reason}`;
+        if (loggedSkipRef.current !== logKey) {
+          loggedSkipRef.current = logKey;
+          const delay = reason === "saved-delay" ? saved : reason === "manual-delay" ? u.currentDelay : null;
+          logSubsyncClient(describeSkip(reason, { file, sub: sel ? subLabel(sel.id) : "-", source: sel?.source ?? "-", delay }));
+        }
+        if (!waitsForPlayback(reason)) handledTokenRef.current = args.selectionToken;
+        return;
+      }
+      if (!sel) return;
+      handledTokenRef.current = args.selectionToken;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const token = guardRef.current.begin();
+      const current2 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
+      const valid = () => isRunValid({ current: current2(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
+      inFlightRef.current = true;
+      let dropLogged = false;
+      const drop = () => {
+        if (!dropLogged) {
+          dropLogged = true;
+          const why = !current2() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
+          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel.id)}`);
+        }
+        if (current2() && inFlightRef.current) {
+          inFlightRef.current = false;
+          a.setStatus({ type: "idle" });
+        }
+      };
+      let applied = null;
+      let restored = false;
+      const markIfFinal = (r) => {
+        if (!isFinalOutcome(r)) return;
+        ledgerRef.current.mark(a.mediaUrl, sel.id);
+        if (r.subtitleId && r.subtitleId !== sel.id) ledgerRef.current.mark(a.mediaUrl, r.subtitleId);
+      };
+      const applyResult = async (r, refined) => {
+        if (r.status !== "synced" || !r.vttUrl) return false;
+        if (!valid()) {
+          drop();
+          return true;
+        }
+        const sub = a.options.find((o) => o.id === r.subtitleId) ?? sel;
+        inFlightRef.current = false;
+        await a.applySynced(sub, r.vttUrl);
+        applied = r.vttUrl;
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad offset=${r.correctionMs ?? 0}ms undertext=${subLabel(sub.id)}${sub.id !== sel.id ? ` (utbytt fr\xE5n ${subLabel(sel.id)})` : ""}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""} fil=${file}`);
+        const offset = formatCorrection(r.correctionMs ?? 0);
+        if (refined) {
+          a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
+          return true;
+        }
+        const message = sub.id !== sel.id ? a.t("subtitleAutoSyncSwapped") : a.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
+        a.showNotice({
+          message,
+          actionLabel: a.t("subtitleAutoSyncUndo"),
+          onAction: () => {
+            setAutoSyncOptOut(key, sub.id);
+            setAutoSyncOptOut(key, sel.id);
+            logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file}`);
+            controller.abort();
+            void a.restoreOriginal(sel, { undo: true });
+          }
+        });
+        a.setStatus({ type: "done", message });
+        return true;
+      };
+      const finish = (r) => {
+        inFlightRef.current = false;
+        const k = outcomeMessageKey(r);
+        a.setStatus(k ? { type: "done", message: a.t(k) } : { type: "idle" });
+        if (sel && r.status === "no_fit" && !/^(network|http_)/.test(r.reason ?? "")) a.onNoFit?.(sel);
+      };
+      const waitPlayed = async (seconds) => {
+        let played = 0;
+        let last2 = a.getPlayTime();
+        while (played < seconds) {
+          await new Promise((resolve) => {
+            const id = setTimeout(done, 1e3);
+            function done() {
+              clearTimeout(id);
+              controller.signal.removeEventListener("abort", done);
+              resolve();
+            }
+            controller.signal.addEventListener("abort", done);
+          });
+          if (!valid()) {
+            drop();
+            return false;
+          }
+          const now2 = a.getPlayTime();
+          played += playedDelta(last2, now2);
+          last2 = now2;
+        }
+        return true;
+      };
+      let attempt = 0;
+      void (async () => {
+        try {
+          a.setStatus({ type: "analyzing", message: a.t("subtitleAutoSyncChecking") });
+          const last2 = await driveSync({
+            request: () => {
+              attempt += 1;
+              const candidates = buildCandidates(toCandidate(sel), a.options.filter((o) => o.source === "opensubtitles").map(toCandidate));
+              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file} undertext=${subLabel(sel.id)} spr\xE5k=${sel.lang3 || "-"} kandidater=${candidates.length}`);
+              return requestSubtitleSync({
+                url: a.mediaUrl,
+                ...identity,
+                selected: toCandidate(sel),
+                candidates
+              }, controller.signal);
+            },
+            waitPlayed,
+            onResult: async (r) => {
+              logSubsyncClient(describeResult(r, attempt));
+              if (!current2()) return;
+              markIfFinal(r);
+              if (r.status === "reference_pending") {
+                if (applied === null && valid()) a.setStatus({ type: "analyzing", message: a.t(PENDING_MESSAGE_KEY) });
+                return;
+              }
+              if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
+                await applyResult(r, applied !== null);
+                return;
+              }
+              if (withdrawsProvisional(r, applied !== null)) {
+                if (!valid()) {
+                  drop();
+                  return;
+                }
+                applied = null;
+                restored = true;
+                inFlightRef.current = false;
+                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file}`);
+                await a.restoreOriginal(sel);
+                a.clearNotice?.();
+                finish(r);
+                return;
+              }
+              if (r.status === "already_synced" && applied !== null) {
+                if (!valid()) {
+                  drop();
+                  return;
+                }
+                applied = null;
+                restored = true;
+                inFlightRef.current = false;
+                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file}`);
+                await a.restoreOriginal(sel);
+                a.clearNotice?.();
+                a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
+              }
+            }
+          });
+          if (!last2 || !current2()) return;
+          if (last2.status === "ambiguous" && last2.jobId) {
+            if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
+            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
+            const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
+            logSubsyncClient(describeResult(v, "ljud"));
+            if (!current2()) return;
+            markIfFinal(v);
+            if (await applyResult(v, false)) return;
+            if (!valid()) {
+              drop();
+              return;
+            }
+            finish(v);
+            return;
+          }
+          if (applied === null && !restored) finish(last2);
+        } catch (err) {
+          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel.id)}`);
+          drop();
+        }
+      })();
+    }, [args.selectionToken, args.firstFrameRendered, args.selected?.id]);
+  }
+  var AUDIO_WAIT_PLAYED_SECONDS, toCandidate, ANDROID_PREFETCH_DELAY_MS;
+  var init_use_subtitle_auto_sync = __esm({
+    "components/player/use-subtitle-auto-sync.ts"() {
+      "use strict";
+      init_react_shim();
+      init_android_source_cache();
+      init_subtitle_delay_store();
+      init_playback_settings();
+      init_client2();
+      init_loop();
+      init_plan();
+      init_opt_out();
+      init_user_delay();
+      init_diag();
+      AUDIO_WAIT_PLAYED_SECONDS = 20;
+      toCandidate = (s) => ({ id: s.id, url: s.url, lang3: s.lang3, hashMatch: s.hashMatch, release: s.release });
+      ANDROID_PREFETCH_DELAY_MS = 2e4;
+    }
+  });
+
+  // components/player/use-embedded-track-languages.ts
+  function useEmbeddedTrackLanguages(a) {
+    const [detected, setDetected] = useState(() => /* @__PURE__ */ new Map());
+    const wanted = a.unknownTrackNumbers.join(",");
+    useEffect(() => {
+      setDetected(/* @__PURE__ */ new Map());
+    }, [a.mediaUrl]);
+    useEffect(() => {
+      if (!a.firstFrameRendered || !a.mediaUrl || a.isLive || !wanted) return;
+      const numbers = wanted.split(",").map(Number);
+      const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
+      const { fileName, ...extra } = identity;
+      void prefetchSubtitleSyncIndex(a.mediaUrl, fileName, extra);
+      let cancelled = false;
+      const timers2 = [];
+      const found = /* @__PURE__ */ new Map();
+      const ask = async () => {
+        if (cancelled) return;
+        const tracks = await fetchEmbeddedTrackLanguages(a.mediaUrl, fileName, extra);
+        if (cancelled) return;
+        let changed = false;
+        for (const t of tracks) {
+          if (t.detected && numbers.includes(t.number) && found.get(t.number) !== t.detected) {
+            found.set(t.number, t.detected);
+            changed = true;
+          }
+        }
+        if (changed) setDetected(new Map(found));
+        if (numbers.every((n) => found.has(n))) timers2.forEach(clearTimeout);
+      };
+      for (const delay of DETECT_SCHEDULE_MS) timers2.push(setTimeout(() => {
+        void ask();
+      }, delay));
+      return () => {
+        cancelled = true;
+        timers2.forEach(clearTimeout);
+      };
+    }, [a.firstFrameRendered, a.mediaUrl, a.isLive, wanted, a.fileName, a.title, a.year, a.season, a.episode]);
+    return detected;
+  }
+  var DETECT_SCHEDULE_MS;
+  var init_use_embedded_track_languages = __esm({
+    "components/player/use-embedded-track-languages.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_client2();
+      init_plan();
+      DETECT_SCHEDULE_MS = [1e4, 3e4, 75e3, 15e4, 3e5];
     }
   });
 
@@ -19222,17 +23570,17 @@
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners4.add(listener);
+    listeners6.add(listener);
     return () => {
-      listeners4.delete(listener);
+      listeners6.delete(listener);
     };
   }
-  var session, listeners4;
+  var session, listeners6;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners4 = /* @__PURE__ */ new Set();
+      listeners6 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -19294,7 +23642,10 @@
         // Stjärna — bevakningslistan HETER stjärnlistan, så formen är dess egen och
         // inte en tillfällighet. Den ligger här i stället för att falla igenom till
         // reservformen nedan, som numera aldrig ger en stjärna.
-        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z"
+        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z",
+        // Boll — Sport som eget menyval (Live TV-pluginets sida `live-tv-sport`):
+        // ring, femhörning i mitten och fem sömmar ut mot kanten.
+        "live-tv-sport": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 8l3.8 2.76-1.45 4.47h-4.7L8.2 10.76zM12 8V3M15.8 10.76l4.75-1.54M14.35 15.23l2.94 4.04M9.65 15.23l-2.94 4.04M8.2 10.76 3.45 9.22"
       };
     }
   });
@@ -19353,6 +23704,2033 @@
     }
   });
 
+  // lib/series-locks.ts
+  function isEpisodeRef(value) {
+    const v = value;
+    return !!v && Number.isInteger(v.season) && Number.isInteger(v.episode);
+  }
+  function normalizeLock(tmdbId, value) {
+    const v = value;
+    if (!v || typeof v !== "object") return null;
+    const members = Array.isArray(v.members) ? v.members.filter((m) => !!m && m.kind === "profile" && typeof m.profileId === "string").map((m) => ({ kind: "profile", profileId: m.profileId, nameHint: typeof m.nameHint === "string" ? m.nameHint : "" })) : [];
+    const history = Array.isArray(v.history) ? v.history.filter((h) => !!h && typeof h.profileId === "string" && Number.isInteger(h.season) && Number.isInteger(h.episode)) : [];
+    return {
+      tmdbId,
+      seriesTitle: typeof v.seriesTitle === "string" ? v.seriesTitle : "",
+      posterUrl: typeof v.posterUrl === "string" ? v.posterUrl : null,
+      members,
+      mode: v.mode === "solo" ? "solo" : "together",
+      requirePin: v.requirePin === true,
+      history,
+      createdBy: typeof v.createdBy === "string" ? v.createdBy : "",
+      createdAt: typeof v.createdAt === "string" ? v.createdAt : "",
+      ...isEpisodeRef(v.finale) ? { finale: { season: v.finale.season, episode: v.finale.episode } } : {},
+      ...typeof v.finishedAt === "string" ? { finishedAt: v.finishedAt } : {}
+    };
+  }
+  function readAll2() {
+    const raw = getItem(SERIES_LOCKS_KEY);
+    if (!raw) {
+      lastReadFailed = false;
+      return {};
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("inte ett objekt");
+      lastReadFailed = false;
+      const out = {};
+      for (const [id, value] of Object.entries(parsed)) {
+        const lock = normalizeLock(id, value);
+        if (lock) out[id] = lock;
+      }
+      return out;
+    } catch (error) {
+      lastReadFailed = true;
+      console.warn("[series-lock] ogiltig series_locks, behandlas som tom", error);
+      return {};
+    }
+  }
+  function profileNames() {
+    return new Map(getProfiles().map((p) => [p.id, p.name]));
+  }
+  function liveMembers(lock, names) {
+    return lock.members.filter((m) => names.has(m.profileId));
+  }
+  function withLiveMembers(lock, names) {
+    const members = liveMembers(lock, names);
+    return members.length >= 2 ? { ...lock, members } : null;
+  }
+  function getSeriesLock(tmdbId) {
+    const lock = readAll2()[tmdbId];
+    return lock ? withLiveMembers(lock, profileNames()) : null;
+  }
+  var SERIES_LOCKS_KEY, lastReadFailed;
+  var init_series_locks = __esm({
+    "lib/series-locks.ts"() {
+      "use client";
+      init_app_storage();
+      init_profile_storage_shim();
+      SERIES_LOCKS_KEY = "series_locks";
+      lastReadFailed = false;
+    }
+  });
+
+  // lib/series-lock-gate.ts
+  function epCode(ep) {
+    return `S${ep.season}E${ep.episode}`;
+  }
+  function parseEpCode(code) {
+    const match = /^S(\d+)E(\d+)$/.exec(code);
+    return match ? { season: Number(match[1]), episode: Number(match[2]) } : null;
+  }
+  function hasWatched(input, profileId, ep) {
+    return input.watched[profileId]?.has(epCode(ep)) ?? false;
+  }
+  function hasOverride(input, profileId, ep) {
+    return input.history.some((h) => h.profileId === profileId && h.season === ep.season && h.episode === ep.episode);
+  }
+  function seasonLength(input, season) {
+    const known = input.seasonLengths[season];
+    if (known && known > 0) return known;
+    let max = 0;
+    for (const codes of Object.values(input.watched)) {
+      for (const code of codes) {
+        const parsed = parseEpCode(code);
+        if (parsed && parsed.season === season && parsed.episode > max) max = parsed.episode;
+      }
+    }
+    return max > 0 ? max : null;
+  }
+  function previousEpisode(input, ep) {
+    if (ep.season < 1) return null;
+    if (ep.episode > 1) return { season: ep.season, episode: ep.episode - 1 };
+    if (ep.season === 1) return null;
+    const prev = ep.season - 1;
+    return { season: prev, episode: seasonLength(input, prev) ?? 1 };
+  }
+  function episodeGate(input, profileId, ep) {
+    if (ep.season < 1) return OPEN;
+    if (!input.memberIds.includes(profileId)) return OPEN;
+    if (hasWatched(input, profileId, ep)) return OPEN;
+    if (hasOverride(input, profileId, ep)) return OPEN;
+    const requires = previousEpisode(input, ep);
+    if (!requires) return OPEN;
+    const waitingFor = input.memberIds.filter((id) => id !== profileId && !hasWatched(input, id, requires));
+    return waitingFor.length === 0 ? OPEN : { kind: "blocked", waitingFor, requires };
+  }
+  var OPEN;
+  var init_series_lock_gate = __esm({
+    "lib/series-lock-gate.ts"() {
+      OPEN = { kind: "open" };
+    }
+  });
+
+  // lib/series-lock-runtime.ts
+  function watchedStorageKey(profileId) {
+    return getProfileStorageKey(WATCHED_KEY, profileId);
+  }
+  function watchedCodesFor(profileId, tmdbId) {
+    const out = /* @__PURE__ */ new Set();
+    const raw = getItem(watchedStorageKey(profileId));
+    if (!raw) return out;
+    try {
+      const data = JSON.parse(raw);
+      const prefix = `${tmdbId}-`;
+      for (const [key, value] of Object.entries(data)) {
+        if (value && key.startsWith(prefix)) out.add(key.slice(prefix.length));
+      }
+    } catch {
+    }
+    return out;
+  }
+  function gateInputFor(lock) {
+    const memberIds = lock.members.map((m) => m.profileId);
+    return {
+      memberIds,
+      history: lock.history,
+      watched: Object.fromEntries(memberIds.map((id) => [id, watchedCodesFor(id, lock.tmdbId)])),
+      seasonLengths: seasonLengths.get(lock.tmdbId) ?? {}
+    };
+  }
+  function checkEpisode(tmdbId, season, episode) {
+    if (!tmdbId) return OPEN2;
+    const lock = getSeriesLock(tmdbId);
+    if (!lock) return OPEN2;
+    const active3 = getActiveProfileId();
+    if (!active3) return OPEN2;
+    return episodeGate(gateInputFor(lock), active3, { season, episode });
+  }
+  var WATCHED_KEY, OPEN2, seasonLengths;
+  var init_series_lock_runtime = __esm({
+    "lib/series-lock-runtime.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_profile_storage_shim();
+      init_watched_episodes();
+      init_series_locks();
+      init_series_lock_gate();
+      WATCHED_KEY = "watched_episodes";
+      OPEN2 = { kind: "open" };
+      seasonLengths = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/player-status-line.ts
+  function endsAtMs(position, duration, speed, nowMs) {
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    const kvar = duration - Math.max(0, position);
+    if (!Number.isFinite(kvar) || kvar <= 0) return null;
+    const takt = Number.isFinite(speed) && speed > 0 ? speed : 1;
+    return nowMs + kvar / takt * 1e3;
+  }
+  function statusLineParts(input) {
+    const delar = [];
+    const slut = endsAtMs(input.position, input.duration, input.speed, input.nowMs);
+    if (slut !== null) delar.push(input.endsTemplate.replace("{time}", input.formatClock(slut)));
+    if (input.introLabel) delar.push(input.introLabel);
+    if (input.outroLabel) delar.push(input.outroLabel);
+    return delar;
+  }
+  var init_player_status_line = __esm({
+    "lib/player-status-line.ts"() {
+    }
+  });
+
+  // lib/moment-link.ts
+  function buildMomentLink(base, target2) {
+    const params = new URLSearchParams();
+    params.set("watch", `${target2.mediaType}-${target2.tmdbId}`);
+    if (target2.mediaType === "tv" && target2.season != null && target2.episode != null) {
+      params.set("s", String(target2.season));
+      params.set("e", String(target2.episode));
+    }
+    const start2 = Math.max(0, Math.floor(target2.seconds));
+    params.set("t", String(start2));
+    if (target2.endSeconds != null && Math.floor(target2.endSeconds) > start2) {
+      params.set("end", String(Math.floor(target2.endSeconds)));
+    }
+    return `${base.replace(/\/+$/, "")}/?${params.toString()}`;
+  }
+  function isShareableOrigin(origin) {
+    try {
+      const url = new URL(origin);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+      return !["localhost", "127.0.0.1", "::1", "[::1]", "tauri.localhost"].includes(url.hostname);
+    } catch {
+      return false;
+    }
+  }
+  function takePendingMomentRange(key, nowMs = Date.now()) {
+    if (!pending3 || !key) return null;
+    if (pending3.expiresAt < nowMs) {
+      pending3 = null;
+      return null;
+    }
+    if (pending3.key !== key) return null;
+    const { seconds, endSeconds } = pending3;
+    pending3 = null;
+    return endSeconds != null ? { seconds, endSeconds } : { seconds };
+  }
+  var pending3;
+  var init_moment_link = __esm({
+    "lib/moment-link.ts"() {
+      pending3 = null;
+    }
+  });
+
+  // components/player/clip/clip-share-button.tsx
+  function ClipShareButton({ state: state2, onClick, t, variant }) {
+    const ref = useRef(null);
+    const label = state2.kind === "ready" ? t("clipShareNow") : state2.kind === "rendering" ? state2.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state2.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
+    return /* @__PURE__ */ jsxs(
+      "button",
+      {
+        ref,
+        type: "button",
+        disabled: state2.kind === "rendering",
+        onClick: () => {
+          if (ref.current) onClick(ref.current.getBoundingClientRect());
+        },
+        className: `flex items-center justify-center gap-2 transition disabled:opacity-70 ${VARIANT_CLASS[variant]}`,
+        children: [
+          clipUploadIcon(variant === "outline" ? "h-3.5 w-3.5" : "h-4 w-4"),
+          label
+        ]
+      }
+    );
+  }
+  var VARIANT_CLASS;
+  var init_clip_share_button = __esm({
+    "components/player/clip/clip-share-button.tsx"() {
+      "use client";
+      init_react_shim();
+      init_player_control_icons();
+      init_jsx_runtime_shim();
+      VARIANT_CLASS = {
+        outline: "w-full rounded-lg border border-[rgb(var(--player-accent)/0.40)] py-[9px] text-[13px] font-medium text-[rgb(var(--player-accent))] hover:bg-[rgb(var(--player-accent)/0.14)]",
+        pill: "h-11 w-full rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-[rgb(var(--player-accent)/0.22)] text-sm font-semibold text-white",
+        "pill-lg": "h-12 w-full rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-[rgb(var(--player-accent)/0.22)] text-[15px] font-semibold text-white"
+      };
+    }
+  });
+
+  // lib/clip/clip-state.ts
+  function maxLengthFor(format) {
+    return format === "gif" ? GIF_MAX_SEC : CLIP_MAX_SEC;
+  }
+  function lengthPresetsFor(format) {
+    return format === "gif" ? [5, 10, 15] : [10, 30, 60];
+  }
+  function clipWindowStart(anchorSec, duration) {
+    if (duration <= CLIP_WINDOW_SEC) return 0;
+    return ms(clamp(anchorSec - CLIP_WINDOW_SEC / 2, 0, duration - CLIP_WINDOW_SEC));
+  }
+  function clipWindowEnd(state2) {
+    return Math.min(state2.duration, state2.windowStart + CLIP_WINDOW_SEC);
+  }
+  function clipLength(state2) {
+    return ms(state2.outSec - state2.inSec);
+  }
+  function formatClipTime(sec) {
+    const total = Math.max(0, Math.floor(sec));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor(total % 3600 / 60);
+    const ss = String(total % 60).padStart(2, "0");
+    return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+  }
+  function normalize(s, fixed) {
+    const lo = s.windowStart;
+    const hi = clipWindowEnd(s);
+    const max = maxLengthFor(s.format);
+    let { inSec, outSec } = s;
+    if (fixed === "out") {
+      outSec = clamp(outSec, Math.min(hi, lo + CLIP_MIN_SEC), hi);
+      inSec = clamp(inSec, Math.max(lo, outSec - max), Math.max(lo, outSec - CLIP_MIN_SEC));
+    } else {
+      inSec = clamp(inSec, lo, Math.max(lo, hi - CLIP_MIN_SEC));
+      outSec = clamp(outSec, Math.min(hi, inSec + CLIP_MIN_SEC), Math.min(hi, inSec + max));
+    }
+    inSec = ms(inSec);
+    outSec = ms(outSec);
+    const title = s.titleEdited ? s.title : `${s.baseTitle} \xB7 ${formatClipTime(inSec)}`;
+    return { ...s, inSec, outSec, title };
+  }
+  function initClipState(args) {
+    const range = args.inSec != null && args.outSec != null ? { inSec: args.inSec, outSec: args.outSec } : null;
+    const anchor = range ? (range.inSec + range.outSec) / 2 : args.anchorSec;
+    const outSec = range ? range.outSec : args.anchorSec;
+    const base = {
+      inSec: range ? range.inSec : outSec - CLIP_DEFAULT_SEC,
+      outSec,
+      windowStart: clipWindowStart(anchor, args.duration),
+      duration: args.duration,
+      format: "mp4",
+      title: "",
+      baseTitle: args.baseTitle,
+      titleEdited: false,
+      activeHandle: null,
+      scrubbing: false
+    };
+    return normalize(base, base.inSec <= base.windowStart ? "in" : "out");
+  }
+  function clipReducer(state2, action) {
+    switch (action.type) {
+      case "setHandle": {
+        const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
+        const other = action.handle === "in" ? "out" : "in";
+        return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+      }
+      case "nudge": {
+        const current2 = action.handle === "in" ? state2.inSec : state2.outSec;
+        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current2 + action.delta });
+      }
+      case "setLength": {
+        const len = Math.min(action.sec, maxLengthFor(state2.format));
+        return normalize({ ...state2, inSec: state2.outSec - len }, "out");
+      }
+      case "setFormat":
+        return normalize({ ...state2, format: action.format }, "out");
+      case "setTitle":
+        return { ...state2, title: action.title, titleEdited: true };
+      case "scrubEnd":
+        return { ...state2, scrubbing: false };
+    }
+  }
+  var CLIP_WINDOW_SEC, CLIP_MIN_SEC, CLIP_MAX_SEC, GIF_MAX_SEC, CLIP_DEFAULT_SEC, clamp, ms;
+  var init_clip_state = __esm({
+    "lib/clip/clip-state.ts"() {
+      CLIP_WINDOW_SEC = 240;
+      CLIP_MIN_SEC = 1;
+      CLIP_MAX_SEC = 60;
+      GIF_MAX_SEC = 15;
+      CLIP_DEFAULT_SEC = 30;
+      clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      ms = (v) => Math.round(v * 1e3) / 1e3;
+    }
+  });
+
+  // components/player/clip/clip-panel.tsx
+  function ClipLengthButtons({ state: state2, dispatch, heightClass, roundedClass, tv = false }) {
+    if (state2.format === "still") return null;
+    const len = Math.round(clipLength(state2));
+    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state2.format).map((sec) => {
+      const on = len === sec;
+      return /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          "data-f": tv ? "1" : void 0,
+          "data-clip-station": tv ? "length" : void 0,
+          onClick: () => dispatch({ type: "setLength", sec }),
+          className: `${heightClass} ${roundedClass} flex-1 border ${tv ? "text-[length:var(--st-body)]" : "text-[13px]"} font-semibold transition ${on ? "border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.22)] text-white" : "border-white/10 text-slate-300 hover:bg-white/[0.06]"}`,
+          children: [
+            sec,
+            " s"
+          ]
+        },
+        sec
+      );
+    }) });
+  }
+  function ClipFormatSegment({ state: state2, dispatch, formats, heightClass, t }) {
+    if (formats.length <= 1) return null;
+    const formatLabel = { mp4: "MP4", gif: "GIF", still: t("clipFormatStill") };
+    return /* @__PURE__ */ jsx("div", { className: "flex self-start rounded-[10px] bg-white/[0.04] p-[3px]", children: formats.map((format) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        onClick: () => dispatch({ type: "setFormat", format }),
+        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state2.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
+        children: formatLabel[format]
+      },
+      format
+    )) });
+  }
+  function ClipTitleField({ state: state2, dispatch }) {
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        value: state2.title,
+        onChange: (event) => dispatch({ type: "setTitle", title: event.target.value }),
+        onKeyDown: (event) => {
+          if (event.key !== "Escape") event.stopPropagation();
+        },
+        className: "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-[9px] text-sm text-slate-100 outline-none focus:border-[rgb(var(--player-accent)/0.45)]"
+      }
+    );
+  }
+  function ClipPanelHeader({ label, onClose, t }) {
+    return /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-white/[0.07] px-4 py-3", children: [
+      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          "aria-label": t("clipClose"),
+          className: "grid h-7 w-7 place-items-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+          children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }) })
+        }
+      )
+    ] });
+  }
+  function ClipPanel(p) {
+    const { state: state2, dispatch, t } = p;
+    const len = Math.round(clipLength(state2));
+    const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs("button", { type: "button", onClick, disabled, className: `${p.rowClass} disabled:opacity-50`, children: [
+      icon,
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${p.rowTextClass}`, children: label })
+    ] }, key);
+    return /* @__PURE__ */ jsxs(
+      "aside",
+      {
+        "data-clip-panel": true,
+        className: "vp-side-panel absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
+        style: { background: "rgb(var(--base-950) / 0.96)" },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
+            /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-lg bg-black/60", children: [
+              p.previewClip?.kind === "mp4" ? /* @__PURE__ */ jsx("video", { src: p.previewClip.src, autoPlay: true, loop: true, muted: true, playsInline: true, className: "h-full w-full object-cover" }) : p.previewClip?.kind === "gif" ? /* @__PURE__ */ jsx("img", { src: p.previewClip.src, alt: "", className: "h-full w-full object-cover" }) : p.previewSrc ? /* @__PURE__ */ jsx("img", { src: p.previewSrc, alt: "", className: "h-full w-full object-cover" }) : null,
+              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state2.inSec)) }),
+              /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: formatClipTime(len) })
+            ] }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
+            /* @__PURE__ */ jsx("div", { className: "px-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("clipShareSection") }),
+            /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
+              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state2.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
+              row("save", downloadIcon(p.iconClass), t("clipSaveFile"), p.onSaveFile, p.busy !== null),
+              row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-2", children: /* @__PURE__ */ jsx(
+              ClipShareButton,
+              {
+                state: p.share ?? (p.busy ? { kind: "rendering", progress: p.busy.progress } : { kind: "idle" }),
+                onClick: p.onShare,
+                t,
+                variant: "outline"
+              }
+            ) })
+          ] })
+        ]
+      }
+    );
+  }
+  var downloadIcon, clipDownloadIcon;
+  var init_clip_panel = __esm({
+    "components/player/clip/clip-panel.tsx"() {
+      "use client";
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+      downloadIcon = (cls) => /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M12 3v12M7 10l5 5 5-5M5 21h14" }) });
+      clipDownloadIcon = downloadIcon;
+    }
+  });
+
+  // components/player/clip/clip-trimmer.tsx
+  function ClipTrimmer({ state: state2, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
+    const touch = size === "touch";
+    const tv = size === "tv";
+    const trackRef = useRef(null);
+    const lastHandle = useRef("out");
+    const start2 = state2.windowStart;
+    const end = clipWindowEnd(state2);
+    const span = Math.max(1, end - start2);
+    const percent = (sec) => Math.min(100, Math.max(0, (sec - start2) / span * 100));
+    const secAt = (clientX) => {
+      const rect = trackRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return start2;
+      return start2 + (clientX - rect.left) / rect.width * span;
+    };
+    const startDrag = (handle) => (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      lastHandle.current = handle;
+      const target2 = event.currentTarget;
+      target2.setPointerCapture(event.pointerId);
+      const move = (ev) => dispatch({ type: "setHandle", handle, sec: secAt(ev.clientX) });
+      const up = () => {
+        target2.removeEventListener("pointermove", move);
+        target2.removeEventListener("pointerup", up);
+        target2.removeEventListener("pointercancel", up);
+      };
+      target2.addEventListener("pointermove", move);
+      target2.addEventListener("pointerup", up);
+      target2.addEventListener("pointercancel", up);
+    };
+    const renderHandle = (which, sec) => {
+      const isFocused = tv && focused === which;
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          role: "slider",
+          tabIndex: tv ? 0 : void 0,
+          "data-f": tv ? "1" : void 0,
+          "data-init": tv && which === "in" ? "1" : void 0,
+          "data-clip-station": tv ? which : void 0,
+          onKeyDown: tv && onHandleKeyDown ? (event) => onHandleKeyDown(which, event) : void 0,
+          "aria-label": which === "in" ? "In" : "Out",
+          "aria-valuemin": Math.round(start2),
+          "aria-valuemax": Math.round(end),
+          "aria-valuenow": Math.round(sec),
+          className: `absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none shadow-[0_1px_6px_rgba(0,0,0,0.6)] outline-none ${touch || tv ? "h-[28px] w-[14px] rounded-[5px]" : "h-[22px] w-[10px] rounded"} ${tv ? isFocused ? "bg-white outline outline-2 outline-offset-[3px] outline-[rgb(var(--player-accent))] shadow-[0_0_24px_rgb(var(--player-accent)/0.55)]" : "bg-white/75" : "bg-white"}`,
+          style: { left: `${percent(sec)}%` },
+          onPointerDown: startDrag(which),
+          children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: touch ? "absolute -inset-x-4 -inset-y-3" : "absolute -inset-3" }),
+            /* @__PURE__ */ jsx("span", { className: isFocused ? `${labelClass} !bg-[rgb(var(--player-accent))] !text-slate-950` : labelClass, children: formatClipTime(sec) })
+          ]
+        },
+        which
+      );
+    };
+    const track = /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: trackRef,
+        className: `vp-seek-track relative flex-1 rounded-full bg-white/[0.18] ${tv ? "h-2" : heightClass}`,
+        style: { touchAction: "none" },
+        onWheel: (event) => {
+          if (touch) return;
+          event.preventDefault();
+          const step = event.shiftKey ? 1 / 24 : 1;
+          dispatch({ type: "nudge", handle: lastHandle.current, delta: event.deltaY < 0 ? step : -step });
+        },
+        children: [
+          /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-[rgb(var(--player-accent))] opacity-35", style: { width: `${percent(position)}%` } }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
+              style: { left: `${percent(state2.inSec)}%`, width: `${percent(state2.outSec) - percent(state2.inSec)}%` }
+            }
+          ),
+          tv ? /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute -bottom-1 -top-1 w-[2px] -translate-x-1/2 bg-white", style: { left: `${percent(position)}%` } }) : null,
+          renderHandle("in", state2.inSec),
+          renderHandle("out", state2.outSec)
+        ]
+      }
+    );
+    if (tv) {
+      return /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
+          /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(start2) }),
+          track,
+          /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(end) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-3 text-center text-[length:var(--st-small)] text-slate-300", children: t ? t("clipTvKeys") : "" })
+      ] });
+    }
+    if (touch) {
+      return /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { className: "flex", children: track }),
+        /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between text-[13px] tabular-nums text-slate-300", children: [
+          /* @__PURE__ */ jsx("span", { children: formatClipTime(start2) }),
+          /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: t ? t("clipZoomed") : "" }),
+          /* @__PURE__ */ jsx("span", { children: formatClipTime(end) })
+        ] })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
+      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(start2) }),
+      track,
+      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(end) })
+    ] });
+  }
+  var timePillClass, labelClass;
+  var init_clip_trimmer = __esm({
+    "components/player/clip/clip-trimmer.tsx"() {
+      "use client";
+      init_react_shim();
+      init_clip_state();
+      init_jsx_runtime_shim();
+      timePillClass = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+      labelClass = "pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white";
+    }
+  });
+
+  // lib/clip/clip-loop.ts
+  function shouldLoopBack(p, gate) {
+    if (p.scrubbing || p.still) return false;
+    if (p.position >= p.inSec && p.position < p.outSec) {
+      gate.armed = true;
+      return false;
+    }
+    if (p.position >= p.outSec && gate.armed) {
+      gate.armed = false;
+      return true;
+    }
+    return false;
+  }
+  function clipAvailableFor(p) {
+    if (p.live || p.duration <= 2) return false;
+    if (p.isTv) return true;
+    return p.engine === "mpv" || p.ffmpeg;
+  }
+  function gestureBlockedBySurface(surface) {
+    return surface === "clip";
+  }
+  function tvClipKey(p) {
+    const lengthOr = (fallback) => p.lengthAvailable === false ? fallback : "length";
+    const { station, key } = p;
+    if (BACK_KEYS.has(key)) return station === "qr" ? { kind: "close-qr" } : { kind: "cancel" };
+    if (station === "qr") return { kind: "none" };
+    const ok = OK_KEYS.has(key);
+    if (station === "in" || station === "out") {
+      if (key === "ArrowLeft" || key === "ArrowRight") {
+        const step = p.held ? 5 : 1;
+        return { kind: "nudge", handle: station, delta: key === "ArrowLeft" ? -step : step };
+      }
+      if (station === "in") return ok ? { kind: "focus", to: "out" } : { kind: "none" };
+      return ok || key === "ArrowDown" ? { kind: "focus", to: lengthOr("row") } : { kind: "none" };
+    }
+    if (station === "length") {
+      if (ok) return { kind: "activate" };
+      if (key === "ArrowLeft") return p.first ? { kind: "focus", to: "out" } : { kind: "focus", to: "prev" };
+      if (key === "ArrowRight") return { kind: "focus", to: "next" };
+      if (key === "ArrowUp") return { kind: "focus", to: "out" };
+      if (key === "ArrowDown") return { kind: "focus", to: "row" };
+      return { kind: "none" };
+    }
+    if (ok) return { kind: "activate" };
+    if (key === "ArrowLeft") return { kind: "focus", to: "out" };
+    if (key === "ArrowUp") return p.first ? { kind: "focus", to: lengthOr("out") } : { kind: "focus", to: "prev" };
+    if (key === "ArrowDown") return { kind: "focus", to: "next" };
+    return { kind: "none" };
+  }
+  function tvRepeatAllowed(p) {
+    return !p.repeat || p.now - p.lastAt >= 120;
+  }
+  var BACK_KEYS, OK_KEYS;
+  var init_clip_loop = __esm({
+    "lib/clip/clip-loop.ts"() {
+      BACK_KEYS = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+      OK_KEYS = /* @__PURE__ */ new Set(["Enter", " ", "Select"]);
+    }
+  });
+
+  // components/player/clip/clip-phone-panels.tsx
+  function ClipLandscapePanel(p) {
+    const { state: state2, dispatch, t } = p;
+    const busy = p.share.kind === "rendering";
+    const len = Math.round(clipLength(state2));
+    const tile = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick,
+        disabled,
+        className: "flex flex-col items-center gap-1 rounded-[10px] bg-white/[0.04] py-2.5 text-slate-200 transition active:bg-white/[0.08] disabled:opacity-50",
+        children: [
+          icon,
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium leading-none", children: label })
+        ]
+      },
+      key
+    );
+    return /* @__PURE__ */ jsxs(
+      "aside",
+      {
+        "data-clip-panel": true,
+        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
+        style: { background: "rgb(var(--base-950) / 0.96)", paddingRight: "env(safe-area-inset-right)" },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx(
+            ClipPanelHeader,
+            {
+              label: t("clipNewWithLength").replace("{len}", state2.format === "still" ? t("clipFormatStill") : `${len} s`),
+              onClose: p.onClose,
+              t
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3", children: [
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-8", t }),
+            /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1.5", children: [
+              tile("link", gearRowIcon("link", "h-[18px] w-[18px]"), t("clipTileLink"), p.onCopyLink),
+              tile("save", clipDownloadIcon("h-[18px] w-[18px]"), t("clipTileSave"), p.onSave, busy),
+              tile("moment", gearRowIcon("moments", "h-[18px] w-[18px]"), t("clipTileMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-1", children: /* @__PURE__ */ jsx(ClipShareButton, { state: p.share, onClick: p.onShare, t, variant: "pill" }) })
+          ] })
+        ]
+      }
+    );
+  }
+  function ClipPortraitSheet(p) {
+    const { state: state2, dispatch, t } = p;
+    const busy = p.share.kind === "rendering";
+    const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick,
+        disabled,
+        className: "flex items-center gap-3 rounded-lg px-2 py-3 text-[15px] text-slate-100 transition active:bg-white/[0.06] disabled:opacity-50",
+        children: [
+          icon,
+          /* @__PURE__ */ jsx("span", { className: "flex-1 text-left", children: label })
+        ]
+      },
+      key
+    );
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-clip-panel": true,
+        className: "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-xl border-t border-white/10 bg-base-800/95 shadow-[0_-20px_60px_rgba(0,0,0,0.6)]",
+        style: { top: p.topOffset },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
+          /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3", children: [
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
+              row("link", gearRowIcon("link", "h-5 w-5 flex-none text-slate-300"), t("clipCopyLink"), p.onCopyLink),
+              row("save", clipDownloadIcon("h-5 w-5 flex-none text-slate-300"), t("clipSavePhotos"), p.onSave, busy),
+              row("moment", gearRowIcon("moments", "h-5 w-5 flex-none text-slate-300"), t("clipSaveMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-1", children: /* @__PURE__ */ jsx(ClipShareButton, { state: p.share, onClick: p.onShare, t, variant: "pill-lg" }) })
+          ] })
+        ]
+      }
+    );
+  }
+  var init_clip_phone_panels = __esm({
+    "components/player/clip/clip-phone-panels.tsx"() {
+      "use client";
+      init_clip_panel();
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // components/player/clip/clip-tv-panel.tsx
+  function ClipTvPanel(p) {
+    const { state: state2, dispatch, t } = p;
+    const row = (key, icon, label, onClick, extra) => /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", "data-clip-station": "row", "data-clip-row": key, onClick, className: `${p.rowClass} py-3`, children: [
+      icon,
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left text-[length:var(--st-body)] ${p.rowTextClass}`, children: label }),
+      extra
+    ] }, key);
+    return /* @__PURE__ */ jsxs(
+      "aside",
+      {
+        "data-clip-panel": true,
+        "data-tv-surface": "clip",
+        "data-panel-root": true,
+        className: "vp-side-panel vp-side-panel-narrow absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)]",
+        style: { background: "rgb(var(--base-950) / 0.96)" },
+        children: [
+          /* @__PURE__ */ jsx("div", { className: "border-b border-white/[0.07] px-4 py-3 text-[length:var(--st-label)] font-semibold uppercase tracking-[0.22em] text-slate-400", children: t("clipNew") }),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+              /* @__PURE__ */ jsx("div", { className: "h-[63px] w-[112px] flex-none overflow-hidden rounded-md bg-black/60", children: p.stillSrc ? /* @__PURE__ */ jsx("img", { src: p.stillSrc, alt: "", className: "h-full w-full object-cover" }) : null }),
+              /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] font-semibold tabular-nums text-white", children: [
+                  formatClipTime(state2.inSec),
+                  " \u2013 ",
+                  formatClipTime(state2.outSec)
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-small)] text-slate-400", children: t("clipTvStill") })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
+            /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
+              p.phones.map((phone) => row(`send-${phone.id}`, phoneIcon(p.iconClass), t("clipSendTo").replace("{phone}", phone.name), () => p.onSend(phone.id))),
+              p.canShowQr === false ? null : row("qr", qrIcon(p.iconClass), t("clipShowQr"), p.onShowQr),
+              row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-[length:var(--st-small)] leading-snug text-slate-500", children: t("clipTvNote") }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto", children: /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                "data-f": "1",
+                "data-clip-station": "row",
+                onClick: p.onCancel,
+                className: "w-full rounded-lg border border-white/60 py-2.5 text-[length:var(--st-body)] font-medium text-white",
+                children: t("clipTvCancel")
+              }
+            ) })
+          ] })
+        ]
+      }
+    );
+  }
+  function ClipTvQrDialog({ link, inSec, outSec, t }) {
+    return /* @__PURE__ */ jsx("div", { className: "vp-side-panel-gap vp-side-panel-narrow absolute inset-y-0 left-0 right-[340px] z-[45] grid place-items-center bg-black/50", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3 rounded-xl bg-base-800/95 px-8 py-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)]", children: [
+      /* @__PURE__ */ jsx("div", { className: "rounded-lg bg-white p-3", children: /* @__PURE__ */ jsx(QRCodeSVG, { value: link, size: 150 }) }),
+      /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-h3)] font-semibold text-white", children: t("clipScanQr") }),
+      /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] tabular-nums text-slate-300", children: [
+        formatClipTime(inSec),
+        " \u2013 ",
+        formatClipTime(outSec)
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-small)] text-slate-500", children: t("clipTvBackCloses") })
+    ] }) });
+  }
+  var phoneIcon, qrIcon;
+  var init_clip_tv_panel = __esm({
+    "components/player/clip/clip-tv-panel.tsx"() {
+      "use client";
+      init_esm();
+      init_clip_panel();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+      phoneIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+        /* @__PURE__ */ jsx("rect", { x: "7", y: "2", width: "10", height: "20", rx: "2" }),
+        /* @__PURE__ */ jsx("path", { d: "M11 18h2" })
+      ] });
+      qrIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+        /* @__PURE__ */ jsx("rect", { x: "3", y: "3", width: "7", height: "7", rx: "1" }),
+        /* @__PURE__ */ jsx("rect", { x: "14", y: "3", width: "7", height: "7", rx: "1" }),
+        /* @__PURE__ */ jsx("rect", { x: "3", y: "14", width: "7", height: "7", rx: "1" }),
+        /* @__PURE__ */ jsx("path", { d: "M14 14h3v3M21 14v7h-7" })
+      ] });
+    }
+  });
+
+  // lib/clip/clip-offer.ts
+  function sendableSourceUrl(lanBase, url, headers) {
+    if (!lanBase) return null;
+    const cached = LOOPBACK_CACHE.exec(url);
+    if (cached) return `${lanBase.replace(/\/+$/, "")}${cached[1]}`;
+    if (!/^https?:\/\//i.test(url) || isLiveStreamUrl(url)) return null;
+    try {
+      const host = new URL(url).hostname;
+      if (host === "127.0.0.1" || host === "localhost" || host === "[::1]" || host === "::1") return null;
+    } catch {
+      return null;
+    }
+    return lanSourceCacheUrl(lanBase, url, headers);
+  }
+  function lanSourceCacheUrl(lanBase, originalUrl, headers) {
+    const h = headers && Object.keys(headers).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(headers))}` : "";
+    return `${lanBase.replace(/\/+$/, "")}/api/source-cache?u=${encodeURIComponent(originalUrl)}${h}`;
+  }
+  function buildClipOffer(p) {
+    return {
+      title: p.state.title,
+      tvName: p.tvName,
+      inSec: p.state.inSec,
+      outSec: p.state.outSec,
+      sourceUrl: p.sourceUrl,
+      sourceHeight: p.sourceHeight,
+      link: p.link,
+      sentAt: p.now
+    };
+  }
+  var LOOPBACK_CACHE;
+  var init_clip_offer = __esm({
+    "lib/clip/clip-offer.ts"() {
+      init_tauri_mpv();
+      LOOPBACK_CACHE = /^http:\/\/(?:127\.0\.0\.1|localhost):3011(\/api\/source-cache\?u=.+)$/;
+    }
+  });
+
+  // lib/couch/host-api.ts
+  async function fetchPhones() {
+    try {
+      const r = await fetch("/api/couch/phones", { cache: "no-store" });
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  }
+  var init_host_api = __esm({
+    "lib/couch/host-api.ts"() {
+    }
+  });
+
+  // lib/device-transfer.ts
+  function describeThisDevice(isTv, isAndroid) {
+    if (isTv) return "Lumio TV";
+    if (isAndroid) return "Lumio (Android)";
+    if (typeof navigator !== "undefined" && /Mac/.test(navigator.platform)) return "Lumio (Mac)";
+    return "Lumio";
+  }
+  var init_device_transfer = __esm({
+    "lib/device-transfer.ts"() {
+      "use client";
+      init_app_storage();
+    }
+  });
+
+  // lib/barcode/barcode-share-render.ts
+  function shareColors(paper) {
+    if (paper === "light") return { bg: PAPER.light.bg, text: PAPER.light.ink, dim: PAPER.light.dim };
+    return { bg: BG, text: TEXT, dim: DIM_TEXT };
+  }
+  function displayBarcode(b) {
+    const shown = displayColumns(b);
+    if (shown.scale === 1) return b;
+    return { ...b, colors: shown.colors, duration: b.duration / shown.scale, endAt: void 0 };
+  }
+  function columnFills(b, unseen) {
+    const tail = tailFrom(b);
+    return b.colors.map((color, i) => {
+      if (color) return color;
+      if (tail != null && i >= tail) return TAIL2;
+      if (unseen === "dim") return DIM2;
+      if (unseen === "empty") return EMPTY3;
+      return "hatch";
+    });
+  }
+  function drawHatch(ctx, r, scale) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+    ctx.fillStyle = HATCH_BASE;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    const period = 7 * scale;
+    const line = 3 * scale;
+    ctx.strokeStyle = HATCH_LINE;
+    ctx.lineWidth = line;
+    ctx.beginPath();
+    for (let d = -r.h; d < r.w + r.h; d += period) {
+      ctx.moveTo(r.x + d, r.y + r.h);
+      ctx.lineTo(r.x + d + r.h, r.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawBarcode(ctx, fills, r, vertical, hatchScale) {
+    const n = fills.length;
+    if (n === 0) {
+      ctx.fillStyle = EMPTY3;
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      return;
+    }
+    const span = vertical ? r.h : r.w;
+    const edge = (i2) => Math.round(i2 / n * span);
+    let i = 0;
+    while (i < n) {
+      let j = i + 1;
+      while (j < n && fills[j] === fills[i]) j++;
+      const a = edge(i);
+      const b = edge(j);
+      const part = vertical ? { x: r.x, y: r.y + a, w: r.w, h: b - a } : { x: r.x + a, y: r.y, w: b - a, h: r.h };
+      if (fills[i] === "hatch") drawHatch(ctx, part, hatchScale);
+      else {
+        ctx.fillStyle = fills[i];
+        ctx.fillRect(part.x, part.y, part.w, part.h);
+      }
+      i = j;
+    }
+  }
+  function drawSpaced(ctx, text, x, y, spacing, align) {
+    const chars = [...text];
+    const widths = chars.map((c) => ctx.measureText(c).width);
+    const total = widths.reduce((s, w) => s + w, 0) + spacing * Math.max(0, chars.length - 1);
+    let cx = align === "left" ? x : align === "right" ? x - total : x - total / 2;
+    ctx.textAlign = "left";
+    chars.forEach((c, k) => {
+      ctx.fillText(c, cx, y);
+      cx += widths[k] + spacing;
+    });
+  }
+  function fitText(ctx, text, maxWidth) {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > maxWidth) t = t.slice(0, -1);
+    return `${t.trimEnd()}\u2026`;
+  }
+  function drawShare(ctx, kind, b, opts) {
+    const { w, h } = SHARE_SIZES[kind];
+    const fills = columnFills(displayBarcode(b), opts.unseen);
+    const year = b.year != null ? String(b.year) : "";
+    const c = kind === "image" || kind === "story" ? shareColors(opts.paper) : shareColors(void 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = c.bg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.textBaseline = "alphabetic";
+    if (kind === "image") {
+      const pad2 = 48;
+      const textBlock = opts.includeTitle ? 150 : 0;
+      drawBarcode(ctx, fills, { x: pad2, y: pad2, w: w - pad2 * 2, h: h - pad2 * 2 - textBlock }, false, 2.4);
+      if (opts.includeTitle) {
+        ctx.fillStyle = c.text;
+        ctx.font = `600 64px ${FONT}`;
+        ctx.textAlign = "left";
+        ctx.fillText(fitText(ctx, b.title, w - pad2 * 2 - 180), pad2, h - pad2 - 62);
+        ctx.fillStyle = c.dim;
+        ctx.font = `500 26px ${FONT}`;
+        const meta = [year, opts.runtimeLabel].filter(Boolean).join(" \xB7 ").toUpperCase();
+        drawSpaced(ctx, meta, pad2, h - pad2 - 8, 26 * 0.2, "left");
+        ctx.font = `600 24px ${FONT}`;
+        drawSpaced(ctx, "LUMIO", w - pad2, h - pad2 - 8, 24 * 0.3, "right");
+      }
+      return;
+    }
+    if (kind === "story") {
+      const pad2 = 90;
+      const textBlock = opts.includeTitle ? 300 : 0;
+      drawBarcode(ctx, fills, { x: pad2, y: pad2, w: w - pad2 * 2, h: h - pad2 * 2 - textBlock }, true, 3);
+      if (opts.includeTitle) {
+        ctx.fillStyle = c.text;
+        ctx.font = `600 72px ${FONT}`;
+        ctx.textAlign = "center";
+        ctx.fillText(fitText(ctx, b.title, w - pad2 * 2), w / 2, h - pad2 - 150);
+        ctx.fillStyle = c.dim;
+        ctx.font = `500 30px ${FONT}`;
+        drawSpaced(ctx, [year, "LUMIO"].filter(Boolean).join(" \xB7 "), w / 2, h - pad2 - 80, 30 * 0.3, "center");
+      }
+      return;
+    }
+    if (kind === "wallDesktop") {
+      drawBarcode(ctx, fills, { x: 0, y: 0, w, h }, false, 3);
+      if (opts.includeTitle) {
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,.65)";
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = "rgba(242,242,245,.9)";
+        ctx.font = `600 30px ${FONT}`;
+        drawSpaced(ctx, [b.title.toUpperCase(), year].filter(Boolean).join(" \xB7 "), w - 72, h - 64, 30 * 0.2, "right");
+        ctx.restore();
+      }
+      return;
+    }
+    drawBarcode(ctx, fills, { x: 0, y: 0, w, h }, true, 3);
+    if (opts.includeTitle) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.65)";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "rgba(242,242,245,.9)";
+      ctx.font = `600 36px ${FONT}`;
+      drawSpaced(ctx, [b.title.toUpperCase(), year].filter(Boolean).join(" \xB7 "), w / 2, h - 260, 36 * 0.2, "center");
+      ctx.restore();
+    }
+  }
+  function shareFileName(b, kind) {
+    const safe = b.title.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "barcode";
+    const suffix = kind === "image" ? "" : kind === "story" ? " story" : kind === "wallDesktop" ? " tapet" : " tapet mobil";
+    return `${safe}${b.year ? ` (${b.year})` : ""} \u2013 barcode${suffix}.png`;
+  }
+  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY3, TAIL2, FONT;
+  var init_barcode_share_render = __esm({
+    "lib/barcode/barcode-share-render.ts"() {
+      "use strict";
+      init_barcode_model();
+      SHARE_SIZES = {
+        image: { w: 1200, h: 630 },
+        story: { w: 1080, h: 1920 },
+        wallDesktop: { w: 2560, h: 1600 },
+        wallMobile: { w: 1170, h: 2532 }
+      };
+      BG = "#050507";
+      TEXT = "#f2f2f5";
+      DIM_TEXT = "#8b8e99";
+      PAPER = {
+        light: { bg: "#f3eee5", ink: "#141416", dim: "#6d6a64", rule: "#c9c2b6" },
+        dark: { bg: "#0c0d11", ink: "#ecebe8", dim: "#8b8e99", rule: "rgba(255,255,255,.18)" }
+      };
+      HATCH_BASE = "#111216";
+      HATCH_LINE = "#1c1d23";
+      DIM2 = "#1a1b22";
+      EMPTY3 = "#141519";
+      TAIL2 = "#0b0b0d";
+      FONT = '"Avenir Next", "Trebuchet MS", system-ui, sans-serif';
+    }
+  });
+
+  // lib/barcode/barcode-poster-render.ts
+  function ensurePosterFont() {
+    if (fontLoad) return fontLoad;
+    if (typeof document === "undefined" || typeof FontFace === "undefined" || !document.fonts) {
+      fontLoad = Promise.resolve();
+      return fontLoad;
+    }
+    const faces = [];
+    for (const weight of ["300", "400", "600", "700"]) {
+      for (const [subset, range] of [["latin", LATIN], ["latin-ext", LATIN_EXT]]) {
+        faces.push(new FontFace(POSTER_FONT_FAMILY, `url(/fonts/jost/jost-${subset}-${weight}-normal.woff2) format('woff2')`, { weight, unicodeRange: range }));
+      }
+    }
+    fontLoad = Promise.all(faces.map((face) => face.load().then((loaded) => {
+      document.fonts.add(loaded);
+    }).catch(() => {
+    }))).then(() => {
+    });
+    return fontLoad;
+  }
+  function setFont(ctx, weight, size) {
+    ctx.font = `${weight} ${size}px ${FONT2}`;
+  }
+  function spacedWidth(ctx, text, spacing) {
+    const chars = [...text];
+    return chars.reduce((sum, c) => sum + ctx.measureText(c).width, 0) + spacing * Math.max(0, chars.length - 1);
+  }
+  function baseline(top2, lineH, size) {
+    return top2 + lineH / 2 + size * 0.34;
+  }
+  function clip(ctx, text, maxW, spacing = 0) {
+    if (spacedWidth(ctx, text, spacing) <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && spacedWidth(ctx, `${t}\u2026`, spacing) > maxW) t = t.slice(0, -1);
+    return `${t.trimEnd()}\u2026`;
+  }
+  function wrapLines(ctx, text, maxW, maxLines) {
+    const lines = [];
+    for (const word of text.split(/\s+/).filter(Boolean)) {
+      const last2 = lines[lines.length - 1];
+      if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines[lines.length - 1] = `${last2} ${word}`;
+      else lines.push(word);
+    }
+    if (lines.length <= maxLines) return lines.map((line) => clip(ctx, line, maxW));
+    const kept = lines.slice(0, maxLines);
+    kept[maxLines - 1] = clip(ctx, `${lines.slice(maxLines - 1).join(" ")}`, maxW);
+    if (!kept[maxLines - 1].endsWith("\u2026")) kept[maxLines - 1] = clip(ctx, `${kept[maxLines - 1]}\u2026`, maxW);
+    return kept.map((line) => clip(ctx, line, maxW));
+  }
+  function parseColor(color) {
+    const hex = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hex) {
+      const h = hex[1].length === 3 ? [...hex[1]].map((c) => c + c).join("") : hex[1];
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    const rgb = color.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
+    return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+  }
+  function smoothRow(fills, width, sigma) {
+    const n = fills.length;
+    const px = Math.max(1, Math.round(width));
+    const rgb = fills.map((f) => f === "hatch" ? HATCH_MEAN : parseColor(f) ?? HATCH_MEAN);
+    let row = Array.from({ length: px }, (_, x) => {
+      if (n === 0) return HATCH_MEAN;
+      const a = Math.floor(x / px * n);
+      const b = Math.max(a + 1, Math.floor((x + 1) / px * n));
+      const acc = [0, 0, 0];
+      for (let i = a; i < Math.min(b, n); i++) for (let k = 0; k < 3; k++) acc[k] += rgb[i][k];
+      const count = Math.max(1, Math.min(b, n) - a);
+      return [acc[0] / count, acc[1] / count, acc[2] / count];
+    });
+    const radius = Math.round((Math.sqrt(12 * sigma * sigma / 3 + 1) - 1) / 2);
+    if (radius < 1) return row;
+    for (let pass = 0; pass < 3; pass++) {
+      const out = new Array(px);
+      const acc = [0, 0, 0];
+      const at = (i) => row[Math.min(px - 1, Math.max(0, i))];
+      for (let i = -radius; i <= radius; i++) for (let k = 0; k < 3; k++) acc[k] += at(i)[k];
+      const span = radius * 2 + 1;
+      for (let x = 0; x < px; x++) {
+        out[x] = [acc[0] / span, acc[1] / span, acc[2] / span];
+        const add = at(x + radius + 1);
+        const drop = at(x - radius);
+        for (let k = 0; k < 3; k++) acc[k] += add[k] - drop[k];
+      }
+      row = out;
+    }
+    return row;
+  }
+  function drawSmooth(ctx, fills, r, sigma) {
+    const x0 = Math.round(r.x);
+    const w = Math.round(r.x + r.w) - x0;
+    const row = smoothRow(fills, w, sigma);
+    for (let x = 0; x < row.length; x++) {
+      const [red, green, blue] = row[x];
+      ctx.fillStyle = `rgb(${Math.round(red)},${Math.round(green)},${Math.round(blue)})`;
+      ctx.fillRect(x0 + x, r.y, 1.5, r.h);
+    }
+  }
+  function drawRing(ctx, fills, cx, cy, radius, holeColor) {
+    const n = fills.length;
+    const start2 = -Math.PI / 2;
+    const angle = (i2) => start2 + i2 / Math.max(1, n) * Math.PI * 2;
+    const colorAt = (i2) => fills[i2] === "hatch" ? Math.floor(i2 / n * 360) % 2 === 0 ? HATCH_BASE : HATCH_LINE : fills[i2];
+    const overlap = 0.6 / radius;
+    let i = 0;
+    while (i < n) {
+      const color = colorAt(i);
+      let j = i + 1;
+      while (j < n && colorAt(j) === color) j++;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, angle(i), Math.min(angle(j) + overlap, start2 + Math.PI * 2));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      i = j;
+    }
+    if (n === 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = HATCH_BASE;
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = holeColor;
+    ctx.fill();
+  }
+  function drawCredits({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 40 * s;
+    const padY = 34 * s;
+    const contentW = 600 * s - padX * 2;
+    const gap = 18 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      let size = 28;
+      setFont(ctx, 700, size * s);
+      const yearW = year ? ctx.measureText(year).width : 0;
+      const titleMax = contentW - yearW - (year ? 24 * s : 0);
+      const title = b.title.toUpperCase();
+      while (size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+        size -= 1;
+        setFont(ctx, 700, size * s);
+      }
+      const rowH = 28 * 1.2 * s;
+      ctx.fillStyle = paper.ink;
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, 28 * s), 0.02 * size * s, "left");
+      if (year) {
+        setFont(ctx, 700, 28 * s);
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, 28 * s));
+      }
+      y += rowH + gap;
+      const m = opts.meta;
+      const columns = m ? [
+        { label: opts.labels.directedBy, names: m.directors },
+        { label: opts.labels.writtenBy, names: m.writers },
+        { label: opts.labels.starring, names: m.starring },
+        { label: opts.labels.musicBy, names: m.music }
+      ].filter((c) => c.names.length > 0) : [];
+      if (columns.length > 0) {
+        const colGap = 14 * s;
+        const colW = (contentW - colGap * 3) / 4;
+        const size7 = 7.5 * s;
+        const lineH = 7.5 * 1.5 * s;
+        const spacing = 0.04 * size7;
+        const rows = Math.max(...columns.map((c) => c.names.length));
+        columns.forEach((c, k) => {
+          const x = padX + k * (colW + colGap);
+          setFont(ctx, 700, size7);
+          drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
+          setFont(ctx, 400, size7);
+          c.names.forEach((name, row) => {
+            const top2 = y + lineH + 3 * s + row * lineH;
+            drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top2, lineH, size7), spacing, "left");
+          });
+        });
+        y += lineH + 3 * s + rows * lineH + gap;
+      }
+    }
+    drawBarcode(ctx, fills, { x: padX, y, w: contentW, h: 400 * s - padY - y }, false, s);
+  }
+  function drawPortrait({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 24 * s;
+    const padY = 28 * s;
+    const contentW = 330 * s - padX * 2;
+    const gap = 14 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      let size = 20;
+      setFont(ctx, 700, size * s);
+      const yearW = year ? ctx.measureText(year).width : 0;
+      const titleMax = contentW - yearW - (year ? 16 * s : 0);
+      const title = b.title.toUpperCase();
+      while (size > 14 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+        size -= 1;
+        setFont(ctx, 700, size * s);
+      }
+      const rowH = 20 * 1.2 * s;
+      ctx.fillStyle = paper.ink;
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, 20 * s), 0.02 * size * s, "left");
+      if (year) {
+        setFont(ctx, 700, 20 * s);
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, 20 * s));
+      }
+      y += rowH + gap;
+      const m = opts.meta;
+      const columns = m ? [
+        { label: opts.labels.directedBy, names: m.directors },
+        { label: opts.labels.writtenBy, names: m.writers },
+        { label: opts.labels.starring, names: m.starring.slice(0, 3) },
+        { label: opts.labels.musicBy, names: m.music }
+      ].filter((c) => c.names.length > 0) : [];
+      if (columns.length > 0) {
+        const perRow = 2;
+        const colGap = 12 * s;
+        const colW = (contentW - colGap * (perRow - 1)) / perRow;
+        const size7 = 6.5 * s;
+        const lineH = 6.5 * 1.5 * s;
+        const spacing = 0.04 * size7;
+        for (let start2 = 0; start2 < columns.length; start2 += perRow) {
+          const rowCols = columns.slice(start2, start2 + perRow);
+          const rows = Math.max(...rowCols.map((c) => c.names.length));
+          rowCols.forEach((c, k) => {
+            const x = padX + k * (colW + colGap);
+            setFont(ctx, 700, size7);
+            drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
+            setFont(ctx, 400, size7);
+            c.names.forEach((name, row) => {
+              const top2 = y + lineH + 2 * s + row * lineH;
+              drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top2, lineH, size7), spacing, "left");
+            });
+          });
+          y += lineH + 2 * s + rows * lineH + 8 * s;
+        }
+        y += gap - 8 * s;
+      }
+    }
+    drawBarcode(ctx, fills, { x: padX, y, w: contentW, h: 440 * s - padY - y }, false, s);
+  }
+  function drawTitleCard({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 30 * s;
+    const padY = 34 * s;
+    const contentW = 440 * s - padX * 2;
+    const cx = 220 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      const titleH = 17 * 1.2 * s;
+      const title = b.title.toUpperCase();
+      const yearText = year ? ` (${year})` : "";
+      setFont(ctx, 400, 9 * s);
+      const yearW = yearText ? ctx.measureText(yearText).width : 0;
+      setFont(ctx, 700, 17 * s);
+      const titleText = clip(ctx, title, contentW - yearW);
+      const titleW = ctx.measureText(titleText).width;
+      const left = cx - (titleW + yearW) / 2;
+      ctx.fillStyle = paper.ink;
+      ctx.textAlign = "left";
+      ctx.fillText(titleText, left, baseline(y, titleH, 17 * s));
+      if (yearText) {
+        setFont(ctx, 400, 9 * s);
+        ctx.fillText(yearText, left + titleW, baseline(y, titleH, 17 * s));
+      }
+      y += titleH;
+      const m = opts.meta;
+      const lines = m ? [
+        [opts.labels.directedBy, m.directors],
+        [opts.labels.cinematographyBy, m.dop],
+        [opts.labels.editedBy, m.editors]
+      ].filter(([, names]) => names.length > 0) : [];
+      const lineH = 11 * 1.2 * s;
+      setFont(ctx, 400, 11 * s);
+      ctx.textAlign = "center";
+      for (const [label, names] of lines) {
+        y += 2 * s;
+        ctx.fillText(clip(ctx, opts.labels.line(label, names), contentW), cx, baseline(y, lineH, 11 * s));
+        y += lineH;
+      }
+      y += 14 * s + 6 * s;
+    }
+    drawSmooth(ctx, fills, { x: padX, y, w: contentW, h: 440 * s - padY - y }, opts.texture === "smooth" ? 1.6 * s : 0);
+  }
+  function drawRingPoster({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 26 * s;
+    const padY = 22 * s;
+    const contentW = 330 * s - padX * 2;
+    const bottom = 440 * s - padY;
+    let top2 = padY;
+    let blockTop = bottom;
+    if (opts.includeTitle) {
+      const m = opts.meta;
+      if (m?.tagline) {
+        const lineH = 8 * 1.2 * s;
+        setFont(ctx, 400, 8 * s);
+        ctx.fillStyle = paper.dim;
+        ctx.textAlign = "left";
+        ctx.fillText(clip(ctx, m.tagline, contentW), padX, baseline(top2, lineH, 8 * s));
+        top2 += lineH + 5 * s;
+        ctx.fillStyle = paper.rule;
+        ctx.fillRect(padX, top2, contentW, Math.max(1, s));
+        top2 += Math.max(1, s) + 12 * s;
+      }
+      setFont(ctx, 600, 24 * s);
+      const titleLines = wrapLines(ctx, b.title, 200 * s, 3);
+      const titleLH = 24 * 1.05 * s;
+      ctx.fillStyle = paper.ink;
+      ctx.textAlign = "left";
+      titleLines.forEach((line, k) => ctx.fillText(line, padX, baseline(top2 + k * titleLH, titleLH, 24 * s)));
+      if (year) {
+        setFont(ctx, 300, 16 * s);
+        ctx.fillStyle = paper.dim;
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(top2, 16 * 1.2 * s, 16 * s));
+      }
+      top2 += titleLines.length * titleLH;
+      const bx = padX + contentW * 0.44;
+      const bw = contentW - contentW * 0.44;
+      const parts = [];
+      if (m?.directors.length) {
+        const h = 9.5 * 1.2 * s;
+        const text = opts.labels.line(opts.labels.directedBy, m.directors);
+        parts.push({ h, draw: (y) => {
+          setFont(ctx, 600, 9.5 * s);
+          ctx.fillStyle = paper.ink;
+          ctx.fillText(clip(ctx, text, bw), bx, baseline(y, h, 9.5 * s));
+        } });
+      }
+      if (m?.writers.length) {
+        const h = 8 * 1.2 * s;
+        const text = opts.labels.line(opts.labels.writtenBy, m.writers);
+        parts.push({ h: h + 2 * s, draw: (y) => {
+          setFont(ctx, 400, 8 * s);
+          ctx.fillStyle = paper.dim;
+          ctx.fillText(clip(ctx, text, bw), bx, baseline(y + 2 * s, h, 8 * s));
+        } });
+      }
+      if (m?.synopsis) {
+        setFont(ctx, 400, 6.5 * s);
+        const lines = wrapLines(ctx, m.synopsis, bw, 7);
+        const lh = 6.5 * 1.45 * s;
+        parts.push({
+          h: 5 * s + lines.length * lh,
+          draw: (y) => {
+            setFont(ctx, 400, 6.5 * s);
+            ctx.fillStyle = paper.dim;
+            lines.forEach((line, k) => ctx.fillText(line, bx, baseline(y + 5 * s + k * lh, lh, 6.5 * s)));
+          }
+        });
+      }
+      const runtimeMin = m?.runtime ?? (b.duration > 0 ? Math.round(b.duration / 60) : null);
+      const metaLine = [
+        runtimeMin ? posterRuntime(runtimeMin) : "",
+        m?.genres ?? "",
+        m?.releaseDate ? posterReleaseDate(m.releaseDate, opts.lang) : ""
+      ].filter(Boolean).join(" \xB7 ");
+      if (metaLine) {
+        const h = 6 * 1.2 * s;
+        parts.push({ h: 5 * s + h, draw: (y) => {
+          setFont(ctx, 600, 6 * s);
+          ctx.fillStyle = paper.ink;
+          ctx.fillText(clip(ctx, metaLine, bw), bx, baseline(y + 5 * s, h, 6 * s));
+        } });
+      }
+      if (parts.length > 0) {
+        const total = parts.reduce((sum, p) => sum + p.h, 0);
+        blockTop = bottom - total;
+        ctx.textAlign = "left";
+        let y = blockTop;
+        for (const p of parts) {
+          p.draw(y);
+          y += p.h;
+        }
+      }
+    }
+    const areaH = blockTop - top2;
+    const radius = Math.max(20 * s, Math.min(105 * s, areaH / 2 - 8 * s));
+    drawRing(ctx, fills, 165 * s, top2 + areaH / 2, radius, paper.bg);
+  }
+  function drawPoster(ctx, style, b, opts) {
+    const { width, height } = ctx.canvas;
+    const s = width / POSTER_DESIGN[style].w;
+    const paper = PAPER[opts.paper];
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = paper.bg;
+    ctx.fillRect(0, 0, width, height);
+    ctx.textBaseline = "alphabetic";
+    const c = { ctx, s, paper, b, fills: columnFills(displayBarcode(b), opts.unseen), opts, year: b.year != null ? String(b.year) : "" };
+    if (style === "credits") drawCredits(c);
+    else if (style === "titleCard") drawTitleCard(c);
+    else if (style === "portrait") drawPortrait(c);
+    else drawRingPoster(c);
+  }
+  var POSTER_DESIGN, POSTER_EXPORT, POSTER_FONT_FAMILY, FONT2, LATIN, LATIN_EXT, fontLoad, HATCH_MEAN;
+  var init_barcode_poster_render = __esm({
+    "lib/barcode/barcode-poster-render.ts"() {
+      "use strict";
+      init_barcode_poster();
+      init_barcode_share_render();
+      POSTER_DESIGN = {
+        credits: { w: 600, h: 400 },
+        titleCard: { w: 440, h: 440 },
+        ring: { w: 330, h: 440 },
+        portrait: { w: 330, h: 440 }
+      };
+      POSTER_EXPORT = {
+        credits: { w: 3e3, h: 2e3 },
+        titleCard: { w: 2400, h: 2400 },
+        ring: { w: 2400, h: 3200 },
+        portrait: { w: 2400, h: 3200 }
+      };
+      POSTER_FONT_FAMILY = "Lumio Poster";
+      FONT2 = `"${POSTER_FONT_FAMILY}", "Futura", "Avenir Next", system-ui, sans-serif`;
+      LATIN = "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+      LATIN_EXT = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF";
+      fontLoad = null;
+      HATCH_MEAN = (() => {
+        const a = parseColor(HATCH_BASE);
+        const b = parseColor(HATCH_LINE);
+        return [0, 1, 2].map((k) => a[k] * (4 / 7) + b[k] * (3 / 7));
+      })();
+    }
+  });
+
+  // lib/barcode/barcode-share-export.ts
+  var barcode_share_export_exports = {};
+  __export(barcode_share_export_exports, {
+    blobToBase64: () => blobToBase64,
+    copySharePng: () => copySharePng,
+    jobFileName: () => jobFileName,
+    publishCanvasForPhone: () => publishCanvasForPhone,
+    publishShareForPhone: () => publishShareForPhone,
+    renderJob: () => renderJob,
+    renderShareCanvas: () => renderShareCanvas,
+    saveCanvasPng: () => saveCanvasPng,
+    saveSharePng: () => saveSharePng,
+    shareCanvasPng: () => shareCanvasPng,
+    shareSharePng: () => shareSharePng
+  });
+  function renderShareCanvas(kind, b, opts) {
+    const { w, h } = SHARE_SIZES[kind];
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (ctx) drawShare(ctx, kind, b, opts);
+    return canvas2;
+  }
+  async function renderJob(job, b) {
+    if (job.type === "share") return renderShareCanvas(job.kind, b, job.opts);
+    await ensurePosterFont();
+    const { w, h } = POSTER_EXPORT[job.style];
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (ctx) drawPoster(ctx, job.style, b, job.opts);
+    return canvas2;
+  }
+  function jobFileName(job, b) {
+    if (job.type === "share") return shareFileName(b, job.kind);
+    return shareFileName(b, "image").replace(/\.png$/, ` ${POSTER_SUFFIX[job.style]}.png`);
+  }
+  function canvasToBlob(canvas2) {
+    return new Promise((resolve, reject) => {
+      canvas2.toBlob((blob) => blob ? resolve(blob) : reject(new Error("toBlob gav inget")), "image/png");
+    });
+  }
+  async function blobToBase64(blob) {
+    const buffer = new Uint8Array(await blob.arrayBuffer());
+    let binary = "";
+    const chunk = 32768;
+    for (let i = 0; i < buffer.length; i += chunk) {
+      binary += String.fromCharCode(...buffer.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+  async function saveCanvasPng(canvas2, name) {
+    const blob = await canvasToBlob(canvas2);
+    if (isTauriEnv) {
+      const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+      const path = await invoke6("save_png_file", { suggestedName: name, dataBase64: await blobToBase64(blob) });
+      return path ? "saved" : "cancelled";
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function saveSharePng(job, b) {
+    return saveCanvasPng(await renderJob(job, b), jobFileName(job, b));
+  }
+  async function copySharePng(job, b) {
+    const ClipboardItemCtor = window.ClipboardItem;
+    if (!ClipboardItemCtor || !navigator.clipboard?.write) throw new Error("urklipp f\xF6r bilder saknas");
+    const item = new ClipboardItemCtor({ "image/png": renderJob(job, b).then(canvasToBlob) });
+    await navigator.clipboard.write([item]);
+  }
+  async function shareCanvasPng(canvas2, name, title) {
+    const blob = await canvasToBlob(canvas2);
+    if (isAndroidTauriEnv) {
+      const result = await np({ cmd: "shareImage", data: await blobToBase64(blob), name, title });
+      if (!result?.ok) throw new Error(result?.error ?? "delning misslyckades");
+      return "shared";
+    }
+    const file = new File([blob], name, { type: "image/png" });
+    const nav = navigator;
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      await nav.share({ files: [file], title });
+      return "shared";
+    }
+    await saveCanvasPng(canvas2, name);
+    return "saved";
+  }
+  async function shareSharePng(job, b) {
+    return shareCanvasPng(await renderJob(job, b), jobFileName(job, b), b.title);
+  }
+  async function publishCanvasForPhone(canvas2) {
+    const blob = await canvasToBlob(canvas2);
+    const upload = await fetch("/api/barcode-share", { method: "POST", headers: { "content-type": "image/png" }, body: blob });
+    if (!upload.ok) return null;
+    const { token } = await upload.json();
+    if (!token) return null;
+    const lan = await fetch("/api/lan-ip").then((r) => r.json()).catch(() => null);
+    if (!lan?.ip) return null;
+    const port = window.location.port || "3011";
+    return `http://${lan.ip}:${port}/api/barcode-share/${token}`;
+  }
+  async function publishShareForPhone(job, b) {
+    return publishCanvasForPhone(await renderJob(job, b));
+  }
+  var POSTER_SUFFIX;
+  var init_barcode_share_export = __esm({
+    "lib/barcode/barcode-share-export.ts"() {
+      init_tauri_mpv();
+      init_tauri_native_player();
+      init_barcode_share_render();
+      init_barcode_poster_render();
+      POSTER_SUFFIX = { portrait: "staende", credits: "affisch", titleCard: "titelkort", ring: "ring" };
+    }
+  });
+
+  // lib/clip/clip-export.ts
+  function clipCacheKey(i) {
+    return `${i.url}|${i.inSec.toFixed(3)}|${i.outSec.toFixed(3)}|${i.format}|${i.hdr ? 1 : 0}|${i.audioIndex ?? ""}`;
+  }
+  function clipExt(format) {
+    return format === "still" ? "png" : format;
+  }
+  function clipMime(format) {
+    return format === "mp4" ? "video/mp4" : format === "gif" ? "image/gif" : "image/png";
+  }
+  function clipFileName(title, ext) {
+    const safe = title.replace(/:\s+/g, " ").replace(/:/g, ".").replace(/[\\/?%*|"<>]/g, "").replace(/\s+/g, " ").trim();
+    return `${safe || "Klipp"}.${ext}`;
+  }
+  async function tauriInvoke(cmd, args) {
+    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke6(cmd, args);
+  }
+  function downloadUrl(url, name) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function anchorArgs(anchor) {
+    return { x: anchor.x, y: anchor.y, w: anchor.width, h: anchor.height };
+  }
+  async function webShareFile(file) {
+    const nav = navigator;
+    if (!nav.share || !nav.canShare?.({ files: [file] })) return false;
+    await nav.share({ files: [file] });
+    return true;
+  }
+  async function saveRenderedClip(clip2, name, ext) {
+    if (isTauriEnv) {
+      const out = await tauriInvoke("save_file", {
+        suggestedName: name,
+        srcPath: clip2.path,
+        filterName: ext.toUpperCase(),
+        extensions: [ext]
+      });
+      return out ? "saved" : "cancelled";
+    }
+    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+    return "saved";
+  }
+  async function shareRenderedClip(clip2, name, anchor, ext) {
+    if (isTauriEnv) {
+      try {
+        await tauriInvoke("share_file", { path: clip2.path, ...anchorArgs(anchor) });
+        return "shared";
+      } catch {
+        await saveRenderedClip(clip2, name, ext);
+        return "saved";
+      }
+    }
+    const blob = await (await fetch(`/api/clip/${clip2.id}/file`)).blob();
+    if (await webShareFile(new File([blob], name, { type: blob.type }))) return "shared";
+    const url = URL.createObjectURL(blob);
+    downloadUrl(url, name);
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function shareFileAndroid(path, mime, title, name) {
+    const res = await np({ cmd: "shareFile", path, mime, title, name });
+    if (!res?.ok) throw new Error(res?.error ?? "delning misslyckades");
+  }
+  async function saveToGalleryAndroid(path, mime, name) {
+    const res = await np({ cmd: "saveToGallery", path, mime, name });
+    if (!res?.ok) throw Object.assign(new Error(res?.error ?? "kunde inte spara"), { code: res?.code });
+  }
+  function isAndroidVersionError(error) {
+    return error instanceof Error && error.code === "android-version";
+  }
+  async function prepareWebShareFile(clip2, name, mime, fetchImpl = (...args) => fetch(...args), routes = DEFAULT_CLIP_ROUTES) {
+    const blob = await (await fetchImpl(routes.file(clip2.id))).blob();
+    return new File([blob], name, { type: mime });
+  }
+  async function shareWebFile(file, nav = navigator) {
+    const n = nav;
+    if (!n.share || !n.canShare?.({ files: [file] })) return "unsupported";
+    try {
+      await n.share({ files: [file] });
+      return "shared";
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return "cancelled";
+      throw error;
+    }
+  }
+  function canShareFiles(mime, nav = navigator) {
+    const n = nav;
+    if (!n.share || !n.canShare) return false;
+    try {
+      return n.canShare({ files: [new File([""], "probe", { type: mime })] });
+    } catch {
+      return false;
+    }
+  }
+  function downloadClipFile(clip2, name) {
+    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+  }
+  async function toPng(source) {
+    const w = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+    const h = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (!ctx) throw new Error("canvas saknas");
+    ctx.drawImage(source, 0, 0, w, h);
+    const blob = await new Promise((r) => canvas2.toBlob(r, "image/png"));
+    if (!blob) throw new Error("kunde inte koda bilden");
+    return blob;
+  }
+  async function captureFrameBlob(engine, video) {
+    if (engine === "mpv") {
+      const key = `clip-still-${Date.now()}`;
+      await mpvCaptureFrame(key);
+      const url = `/api/player-frame?key=${encodeURIComponent(key)}`;
+      const jpeg = await (await fetch(url)).blob();
+      void fetch(url, { method: "DELETE" }).catch(() => {
+      });
+      return jpeg;
+    }
+    if (!video || video.readyState < 2 || video.videoWidth === 0) throw new Error("ingen bildruta");
+    return toPng(video);
+  }
+  async function captureStill(engine, video) {
+    const blob = await captureFrameBlob(engine, video);
+    return blob.type === "image/png" ? blob : toPng(await createImageBitmap(blob));
+  }
+  function copyStillToClipboard(blob) {
+    const Ctor = window.ClipboardItem;
+    if (!Ctor || !navigator.clipboard?.write) return Promise.reject(new Error("urklipp f\xF6r bilder saknas"));
+    return navigator.clipboard.write([new Ctor({ "image/png": blob })]);
+  }
+  async function saveStill(blob, name) {
+    if (isTauriEnv) {
+      const { blobToBase64: blobToBase642 } = await Promise.resolve().then(() => (init_barcode_share_export(), barcode_share_export_exports));
+      const out = await tauriInvoke("save_png_file", { suggestedName: name, dataBase64: await blobToBase642(blob) });
+      return out ? "saved" : "cancelled";
+    }
+    const url = URL.createObjectURL(blob);
+    downloadUrl(url, name);
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function shareStill(blob, name, anchor) {
+    if (isTauriEnv) {
+      const path = await mpvCaptureFrame(`clip-share-${Date.now()}`);
+      await tauriInvoke("share_file", { path, ...anchorArgs(anchor) });
+      return "shared";
+    }
+    if (await webShareFile(new File([blob], name, { type: "image/png" }))) return "shared";
+    await saveStill(blob, name);
+    return "saved";
+  }
+  var DEFAULT_CLIP_ROUTES, ClipRenderer;
+  var init_clip_export = __esm({
+    "lib/clip/clip-export.ts"() {
+      "use client";
+      init_tauri_mpv();
+      init_tauri_native_player();
+      DEFAULT_CLIP_ROUTES = {
+        render: "/api/clip/render",
+        status: (id) => `/api/clip/${id}`,
+        file: (id) => `/api/clip/${id}/file`
+      };
+      ClipRenderer = class {
+        constructor(fetchImpl = (...args) => fetch(...args), pollMs = 400, routes = DEFAULT_CLIP_ROUTES) {
+          __publicField(this, "fetchImpl", fetchImpl);
+          __publicField(this, "pollMs", pollMs);
+          __publicField(this, "routes", routes);
+          __publicField(this, "last", null);
+          __publicField(this, "active", null);
+        }
+        async render(input, onProgress) {
+          const key = clipCacheKey(input);
+          if (this.last?.key === key) return this.last.clip;
+          this.cancel();
+          const token = { id: null, cancelled: false };
+          this.active = token;
+          const res = await this.fetchImpl(this.routes.render, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(input)
+          });
+          if (!res.ok) throw new Error(`rendering nekades (${res.status})`);
+          const { id } = await res.json();
+          token.id = id;
+          if (token.cancelled) {
+            void this.fetchImpl(this.routes.status(id), { method: "DELETE" }).catch(() => {
+            });
+            throw new Error("avbruten");
+          }
+          for (; ; ) {
+            const s = await (await this.fetchImpl(this.routes.status(id))).json();
+            if (token.cancelled) throw new Error("avbruten");
+            if (s.state === "done" && s.path) {
+              this.last = { key, clip: { id, path: s.path } };
+              this.active = null;
+              return this.last.clip;
+            }
+            if (s.state !== "running") throw new Error(s.error ?? s.state);
+            onProgress(s.progress);
+            await new Promise((r) => setTimeout(r, this.pollMs));
+            if (token.cancelled) throw new Error("avbruten");
+          }
+        }
+        /** Den färdiga filen om just det här valet redan är renderat. */
+        peek(input) {
+          return this.last?.key === clipCacheKey(input) ? this.last.clip : null;
+        }
+        cancel() {
+          const a = this.active;
+          if (!a) return;
+          a.cancelled = true;
+          this.active = null;
+          if (a.id) void this.fetchImpl(this.routes.status(a.id), { method: "DELETE" }).catch(() => {
+          });
+        }
+      };
+    }
+  });
+
+  // lib/player-chapters.ts
+  function buildChapterList(input) {
+    const l\u00E4ngd = Number.isFinite(input.durationSec) && input.durationSec > 0 ? input.durationSec : 0;
+    const fil = (input.fileChapters ?? []).filter((c) => Number.isFinite(c.time) && c.time >= 0).sort((a, b) => a.time - b.time);
+    if (fil.length >= 2) {
+      return fil.map((c, i) => {
+        const n\u00E4sta = i + 1 < fil.length ? fil[i + 1].time : l\u00E4ngd;
+        const titel = c.title.trim();
+        return {
+          label: titel && !GENERISK.test(titel) ? titel : input.labels.chapter(i + 1),
+          startSec: c.time,
+          durationSec: Math.max(0, n\u00E4sta - c.time),
+          kind: "chapter"
+        };
+      });
+    }
+    if (l\u00E4ngd <= 0) return [];
+    const delar = [{ start: 0, kind: "main" }];
+    const slutpunkter = [];
+    if (input.intro) {
+      const start2 = input.intro.startMs / 1e3;
+      const slut = input.intro.endMs / 1e3;
+      if (slut > start2 && start2 < l\u00E4ngd) {
+        delar.push({ start: start2, kind: input.introKind === "recap" ? "recap" : "intro" });
+        slutpunkter.push(slut);
+      }
+    }
+    if (input.outro) {
+      const start2 = input.outro.startMs / 1e3;
+      if (start2 > 0 && start2 < l\u00E4ngd) delar.push({ start: start2, kind: "credits" });
+    }
+    if (delar.length === 1) return [];
+    for (const slut of slutpunkter) {
+      if (slut < l\u00E4ngd && !delar.some((d) => Math.abs(d.start - slut) < 1)) delar.push({ start: slut, kind: "main" });
+    }
+    delar.sort((a, b) => a.start - b.start);
+    const rensade = delar.filter((d, i) => i === 0 || d.start - delar[i - 1].start >= 1 || d.kind !== "main");
+    const etikett = (kind) => kind === "intro" ? input.labels.intro : kind === "recap" ? input.labels.recap : kind === "credits" ? input.labels.credits : input.labels.main;
+    return rensade.map((d, i) => ({
+      label: etikett(d.kind),
+      startSec: d.start,
+      durationSec: Math.max(0, (i + 1 < rensade.length ? rensade[i + 1].start : l\u00E4ngd) - d.start),
+      kind: d.kind
+    })).filter((d) => d.kind !== "main" || d.durationSec >= 1);
+  }
+  function currentChapterIndex(list, positionSec) {
+    let index = -1;
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i].startSec <= positionSec + 0.25) index = i;
+    }
+    return index;
+  }
+  function formatChapterDuration(seconds, lang) {
+    const s = Math.max(0, Math.round(seconds));
+    const min = Math.floor(s / 60);
+    const sek = s % 60;
+    const enhetMin = "min";
+    const enhetSek = lang === "sv" ? "sek" : "sec";
+    if (min === 0) return `${sek} ${enhetSek}`;
+    if (sek === 0 || min >= 10) return `${min} ${enhetMin}`;
+    return `${min} ${enhetMin} ${sek} ${enhetSek}`;
+  }
+  var GENERISK;
+  var init_player_chapters = __esm({
+    "lib/player-chapters.ts"() {
+      GENERISK = /^(chapter|kapitel|chap\.?|ch\.?)?\s*\d+$/i;
+    }
+  });
+
+  // lib/player-moments.ts
+  function momentTitleKey(input) {
+    const id = input.tmdbId?.trim();
+    if (!id) return null;
+    if (input.mediaType === "tv") {
+      if (input.season == null || input.episode == null) return null;
+      return `tv:${id}:s${input.season}e${input.episode}`;
+    }
+    return `movie:${id}`;
+  }
+  function read6() {
+    try {
+      const raw = getScopedStorageItem(KEY13);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function write2(store2) {
+    const nycklar = Object.keys(store2);
+    if (nycklar.length > MAX_TITLES) {
+      nycklar.sort((a, b) => store2[a].at - store2[b].at);
+      for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
+    }
+    try {
+      setScopedStorageItem(KEY13, JSON.stringify(store2));
+    } catch {
+    }
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT10));
+  }
+  function getMoments(titleKey) {
+    if (!titleKey) return [];
+    return [...read6()[titleKey]?.t ?? []];
+  }
+  function addMoment(titleKey, seconds, nowMs = Date.now()) {
+    const sekund = Math.max(0, Math.floor(seconds));
+    const store2 = read6();
+    const lista = store2[titleKey]?.t ?? [];
+    const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
+    if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
+    const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
+    store2[titleKey] = { at: nowMs, t: n\u00E4sta };
+    write2(store2);
+    return { kind: "added", seconds: sekund };
+  }
+  function removeMoment(titleKey, seconds) {
+    const store2 = read6();
+    const lista = store2[titleKey]?.t;
+    if (!lista) return;
+    const kvar = lista.filter((t) => t !== seconds);
+    if (kvar.length === 0) delete store2[titleKey];
+    else store2[titleKey] = { at: Date.now(), t: kvar };
+    write2(store2);
+  }
+  function clearMoments(titleKey) {
+    const store2 = read6();
+    if (!store2[titleKey]) return;
+    delete store2[titleKey];
+    write2(store2);
+  }
+  function onMomentsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT10, listener);
+    return () => window.removeEventListener(EVENT10, listener);
+  }
+  var KEY13, EVENT10, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var init_player_moments = __esm({
+    "lib/player-moments.ts"() {
+      init_profile_storage_shim();
+      KEY13 = "player_moments_v1";
+      EVENT10 = "lumio-player-moments-changed";
+      MOMENT_DEDUPE_SECONDS = 3;
+      MAX_PER_TITLE = 50;
+      MAX_TITLES = 200;
+    }
+  });
+
   // components/player/video-player-modal.tsx
   function sameAudioTracks(a, b) {
     if (a.length !== b.length) return false;
@@ -19370,11 +25748,11 @@
   }
   function cuesToSrt(cues) {
     const stamp = (sec) => {
-      const ms = Math.max(0, Math.round(sec * 1e3));
-      const h = String(Math.floor(ms / 36e5)).padStart(2, "0");
-      const m = String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0");
-      const s = String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0");
-      const rest = String(ms % 1e3).padStart(3, "0");
+      const ms2 = Math.max(0, Math.round(sec * 1e3));
+      const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
+      const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
+      const s = String(Math.floor(ms2 % 6e4 / 1e3)).padStart(2, "0");
+      const rest = String(ms2 % 1e3).padStart(3, "0");
       return `${h}:${m}:${s},${rest}`;
     };
     return cues.map((cue, i) => `${i + 1}
@@ -19384,11 +25762,11 @@ ${cue.text}
   }
   function cuesToVtt(cues, delay) {
     const stamp = (sec) => {
-      const ms = Math.max(0, Math.round((sec + delay) * 1e3));
-      const h = String(Math.floor(ms / 36e5)).padStart(2, "0");
-      const m = String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0");
-      const s = String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0");
-      const rest = String(ms % 1e3).padStart(3, "0");
+      const ms2 = Math.max(0, Math.round((sec + delay) * 1e3));
+      const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
+      const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
+      const s = String(Math.floor(ms2 % 6e4 / 1e3)).padStart(2, "0");
+      const rest = String(ms2 % 1e3).padStart(3, "0");
       return `${h}:${m}:${s}.${rest}`;
     };
     return `WEBVTT
@@ -19396,12 +25774,6 @@ ${cue.text}
 ${cues.map((cue) => `${stamp(cue.start)} --> ${stamp(cue.end)}
 ${cue.text}`).join("\n\n")}
 `;
-  }
-  function readChromeViewport() {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "desktop";
-    if (window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "desktop";
-    if (window.matchMedia(LANDSCAPE_PHONE_QUERY).matches) return "landscape";
-    return "portrait";
   }
   function buildIntroDbCacheKey(mediaType, tmdbId, imdbId, season, episode) {
     return [
@@ -19577,20 +25949,11 @@ ${cue.text}`).join("\n\n")}
   }
   function getAnchoredMenuStyle(trigger, menuWidth = 0) {
     if (!trigger || typeof window === "undefined") return { visibility: "hidden", position: "fixed" };
-    const rect = trigger.getBoundingClientRect();
-    const right = Math.round(Math.max(4, window.innerWidth - rect.right));
-    const maxRight = Math.round(Math.max(4, window.innerWidth - menuWidth - 4));
+    const inScene = document.documentElement.getAttribute("data-tv-scene") === "1";
+    const space = inScene ? { width: tvSceneWidth(), height: tvSceneHeight(), scale: tvSceneScale() || 1 } : { width: window.innerWidth, height: window.innerHeight, scale: 1 };
     return {
       position: "fixed",
-      bottom: Math.round(window.innerHeight - rect.top + 8),
-      right: Math.min(right, maxRight),
-      // Menyn växer UPPÅT från kontrollraden och hade ingen höjdgräns: raderna
-      // är ~44 px, och ••• -menyns nio poster blir drygt 400 px. En telefon i
-      // liggande läge är ~412 px hög, så de översta posterna låg redan utanför
-      // skärmen utan att gå att nå — det syntes inte i porträtt, där det finns
-      // gott om höjd. Gränsen är utrymmet ovanför knappen, och rullningen gör
-      // resten nåbar i stället för avklippt.
-      maxHeight: Math.max(160, Math.round(rect.top - 16)),
+      ...anchoredMenuGeometry(trigger.getBoundingClientRect(), space, menuWidth),
       overflowY: "auto"
     };
   }
@@ -19740,6 +26103,12 @@ ${cue.text}`).join("\n\n")}
   }
   function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
+    useEffect(() => {
+      if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
+      if (checkEpisode(tmdbId, season, episode).kind !== "blocked") return;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[series-lock] ogrindad start ${tmdbId} S${season}E${episode}`)}`).catch(() => {
+      });
+    }, [mediaType, tmdbId, season, episode]);
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
       setEngineKind(isDesktopTauriEnv ? "mpv" : isAndroidTauriEnv ? "droid" : "none");
@@ -19893,9 +26262,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
     }, [endHlsSessionOnServer]);
-    const notifyLanPlaybackState = useCallback((active2) => {
+    const notifyLanPlaybackState = useCallback((active3) => {
       if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
-      const body = active2 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      const body = active3 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
       void fetch("/api/lan-playback-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -20018,9 +26387,9 @@ ${cue.text}`).join("\n\n")}
     playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
-    const surfaceSetter = (id) => (value) => setOpenSurface((current) => {
-      const next = typeof value === "function" ? value(current === id) : value;
-      return next ? id : current === id ? null : current;
+    const surfaceSetter = (id) => (value) => setOpenSurface((current2) => {
+      const next = typeof value === "function" ? value(current2 === id) : value;
+      return next ? id : current2 === id ? null : current2;
     });
     const showSubMenu = openSurface === "subs";
     const setShowSubMenu = surfaceSetter("subs");
@@ -20028,6 +26397,10 @@ ${cue.text}`).join("\n\n")}
     const setShowAudioMenu = surfaceSetter("audio");
     const showAudioDelayMenu = openSurface === "audioDelay";
     const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showMomentsMenu = openSurface === "moments";
+    const setShowMomentsMenu = surfaceSetter("moments");
+    const showChaptersMenu = openSurface === "chapters";
+    const setShowChaptersMenu = surfaceSetter("chapters");
     const showSleepMenu = openSurface === "sleep";
     const setShowSleepMenu = surfaceSetter("sleep");
     const showCompanionsMenu = openSurface === "companions";
@@ -20048,6 +26421,7 @@ ${cue.text}`).join("\n\n")}
     const setShowEpisodes = surfaceSetter("episodes");
     const showStreams = openSurface === "streams";
     const setShowStreams = surfaceSetter("streams");
+    const tvSidePanelOpen = isTv && (showWiki || showSoundtrack || showEpisodes || showStreams);
     const hasStreamChoice = Boolean(streams && streams.items.length >= 2);
     const showStreamButton = Boolean(streams && (hasStreamChoice || streams.loading));
     const showTuningPanel = openSurface === "tuning";
@@ -20056,11 +26430,11 @@ ${cue.text}`).join("\n\n")}
     const [hasEverStarted, setHasEverStarted] = useState(false);
     const [playerLayout, setPlayerLayout] = useState(() => getPlayerLayout());
     useEffect(() => onPlayerLayoutChanged(() => setPlayerLayout(getPlayerLayout())), []);
-    const [chromeViewport, setChromeViewport] = useState(readChromeViewport);
+    const [chromeViewport, setChromeViewport] = useState(readPlayerChromeViewport);
     useEffect(() => {
       if (typeof window.matchMedia !== "function") return;
       const queries = [DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY].map((q) => window.matchMedia(q));
-      const sync = () => setChromeViewport(readChromeViewport());
+      const sync = () => setChromeViewport(readPlayerChromeViewport());
       sync();
       queries.forEach((mq) => mq.addEventListener("change", sync));
       return () => queries.forEach((mq) => mq.removeEventListener("change", sync));
@@ -20092,6 +26466,8 @@ ${cue.text}`).join("\n\n")}
     const showsControl = (id) => !hiddenControls.has(id);
     const [videoTuning, setVideoTuningState] = useState(() => getVideoTuning());
     useEffect(() => onVideoTuningChanged(() => setVideoTuningState(getVideoTuning())), []);
+    useEffect(() => () => clearFilmVideoTuning(), []);
+    const tuningActive = isVideoTuningActive(videoTuning);
     const [dvColorFallback, setDvColorFallback] = useState(false);
     const [dvColorFallbackMuted, setDvColorFallbackMuted] = useState(false);
     const dvColorFallbackActive = dvColorFallback && !dvColorFallbackMuted;
@@ -20115,12 +26491,13 @@ ${cue.text}`).join("\n\n")}
       void (async () => {
         try {
           if (useMpv && await mpvRenderIsGpu()) {
-            const colorspace = await mpvCommand2(["get_property", "video-params/colorspace"]);
-            if (!cancelled && colorspace === "dolbyvision") {
-              void fetch(`/api/debug-log?msg=${encodeURIComponent("[dv] mpv gpu-v\xE4g: motorn renderar DV sj\xE4lv \u2014 ingen korrigering")}`).catch(() => {
+            const colormatrix = await mpvCommand2(["get_property", "video-params/colormatrix"]);
+            if (cancelled || colormatrix !== "dolbyvision") return;
+            if (await mpvDvGpuNextActive()) {
+              void fetch(`/api/debug-log?msg=${encodeURIComponent("[dv] gpu-next ritar DV \u2014 ingen korrigering")}`).catch(() => {
               });
+              return;
             }
-            return;
           }
           const response = await fetch(`/api/video-color?url=${encodeURIComponent(url)}`);
           const data = await response.json();
@@ -20325,15 +26702,26 @@ ${cue.text}`).join("\n\n")}
     }, [videoSrc]);
     const [subDrift, setSubDrift] = useState(null);
     const subtitleDelayMediaKey = buildSubtitleDelayMediaKey(mediaType, tmdbId, imdbId ?? null);
+    const inheritedSubDelayRef = useRef(null);
+    const clearedInheritedSubDelayRef = useRef(null);
+    const restoringSubDelayRef = useRef(null);
     useEffect(() => {
+      inheritedSubDelayRef.current = null;
+      clearedInheritedSubDelayRef.current = null;
+      restoringSubDelayRef.current = null;
       if (!subtitleDelayMediaKey) return;
       setSubDrift(null);
-      const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
-      if (saved == null) return;
-      setSubDelay(saved);
+      const entry = getSavedSubtitleDelayEntry(subtitleDelayMediaKey, season ?? null, episode ?? null);
+      if (entry == null) return;
+      inheritedSubDelayRef.current = inheritedDelay(entry);
+      if (entry.delay !== subDelay) restoringSubDelayRef.current = entry.delay;
+      setSubDelay(entry.delay);
     }, [subtitleDelayMediaKey, season, episode, url]);
     useEffect(() => {
       if (!subtitleDelayMediaKey) return;
+      const step = persistAfterRestore(restoringSubDelayRef.current, subDelay);
+      restoringSubDelayRef.current = step.pending;
+      if (step.skip) return;
       const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
       if ((saved ?? 0) === subDelay) return;
       saveSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null, subDelay);
@@ -20350,6 +26738,25 @@ ${cue.text}`).join("\n\n")}
       saveSubtitleDelay(secondaryDelayMediaKey, season ?? null, episode ?? null, secondarySubDelay);
     }, [secondarySubDelay]);
     const [subtitleAutoSyncState, setSubtitleAutoSyncState] = useState({ type: "idle" });
+    const [subtitleSelectionToken, setSubtitleSelectionToken] = useState(0);
+    const syncedVttRef = useRef(/* @__PURE__ */ new Map());
+    const applySyncedSubtitleRef = useRef(null);
+    const subDelayRef = useRef(0);
+    const subDriftRef = useRef(null);
+    const [syncNotice, setSyncNotice] = useState(null);
+    const [syncNoFit, setSyncNoFit] = useState(null);
+    const syncNoticeTimerRef = useRef(null);
+    const showSyncNotice = useCallback((n) => {
+      setSyncNotice(n);
+      if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+      syncNoticeTimerRef.current = window.setTimeout(() => setSyncNotice(null), 6e3);
+    }, []);
+    useEffect(() => () => {
+      if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+    }, []);
+    useEffect(() => {
+      setSyncNotice(null);
+    }, [url]);
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [externalSubtitles, setExternalSubtitles] = useState([]);
     const externalVttRef = useRef(/* @__PURE__ */ new Map());
@@ -20359,11 +26766,12 @@ ${cue.text}`).join("\n\n")}
     const [subTextColor, setSubTextColor] = useState(() => getSubtitleTextColor());
     const [subBackgroundColor, setSubBackgroundColor] = useState(() => getSubtitleBackgroundColor());
     const [subOutlineColor, setSubOutlineColor] = useState(() => getSubtitleOutlineColor());
+    const [subLegibility, setSubLegibility] = useState(() => getSubtitleLegibility());
     const [audioOutputMode] = useState(() => getAudioOutputMode());
     const effectiveProxyAudioMode = proxyTranscodeActive ? "compatible" : audioOutputMode;
     const [nightMode, setNightModeLive] = useState(() => getNightMode());
     useEffect(() => onPlaybackSettingsChanged(() => setNightModeLive(getNightMode())), []);
-    const [autoSkipIntro] = useState(() => getAutoSkipIntro());
+    const [autoSkipIntro, setAutoSkipIntroState] = useState(() => getAutoSkipIntro());
     const [rememberAspectRatio] = useState(() => getRememberAspectRatio());
     const [aspectRatioMode, setAspectRatioMode] = useState(() => getRememberAspectRatio() ? getDefaultAspectRatio() : "auto");
     const [cropZoomMode, setCropZoomMode] = useState("off");
@@ -20383,6 +26791,8 @@ ${cue.text}`).join("\n\n")}
     const [creditsMode, setCreditsMode] = useState(false);
     creditsModeRef.current = creditsMode;
     const creditsPipRef = useRef(null);
+    const clipDockRef = useRef(null);
+    const clipDockedRef = useRef(false);
     const creditsTouchedRef = useRef(false);
     const outroFiredRef = useRef(false);
     const onOutroStartRef = useRef(onOutroStart);
@@ -20416,12 +26826,35 @@ ${cue.text}`).join("\n\n")}
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
     const [defaultAudioLanguage, setDefaultAudioLanguage] = useState(() => getDefaultAudioLanguage() || null);
     const moreMenuRef = useRef(null);
+    const [gearPage, setGearPage] = useState("root");
+    useEffect(() => {
+      if (showMoreMenu) setGearPage("root");
+    }, [showMoreMenu]);
+    const momentKey = momentTitleKey({ mediaType: mediaType ?? null, tmdbId: tmdbId ?? null, season: season ?? null, episode: episode ?? null });
+    const [moments, setMoments] = useState(() => getMoments(momentKey));
+    useEffect(() => {
+      setMoments(getMoments(momentKey));
+      return onMomentsChanged(() => setMoments(getMoments(momentKey)));
+    }, [momentKey]);
+    const [momentNotice, setMomentNotice] = useState(null);
+    useEffect(() => {
+      if (!momentNotice) return;
+      const id = window.setTimeout(() => setMomentNotice(null), 2600);
+      return () => window.clearTimeout(id);
+    }, [momentNotice]);
+    const showMomentNotice = (text) => setMomentNotice({ text, id: Date.now() });
+    useEffect(() => {
+      if (!showMoreMenu || !isTv) return;
+      moreMenuRef.current?.querySelector("[data-f]")?.focus();
+    }, [gearPage, showMoreMenu, isTv]);
     const subTriggerRef = useRef(null);
     const audioTriggerRef = useRef(null);
     const aspectTriggerRef = useRef(null);
     const cropTriggerRef = useRef(null);
     const moreTriggerRef = useRef(null);
     const sleepTriggerRef = useRef(null);
+    const chaptersTriggerRef = useRef(null);
+    const momentsTriggerRef = useRef(null);
     const companionsTriggerRef = useRef(null);
     const downloadEsRef = useRef(null);
     const downloadTimerRef = useRef(null);
@@ -20433,11 +26866,6 @@ ${cue.text}`).join("\n\n")}
     const autoSubtitleSuppressedRef = useRef(false);
     const manualSubtitleOverrideRef = useRef(false);
     const subtitlePreferenceRef = useRef({ mode: "default" });
-    const lastAutoSyncedDelayRef = useRef(null);
-    const [manualSyncOpen, setManualSyncOpen] = useState(false);
-    const [manualSyncTapTime, setManualSyncTapTime] = useState(null);
-    const [manualSyncBusy, setManualSyncBusy] = useState(false);
-    const [manualSyncFirstAnchor, setManualSyncFirstAnchor] = useState(null);
     const stallLastProgressSecondsRef = useRef(0);
     const stallLastProgressAtRef = useRef(Date.now());
     const androidStartNudgesRef = useRef(0);
@@ -20527,7 +26955,8 @@ ${cue.text}`).join("\n\n")}
         external: false,
         selected: t2.id === droid.sid,
         forced: false,
-        externalFilename: null
+        externalFilename: null,
+        srcId: t2.number ?? null
       })));
     }, [isDroidEngine, droid.audioTracks, droid.subtitleTracks, droid.selectedAudio, droid.sid]);
     useEffect(() => {
@@ -20587,7 +27016,7 @@ ${cue.text}`).join("\n\n")}
         cinemaMute.held = true;
         droid.setMuted(true);
       }
-      await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang });
+      await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang, requestHeaders: args.requestHeaders, kind: "vod" });
     } : openMpvPlayer;
     const closeMpvPlayer2 = isDroidEngine ? closeNativePlayer : closeMpvPlayer;
     const setMpvPause2 = isDroidEngine ? async (paused) => {
@@ -20619,7 +27048,8 @@ ${cue.text}`).join("\n\n")}
       external: false,
       selected: t2.id === droidRef.current.sid,
       forced: false,
-      externalFilename: null
+      externalFilename: null,
+      srcId: t2.number ?? null
     })) : getMpvSubtitleTracks;
     const getMpvSid2 = isDroidEngine ? async () => droidRef.current.sid : getMpvSid;
     const mpvSetBounds2 = isDroidEngine ? nativeSetBounds : mpvSetBounds;
@@ -20697,6 +27127,12 @@ ${cue.text}`).join("\n\n")}
     firstFrameRenderedRef.current = mpv.firstFrameRendered;
     const mutedRef = useRef(muted);
     const cinemaMuteRef = useRef({ held: false, userMuted: false });
+    const silentStartRef = useRef({ held: false });
+    const mpvCommandRef = useRef(mpvCommand2);
+    mpvCommandRef.current = mpvCommand2;
+    const [silentReloadNonce, setSilentReloadNonce] = useState(0);
+    const silentReloadPendingRef = useRef(false);
+    const audioOnlyTrackerRef = useRef(createAudioOnlyTracker());
     const cinemaTimePosRef = useRef(0);
     cinemaTimePosRef.current = mpv.timePos;
     mutedRef.current = muted;
@@ -20930,6 +27366,7 @@ ${cue.text}`).join("\n\n")}
     const realTime = useMpv ? mpv.timePos : currentTime + streamStartRef.current;
     const realTimeRef = useRef(realTime);
     realTimeRef.current = realTime;
+    const streamSwitchPosition = () => Math.max(0, hasStartedForUrlRef.current ? realTimeRef.current : initialTime ?? 0);
     const totalDuration = useMpv ? mpv.duration > 0 ? mpv.duration : probedDuration ?? 0 : probedDuration ?? (isFinite(duration) && duration > 0 ? duration : 0);
     const isPlaying = useMpv ? !mpv.paused : playing;
     const hasEndedPlayback = useMpv ? mpv.ended : hasEnded;
@@ -20954,6 +27391,8 @@ ${cue.text}`).join("\n\n")}
     const firstFrameLoggedRef = useRef(false);
     const closeEventSentRef = useRef(false);
     const closeInProgressRef = useRef(false);
+    const captureContinueFrameRef = useRef(() => {
+    });
     const playbackSessionIdRef = useRef(null);
     const playbackSessionClosedRef = useRef(false);
     const tryCloseDesktopPlaybackSession = useCallback(async (reason) => {
@@ -20981,6 +27420,21 @@ ${cue.text}`).join("\n\n")}
     const subtitleClockBase = subtitleClockOverride ?? realTime;
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setNativeFineTime(controlsVisible);
+    }, [isDroidEngine, controlsVisible]);
+    useEffect(() => () => setNativeFineTime(true), []);
+    const cueGateRef = useRef({ cues, secondaryCues, subDelay, secondarySubDelay, subDrift });
+    cueGateRef.current = { cues, secondaryCues, subDelay, secondarySubDelay, subDrift };
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      setNativeTimeGate((publishedTime, nextTime) => {
+        const g = cueGateRef.current;
+        return cueIndexChanged(g.cues, publishedTime, nextTime, (t2) => t2 - g.subDelay + (g.subDrift ? g.subDrift.slope * (t2 - g.subDrift.anchor) : 0)) || cueIndexChanged(g.secondaryCues, publishedTime, nextTime, (t2) => t2 - g.secondarySubDelay);
+      });
+      return () => setNativeTimeGate(null);
+    }, [isDroidEngine]);
     const embeddedCueText = isDroidEngine && !activeCue ? (mpv.cueText ?? "").trim() : "";
     const rawSubtitleText = activeCue?.text ?? (embeddedCueText || null);
     const renderedSubtitleText = rawSubtitleText && stripSdh ? stripSdhText(rawSubtitleText) || null : rawSubtitleText;
@@ -20993,6 +27447,7 @@ ${cue.text}`).join("\n\n")}
     ) : null;
     const overlayPrimaryText = dualLines ? dualLines.primary : renderedSubtitleText;
     const overlaySecondaryText = dualLines?.secondary ?? null;
+    const subDomTypography = domSubtitleTypography(subLegibility);
     const editingSecondary = learningMode && subMenuSlot === "secondary";
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
@@ -21002,7 +27457,8 @@ ${cue.text}`).join("\n\n")}
     const activeAudioChannels = activeAudioInfo?.channels ?? null;
     const audioChannelLabel = activeAudioChannels ? activeAudioChannels === 1 ? "Mono" : activeAudioChannels === 2 ? "Stereo" : activeAudioChannels === 6 ? "5.1" : `${activeAudioChannels}ch` : null;
     const audioCodecLabel = activeAudioInfo?.codec?.toUpperCase() ?? null;
-    const audioIndicator = useMpv ? audioChannelLabel ? `Original via mpv ${audioChannelLabel}` : "Original via mpv" : isServerStreamUrl(videoSrc) ? `${audioOutputMode === "compatible" ? "AAC Stereo" : `AAC ${audioChannelLabel ?? "Audio"}`}` : `${audioCodecLabel ?? "Direct"}${audioChannelLabel ? ` ${audioChannelLabel}` : ""}`;
+    const audioEngineLabel = isAndroidTauriEnv ? "Original" : "Original via mpv";
+    const audioIndicator = useMpv ? audioChannelLabel ? `${audioEngineLabel} ${audioChannelLabel}` : audioEngineLabel : isServerStreamUrl(videoSrc) ? `${audioOutputMode === "compatible" ? "AAC Stereo" : `AAC ${audioChannelLabel ?? "Audio"}`}` : `${audioCodecLabel ?? "Direct"}${audioChannelLabel ? ` ${audioChannelLabel}` : ""}`;
     const aspectLabel = getAspectRatioLabel(aspectRatioMode, t);
     const cropZoomLabel = getCropZoomLabel(cropZoomMode, t);
     const videoPresentation = getVideoPresentation(aspectRatioMode);
@@ -21056,9 +27512,12 @@ ${cue.text}`).join("\n\n")}
       const fontSize = Math.max(14, 20 * (subSize / 100));
       const marginBottom = Math.max(18, Math.round(subVerticalPos / 100 * containerSize.height + 56));
       const usesBoxBackground = subBackgroundColor !== "transparent";
+      const scale = Math.max(0.5, subSize / 100);
+      const nativeFontSize = Math.max(18, Math.round(42 * scale));
+      const typo = assSubtitleTypography(subLegibility, fontSize, nativeFontSize);
       const style = [
-        "FontName=Helvetica",
-        `FontSize=${fontSize.toFixed(1)}`,
+        `FontName=${typo.fontName}`,
+        `FontSize=${typo.assFontSize.toFixed(1)}`,
         `PrimaryColour=${primaryColor}`,
         `OutlineColour=${outlineColor}`,
         `BackColour=${backgroundColor}`,
@@ -21067,9 +27526,11 @@ ${cue.text}`).join("\n\n")}
         usesBoxBackground ? "BorderStyle=3" : "BorderStyle=1",
         usesBoxBackground ? "Outline=0" : "Outline=1.6",
         usesBoxBackground ? "Shadow=0" : "Shadow=0.8",
-        "Bold=1"
+        typo.bold ? "Bold=1" : "Bold=0",
+        // Bara när det är valt: force skriver över filens egna stilar, och ett
+        // ASS-spår med eget teckenavstånd ska behålla det i standardläget.
+        ...typo.assSpacing ? [`Spacing=${typo.assSpacing}`] : []
       ].join(",");
-      const scale = Math.max(0.5, subSize / 100);
       const driftSlope = subDrift?.slope ?? 0;
       const speed = 1 / (1 + driftSlope);
       const delayWithDrift = subDrift ? (subDelay + driftSlope * subDrift.anchor) * speed : subDelay;
@@ -21078,14 +27539,17 @@ ${cue.text}`).join("\n\n")}
         speed,
         scale,
         pos: Math.max(0, Math.min(100, 100 - subVerticalPos)),
-        fontSize: Math.max(18, Math.round(42 * scale)),
+        fontSize: typo.nativeFontSize,
+        font: subLegibility.font === "default" ? void 0 : typo.fontName,
+        bold: typo.bold,
+        spacing: typo.nativeSpacing,
         marginY: Math.max(12, Math.round(subVerticalPos / 100 * containerSize.height)),
         color: toMpvNativeColor(subTextColor, subOpacity),
         outlineColor: toMpvNativeColor(subOutlineColor, subOpacity),
         backColor: subBackgroundColor === "transparent" ? "#00000000" : toMpvNativeColor(subBackgroundColor, Math.max(35, subOpacity)),
         assStyle: style
       });
-    }, [useMpv, subDelay, subDrift, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, containerSize.height, activeSubId, mpv.sid]);
+    }, [useMpv, subDelay, subDrift, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, subLegibility, containerSize.height, activeSubId, mpv.sid]);
     useEffect(() => {
       if (!isMpvEngine || !mpv.fileLoaded) return;
       const on = learningMode;
@@ -21475,7 +27939,7 @@ ${cue.text}`).join("\n\n")}
       const rect = container.getBoundingClientRect();
       setContainerSize({ width: rect.width, height: rect.height });
       if (!useMpv) return;
-      const pip = creditsMode ? creditsPipRef.current : null;
+      const pip = creditsMode ? creditsPipRef.current : clipDockedRef.current ? clipDockRef.current : null;
       if (pip) {
         const pipRect = pip.getBoundingClientRect();
         if (pipRect.width > 0 && pipRect.height > 0) {
@@ -21586,6 +28050,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!useMpv) return;
       let cancelled = false;
+      const silentReload = silentReloadPendingRef.current;
+      silentReloadPendingRef.current = false;
       mpv.resetTimePos();
       mpv.resetFileLoaded();
       mpv.resetPlaybackRestarted();
@@ -21599,19 +28065,36 @@ ${cue.text}`).join("\n\n")}
       }).then(() => {
         if (cancelled) return;
         syncPlayerBounds();
+        const silent = !isPlayerRevealHeld();
+        if (silent) {
+          silentStartRef.current.held = true;
+          if (isDroidEngine) void mpvCommand2(["set_property", "mute", "yes"]);
+        }
         openPromise = openMpvPlayer2({
           url,
           start: initialTime ?? 0,
           audioLang: getDefaultAudioLanguage() || void 0,
           requestHeaders,
           shouldAbort: () => cancelled
+        }).then(() => {
+          if (silent && !cancelled && silentStartRef.current.held) void mpvCommand2(["set_property", "mute", "yes"]);
         });
+        if (silentReload) {
+          void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] \xF6ppnar samma str\xF6m igen vid ${Math.round(initialTime ?? 0)} s`)}`).catch(() => {
+          });
+        }
         return openPromise;
       });
       return () => {
         cancelled = true;
-        const pending3 = openPromise;
-        void (pending3 ? pending3.catch(() => {
+        if (silentReloadPendingRef.current) {
+          const pending5 = openPromise;
+          void (pending5 ? pending5.catch(() => {
+          }).then(() => closeMpvPlayer2("spelare: tyst omstart")) : closeMpvPlayer2("spelare: tyst omstart"));
+          return;
+        }
+        const pending4 = openPromise;
+        void (pending4 ? pending4.catch(() => {
         }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
@@ -21626,7 +28109,31 @@ ${cue.text}`).join("\n\n")}
         setAirplayActive(false);
         airplayWasExternalRef.current = false;
       };
-    }, [useMpv, url]);
+    }, [useMpv, url, silentReloadNonce]);
+    useEffect(() => {
+      if (!useMpv || !mpvRevealPlaybackReady) return;
+      const silentStart = silentStartRef.current;
+      if (!silentStart.held) return;
+      silentStart.held = false;
+      if (isPlayerRevealHeld()) return;
+      void mpvCommand2(["set_property", "mute", mutedRef.current ? "yes" : "no"]);
+    }, [useMpv, mpvRevealPlaybackReady]);
+    useEffect(() => () => {
+      if (!silentStartRef.current.held) return;
+      silentStartRef.current.held = false;
+      void mpvCommandRef.current(["set_property", "mute", mutedRef.current ? "yes" : "no"]);
+    }, []);
+    useEffect(() => {
+      if (!useMpv) return;
+      if (!audioOnlyTrackerRef.current.observe({ url, timePos: mpv.timePos, firstFrame: mpv.firstFrameRendered })) return;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] ljud utan bild i 3 s \u2014 laddar om samma str\xF6m tyst (${filename ?? url.slice(-40)})`)}`).catch(() => {
+      });
+      silentReloadPendingRef.current = true;
+      setMpvStartupHoldReady(false);
+      setMpvStartupTracksReady(false);
+      setMpvRevealPlaybackReady(false);
+      setSilentReloadNonce((n) => n + 1);
+    }, [useMpv, url, mpv.timePos, mpv.firstFrameRendered]);
     useEffect(() => {
       if (!useMpv) return;
       if (mpv.paused) showControlsPermanent();
@@ -21777,6 +28284,7 @@ ${cue.text}`).join("\n\n")}
     const handleClose = useCallback(() => {
       if (closeInProgressRef.current) return;
       closeInProgressRef.current = true;
+      captureContinueFrameRef.current();
       let didFinishClose = false;
       const finishClose = () => {
         notifyLanPlaybackState(false);
@@ -21870,6 +28378,35 @@ ${cue.text}`).join("\n\n")}
       }
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
+    const pipMode = usePipMode();
+    const pipSeekRef = useRef(seek);
+    pipSeekRef.current = seek;
+    const pipToggleRef = useRef(togglePlay);
+    pipToggleRef.current = togglePlay;
+    const pipCloseRef = useRef(handleClose);
+    pipCloseRef.current = handleClose;
+    const pipPlayingRef = useRef(isPlaying);
+    pipPlayingRef.current = isPlaying;
+    const pipEligible = !isTv && !isMpvEngine && (isDroidEngine || isClientSession());
+    const [pipVideoEl, setPipVideoEl] = useState(null);
+    useEffect(() => {
+      setPipVideoEl(isDroidEngine ? null : videoRef.current);
+    });
+    const pipAvailable = usePipAvailable(pipVideoEl);
+    useEffect(() => {
+      if (!pipEligible) return;
+      return registerPip({
+        prevNextKind: "seek",
+        onPlayPause: () => pipToggleRef.current(),
+        onPrev: () => pipSeekRef.current(-10),
+        onNext: () => pipSeekRef.current(10),
+        onClosed: () => pipCloseRef.current(),
+        isPlaying: () => pipPlayingRef.current
+      }, pipVideoEl);
+    }, [pipEligible, pipVideoEl]);
+    useEffect(() => {
+      if (pipEligible) notifyPipPlaying(isPlaying);
+    }, [pipEligible, isPlaying]);
     useEffect(() => {
       const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
@@ -21878,8 +28415,8 @@ ${cue.text}`).join("\n\n")}
       }
       setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
-        setStillWatchingCountdown((current) => {
-          if (current <= 1) {
+        setStillWatchingCountdown((current2) => {
+          if (current2 <= 1) {
             window.clearInterval(interval);
             window.setTimeout(() => {
               if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
@@ -21887,7 +28424,7 @@ ${cue.text}`).join("\n\n")}
             }, 0);
             return 0;
           }
-          return current - 1;
+          return current2 - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
@@ -22143,6 +28680,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       if (isTv && e.key.startsWith("Arrow")) return;
+      if (isTextEntryTarget(keyTarget)) return;
       if (matchesShortcut("playPause", e.key) || e.key === "k") {
         e.preventDefault();
         togglePlay();
@@ -22162,6 +28700,15 @@ ${cue.text}`).join("\n\n")}
       }
       if (matchesShortcut("fullscreen", e.key)) {
         toggleFullscreen();
+        return;
+      }
+      if (matchesShortcut("saveMoment", e.key)) {
+        saveMomentNow();
+        return;
+      }
+      if (!isTv && !hasCommandModifier(e) && matchesShortcut("clip", e.key)) {
+        if (openSurfaceRef.current === "clip") closeClip();
+        else openClip();
         return;
       }
       if (matchesShortcut("secondarySubtitleCycle", e.key)) {
@@ -22219,6 +28766,9 @@ ${cue.text}`).join("\n\n")}
       const onTvRemoteKey = (e) => {
         const nav = e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Enter";
         if (!nav) return;
+        const target2 = e.target;
+        const root = playerRootRef.current;
+        if (root && target2 instanceof Node && target2 !== document.body && target2 !== document.documentElement && !root.contains(target2)) return;
         if (!controlsVisibleRef.current) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -22238,15 +28788,15 @@ ${cue.text}`).join("\n\n")}
       if (!isTv || !splashVisibleForTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = splashCancelRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -22269,6 +28819,8 @@ ${cue.text}`).join("\n\n")}
         setSubTextColor(getSubtitleTextColor());
         setSubBackgroundColor(getSubtitleBackgroundColor());
         setSubOutlineColor(getSubtitleOutlineColor());
+        const nextLegibility = getSubtitleLegibility();
+        setSubLegibility((prev) => JSON.stringify(prev) === JSON.stringify(nextLegibility) ? prev : nextLegibility);
         setLearningModeState(getLearningMode());
         setSecondarySubtitleLang(getSecondarySubtitleLanguage());
         setSecondarySubColor(getSecondarySubtitleColor());
@@ -22285,14 +28837,18 @@ ${cue.text}`).join("\n\n")}
       setSubtitleLoadError(null);
       setSubtitleDebugInfo(null);
       setSubtitleClientDebugInfo(null);
+      subtitlePreferenceRef.current = nextSubtitlePreference(subtitlePreferenceRef.current, sub, Boolean(options?.manual));
       if (!sub) {
-        subtitlePreferenceRef.current = { mode: "off" };
         setActiveSubId(null);
         setCues([]);
         if (useMpv) void setMpvSubtitleTrack2(null);
         return;
       }
-      subtitlePreferenceRef.current = { mode: "language", language: sub.language };
+      setActiveSubId(sub.id);
+      if (!options?.noAutoSync) {
+        syncedVttRef.current.delete(sub.id);
+        setSubtitleSelectionToken((v) => v + 1);
+      }
       if (sub.id.startsWith("embedded:") && useMpv) {
         const sidRaw = sub.id.slice("embedded:".length);
         const sid = Number.parseInt(sidRaw, 10);
@@ -22537,29 +29093,22 @@ ${cue.text}`).join("\n\n")}
       if (!durationConfirmed) return;
       if (isPlaying) {
         scrobbleStartedRef.current = true;
-        void scrobble("start", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("start", scrobbleIdentityRef.current, scrobbleProgress());
         const pulse = window.setInterval(() => {
           if (!scrobbleStartedRef.current) return;
-          void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+          void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress(), { pulse: true });
         }, 3e4);
         return () => window.clearInterval(pulse);
       } else if (scrobbleStartedRef.current) {
-        void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress());
       }
-    }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
-    useEffect(() => {
-      if (!isPlaying || !hasStarted || !durationConfirmed) return;
-      const interval = setInterval(() => {
-        void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
-      }, 3e4);
-      return () => clearInterval(interval);
     }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
     useEffect(() => {
       if (!wikiTmdbId && !imdbId) return;
       return () => {
         if (!scrobbleStartedRef.current) return;
         scrobbleStartedRef.current = false;
-        void scrobble("stop", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("stop", scrobbleIdentityRef.current, scrobbleProgress());
       };
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
@@ -22569,6 +29118,7 @@ ${cue.text}`).join("\n\n")}
         if (!mediaId || !url || snapshot.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
         if (!durationConfirmedRef.current) return;
+        if (!hasStartedForUrlRef.current) return;
         saveStreamProgress({
           id: mediaId,
           tmdbId: wikiTmdbId,
@@ -22610,6 +29160,15 @@ ${cue.text}`).join("\n\n")}
       setPlayerOpen(true);
       return () => setPlayerOpen(false);
     }, []);
+    const continueFrameRef = useMemo(() => mediaId ? { id: mediaId, season, episode } : null, [mediaId, season, episode]);
+    captureContinueFrameRef.current = useContinueFrameCapture({
+      engine: engineKind,
+      ref: continueFrameRef,
+      videoRef,
+      playing: isPlaying,
+      armed: hasStarted && durationConfirmed,
+      shouldSkip: () => watchedMarkedRef.current || creditsMode || hasEndedPlayback
+    });
     const playerBarcode = useBarcodeRecorder({ engine: engineKind, mediaId: mediaId ?? null, mediaType, tmdbId: wikiTmdbId, title: mediaTitle ?? title, year, posterUrl, season, episode, snapshotRef: progressSnapshotRef, videoRef, playing: isPlaying, finished: creditsMode || hasEndedPlayback });
     useEffect(() => {
       if (useMpv) {
@@ -22721,7 +29280,6 @@ ${cue.text}`).join("\n\n")}
       playbackStartedAtRef.current = initialTime ?? 0;
       autoSubtitleSuppressedRef.current = false;
       manualSubtitleOverrideRef.current = false;
-      lastAutoSyncedDelayRef.current = null;
       setSubtitleClockOverride(null);
       setSubtitleAutoSyncState({ type: "idle" });
       setShowStillWatchingPrompt(false);
@@ -23029,51 +29587,58 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [wikiTmdbId, resolvedImdbId, imdbId, mediaType, season, episode, url]);
+    const [mpvChapters, setMpvChapters] = useState(null);
     const chapterProbeKeyRef = useRef(null);
     useEffect(() => {
-      if (!isMpvEngine || !mpv.fileLoaded || !introDataReady || introSegment) return;
+      if (!isMpvEngine || !mpv.fileLoaded) return;
       if (chapterProbeKeyRef.current === url) return;
       chapterProbeKeyRef.current = url;
       let cancelled = false;
       void (async () => {
+        const chapters = [];
         try {
           const count = Number(await mpvCommand2(["get_property", "chapter-list/count"]));
-          if (cancelled || !Number.isFinite(count) || count < 1) return;
-          const chapters = [];
-          for (let i = 0; i < Math.min(count, 40); i++) {
-            const [chapterTitle, chapterTime] = await Promise.all([
-              mpvCommand2(["get_property", `chapter-list/${i}/title`]).catch(() => ""),
-              mpvCommand2(["get_property", `chapter-list/${i}/time`])
-            ]);
-            const time = Number(chapterTime);
-            if (Number.isFinite(time)) chapters.push({ title: String(chapterTitle ?? ""), time });
-          }
-          if (cancelled || chapters.length === 0) return;
-          const INTRO_RE = /\b(intro|opening|op ?\d*|förtexter)\b/i;
-          const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
-          const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
-          if (introIndex >= 0) {
-            const start2 = chapters[introIndex].time;
-            const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
-            if (end > start2 && end - start2 <= 240) {
-              setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
-              setIntroKind("intro");
+          if (!cancelled && Number.isFinite(count) && count > 0) {
+            for (let i = 0; i < Math.min(count, 40); i++) {
+              const [chapterTitle, chapterTime] = await Promise.all([
+                mpvCommand2(["get_property", `chapter-list/${i}/title`]).catch(() => ""),
+                mpvCommand2(["get_property", `chapter-list/${i}/time`])
+              ]);
+              const time = Number(chapterTime);
+              if (Number.isFinite(time)) chapters.push({ title: String(chapterTitle ?? ""), time });
             }
-          }
-          const outroChapter = [...chapters].reverse().find((c) => OUTRO_RE.test(c.title));
-          if (outroChapter) {
-            setOutroSegment((prev) => prev ?? {
-              startMs: Math.round(outroChapter.time * 1e3),
-              endMs: Math.round((outroChapter.time + 600) * 1e3)
-            });
           }
         } catch {
         }
+        if (!cancelled) setMpvChapters({ url, list: chapters });
       })();
       return () => {
         cancelled = true;
       };
-    }, [isMpvEngine, mpv.fileLoaded, introDataReady, introSegment, url]);
+    }, [isMpvEngine, mpv.fileLoaded, url]);
+    useEffect(() => {
+      if (!introDataReady || introSegment) return;
+      if (!mpvChapters || mpvChapters.url !== url || mpvChapters.list.length === 0) return;
+      const chapters = mpvChapters.list;
+      const INTRO_RE = /\b(intro|opening|op ?\d*|förtexter)\b/i;
+      const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
+      const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
+      if (introIndex >= 0) {
+        const start2 = chapters[introIndex].time;
+        const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
+        if (end > start2 && end - start2 <= 240) {
+          setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
+          setIntroKind("intro");
+        }
+      }
+      const outroChapter = [...chapters].reverse().find((c) => OUTRO_RE.test(c.title));
+      if (outroChapter) {
+        setOutroSegment((prev) => prev ?? {
+          startMs: Math.round(outroChapter.time * 1e3),
+          endMs: Math.round((outroChapter.time + 600) * 1e3)
+        });
+      }
+    }, [mpvChapters, introDataReady, introSegment, url]);
     function resumeAfterSleepPrompt() {
       setStillWatchingReason("episodes");
       if (useMpv) {
@@ -23093,7 +29658,7 @@ ${cue.text}`).join("\n\n")}
       void safePlay(videoRef.current);
     }
     useEffect(() => {
-      const shouldProbe = useMpv || shouldProxyPlayback;
+      const shouldProbe = useMpv && !isAndroidTauriEnv || shouldProxyPlayback;
       if (!shouldProbe) return;
       let cancelled = false;
       if (useMpv) setPreparingProxySource(false);
@@ -23441,18 +30006,36 @@ ${cue.text}`).join("\n\n")}
         window.clearInterval(interval);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, isPlaying, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
+    const unknownEmbeddedTrackNumbers = useMemo(
+      () => mpvSubtitleTracks.filter((track) => !track.external && track.srcId != null && toSubtitleLangGroup(track.language) === "und").map((track) => track.srcId),
+      [mpvSubtitleTracks]
+    );
+    const detectedEmbeddedLanguages = useEmbeddedTrackLanguages({
+      mediaUrl: url,
+      fileName: filename,
+      title: mediaTitle ?? title,
+      year: year ?? null,
+      season,
+      episode,
+      isLive: isHlsUrl2(url),
+      firstFrameRendered: useMpv ? mpv.firstFrameRendered : hasStarted,
+      unknownTrackNumbers: useMpv ? unknownEmbeddedTrackNumbers : []
+    });
     const embeddedSubtitleOptions = useMemo(() => {
       if (!EMBEDDED_SUBTITLES_ENABLED) return [];
       if (useMpv && mpvSubtitleTracks.length > 0) {
         return mpvSubtitleTracks.map((track) => {
-          const language = toSubtitleLangGroup(track.language);
+          const tagged = toSubtitleLangGroup(track.language);
+          const detected = tagged === "und" && track.srcId != null ? detectedEmbeddedLanguages.get(track.srcId) : void 0;
+          const language = detected ?? tagged;
           return {
             language,
             lang3: language,
             url: "",
             id: `embedded:${track.sid}`,
             source: "embedded",
-            label: track.title ?? void 0
+            label: detected ? [track.title, t("subtitleLanguageDetected")].filter(Boolean).join(" \xB7 ") : track.title ?? void 0,
+            ...detected ? { detectedLanguage: true } : {}
           };
         });
       }
@@ -23465,7 +30048,7 @@ ${cue.text}`).join("\n\n")}
         source: "embedded",
         label: track.title ?? void 0
       }));
-    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv]);
+    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, detectedEmbeddedLanguages, t]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
@@ -23479,9 +30062,89 @@ ${cue.text}`).join("\n\n")}
         return true;
       });
     }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
+    const applySyncedSubtitle = useCallback(async (sub, vttUrl) => {
+      const inherited = inheritedSubDelayRef.current;
+      if (clearsInheritedDelay(inherited, subDelayRef.current)) {
+        clearedInheritedSubDelayRef.current = inherited;
+        inheritedSubDelayRef.current = 0;
+        subDelayRef.current = 0;
+        setSubDelay(0);
+        logSubsyncClient(`${CLIENT_PREFIX} \xE4rvd f\xF6rdr\xF6jning ${inherited}s nollad inf\xF6r synken`);
+      }
+      if (isMpvEngine) {
+        const path = await (0, import_core5.invoke)("download_subtitle_to_temp", { url: `${window.location.origin}${vttUrl}` });
+        await mpvCommand2(["sub-add", path, "select"]);
+        await refreshMpvSubtitleTracks();
+      }
+      setCues(parseVtt(await (await fetch(vttUrl)).text()));
+      setActiveSubId(sub.id);
+      syncedVttRef.current.set(sub.id, { url, vtt: vttUrl });
+    }, [isMpvEngine, refreshMpvSubtitleTracks, url]);
+    applySyncedSubtitleRef.current = applySyncedSubtitle;
+    subDelayRef.current = subDelay;
+    subDriftRef.current = subDrift;
+    const restoreOriginalSubtitle = useCallback(async (sub, opts) => {
+      syncedVttRef.current.clear();
+      const cleared = clearedInheritedSubDelayRef.current;
+      if (opts?.undo && cleared !== null) {
+        clearedInheritedSubDelayRef.current = null;
+        inheritedSubDelayRef.current = cleared;
+        setSubDelay(cleared);
+      }
+      await selectSubtitle(sub, { manual: true });
+    }, [selectSubtitle]);
+    useSubtitleAutoSync({
+      mediaUrl: url,
+      fileName: filename,
+      title: mediaTitle ?? title,
+      year: year ?? null,
+      isLive: isHlsUrl2(url),
+      mediaKey: subtitleDelayMediaKey,
+      season,
+      episode,
+      getUserDelayState: () => ({
+        currentDelay: subDelayRef.current,
+        hasDrift: subDriftRef.current !== null,
+        inheritedDelay: inheritedSubDelayRef.current
+      }),
+      selected: subtitleOptions.find((o) => o.id === activeSubId) ?? null,
+      selectionToken: subtitleSelectionToken,
+      options: subtitleOptions,
+      firstFrameRendered: useMpv ? mpv.firstFrameRendered : hasStarted,
+      getPlayTime: () => realTimeRef.current,
+      applySynced: applySyncedSubtitle,
+      restoreOriginal: restoreOriginalSubtitle,
+      showNotice: showSyncNotice,
+      clearNotice: () => setSyncNotice(null),
+      onNoFit: (sub) => {
+        if (sub.source !== "embedded") setSyncNoFit({ subId: sub.id, lang: sub.lang3 });
+      },
+      setStatus: (st) => setSubtitleAutoSyncState(
+        st.type === "idle" ? { type: "idle" } : st.type === "analyzing" ? { type: "analyzing", message: st.message } : { type: st.type, message: st.message ?? "" }
+      ),
+      t
+    });
+    useEffect(() => {
+      setSyncNoFit(null);
+    }, [url]);
+    useEffect(() => {
+      if (!syncNoFit) return;
+      if (activeSubId !== syncNoFit.subId) {
+        setSyncNoFit(null);
+        return;
+      }
+      const wanted = toSubtitleLangGroup(syncNoFit.lang);
+      const own = wanted === "und" ? void 0 : embeddedSubtitleOptions.find((option) => toSubtitleLangGroup(option.language) === wanted);
+      if (!own) return;
+      setSyncNoFit(null);
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] no_fit \u2192 filens eget sp\xE5r ${own.id} (${own.lang3}${own.detectedLanguage ? ", uppt\xE4ckt" : ""})`)}`).catch(() => {
+      });
+      void selectSubtitle(own, { noAutoSync: true });
+      showSyncNotice({ message: t("subtitleAutoSyncSwappedEmbedded") });
+    }, [syncNoFit, activeSubId, embeddedSubtitleOptions, selectSubtitle, showSyncNotice, t]);
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
-      setSubtitleLoadError((current) => current === t("vpNoSubsFound") ? null : current);
+      setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
     }, [embeddedSubtitleOptions.length]);
     useEffect(() => {
       if (manualSubtitleOverrideRef.current) return;
@@ -23490,29 +30153,30 @@ ${cue.text}`).join("\n\n")}
       if (autoSubtitleSuppressedRef.current) return;
       if (getSubtitlesOffByDefault()) return;
       if (useMpv && !mpv.fileLoaded) return;
-      const preferredLanguages = [defaultSubtitleLang, fallbackSubtitleLang, ...getExtraSubtitleLanguages(), selectedLang].map((lang2) => normalizeLanguageCode(lang2)).filter((lang2, index, values) => Boolean(lang2) && values.indexOf(lang2) === index);
-      if (preferredLanguages.length === 0) return;
-      const preferredLanguage = subtitlePreferenceRef.current.mode === "language" ? normalizeLanguageCode(subtitlePreferenceRef.current.language) : null;
-      const orderedPreferredLanguages = preferredLanguage ? [preferredLanguage, ...preferredLanguages.filter((lang2) => lang2 !== preferredLanguage)] : preferredLanguages;
+      const orderedPreferredLanguages = orderAutoPickLanguages({
+        preference: subtitlePreferenceRef.current,
+        settingsLanguages: [defaultSubtitleLang, fallbackSubtitleLang, ...getExtraSubtitleLanguages(), selectedLang],
+        normalize: normalizeLanguageCode
+      });
+      if (orderedPreferredLanguages.length === 0) return;
       const blockWords = getTrackBlockWords();
-      const isBlocked = (subtitle) => {
-        if (blockWords.length === 0) return false;
-        const name = `${subtitle.label ?? ""} ${subtitle.language ?? ""}`.toLowerCase();
-        return blockWords.some((word) => name.includes(word));
-      };
-      const searchOrder = getPreferEmbeddedSubtitles() ? [
-        ...subtitleOptions.filter((subtitle) => subtitle.id.startsWith("embedded:")),
-        ...subtitleOptions.filter((subtitle) => !subtitle.id.startsWith("embedded:"))
-      ] : subtitleOptions;
-      const match = orderedPreferredLanguages.map((preferredLanguage2) => searchOrder.find((subtitle) => !isBlocked(subtitle) && (normalizeLanguageCode(subtitle.language) === preferredLanguage2 || subtitleOptionMatchesLanguage(subtitle, preferredLanguage2)))).find((subtitle) => Boolean(subtitle));
+      const match = pickAutoSubtitle({
+        options: subtitleOptions,
+        embeddedOptions: embeddedSubtitleOptions,
+        addonCount: subtitles.length,
+        languages: orderedPreferredLanguages,
+        // "Prefer embedded": container tracks are always in sync, so when the
+        // setting is on they get first shot at every preferred language.
+        preferEmbedded: getPreferEmbeddedSubtitles(),
+        isEmbedded: (subtitle) => subtitle.id.startsWith("embedded:"),
+        isBlocked: (subtitle) => blockWords.length > 0 && blockWords.some((word) => `${subtitle.label ?? ""} ${subtitle.language ?? ""}`.toLowerCase().includes(word)),
+        matchesLanguage: (subtitle, lang2) => normalizeLanguageCode(subtitle.language) === lang2 || subtitleOptionMatchesLanguage(subtitle, lang2)
+      });
       if (match && match.id !== activeSubId) {
         if (activeSubId != null && !getUpgradeSubtitleWhenBetter()) return;
+        if (activeSubId != null && syncedVttRef.current.get(activeSubId)?.url === url) return;
         void selectSubtitle(match);
-        return;
       }
-      const embeddedPreferred = subtitles.length === 0 ? orderedPreferredLanguages.map((lang2) => embeddedSubtitleOptions.find((option) => subtitleOptionMatchesLanguage(option, lang2))).find((option) => Boolean(option)) : null;
-      const embeddedFallback = embeddedPreferred ?? (subtitles.length === 0 ? embeddedSubtitleOptions[0] : null);
-      if (embeddedFallback && embeddedFallback.id !== activeSubId) void selectSubtitle(embeddedFallback);
     }, [subtitleOptions, selectedLang, fallbackSubtitleLang, subtitles.length, embeddedSubtitleOptions, useMpv, mpv.fileLoaded]);
     const subtitleSearchSettled = subtitleClientDebugInfo?.status === "ok" || subtitleClientDebugInfo?.status === "empty" || subtitleClientDebugInfo?.status === "error";
     useEffect(() => {
@@ -23552,8 +30216,14 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSubReapplyTokenRef.current) return;
       lastSubReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!activeSubId || activeSubId.startsWith("embedded:")) return;
-      const current = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
-      if (current) void selectSubtitle(current);
+      const current2 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
+      if (!current2) return;
+      const synced = syncedVttRef.current.get(current2.id);
+      if (synced && synced.url === url) {
+        void applySyncedSubtitleRef.current?.(current2, synced.vtt);
+        return;
+      }
+      void selectSubtitle(current2, { noAutoSync: true });
     }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const lastSecondaryReapplyTokenRef = useRef(0);
     useEffect(() => {
@@ -23561,8 +30231,8 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSecondaryReapplyTokenRef.current) return;
       lastSecondaryReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!secondarySubId) return;
-      const current = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
-      if (current) void selectSecondarySubtitle(current);
+      const current2 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
+      if (current2) void selectSecondarySubtitle(current2);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
@@ -23957,7 +30627,7 @@ ${cue.text}`).join("\n\n")}
           `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
-        setExternalSubtitles((current) => [option, ...current]);
+        setExternalSubtitles((current2) => [option, ...current2]);
         void selectSubtitle(option, { manual: true });
       } catch (error) {
         setSubtitleLoadError(
@@ -23971,60 +30641,6 @@ ${cue.text}`).join("\n\n")}
       (acc[_a = s.language] ?? (acc[_a] = [])).push(s);
       return acc;
     }, {});
-    const applyManualAnchor = useCallback(async (cue) => {
-      const tapTime = manualSyncTapTime;
-      if (tapTime == null) return;
-      setManualSyncBusy(true);
-      try {
-        const coarseDelay = Math.round((tapTime - cue.start) * 100) / 100;
-        let finalDelay = coarseDelay;
-        const activeAudioAid = useMpv ? activeAudioTrack ?? audioTracks.find((track) => track.index != null)?.index ?? null : null;
-        const audioTrackIndex = typeof activeAudioAid === "number" && activeAudioAid > 0 ? activeAudioAid - 1 : null;
-        const refined = await fetch("/api/subtitles/refine-offset", {
-          signal: AbortSignal.timeout(9e4),
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url,
-            anchorTime: tapTime,
-            coarseDelay,
-            audioTrackIndex,
-            cues: cues.map((entry) => ({ start: entry.start, end: entry.end, text: entry.text }))
-          })
-        }).catch(() => null);
-        if (refined?.ok) {
-          const data = await refined.json();
-          if (typeof data.refinedDelay === "number" && (data.score ?? 0) > 0.15) {
-            finalDelay = data.refinedDelay;
-          }
-        }
-        lastAutoSyncedDelayRef.current = subDelay;
-        if (manualSyncFirstAnchor && Math.abs(tapTime - manualSyncFirstAnchor.time) >= 180) {
-          const s1 = manualSyncFirstAnchor.cueStart;
-          const t1 = manualSyncFirstAnchor.time;
-          const slope = (cue.start - s1) / (tapTime - t1) - 1;
-          setSubDelay(Math.round((t1 - s1) * 10) / 10);
-          setSubDrift(Math.abs(slope) > 5e-4 ? { slope, anchor: t1 } : null);
-          setSubtitleAutoSyncState({
-            type: "done",
-            message: `${t("subtitleAnchorApplied")} ${t1 - s1 > 0 ? "+" : ""}${(t1 - s1).toFixed(1)}s \xB7 ${t("subtitleAnchorDrift")}`
-          });
-          setManualSyncFirstAnchor(null);
-        } else {
-          setSubDelay(finalDelay);
-          setSubDrift(null);
-          setManualSyncFirstAnchor({ time: tapTime, cueStart: cue.start });
-          setSubtitleAutoSyncState({
-            type: "done",
-            message: `${t("subtitleAnchorApplied")} ${finalDelay > 0 ? "+" : ""}${finalDelay.toFixed(1)}s`
-          });
-        }
-        setManualSyncOpen(false);
-        setManualSyncTapTime(null);
-      } finally {
-        setManualSyncBusy(false);
-      }
-    }, [activeAudioTrack, audioTracks, cues, manualSyncFirstAnchor, manualSyncTapTime, subDelay, t, url, useMpv]);
     const scanCastDevices = useCallback(async () => {
       setCastScanning(true);
       setCastError(null);
@@ -24197,20 +30813,35 @@ ${cue.text}`).join("\n\n")}
       }, 1e4);
       return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
-    const undoSubtitleAutoSync = useCallback(() => {
-      if (lastAutoSyncedDelayRef.current === null) return;
-      setSubDelay(lastAutoSyncedDelayRef.current);
-      setSubDrift(null);
-      lastAutoSyncedDelayRef.current = null;
-      setSubtitleAutoSyncState({ type: "idle" });
+    const dtIconButtonClass = playerIconButtonClass;
+    const dtLabelButtonClass = playerLabelButtonClass;
+    const [statusNowMs, setStatusNowMs] = useState(() => Date.now());
+    useEffect(() => {
+      const id = window.setInterval(() => setStatusNowMs(Date.now()), 15e3);
+      return () => window.clearInterval(id);
     }, []);
-    const dtIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-    const dtLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-    const dtStatusPillClass = "flex-none rounded-full border border-[rgb(var(--player-accent)/0.40)] px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--player-accent))]";
+    const statusClock = useMemo(
+      () => new Intl.DateTimeFormat(lang === "sv" ? "sv-SE" : "en-US", { hour: "numeric", minute: "2-digit" }),
+      [lang]
+    );
+    const statusParts = statusLineParts({
+      position: realTime,
+      duration: totalDuration,
+      speed: playbackSpeed,
+      nowMs: Math.max(statusNowMs, Date.now() - 15e3),
+      introLabel: mediaType === "tv" && introSegment ? introKind === "recap" ? t("recapFound") : t("introFound") : null,
+      outroLabel: mediaType === "tv" && outroSegment ? t("outroFound") : null,
+      endsTemplate: t("plEndsAt"),
+      formatClock: (ms2) => statusClock.format(ms2)
+    });
+    const renderStatusLine = (textClass) => statusParts.length === 0 ? null : /* @__PURE__ */ jsx("span", { className: `vp-status-line flex flex-none items-center gap-2 whitespace-nowrap font-medium text-white ${textClass}`, children: statusParts.map((part, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
+      index > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "h-[3px] w-[3px] flex-none rounded-full bg-white/80" }) : null,
+      /* @__PURE__ */ jsx("span", { children: part })
+    ] }, part)) });
     const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
     const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
     const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
-    const dtMenuRowClass = (active2) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active2 ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMenuRowClass = (active3) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active3 ? "text-aurora-300" : "text-slate-300"}`;
     const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
@@ -24228,9 +30859,597 @@ ${cue.text}`).join("\n\n")}
         }
       )
     ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label });
-    const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
+    const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more" || openSurface === "clip");
     const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
     const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
+    const chapterList = useMemo(() => buildChapterList({
+      fileChapters: mpvChapters && mpvChapters.url === url ? mpvChapters.list : null,
+      intro: introSegment,
+      introKind: introKind === "recap" ? "recap" : introSegment ? "intro" : null,
+      outro: outroSegment,
+      durationSec: totalDuration,
+      labels: {
+        main: mediaType === "tv" && season != null && episode != null ? `S${season} E${episode} \xB7 ${mediaTitle ?? title}` : mediaTitle ?? title,
+        intro: t("introFound"),
+        recap: t("recapFound"),
+        credits: t("plCreditsChapter"),
+        chapter: (n) => t("plChapterN").replace("{n}", String(n))
+      }
+    }), [mpvChapters, url, introSegment, introKind, outroSegment, totalDuration, mediaType, season, episode, mediaTitle, title, t]);
+    const chapterIndexNow = currentChapterIndex(chapterList, realTime);
+    const pendingClipRef = useRef(null);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const range = takePendingMomentRange(momentKey);
+      if (!range) return;
+      if (range.seconds > 0) seekToAbsolute(range.seconds);
+      if (range.endSeconds != null) pendingClipRef.current = { inSec: range.seconds, outSec: range.endSeconds };
+    }, [hasStarted, momentKey, seekToAbsolute]);
+    const saveMomentNow = () => {
+      if (!momentKey) {
+        showMomentNotice(t("plMomentUnavailable"));
+        return;
+      }
+      const result = addMoment(momentKey, realTime);
+      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+    };
+    const showClip = openSurface === "clip";
+    const [clip2, setClip] = useState(null);
+    const clipDispatch = useCallback((action) => setClip((s) => s ? clipReducer(s, action) : s), []);
+    const clipAnchorRef = useRef(0);
+    const clipRendererRef = useRef(null);
+    const clipHdrRef = useRef(false);
+    const clipRenderSeqRef = useRef(0);
+    const isMpvEngineRef = useRef(isMpvEngine);
+    isMpvEngineRef.current = isMpvEngine;
+    const [clipShareState, setClipShareState] = useState({ kind: "idle" });
+    const clipBusy = clipShareState.kind === "rendering" ? { kind: "rendering", progress: clipShareState.progress } : null;
+    const setClipBusy = (busy) => setClipShareState(busy ? { kind: "rendering", progress: busy.progress } : { kind: "idle" });
+    const clipWebFileRef = useRef(null);
+    const clipLoopGateRef = useRef({ armed: true });
+    const [clipPreview, setClipPreview] = useState(null);
+    const [ffmpegOk, setFfmpegOk] = useState(true);
+    useEffect(() => {
+      void fetch("/api/health").then((r) => r.json()).then((h) => setFfmpegOk(h.ffmpeg !== false)).catch(() => {
+      });
+    }, []);
+    const clipEngine = isMpvEngine ? "mpv" : useMpv ? "droid" : "none";
+    const clipAvailable = clipAvailableFor({ isTv, duration: totalDuration, live: isLiveStreamUrl(url), ffmpeg: ffmpegOk, engine: clipEngine });
+    const [clipLinkBase, setClipLinkBase] = useState(() => typeof window !== "undefined" && isShareableOrigin(window.location.origin) ? window.location.origin : null);
+    useEffect(() => {
+      if (!showClip || clipLinkBase) return;
+      void fetch("/api/lan-ip").then((r) => r.json()).then((lan) => {
+        if (lan?.ip) setClipLinkBase(`http://${lan.ip}:${window.location.port || "3011"}`);
+      }).catch(() => {
+      });
+    }, [showClip, clipLinkBase]);
+    const openClip = (range) => {
+      if (!clipAvailable) return;
+      clipAnchorRef.current = range ? range.inSec : realTime;
+      let next = initClipState({ anchorSec: realTime, duration: totalDuration, baseTitle: mediaTitle || title || "", ...range ?? {} });
+      if (!ffmpegOk && !isTv) next = clipReducer(next, { type: "setFormat", format: "still" });
+      clipLoopGateRef.current = { armed: true };
+      setClip(next);
+      setOpenSurface("clip");
+    };
+    const closeClip = () => {
+      clipRendererRef.current?.cancel();
+      setClipBusy(null);
+      setClip(null);
+      setClipPreview((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return null;
+      });
+      if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+      seekToAbsolute(clipAnchorRef.current);
+      if (isPlaying) togglePlay();
+      setOpenSurface((s) => s === "clip" ? null : s);
+    };
+    useEffect(() => {
+      const pending4 = pendingClipRef.current;
+      if (!pending4 || !clipAvailable) return;
+      pendingClipRef.current = null;
+      openClip(pending4);
+    }, [clipAvailable]);
+    useEffect(() => {
+      clipRendererRef.current?.cancel();
+      clipRenderSeqRef.current += 1;
+      clipWebFileRef.current = null;
+      setClipShareState({ kind: "idle" });
+    }, [clip2?.inSec, clip2?.outSec, clip2?.format]);
+    useEffect(() => () => {
+      clipRendererRef.current?.cancel();
+      if (isMpvEngineRef.current) void mpvCommand(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand(["set_property", "ab-loop-b", "no"]));
+    }, []);
+    const clipDocked = showClip && Boolean(clip2) && portraitChrome;
+    clipDockedRef.current = clipDocked;
+    useEffect(() => {
+      if (useMpv) scheduleBoundsResync();
+    }, [clipDocked, useMpv, scheduleBoundsResync]);
+    const [clipPhones, setClipPhones] = useState([]);
+    const [clipQrOpen, setClipQrOpen] = useState(false);
+    const [clipTvFocus, setClipTvFocus] = useState(null);
+    const [clipTvStill, setClipTvStill] = useState(null);
+    const clipKeyRepeatAtRef = useRef(0);
+    const showClipTv = showClip && Boolean(clip2) && isTv;
+    useEffect(() => {
+      if (!showClipTv) return;
+      let alive = true;
+      void fetchPhones().then((r) => {
+        if (alive) setClipPhones((r?.phones ?? []).filter((ph) => ph.live).map((ph) => ({ id: ph.id, name: ph.name })));
+      });
+      return () => {
+        alive = false;
+      };
+    }, [showClipTv]);
+    useEffect(() => {
+      if (!showClipTv) {
+        setClipQrOpen(false);
+        setClipTvStill(null);
+        return;
+      }
+      const id = window.setTimeout(() => document.querySelector('[data-clip-station="in"]')?.focus(), 60);
+      return () => window.clearTimeout(id);
+    }, [showClipTv]);
+    useEffect(() => {
+      if (!showClipTv) return;
+      const onFocus = () => {
+        const st = document.activeElement?.dataset?.clipStation;
+        setClipTvFocus(st === "in" || st === "out" ? st : null);
+      };
+      document.addEventListener("focusin", onFocus);
+      return () => document.removeEventListener("focusin", onFocus);
+    }, [showClipTv]);
+    useEffect(() => {
+      if (!showClipTv || !clip2 || clip2.scrubbing) return;
+      let alive = true;
+      const key = `clip-tv-${Math.round(clip2.inSec)}`;
+      const id = window.setTimeout(() => {
+        void Promise.resolve(np({ cmd: "captureFrame", path: `/api/player-frame?key=${key}` })).then(async () => {
+          for (let i = 0; i < 12 && alive; i++) {
+            await new Promise((r) => setTimeout(r, 200));
+            const res = await fetch(`/api/player-frame?key=${key}`, { method: "HEAD" }).catch(() => null);
+            if (res?.ok) {
+              if (alive) setClipTvStill(`/api/player-frame?key=${key}&v=${Date.now()}`);
+              return;
+            }
+          }
+        }).catch(() => {
+        });
+      }, 400);
+      return () => {
+        alive = false;
+        window.clearTimeout(id);
+      };
+    }, [showClipTv, clip2?.inSec, clip2?.scrubbing]);
+    const clipSendSource = showClipTv ? sendableSourceUrl(clipLinkBase, url, requestHeaders) : null;
+    const clipTvSend = async (phoneId) => {
+      if (!clip2) return;
+      const phone = clipPhones.find((ph) => ph.id === phoneId);
+      const base = clipLinkBase;
+      if (!base || !clipSendSource) {
+        clipToast("clipFailed");
+        return;
+      }
+      const link = tmdbId ? buildMomentLink(base, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : base;
+      const offer = buildClipOffer({
+        state: clip2,
+        tvName: describeThisDevice(isTv, isAndroidTauriEnv),
+        sourceUrl: clipSendSource,
+        sourceHeight: droid.stats?.height ?? null,
+        link,
+        now: Date.now()
+      });
+      const res = await fetch("/api/couch/push", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phoneId, kind: "clip", body: offer })
+      }).catch(() => null);
+      if (res?.ok) {
+        showMomentNotice(tClip("clipSentTo").replace("{phone}", phone?.name ?? "").replace("{len}", String(Math.round(clip2.outSec - clip2.inSec))));
+      } else if (res?.status === 404) {
+        clipToast("clipPhoneGone");
+        void fetchPhones().then((r) => setClipPhones((r?.phones ?? []).filter((ph) => ph.live).map((ph) => ({ id: ph.id, name: ph.name }))));
+      } else {
+        clipToast("clipFailed");
+      }
+    };
+    const onClipTvKeyDown = (event) => {
+      if (!clip2) return;
+      const target2 = event.target;
+      const station = clipQrOpen ? "qr" : target2.dataset.clipStation;
+      if (!station) return;
+      const group = Array.from(document.querySelectorAll(`[data-clip-station="${station}"]`));
+      const idx = group.indexOf(target2);
+      const now2 = Date.now();
+      const hold = noteKeyDown(event, now2);
+      if (!tvRepeatAllowed({ repeat: hold.repeat, lastAt: clipKeyRepeatAtRef.current, now: now2 })) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      clipKeyRepeatAtRef.current = now2;
+      const held2 = heldLongerThan(hold, 1e3);
+      const lengthAvailable = document.querySelector('[data-clip-station="length"]') !== null;
+      const action = tvClipKey({ station, key: event.key, held: held2, first: idx <= 0, lengthAvailable });
+      if (action.kind === "none") {
+        if (station === "qr" && event.key.startsWith("Arrow")) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      switch (action.kind) {
+        case "nudge":
+          clipDispatch({ type: "nudge", handle: action.handle, delta: action.delta });
+          break;
+        case "focus": {
+          const to = action.to === "next" ? group[idx + 1] : action.to === "prev" ? group[idx - 1] : document.querySelector(`[data-clip-station="${action.to}"]`);
+          to?.focus();
+          break;
+        }
+        case "activate":
+          target2.click();
+          break;
+        case "cancel":
+          closeClip();
+          window.requestAnimationFrame(() => {
+            const trigger = moreTriggerRef.current;
+            if (trigger && trigger.isConnected) trigger.focus();
+            else tvFocus?.focusInit(playerRootRef.current);
+          });
+          break;
+        case "close-qr":
+          setClipQrOpen(false);
+          window.requestAnimationFrame(() => document.querySelector('[data-clip-row="qr"]')?.focus());
+          break;
+      }
+    };
+    useEffect(() => {
+      if (!showClip && clip2) closeClip();
+    }, [showClip]);
+    useEffect(() => {
+      if (!clip2) return;
+      if (clip2.format === "still" && !clip2.scrubbing) {
+        if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+        seekToAbsolute(clip2.inSec);
+        if (isPlaying) togglePlay();
+        return;
+      }
+      if (clip2.scrubbing) {
+        if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+        seekToAbsolute(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec);
+        if (isPlaying) togglePlay();
+        const id = window.setTimeout(() => clipDispatch({ type: "scrubEnd" }), 900);
+        return () => window.clearTimeout(id);
+      }
+      if (isMpvEngine) {
+        void mpvCommand2(["set_property", "ab-loop-a", String(clip2.inSec)]).then(() => mpvCommand2(["set_property", "ab-loop-b", String(clip2.outSec)]));
+      }
+      seekToAbsolute(clip2.inSec);
+      if (!isPlaying) togglePlay();
+    }, [clip2?.inSec, clip2?.outSec, clip2?.scrubbing, clip2?.format]);
+    useEffect(() => {
+      if (!clip2 || isMpvEngine) return;
+      const back = shouldLoopBack(
+        { position: realTime, inSec: clip2.inSec, outSec: clip2.outSec, scrubbing: clip2.scrubbing, still: clip2.format === "still" },
+        clipLoopGateRef.current
+      );
+      if (back) seekToAbsolute(clip2.inSec);
+    }, [realTime, clip2, isMpvEngine, seekToAbsolute]);
+    useEffect(() => {
+      if (!showClip || !isMpvEngine) return;
+      void Promise.resolve(mpvCommand2(["get_property", "video-params/gamma"])).then((g) => {
+        clipHdrRef.current = g === "pq" || g === "hlg";
+      });
+    }, [showClip, isMpvEngine]);
+    useEffect(() => {
+      if (!clip2 || clip2.scrubbing || !isMpvEngine) return;
+      let cancelled = false;
+      const id = window.setTimeout(() => {
+        void captureFrameBlob("mpv", null).then((blob) => {
+          if (cancelled) return;
+          const next = URL.createObjectURL(blob);
+          setClipPreview((previous) => {
+            if (previous) URL.revokeObjectURL(previous);
+            return next;
+          });
+        }).catch(() => {
+        });
+      }, 250);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(id);
+      };
+    }, [clip2?.inSec, clip2?.scrubbing]);
+    const tClip = (key) => t(key);
+    const clipToast = (key) => showMomentNotice(tClip(key));
+    const isClipCancel = (error) => error instanceof Error && error.message === "avbruten";
+    const clipAudioPos = audioTracks.findIndex((track) => track.index === activeAudioTrack);
+    const clipAudioIndex = clipAudioPos >= 0 ? clipAudioPos : void 0;
+    const clipRenderInput = () => clip2 && (clip2.format !== "still" || clipEngine !== "mpv") ? { url, headers: requestHeaders, inSec: clip2.inSec, outSec: clip2.outSec, format: clip2.format, hdr: clipHdrRef.current, audioIndex: clipAudioIndex } : null;
+    const clipPreviewClip = (() => {
+      const input = clipRenderInput();
+      const done = input ? clipRendererRef.current?.peek(input) : null;
+      return input && done && input.format !== "still" ? { src: `/api/clip/${done.id}/file`, kind: input.format } : null;
+    })();
+    const renderClip = async () => {
+      const input = clipRenderInput();
+      if (!input) throw new Error("inget att rendera");
+      clipRendererRef.current ?? (clipRendererRef.current = new ClipRenderer());
+      const seq = ++clipRenderSeqRef.current;
+      setClipBusy({ kind: "rendering", progress: 0 });
+      try {
+        return await clipRendererRef.current.render(input, (progress2) => {
+          if (seq === clipRenderSeqRef.current) setClipBusy({ kind: "rendering", progress: progress2 });
+        });
+      } finally {
+        if (seq === clipRenderSeqRef.current) setClipBusy(null);
+      }
+    };
+    const clipCopy = () => {
+      if (!clip2) return;
+      if (clip2.format === "still") {
+        copyStillToClipboard(captureStill(clipEngine, videoRef.current)).then(() => clipToast("clipImageCopied"), () => clipToast("clipFailed"));
+        return;
+      }
+      if (!tmdbId || !clipLinkBase) {
+        clipToast("clipFailed");
+        return;
+      }
+      const link = buildMomentLink(clipLinkBase, {
+        mediaType: mediaType === "tv" ? "tv" : "movie",
+        tmdbId: String(tmdbId),
+        season: season ?? void 0,
+        episode: episode ?? void 0,
+        seconds: clip2.inSec,
+        endSeconds: clip2.outSec
+      });
+      void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
+    };
+    const clipCopyLink = () => {
+      if (!clip2) return;
+      if (!tmdbId || !clipLinkBase) {
+        clipToast("clipFailed");
+        return;
+      }
+      const link = buildMomentLink(clipLinkBase, {
+        mediaType: mediaType === "tv" ? "tv" : "movie",
+        tmdbId: String(tmdbId),
+        season: season ?? void 0,
+        episode: episode ?? void 0,
+        seconds: clip2.inSec,
+        endSeconds: clip2.format === "still" ? void 0 : clip2.outSec
+      });
+      void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
+    };
+    const clipSaveFile = async () => {
+      if (!clip2) return;
+      try {
+        if (clipEngine !== "mpv") {
+          const rendered2 = await renderClip();
+          const name = clipFileName(clip2.title, clipExt(clip2.format));
+          if (clipEngine === "droid") {
+            try {
+              await saveToGalleryAndroid(rendered2.path, clipMime(clip2.format), name);
+              clipToast("clipSavedPhotos");
+            } catch (error) {
+              if (!isAndroidVersionError(error)) throw error;
+              clipToast("clipSaveNeedsAndroid10");
+              await shareFileAndroid(rendered2.path, clipMime(clip2.format), clip2.title, name);
+            }
+          } else {
+            downloadClipFile(rendered2, name);
+          }
+          return;
+        }
+        if (clip2.format === "still") {
+          await saveStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"));
+          return;
+        }
+        const rendered = await renderClip();
+        if (await saveRenderedClip(rendered, clipFileName(clip2.title, clip2.format), clip2.format) === "saved") clipToast("clipSaved");
+      } catch (error) {
+        if (!isClipCancel(error)) clipToast("clipFailed");
+      }
+    };
+    const clipShare = async (anchor) => {
+      if (!clip2) return;
+      try {
+        if (clipEngine === "none") {
+          const ready = clipWebFileRef.current;
+          if (clipShareState.kind === "ready" && ready) {
+            const name2 = ready.name;
+            const result = await shareWebFile(ready);
+            if (result === "unsupported") {
+              const rendered2 = clipRenderInput() ? clipRendererRef.current?.peek(clipRenderInput()) : null;
+              if (rendered2) downloadClipFile(rendered2, name2);
+            }
+            clipWebFileRef.current = null;
+            setClipShareState({ kind: "idle" });
+            return;
+          }
+          const rendered = await renderClip();
+          const name = clipFileName(clip2.title, clipExt(clip2.format));
+          if (!canShareFiles(clipMime(clip2.format))) {
+            downloadClipFile(rendered, name);
+            return;
+          }
+          const seq = clipRenderSeqRef.current;
+          const file = await prepareWebShareFile(rendered, name, clipMime(clip2.format));
+          if (seq !== clipRenderSeqRef.current) return;
+          clipWebFileRef.current = file;
+          setClipShareState({ kind: "ready" });
+          return;
+        }
+        if (clipEngine === "droid") {
+          const rendered = await renderClip();
+          await shareFileAndroid(rendered.path, clipMime(clip2.format), clip2.title, clipFileName(clip2.title, clipExt(clip2.format)));
+          return;
+        }
+        if (clip2.format === "still") {
+          await shareStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"), anchor);
+          return;
+        }
+        await shareRenderedClip(await renderClip(), clipFileName(clip2.title, clip2.format), anchor, clip2.format);
+      } catch (error) {
+        if (!isClipCancel(error)) clipToast("clipFailed");
+      }
+    };
+    const clipSaveMoment = () => {
+      if (!clip2 || !momentKey) {
+        showMomentNotice(t("plMomentUnavailable"));
+        return;
+      }
+      const result = addMoment(momentKey, clip2.inSec);
+      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+    };
+    const gearChevron = /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: "h-4 w-4 flex-none text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) });
+    const gearValue = (value) => value ? /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: value }) : null;
+    const gearNavRow = (icon, label, value, page) => /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setGearPage(page), className: dtMoreRowClass, children: [
+      gearRowIcon(icon, dtMoreIconClass),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: label }),
+      gearValue(value),
+      gearChevron
+    ] }, page);
+    const gearToggleRow = (key, icon, label, on, toggle) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, ...dtStation, onClick: toggle, className: dtMoreRowClass, children: [
+      gearRowIcon(icon, dtMoreIconClass),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: label }),
+      /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
+    ] }, key);
+    const gearSubHeader = (label, value) => /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setGearPage("root"), className: `${dtMoreRowClass} mb-1 border-b border-white/[0.08]`, children: [
+      /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M19 12H5M11 6l-6 6 6 6" }) }),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left font-semibold ${dtMoreTextClass}`, children: label }),
+      gearValue(value)
+    ] });
+    const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
+    const nightLabel = (mode) => t(mode === "off" ? "nightModeOff" : mode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong");
+    const applySpeed = (next) => {
+      setPlaybackSpeedState(next);
+      savePlaybackSpeed(mediaType, tmdbId ?? null, next);
+      mpv.setSpeed(next);
+    };
+    const renderGearRoot = () => /* @__PURE__ */ jsxs(Fragment2, { children: [
+      isTv && clipAvailable && !showsControl("clip") ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => {
+        setShowMoreMenu(false);
+        openClip();
+      }, className: dtMoreRowClass, children: [
+        playerIcon("clip", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("clipTitle") })
+      ] }, "clip") : null,
+      gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
+      gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
+      gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
+      gearNavRow("sleep", t("plSleepTimer"), sleepModeLabel(sleepTimer.mode), "sleep"),
+      isMpvEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
+      mediaType === "tv" ? gearToggleRow("skip", "skip", t("plGearSkipIntros"), autoSkipIntro, () => {
+        const next = !autoSkipIntro;
+        setAutoSkipIntro(next);
+        setAutoSkipIntroState(next);
+      }) : null,
+      playerBarcode.stripToggle ? gearToggleRow(
+        "barcode",
+        "barcode",
+        t("barcodeStripControl"),
+        getBarcodeSettings().showStripInPlayer,
+        () => setBarcodeSettings({ showStripInPlayer: !getBarcodeSettings().showStripInPlayer })
+      ) : null
+    ] });
+    const renderGearSubPage = () => {
+      switch (gearPage) {
+        case "speed":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed)),
+            gearOptions(PLAYBACK_SPEED_OPTIONS, playbackSpeed, speedLabel, applySpeed)
+          ] });
+        case "aspect":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("aspectRatio"), aspectLabel),
+            gearOptions(["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"], aspectRatioMode, (mode) => getAspectRatioLabel(mode, t), setAspectRatioMode)
+          ] });
+        case "zoom":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("cropZoom"), cropZoomLabel),
+            gearOptions(["off", "crop", "zoom", "zoom_plus"], cropZoomMode, (mode) => getCropZoomLabel(mode, t), setCropZoomMode)
+          ] });
+        case "sleep":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("plSleepTimer"), sleepModeLabel(sleepTimer.mode)),
+            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
+          ] });
+        case "night":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("nightModeMenuLabel"), nightLabel(nightMode)),
+            gearOptions(["off", "mild", "strong"], nightMode, nightLabel, setNightMode)
+          ] });
+        default:
+          return null;
+      }
+    };
+    const renderMomentsPanel = () => /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: saveMomentNow, className: dtMoreRowClass, children: [
+        gearRowIcon("moments", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentKeep") }),
+        !isTv ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded border border-white/15 px-1.5 text-[11px] uppercase text-slate-400", children: getShortcutKey("saveMoment") }) : null
+      ] }),
+      moments.length === 0 ? /* @__PURE__ */ jsx("p", { className: "px-3 py-2 text-[13px] text-slate-500", children: t("plMomentsEmpty") }) : moments.map((sekund) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            ...dtStation,
+            onClick: () => {
+              seekToAbsolute(sekund);
+              setShowMomentsMenu(false);
+            },
+            className: `${dtMenuRowClass(false)} flex-1`,
+            children: [
+              /* @__PURE__ */ jsx("span", { className: "tabular-nums", children: fmt(sekund) }),
+              /* @__PURE__ */ jsx("span", { className: "text-[13px] text-slate-400", children: t("plMomentJump") })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            ...dtStation,
+            onClick: () => {
+              if (momentKey) removeMoment(momentKey, sekund);
+            },
+            title: t("plMomentRemove"),
+            "aria-label": `${t("plMomentRemove")} ${fmt(sekund)}`,
+            className: "flex h-8 w-8 flex-none items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/10 hover:text-white",
+            children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+          }
+        )
+      ] }, sekund)),
+      moments.length > 0 ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => {
+        if (momentKey) clearMoments(momentKey);
+      }, className: dtMoreRowClass, children: [
+        /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentsClear") })
+      ] }) : null
+    ] });
+    const gearOptions = (options, current2, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        ...dtStation,
+        onClick: () => {
+          pick2(option);
+          setGearPage("root");
+        },
+        className: dtMenuRowClass(option === current2),
+        children: [
+          /* @__PURE__ */ jsx("span", { children: label(option) }),
+          option === current2 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+        ]
+      },
+      String(option)
+    ));
     const activeSubLangCode = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null)?.toUpperCase() ?? "CC" : "CC";
     const activeAudioLangCode = toAudioLangGroup(
       (audioTracks.find((track) => track.index === activeAudioTrack) ?? audioTracks[0])?.language
@@ -24271,7 +31490,7 @@ ${cue.text}`).join("\n\n")}
     const introZone = trackZone(introSegment);
     const outroZone = trackZone(outroSegment);
     const playerIcon = (id, cls) => playerControlIcon(id, cls);
-    const downloadIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+    const downloadIcon2 = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
       /* @__PURE__ */ jsx("path", { d: "M12 3v12" }),
       /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5" }),
       /* @__PURE__ */ jsx("path", { d: "M5 21h14" })
@@ -24357,10 +31576,7 @@ ${cue.text}`).join("\n\n")}
       /* Rena statusetiketter: de säger ATT segmentet hittats. Åtgärden ligger i
          "Hoppa över intro"-pillret, och "hittades inte" utgår helt — det var en
          rad som aldrig hade något att erbjuda. */
-      segmentBadges: mediaType === "tv" && (introSegment || outroSegment) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
-        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
-      ] }) : null,
+      segmentBadges: renderStatusLine("text-[13px]"),
       subtitles: /* @__PURE__ */ jsxs(
         "button",
         {
@@ -24471,6 +31687,18 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
+      clip: clipAvailable ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          onClick: () => showClip ? closeClip() : openClip(),
+          title: t("clipTitle"),
+          "aria-label": t("clipTitle"),
+          className: dtIconButtonClass(showClip ? "open" : "idle"),
+          children: playerIcon("clip", "h-[19px] w-[19px]")
+        }
+      ) : null,
       sleepTimer: /* @__PURE__ */ jsx(
         "button",
         {
@@ -24511,7 +31739,33 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("barcodeStrip", "h-[19px] w-[19px]")
         }
       ) : null,
-      tuning: /* @__PURE__ */ jsx(
+      chapters: chapterList.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: chaptersTriggerRef,
+          onClick: () => setShowChaptersMenu((v) => !v),
+          title: t("plChapters"),
+          "aria-label": t("plChapters"),
+          className: dtIconButtonClass(showChaptersMenu ? "open" : "idle"),
+          children: playerIcon("chapters", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      moments: momentKey ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: momentsTriggerRef,
+          onClick: () => setShowMomentsMenu((v) => !v),
+          title: t("plMoments"),
+          "aria-label": t("plMoments"),
+          className: dtIconButtonClass(showMomentsMenu ? "open" : moments.length > 0 ? "active" : "idle"),
+          children: playerIcon("moments", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      tuning: /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
@@ -24520,8 +31774,11 @@ ${cue.text}`).join("\n\n")}
           onClick: () => setShowTuningPanel((v) => !v),
           title: t("vtTitle"),
           "aria-label": t("vtTitle"),
-          className: dtIconButtonClass(showTuningPanel ? "open" : "idle"),
-          children: playerIcon("tuning", "h-[19px] w-[19px]")
+          className: `relative ${dtIconButtonClass(showTuningPanel ? "open" : "idle")}`,
+          children: [
+            playerIcon("tuning", "h-[19px] w-[19px]"),
+            tuningActive ? /* @__PURE__ */ jsx("span", { "data-tuning-active": "", "aria-hidden": true, className: "absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent-400" }) : null
+          ]
         }
       ),
       more: /* @__PURE__ */ jsx(
@@ -24531,8 +31788,8 @@ ${cue.text}`).join("\n\n")}
           type: "button",
           ...dtStation,
           onClick: () => setShowMoreMenu((value) => !value),
-          title: t("moreActions"),
-          "aria-label": t("moreActions"),
+          title: t("plGearTitle"),
+          "aria-label": t("plGearTitle"),
           className: dtIconButtonClass(showMoreMenu ? "open" : "idle"),
           children: playerIcon("more", "h-[19px] w-[19px]")
         }
@@ -24550,15 +31807,6 @@ ${cue.text}`).join("\n\n")}
         }
       ) : null
     };
-    const DESKTOP_ZONES = {
-      left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"]],
-      center: [["segmentBadges"]],
-      right: [
-        ["subtitles", "audioTrack", "aspect", "cropZoom"],
-        ["wiki", "soundtrack", "cast"],
-        ["tuning", "barcodeStrip", "sleepTimer", "companions", "more", "fullscreen"]
-      ]
-    };
     const renderDesktopZone = (groups) => {
       const filled = groups.map((group) => group.filter((id) => showsControl(id) && Boolean(desktopControls[id])).sort((a, b) => playerLayout.order.indexOf(a) - playerLayout.order.indexOf(b))).filter((group) => group.length > 0);
       return filled.map((group, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
@@ -24570,14 +31818,11 @@ ${cue.text}`).join("\n\n")}
     const seekHeightClass = seekLook.heightClass;
     const seekFillColorClass = seekLook.fillClass;
     const seekFillStyleClass = seekLook.overlayClass;
-    const tvSeekHoldStartedAtRef = useRef(0);
     const handleTvSeekKey = (event) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         event.stopPropagation();
-        if (!event.repeat) tvSeekHoldStartedAtRef.current = Date.now();
-        const held = event.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
-        const step = held ? 60 : 10;
+        const step = tvSeekStepSeconds(noteKeyDown(event));
         seek(event.key === "ArrowLeft" ? -step : step);
         return;
       }
@@ -24622,6 +31867,142 @@ ${cue.text}`).join("\n\n")}
       onMouseActivityRef.current();
     };
     useEffect(() => onMediaKey((action) => mediaKeyRef.current(action)), []);
+    const saidBufferRef = useRef([]);
+    const saidText = isMpvEngine ? mpv.subText : rawSubtitleText;
+    useEffect(() => {
+      const text = (saidText ?? "").trim();
+      if (!text) return;
+      const now2 = realTimeRef.current;
+      saidBufferRef.current = pushCue(saidBufferRef.current, { text, start: now2 }, now2);
+    }, [saidText]);
+    const couchRef = useRef({ snapshot: () => null, run: () => {
+    }, said: () => [] });
+    couchRef.current = {
+      said: () => {
+        const now2 = realTimeRef.current;
+        return saidBufferRef.current.filter((c) => c.start >= now2 - 30 && c.start <= now2 + 1);
+      },
+      snapshot: () => {
+        const epTitle = episodes?.items.find((e) => e.number === episodes.current)?.title;
+        return {
+          kind: mediaType === "tv" ? "episode" : "movie",
+          tmdbId: tmdbId ?? null,
+          title,
+          season,
+          episode,
+          episodeTitle: epTitle,
+          posterUrl: posterUrl ?? null,
+          backdropUrl: backdropUrl ?? null,
+          pos: Math.max(0, realTimeRef.current),
+          dur: totalDuration,
+          playing: isPlaying,
+          volume: couchVolume(volume, muted),
+          audio: audioTracks.map((t2) => ({ id: t2.index, ...audioLabel(t2) })),
+          audioId: activeAudioTrack,
+          subs: subtitleOptions.map((s) => ({ id: s.id, label: s.label || s.language })),
+          subId: activeSubId,
+          // ExoPlayer kan inte förskjuta inbäddad undertext: telefonen döljer Synk vid null.
+          subDelay: isDroidEngine && activeSubId?.startsWith("embedded:") ? null : subDelay,
+          dialogBoost: isMpvEngine ? nightMode !== "off" : null,
+          introUntil: activeIntro ? activeIntro.endMs / 1e3 : void 0,
+          creditsAt: outroSegment ? outroSegment.startMs / 1e3 : void 0,
+          nextEpisode: nextEpisodeOf(episodes),
+          episodes: episodes ? { season: episodes.seasonNumber, items: episodes.items.map((e) => ({ number: e.number, title: e.title, stillUrl: e.stillUrl, runtimeMinutes: e.runtimeMinutes, watched: e.watched })), current: episodes.current } : void 0,
+          streams: selectableStreams(streams?.items ?? []).map(describeStream),
+          streamKey: streams?.currentUrl ?? null,
+          sleep: couchSleep(sleepTimer, Date.now(), realTimeRef.current, totalDuration)
+        };
+      },
+      run: async (cmd) => {
+        const runCouchCommand = async () => {
+          switch (cmd.type) {
+            case "toggle-play":
+              togglePlay();
+              return;
+            case "seek":
+              seekToAbsolute(cmd.to);
+              return;
+            case "seek-rel":
+              seek(cmd.by);
+              return;
+            case "volume":
+              applyVolume(cmd.value / 100);
+              return;
+            case "audio": {
+              const t2 = audioTracks.find((a) => a.index === cmd.audioId);
+              if (!t2) throw new Error("unknown-audio");
+              switchAudioTrack(t2);
+              return;
+            }
+            case "sub": {
+              if (cmd.subId == null) {
+                await selectSubtitle(null, { manual: true });
+                return;
+              }
+              const s = subtitleOptions.find((o) => o.id === cmd.subId);
+              if (!s) throw new Error("unknown-sub");
+              await selectSubtitle(s, { manual: true });
+              return;
+            }
+            case "sub-delay":
+              setSubDelay(Math.max(-180, Math.min(180, Math.round(cmd.value * 10) / 10)));
+              return;
+            case "dialog-boost":
+              if (!isMpvEngine) throw new Error("unsupported");
+              setNightMode(cmd.on ? "mild" : "off");
+              return;
+            case "stream": {
+              const s = streams?.items.find((x) => streamKey(x) === cmd.key);
+              if (!s || !streams) throw new Error("unknown-stream");
+              streams.onSelect(s, streamSwitchPosition());
+              return;
+            }
+            case "episode": {
+              if (!episodes || cmd.season !== episodes.seasonNumber) throw new Error("season-unavailable");
+              episodes.onSelect(cmd.episode);
+              return;
+            }
+            case "next-episode": {
+              const next = nextEpisodeOf(episodes);
+              if (!next || !episodes) throw new Error("no-next");
+              episodes.onSelect(next.episode);
+              return;
+            }
+            case "skip-intro":
+              if (activeIntro) seekToAbsolute(activeIntro.endMs / 1e3);
+              return;
+            case "sleep":
+              setSleepTimer(sleepStateFor(cmd.mode, Date.now()));
+              return;
+            default:
+              throw new Error("unsupported");
+          }
+        };
+        await runCouchCommand();
+        notifyCouchState();
+      }
+    };
+    useEffect(() => registerCouchPlayer({
+      snapshot: () => couchRef.current.snapshot(),
+      run: (cmd) => couchRef.current.run(cmd),
+      said: () => couchRef.current.said()
+    }), []);
+    useEffect(() => {
+      notifyCouchState();
+    }, [isPlaying, title, season, episode, totalDuration, volume, muted, activeAudioTrack, audioTracks.length, activeSubId, subtitleOptions.length, subDelay, nightMode, Boolean(activeIntro), outroSegment, streams?.currentUrl, streams?.items.length, sleepTimer, episodes?.current]);
+    const couchPosRef = useRef(null);
+    useEffect(() => {
+      const now2 = Date.now();
+      const last2 = couchPosRef.current;
+      if (!last2 || last2.playing !== isPlaying) {
+        couchPosRef.current = { pos: realTime, at: now2, playing: isPlaying };
+        return;
+      }
+      if (positionJumped(last2, realTime, now2, isPlaying)) {
+        couchPosRef.current = { pos: realTime, at: now2, playing: isPlaying };
+        notifyCouchState();
+      }
+    }, [realTime, isPlaying]);
     const tvSeekStation = isTv ? {
       "data-f": "1",
       "data-init": "1",
@@ -24664,6 +32045,15 @@ ${cue.text}`).join("\n\n")}
               style: { left: `${outroZone.left}%`, width: `${outroZone.width}%` }
             }
           ) : null,
+          totalDuration > 0 ? moments.map((sekund) => /* @__PURE__ */ jsx(
+            "div",
+            {
+              "aria-hidden": true,
+              className: "pointer-events-none absolute -bottom-[4px] -top-[4px] w-[2px] -translate-x-1/2 rounded-full bg-white shadow-[0_0_4px_rgba(0,0,0,0.6)]",
+              style: { left: `${Math.min(100, sekund / totalDuration * 100)}%` }
+            },
+            `moment-${sekund}`
+          )) : null,
           scrubPercent !== null && totalDuration > 0 ? (() => {
             const thumb = scrubPreview && scrubPreview.intervalMs > 0 && scrubPreview.tileWidth > 0 && scrubPreview.tileHeight > 0 ? (() => {
               const perTile = scrubPreview.tileWidth * scrubPreview.tileHeight;
@@ -24763,6 +32153,7 @@ ${cue.text}`).join("\n\n")}
     };
     const onGesturePointerDown = (event) => {
       if (!phoneChrome || event.pointerType === "mouse") return;
+      if (gestureBlockedBySurface(openSurfaceRef.current)) return;
       const rect = event.currentTarget.getBoundingClientRect();
       activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (activePointersRef.current.size === 2) {
@@ -24826,8 +32217,8 @@ ${cue.text}`).join("\n\n")}
         if (!pinch.handled && (ratio > 1.25 || ratio < 0.8)) {
           pinch.handled = true;
           const modes = ASPECT_RATIO_MODES;
-          const current = modes.indexOf(aspectRatioMode);
-          const next2 = modes[(current + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
+          const current2 = modes.indexOf(aspectRatioMode);
+          const next2 = modes[(current2 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
           setAspectRatioMode(next2);
           showGestureHud("aspect", 0, getAspectRatioLabel(next2, t));
         }
@@ -24955,10 +32346,32 @@ ${cue.text}`).join("\n\n")}
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
+        value: tuningActive ? t("vtActive") : void 0,
         state: showTuningPanel ? "open" : "idle",
         onClick: () => setShowTuningPanel((open2) => !open2),
         triggerRef: tuningTriggerRef
       },
+      moments: momentKey ? {
+        label: t("plMoments"),
+        title: t("plMoments"),
+        value: moments.length > 0 ? String(moments.length) : void 0,
+        state: showMomentsMenu ? "open" : moments.length > 0 ? "active" : "idle",
+        onClick: () => setShowMomentsMenu((open2) => !open2),
+        triggerRef: momentsTriggerRef
+      } : void 0,
+      clip: clipAvailable ? {
+        label: t("clipTitle"),
+        title: t("clipTitle"),
+        state: showClip ? "open" : "idle",
+        onClick: () => showClip ? closeClip() : openClip()
+      } : void 0,
+      chapters: chapterList.length > 0 ? {
+        label: t("plChapters"),
+        title: t("plChapters"),
+        state: showChaptersMenu ? "open" : "idle",
+        onClick: () => setShowChaptersMenu((open2) => !open2),
+        triggerRef: chaptersTriggerRef
+      } : void 0,
       wiki: wikiTmdbId || resolvedImdbId ? {
         label: t("plShortWiki"),
         title: t("info"),
@@ -24987,6 +32400,14 @@ ${cue.text}`).join("\n\n")}
         onClick: () => setShowAspectMenu((open2) => !open2),
         triggerRef: aspectTriggerRef
       },
+      pip: pipEligible && pipAvailable ? {
+        label: t("plShortPip"),
+        title: t("plPip"),
+        state: pipMode ? "active" : "idle",
+        onClick: () => {
+          void enterPip(pipVideoEl);
+        }
+      } : void 0,
       cast: !isClientSession() ? {
         label: t("plShortCast"),
         title: t("castTitle"),
@@ -25016,10 +32437,10 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen", "sleepTimer", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect", "sleepTimer", "companions"];
-    const LANDSCAPE_ROW_BUDGET = 6;
-    const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
-    const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
+    const phoneSurface = landscapeChrome ? "landscape" : "portrait";
+    const phoneRowOrder = PHONE_ROW_ORDER[phoneSurface];
+    const phoneDedicatedIds = PHONE_DEDICATED_IDS[phoneSurface];
+    const phoneRowCandidates = phoneRowOrder.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
     const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
     const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
     const phoneClusterIds = phoneDedicatedIds.filter((id) => showsControl(id) && Boolean(phoneControls[id]));
@@ -25092,7 +32513,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) return null;
       const downloading = downloadState.type === "downloading";
       const busy = downloadState.type === "picking-folder";
-      const active2 = downloadLabel !== null;
+      const active3 = downloadLabel !== null;
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -25103,20 +32524,17 @@ ${cue.text}`).join("\n\n")}
           disabled: busy,
           title: downloading ? t("cancel") : t("downloadThisVideo"),
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
-          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active2 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active3 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
-            downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
+            downloadIcon2(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
           ]
         }
       );
     };
     const renderSegmentPills = () => {
-      if (mediaType !== "tv" || !showsControl("segmentBadges") || !introSegment && !outroSegment) return null;
-      return /* @__PURE__ */ jsxs(Fragment2, { children: [
-        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
-        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
-      ] });
+      if (!showsControl("segmentBadges")) return null;
+      return renderStatusLine("text-[12px]");
     };
     const renderPhoneClock = (bigClass, smallClass) => {
       if (!showsControl("time")) return null;
@@ -25223,52 +32641,57 @@ ${cue.text}`).join("\n\n")}
                   // för att kapa den.
                   background: "linear-gradient(0deg,transparent 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.85) 100%)",
                   opacity: controlsVisible ? 1 : 0,
-                  pointerEvents: controlsVisible ? "auto" : "none"
+                  pointerEvents: controlsVisible ? "auto" : "none",
+                  // Klippets sidopanel tar 340 px till höger.
+                  right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0
                 },
                 children: [
                   isDesktopTauriEnv ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
                   /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-2.5", children: [
                     /* @__PURE__ */ jsx("span", { className: "truncate text-sm font-medium text-slate-100", children: headerTitle }),
-                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
+                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
                     showsControl("audioOutput") ? /* @__PURE__ */ jsx(
                       "span",
                       {
                         title: t("currentAudioOutput"),
-                        className: "flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
+                        className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
                         children: audioIndicator
                       }
                     ) : null
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
                     /* @__PURE__ */ jsx(BingeModeChip, {}),
-                    /* @__PURE__ */ jsxs(
-                      "button",
-                      {
-                        type: "button",
-                        ...dtStation,
-                        onClick: () => {
-                          void handleCopyStreamLink();
-                        },
-                        className: "flex items-center gap-[7px] rounded-lg border border-[rgb(var(--player-accent)/0.40)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--player-accent))] transition hover:bg-[rgb(var(--player-accent)/0.14)]",
-                        children: [
-                          /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                            /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
-                            /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
-                          ] }),
-                          copiedLink ? t("copied") : t("copyLink")
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsx(
-                      "button",
-                      {
-                        type: "button",
-                        ...dtStation,
-                        onClick: handleClose,
-                        className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
-                        children: t("close")
-                      }
-                    )
+                    showClip && clip2 && isTv ? /* @__PURE__ */ jsx("span", { className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-black/60 px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-white", children: clip2.scrubbing ? tClip("clipFrame").replace("{time}", formatClipTime(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec)) : tClip("clipLoopChip").replace("{len}", String(Math.round(clip2.outSec - clip2.inSec))) }) : null,
+                    showClip ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                      isTv ? null : /* @__PURE__ */ jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          ...dtStation,
+                          onClick: () => {
+                            void handleCopyStreamLink();
+                          },
+                          className: "flex items-center gap-[7px] rounded-lg border border-[rgb(var(--player-accent)/0.40)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--player-accent))] transition hover:bg-[rgb(var(--player-accent)/0.14)]",
+                          children: [
+                            /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                              /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
+                              /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
+                            ] }),
+                            copiedLink ? t("copied") : t("copyLink")
+                          ]
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          ...dtStation,
+                          onClick: handleClose,
+                          className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
+                          children: t("close")
+                        }
+                      )
+                    ] })
                   ] })
                 ]
               }
@@ -25296,7 +32719,15 @@ ${cue.text}`).join("\n\n")}
                 },
                 children: [
                   /* @__PURE__ */ jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-medium text-slate-100", children: headerTitle }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
+                  /* @__PURE__ */ jsx("div", { className: "flex flex-none items-center gap-2", children: showClip ? /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: closeClip,
+                      className: "rounded-full border border-white/[0.14] px-3 py-[7px] text-[11px] font-medium text-slate-300",
+                      children: t("clipCancel")
+                    }
+                  ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
                     renderPhoneDownload("flat"),
                     /* @__PURE__ */ jsx(
                       "button",
@@ -25318,7 +32749,7 @@ ${cue.text}`).join("\n\n")}
                         children: t("close")
                       }
                     )
-                  ] })
+                  ] }) })
                 ]
               }
             )
@@ -25447,7 +32878,13 @@ ${cue.text}`).join("\n\n")}
                     autoPlay: true,
                     playsInline: true,
                     className: "block",
-                    style: { ...videoPresentation.videoStyle, ...cropZoomVideoStyle, filter: tuningToCssFilter(effectiveVideoTuning) || void 0 },
+                    style: {
+                      ...videoPresentation.videoStyle,
+                      ...cropZoomVideoStyle,
+                      filter: tuningToCssFilter(effectiveVideoTuning) || void 0,
+                      // Klippet i stående läge: samma dockade ruta som Android-ytan.
+                      ...clipDocked ? { position: "fixed", left: 0, top: `calc(56px + ${PHONE_TOP_INSET})`, width: "100vw", height: "56.25vw", objectFit: "contain", transform: "none" } : {}
+                    },
                     ...{ "x-webkit-airplay": "allow" },
                     onLoadedMetadata: () => {
                       if (!hasStarted) void attemptHtml5Start(false);
@@ -25669,6 +33106,7 @@ ${cue.text}`).join("\n\n")}
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
                       // Liggande: designens -60 % lyfter klustret ur seekradens väg.
                       transform: landscapeChrome ? "translateY(-60%)" : void 0,
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0,
                       // Stående: centrerad på VIDEON, inte i ytan mellan listen och
                       // kontrollerna. Bilden är brevlådad och ligger mitt i
                       // videoytan — designens "centrerad över videon" är alltså
@@ -25677,7 +33115,7 @@ ${cue.text}`).join("\n\n")}
                       top: portraitChrome ? "50%" : void 0
                     },
                     children: [
-                      showsControl("seekBack") ? /* @__PURE__ */ jsx(
+                      showsControl("seekBack") && !showClip ? /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
@@ -25699,7 +33137,7 @@ ${cue.text}`).join("\n\n")}
                           children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-[30px] w-[30px]" : landscapeChrome ? "h-[26px] w-[26px]" : "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-8 w-8" : landscapeChrome ? "h-7 w-7" : "h-[22px] w-[22px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) })
                         }
                       ),
-                      showsControl("seekForward") ? /* @__PURE__ */ jsx(
+                      showsControl("seekForward") && !showClip ? /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
@@ -25731,7 +33169,9 @@ ${cue.text}`).join("\n\n")}
                       /* I landskap sitter urklippet i SIDAN, inte i toppen — annars
                          hamnar bakåtpilen och nedladdningen under det. */
                       marginLeft: PHONE_LEFT_INSET,
-                      marginRight: PHONE_RIGHT_INSET
+                      marginRight: PHONE_RIGHT_INSET,
+                      // Klippets panel tar 340 px till höger.
+                      right: showClip ? "calc(340px + 26px)" : void 0
                     },
                     children: [
                       /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
@@ -25769,81 +33209,6 @@ ${cue.text}`).join("\n\n")}
                     children: t("pressToStart")
                   }
                 ) }),
-                manualSyncOpen && /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "absolute inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-6 backdrop-blur-sm",
-                    onClick: () => {
-                      setManualSyncOpen(false);
-                      setManualSyncTapTime(null);
-                    },
-                    children: /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        className: "mb-24 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 shadow-2xl",
-                        onClick: (event) => event.stopPropagation(),
-                        children: manualSyncTapTime === null ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: t("subtitleManualSyncTapPrompt") }),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              autoFocus: true,
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => setManualSyncTapTime(realTimeRef.current),
-                              className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
-                              children: t("subtitleManualSyncTapButton")
-                            }
-                          ),
-                          /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] text-slate-500", children: t("subtitleManualSyncSecondHint") })
-                        ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
-                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: manualSyncBusy ? t("subtitleManualSyncApplying") : t("subtitleManualSyncPickPrompt") }),
-                          manualSyncBusy && /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3", children: [
-                            /* @__PURE__ */ jsx("span", { className: "h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white/80" }),
-                            /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-300", children: t("subtitleManualSyncRefining") })
-                          ] }),
-                          /* @__PURE__ */ jsx("div", { className: `mt-3 max-h-64 space-y-1 overflow-y-auto ${manualSyncBusy ? "pointer-events-none opacity-40" : ""}`, children: (() => {
-                            const near = cues.filter((cue) => Math.abs(cue.start - manualSyncTapTime) <= 120).sort((a, b) => Math.abs(a.start - manualSyncTapTime) - Math.abs(b.start - manualSyncTapTime)).slice(0, 40).sort((a, b) => a.start - b.start);
-                            if (near.length === 0) {
-                              return /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("subtitleManualSyncNoCues") });
-                            }
-                            return near.map((cue) => /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                "data-f": isTv ? "1" : void 0,
-                                disabled: manualSyncBusy,
-                                onClick: () => {
-                                  void applyManualAnchor(cue);
-                                },
-                                className: "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50",
-                                children: [
-                                  /* @__PURE__ */ jsxs("span", { className: "shrink-0 font-mono text-[11px] text-slate-500", children: [
-                                    Math.floor(cue.start / 60),
-                                    ":",
-                                    String(Math.floor(cue.start % 60)).padStart(2, "0")
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: cue.text.replace(/\n/g, " ") })
-                                ]
-                              },
-                              `${cue.start}-${cue.text.slice(0, 12)}`
-                            ));
-                          })() }),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => setManualSyncTapTime(null),
-                              className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
-                              children: t("cancel2")
-                            }
-                          )
-                        ] })
-                      }
-                    )
-                  }
-                ),
                 creditsMode && creditsCards.length > 0 && /* @__PURE__ */ jsx(
                   CreditsRecommendations,
                   {
@@ -25867,21 +33232,38 @@ ${cue.text}`).join("\n\n")}
                     children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
                   }
                 ),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* @__PURE__ */ jsxs(
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice) && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
                     style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
                     children: [
                       secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
+                      syncNotice && /* @__PURE__ */ jsxs("div", { className: "pointer-events-auto mb-1 flex items-center gap-2 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: [
+                        /* @__PURE__ */ jsx("span", { children: syncNotice.message }),
+                        syncNotice.actionLabel && syncNotice.onAction && /* @__PURE__ */ jsx(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            onClick: () => {
+                              syncNotice.onAction?.();
+                              setSyncNotice(null);
+                            },
+                            className: "font-medium text-aurora-300 hover:text-aurora-200",
+                            children: syncNotice.actionLabel
+                          }
+                        )
+                      ] }),
                       [
                         { text: overlayPrimaryText, scale: 1, color: subTextColor, key: "primary" },
                         { text: overlaySecondaryText, scale: 0.85, color: secondarySubColor, key: "secondary" }
                       ].filter((line) => line.text).map((line) => /* @__PURE__ */ jsx(
                         "div",
                         {
-                          className: "rounded px-3 py-1 text-center font-medium leading-snug",
+                          className: "rounded px-3 py-1 text-center",
                           style: {
+                            ...subDomTypography,
                             fontSize: `${subSize / 100 * 1.25 * line.scale}rem`,
                             color: line.color,
                             backgroundColor: subBackgroundColor,
@@ -26148,35 +33530,8 @@ ${cue.text}`).join("\n\n")}
                         ] }),
                         subtitleLoadError && subtitleOptions.length === 0 && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[11px] leading-5 text-rose-300", children: subtitleLoadError }),
                         /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => {
-                                setShowSubMenu(false);
-                                setManualSyncTapTime(null);
-                                setManualSyncOpen(true);
-                              },
-                              disabled: cues.length < 2,
-                              className: `mt-2 w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${cues.length >= 2 ? "border-white/15 bg-white/5 text-slate-200 hover:border-white/25 hover:bg-white/10" : "border-white/10 bg-white/5 text-slate-500"}`,
-                              children: t("subtitleManualSync")
-                            }
-                          ),
-                          subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsxs("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: [
-                            subtitleAutoSyncState.message,
-                            subtitleAutoSyncState.type === "done" && lastAutoSyncedDelayRef.current !== null && /* @__PURE__ */ jsx(
-                              "button",
-                              {
-                                type: "button",
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: undoSubtitleAutoSync,
-                                className: `ml-2 transition ${desktopChrome ? "text-[rgb(var(--player-accent))] hover:text-[rgb(var(--player-accent)/0.8)]" : "text-aurora-300 hover:text-aurora-200"}`,
-                                children: t("undo")
-                              }
-                            )
-                          ] }),
-                          subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
+                          subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: subtitleAutoSyncState.message }),
+                          subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: subtitleAutoSyncState.message ?? t("subtitleAutoSyncAnalyzing") })
                         ] }),
                         /* @__PURE__ */ jsx("div", { className: "px-4 py-2", children: /* @__PURE__ */ jsxs(
                           "button",
@@ -26263,11 +33618,30 @@ ${cue.text}`).join("\n\n")}
                   ] })
                 ] }) }),
                 showStartTitle && /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute left-8 top-10 z-[55] max-w-[70%]", children: /* @__PURE__ */ jsx("p", { className: "text-2xl font-semibold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-3xl", children: title }) }),
-                showTuningPanel && /* @__PURE__ */ jsx(PlayerTuningPanel, { onClose: () => {
-                  setShowTuningPanel(false);
-                  if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
-                } }),
-                shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsxs(
+                showTuningPanel && /* @__PURE__ */ jsx(
+                  PlayerTuningPanel,
+                  {
+                    surface: isTv ? {
+                      ...tvSurface2("tuning"),
+                      style: pickerStyle(tuningTriggerRef.current, 420),
+                      className: dtMenuSurfaceClass
+                    } : void 0,
+                    onClose: () => {
+                      setShowTuningPanel(false);
+                      if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
+                    }
+                  }
+                ),
+                momentNotice ? /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    role: "status",
+                    className: "pointer-events-none absolute left-6 top-16 z-[56] rounded-full border border-white/[0.10] bg-[rgba(13,14,22,0.88)] px-5 py-2.5 text-[15px] font-medium text-white shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md",
+                    children: momentNotice.text
+                  },
+                  momentNotice.id
+                ) : null,
+                shouldShowSkipIntroButton && activeIntro && openSurface === null && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     inert: !controlsVisible,
@@ -26303,6 +33677,113 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ),
+                clipDocked && clip2 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      ref: clipDockRef,
+                      className: "pointer-events-none fixed inset-x-0 z-[25]",
+                      style: { top: `calc(56px + ${PHONE_TOP_INSET})`, aspectRatio: "16 / 9" },
+                      children: /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: tClip("clipFrom").replace("{time}", formatClipTime(clip2.inSec)) })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    ClipPortraitSheet,
+                    {
+                      state: clip2,
+                      dispatch: clipDispatch,
+                      formats: ["mp4", "gif", "still"],
+                      share: clipShareState,
+                      t: tClip,
+                      topOffset: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 96px)`,
+                      onClose: closeClip,
+                      onCopyLink: clipCopyLink,
+                      onSave: () => {
+                        void clipSaveFile();
+                      },
+                      onSaveMoment: clipSaveMoment,
+                      onShare: (anchor) => {
+                        void clipShare(anchor);
+                      }
+                    }
+                  )
+                ] }) : null,
+                showClip && clip2 && landscapeChrome ? /* @__PURE__ */ jsx(
+                  ClipLandscapePanel,
+                  {
+                    state: clip2,
+                    dispatch: clipDispatch,
+                    formats: ["mp4", "gif", "still"],
+                    share: clipShareState,
+                    t: tClip,
+                    onClose: closeClip,
+                    onCopyLink: clipCopyLink,
+                    onSave: () => {
+                      void clipSaveFile();
+                    },
+                    onSaveMoment: clipSaveMoment,
+                    onShare: (anchor) => {
+                      void clipShare(anchor);
+                    }
+                  }
+                ) : null,
+                showClip && clip2 && isTv ? /* @__PURE__ */ jsxs("div", { className: "contents", onKeyDown: onClipTvKeyDown, children: [
+                  /* @__PURE__ */ jsx(
+                    ClipTvPanel,
+                    {
+                      state: clip2,
+                      dispatch: clipDispatch,
+                      phones: clipSendSource ? clipPhones : [],
+                      canShowQr: Boolean(tmdbId && clipLinkBase),
+                      stillSrc: clipTvStill,
+                      onSend: (phoneId) => {
+                        void clipTvSend(phoneId);
+                      },
+                      onShowQr: () => setClipQrOpen(true),
+                      onSaveMoment: clipSaveMoment,
+                      onCancel: closeClip,
+                      t: tClip,
+                      rowClass: dtMoreRowClass,
+                      rowTextClass: dtMoreTextClass,
+                      iconClass: dtMoreIconClass
+                    }
+                  ),
+                  clipQrOpen ? /* @__PURE__ */ jsx(
+                    ClipTvQrDialog,
+                    {
+                      link: tmdbId && clipLinkBase ? buildMomentLink(clipLinkBase, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : clipLinkBase ?? "",
+                      inSec: clip2.inSec,
+                      outSec: clip2.outSec,
+                      t: tClip
+                    }
+                  ) : null
+                ] }) : null,
+                showClip && clip2 && !phoneChrome && !isTv ? /* @__PURE__ */ jsx(
+                  ClipPanel,
+                  {
+                    state: clip2,
+                    dispatch: clipDispatch,
+                    formats: ffmpegOk ? ["mp4", "gif", "still"] : ["still"],
+                    canCopyLink: clip2.format === "still" || clipLinkBase !== null,
+                    busy: clipBusy,
+                    share: clipShareState,
+                    previewSrc: clipPreview,
+                    previewClip: clipPreviewClip,
+                    onClose: closeClip,
+                    onCopy: clipCopy,
+                    onSaveFile: () => {
+                      void clipSaveFile();
+                    },
+                    onSaveMoment: clipSaveMoment,
+                    onShare: (anchor) => {
+                      void clipShare(anchor);
+                    },
+                    t: tClip,
+                    rowClass: dtMoreRowClass,
+                    rowTextClass: dtMoreTextClass,
+                    iconClass: dtMoreIconClass
+                  }
+                ) : null,
                 /* @__PURE__ */ jsxs(
                   "div",
                   {
@@ -26311,6 +33792,7 @@ ${cue.text}`).join("\n\n")}
                     style: {
                       opacity: controlsVisible && controlsReady ? 1 : 0,
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0,
                       // Sidoinsetet gäller bara liggande telefon: där ligger urklippet i
                       // sidan och skulle annars klippa tiden respektive Mer-brickan.
                       //
@@ -26329,26 +33811,63 @@ ${cue.text}`).join("\n\n")}
                     children: [
                       portraitPickerOpen ? /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-0 bg-slate-950/60", onClick: () => setOpenSurface(null) }) : null,
                       desktopChrome ? (() => {
-                        const timePillClass = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+                        const timePillClass2 = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
                         const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
                         const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
+                        if (showClip && clip2 && isTv) {
+                          return /* @__PURE__ */ jsx("div", { onKeyDown: onClipTvKeyDown, children: /* @__PURE__ */ jsx(
+                            ClipTrimmer,
+                            {
+                              state: clip2,
+                              dispatch: clipDispatch,
+                              position: realTime,
+                              heightClass: seekHeightClass,
+                              size: "tv",
+                              t: tClip,
+                              focused: clipTvFocus
+                            }
+                          ) });
+                        }
+                        if (showClip && clip2) {
+                          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass }),
+                            /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
+                              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+                                desktopControls.playPause,
+                                dtDivider,
+                                /* @__PURE__ */ jsx("span", { className: "px-2 text-[13px] font-medium text-white", children: t("clipZoomed") })
+                              ] }),
+                              /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: desktopControls.clip })
+                            ] })
+                          ] });
+                        }
                         return /* @__PURE__ */ jsxs(Fragment2, { children: [
                           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
-                            showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: elapsedLabel }) : null,
+                            showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass2, children: elapsedLabel }) : null,
                             renderSeekTrack("flex-1"),
-                            showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: totalLabel }) : null
+                            showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass2, children: totalLabel }) : null
                           ] }),
                           /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.left) }),
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2.5", children: renderDesktopZone(DESKTOP_ZONES.center) }),
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.right) })
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.left) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2.5", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.center) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.right) })
                           ] })
                         ] });
                       })() : landscapeChrome ? (
                         /* Liggande: spåret kant till kant, tiden till vänster och sju
                            brickor till höger — den sjunde är Mer, som bär det som inte fick
                            plats. Ingen sidoscroll: budgeten är just sex plus Mer. */
-                        /* @__PURE__ */ jsxs(Fragment2, { children: [
+                        showClip && clip2 ? (
+                          /* Klippytan (handoff 2b): trimmern i touchstorlek, och raden bär
+                             bara play och klippknappen. */
+                          /* @__PURE__ */ jsxs(Fragment2, { children: [
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }),
+                            /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
+                              /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, "aria-label": t("plPlayPause"), className: "p-1 text-white", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+                              phoneControls.clip ? renderPhoneTile("clip", phoneControls.clip) : null
+                            ] })
+                          ] })
+                        ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
                           renderSeekTrack("w-full"),
                           /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
                             renderPhoneClock("text-[15px]", "text-[13px]"),
@@ -26360,8 +33879,8 @@ ${cue.text}`).join("\n\n")}
                                   type: "button",
                                   ref: moreTriggerRef,
                                   onClick: () => setShowMoreMenu((open2) => !open2),
-                                  title: t("moreActions"),
-                                  "aria-label": t("moreActions"),
+                                  title: t("plGearTitle"),
+                                  "aria-label": t("plGearTitle"),
                                   className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-200"}`,
                                   children: [
                                     playerIcon("more", "h-[17px] w-[17px]"),
@@ -26372,6 +33891,10 @@ ${cue.text}`).join("\n\n")}
                             ] })
                           ] })
                         ] })
+                      ) : portraitChrome && showClip && clip2 ? (
+                        /* Klippet i stående läge (handoff 2c): trimmern direkt under den
+                           dockade videon. Bottenarket ritas för sig (ClipPortraitSheet). */
+                        /* @__PURE__ */ jsx("div", { className: "fixed inset-x-0 px-[22px]", style: { top: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 14px)` }, children: /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }) })
                       ) : portraitChrome ? (
                         /* Stående: seekrad och ikonrad i sidmarginalen, sedan den rullande
                            pillerraden. `flex-none` på raden är NÖDVÄNDIGT — utan den blir
@@ -26393,8 +33916,8 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 ref: moreTriggerRef,
                                 onClick: () => setShowMoreMenu((open2) => !open2),
-                                title: t("moreActions"),
-                                "aria-label": t("moreActions"),
+                                title: t("plGearTitle"),
+                                "aria-label": t("plGearTitle"),
                                 className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300"}`,
                                 children: [
                                   playerIcon("more", "h-[17px] w-[17px]"),
@@ -26446,9 +33969,15 @@ ${cue.text}`).join("\n\n")}
                         })(),
                         /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                           const controls = {
+                            chapters: null,
+                            moments: null,
                             barcodeStrip: null,
+                            // PiP finns bara i telefonens ikonkluster, inte i skrivbordets rad.
+                            pip: null,
                             sleepTimer: null,
                             companions: null,
+                            // Klippet finns bara i den nya skrivbordsraden (desktopControls).
+                            clip: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -26641,7 +34170,7 @@ ${cue.text}`).join("\n\n")}
                                 children: t("soundtrack")
                               }
                             ),
-                            tuning: /* @__PURE__ */ jsx(
+                            tuning: /* @__PURE__ */ jsxs(
                               "button",
                               {
                                 type: "button",
@@ -26649,11 +34178,14 @@ ${cue.text}`).join("\n\n")}
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => setShowTuningPanel((v) => !v),
                                 title: t("vtTitle"),
-                                className: `transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
-                                children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
-                                  /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
-                                  /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
-                                ] })
+                                className: `relative transition ${showTuningPanel ? "text-aurora-300" : "text-slate-300 hover:text-white"}`,
+                                children: [
+                                  /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: [
+                                    /* @__PURE__ */ jsx("path", { d: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" }),
+                                    /* @__PURE__ */ jsx("path", { d: "M1 14h6M9 8h6M17 16h6" })
+                                  ] }),
+                                  tuningActive ? /* @__PURE__ */ jsx("span", { "data-tuning-active": "", "aria-hidden": true, className: "absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-accent-400" }) : null
+                                ]
                               }
                             ),
                             more: /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx(
@@ -26910,6 +34442,54 @@ ${cue.text}`).join("\n\n")}
                           ]
                         }
                       ),
+                      showMomentsMenu && momentKey && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("moments"),
+                          style: { ...pickerStyle(momentsTriggerRef.current, 280), maxHeight: "60vh", overflowY: "auto" },
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plMoments")),
+                            renderMomentsPanel()
+                          ]
+                        }
+                      ),
+                      showChaptersMenu && chapterList.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("chapters"),
+                          style: { ...pickerStyle(chaptersTriggerRef.current, 300), maxHeight: "60vh", overflowY: "auto" },
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plChapters")),
+                            chapterList.map((chapter, index) => {
+                              const isNow = index === chapterIndexNow;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    seekToAbsolute(chapter.startSec);
+                                    setShowChaptersMenu(false);
+                                  },
+                                  className: `flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition ${isNow ? "bg-white/[0.10] text-white" : "text-slate-300 hover:bg-white/[0.06] hover:text-white"}`,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "min-w-0", children: [
+                                      /* @__PURE__ */ jsx("span", { className: "block truncate text-sm", children: chapter.label }),
+                                      /* @__PURE__ */ jsx("span", { className: "mt-0.5 block text-[12px] text-slate-500", children: formatChapterDuration(chapter.durationSec, lang === "sv" ? "sv" : "en") })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: "flex-none rounded bg-white/[0.07] px-1.5 py-0.5 text-[12px] tabular-nums text-slate-300", children: fmt(chapter.startSec) })
+                                  ]
+                                },
+                                `${chapter.startSec}-${index}`
+                              );
+                            })
+                          ]
+                        }
+                      ),
                       showSleepMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
@@ -26988,164 +34568,108 @@ ${cue.text}`).join("\n\n")}
                           className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
                           onClick: (e) => e.stopPropagation(),
                           children: [
-                            portraitChrome ? pickerHeading(t("moreActions")) : null,
-                            phoneOverflowIds.map((id) => renderPhoneOverflowRow(id, phoneControls[id])),
-                            dvColorFallback && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => setDvColorFallbackMuted((current) => !current),
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                    /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
-                                  ] }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("dvColorLabel"),
-                                    ": ",
-                                    dvColorFallbackActive ? t("dvColorAuto") : t("dvColorOff")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = nextPlaybackSpeed(playbackSpeed);
-                                  setPlaybackSpeedState(next);
-                                  savePlaybackSpeed(mediaType, tmdbId ?? null, next);
-                                  mpv.setSpeed(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M13 3 4 14h7l-1 7 9-11h-7l1-7Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("playbackSpeedMenuLabel"),
-                                    ": ",
-                                    playbackSpeed,
-                                    "\xD7"
-                                  ] })
-                                ]
-                              }
-                            ),
-                            /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = !statsHud;
-                                  setStatsHudState(next);
-                                  setStatsHud(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("statsHudMenuLabel"),
-                                    ": ",
-                                    t(statsHud ? "on" : "off")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            isMpvEngine && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
-                                  setNightMode(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("nightModeMenuLabel"),
-                                    ": ",
-                                    t(nightMode === "off" ? "nightModeOff" : nightMode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            !(desktopChrome || portraitChrome) && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => void handleCopyStreamLink(),
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                    /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: copiedLink ? t("copied") : t("copyStreamLink") })
-                                ]
-                              }
-                            ),
-                            !isClientSession() && !phoneChrome && /* @__PURE__ */ jsxs("div", { className: `flex items-center gap-2 transition ${newChrome ? "rounded-lg hover:bg-[rgb(var(--player-accent)/0.14)]" : "rounded-[1.15rem] hover:bg-white/5"}`, children: [
-                              /* @__PURE__ */ jsxs(
+                            portraitChrome && gearPage === "root" ? pickerHeading(t("plGearTitle")) : null,
+                            gearPage === "root" && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              phoneOverflowIds.map((id) => renderPhoneOverflowRow(id, phoneControls[id])),
+                              renderGearRoot()
+                            ] }),
+                            gearPage === "root" && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              dvColorFallback && /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleDownload(),
-                                  disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
-                                  className: `flex min-w-0 flex-1 items-center gap-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70 ${desktopChrome ? "px-3 py-2.5" : "px-4 py-3"}`,
+                                  onClick: () => setDvColorFallbackMuted((current2) => !current2),
+                                  className: dtMoreRowClass,
                                   children: [
                                     /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                      /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
-                                      /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                      /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
+                                      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
                                     ] }),
-                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
+                                    /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                      t("dvColorLabel"),
+                                      ": ",
+                                      dvColorFallbackActive ? t("dvColorAuto") : t("dvColorOff")
+                                    ] })
                                   ]
                                 }
                               ),
-                              downloadState.type === "downloading" && /* @__PURE__ */ jsx(
+                              gearToggleRow("stats", "stats", t("statsHudMenuLabel"), statsHud, () => {
+                                const next = !statsHud;
+                                setStatsHudState(next);
+                                setStatsHud(next);
+                              }),
+                              !(desktopChrome || portraitChrome) && /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleCancelDownload(),
-                                  className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
-                                  title: t("cancel"),
-                                  children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
+                                  onClick: () => void handleCopyStreamLink(),
+                                  className: dtMoreRowClass,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                      /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: copiedLink ? t("copied") : t("copyStreamLink") })
+                                  ]
+                                }
+                              ),
+                              !isClientSession() && !phoneChrome && /* @__PURE__ */ jsxs("div", { className: `flex items-center gap-2 transition ${newChrome ? "rounded-lg hover:bg-[rgb(var(--player-accent)/0.14)]" : "rounded-[1.15rem] hover:bg-white/5"}`, children: [
+                                /* @__PURE__ */ jsxs(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    ...dtStation,
+                                    "data-f": isTv ? "1" : void 0,
+                                    onClick: () => void handleDownload(),
+                                    disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
+                                    className: `flex min-w-0 flex-1 items-center gap-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70 ${desktopChrome ? "px-3 py-2.5" : "px-4 py-3"}`,
+                                    children: [
+                                      /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                        /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
+                                        /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                        /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
+                                      ] }),
+                                      /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
+                                    ]
+                                  }
+                                ),
+                                downloadState.type === "downloading" && /* @__PURE__ */ jsx(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    ...dtStation,
+                                    "data-f": isTv ? "1" : void 0,
+                                    onClick: () => void handleCancelDownload(),
+                                    className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
+                                    title: t("cancel"),
+                                    children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
+                                  }
+                                )
+                              ] }),
+                              !isClientSession() && /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => void handleOpenExternal(),
+                                  onMouseDown: (e) => e.stopPropagation(),
+                                  className: `relative z-10 mt-1 flex w-full items-center gap-3 bg-white/5 text-left text-slate-100 transition hover:bg-white/10 ${desktopChrome ? "rounded-lg px-3 py-2.5" : "rounded-[1.15rem] px-4 py-3"}`,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "currentColor", children: [
+                                      /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
+                                  ]
                                 }
                               )
                             ] }),
-                            !isClientSession() && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => void handleOpenExternal(),
-                                onMouseDown: (e) => e.stopPropagation(),
-                                className: `relative z-10 mt-1 flex w-full items-center gap-3 bg-white/5 text-left text-slate-100 transition hover:bg-white/10 ${desktopChrome ? "rounded-lg px-3 py-2.5" : "rounded-[1.15rem] px-4 py-3"}`,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "currentColor", children: [
-                                    /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
-                                ]
-                              }
-                            ),
+                            gearPage !== "root" && renderGearSubPage(),
                             downloadState.type === "error" && /* @__PURE__ */ jsx("div", { className: "px-4 pb-1 pt-3 text-xs text-red-300", children: downloadState.message })
                           ]
                         }
@@ -27186,7 +34710,7 @@ ${cue.text}`).join("\n\n")}
                     onSelect: (stream) => {
                       setShowStreams(false);
                       if (streams.currentUrl && stream.directUrl === streams.currentUrl) return;
-                      streams.onSelect(stream, Math.max(0, realTimeRef.current));
+                      streams.onSelect(stream, streamSwitchPosition());
                     },
                     onClose: () => setShowStreams(false)
                   },
@@ -27209,7 +34733,7 @@ ${cue.text}`).join("\n\n")}
     );
     return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, MPV_TRANSITION_COVER_ATTR;
+  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, TV_SIDE_PANEL_WIDTH, TV_CLIP_PANEL_WIDTH, MPV_TRANSITION_COVER_ATTR;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
@@ -27217,6 +34741,8 @@ ${cue.text}`).join("\n\n")}
       init_player_control_icons();
       init_playback_settings();
       init_playback_settings();
+      init_playback_settings();
+      init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
       init_react_shim();
@@ -27238,9 +34764,10 @@ ${cue.text}`).join("\n\n")}
       init_playback_settings();
       init_android_media_keys();
       init_resume_playback();
+      init_subtitle_autopick();
       init_watched_episodes();
       init_watched_movies();
-      init_trakt_scrobble();
+      init_scrobble_fanout();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -27251,8 +34778,11 @@ ${cue.text}`).join("\n\n")}
       init_scroll_lock();
       init_i18n();
       init_tv_focus_shim();
+      init_tv_scene();
+      init_player_menu_anchor();
       init_download_target();
       init_session_host();
+      init_pip();
       init_vlc_deep_link();
       init_fetch_client();
       init_wiki_request_cache();
@@ -27262,14 +34792,18 @@ ${cue.text}`).join("\n\n")}
       init_player_soundtrack_panel();
       init_player_episodes_panel();
       init_player_streams_panel();
+      init_host_bridge();
+      init_player_snapshot();
       init_homekit_client();
       init_plugin_sdk();
+      init_use_continue_frame_capture();
       init_playback_session_client();
       init_playback_settings();
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
       init_player_reveal_hold();
+      init_player_silent_start();
       init_credits_recommendations();
       init_ids();
       init_title_logo_cache();
@@ -27278,12 +34812,33 @@ ${cue.text}`).join("\n\n")}
       init_tauri_native_player();
       init_playback_settings();
       init_lan_streaming_settings();
+      init_use_subtitle_auto_sync();
+      init_use_embedded_track_languages();
       init_subtitle_delay_store();
+      init_user_delay();
+      init_diag();
       init_tauri_mpv();
       init_tauri_native_player();
       init_tauri_avplayer();
       init_app_storage();
       init_binge_zap_button();
+      init_series_lock_runtime();
+      init_player_status_line();
+      init_moment_link();
+      init_clip_panel();
+      init_clip_trimmer();
+      init_clip_state();
+      init_key_hold();
+      init_clip_loop();
+      init_clip_phone_panels();
+      init_clip_tv_panel();
+      init_clip_offer();
+      init_host_api();
+      init_device_transfer();
+      init_tauri_native_player();
+      init_clip_export();
+      init_player_chapters();
+      init_player_moments();
       init_jsx_runtime_shim();
       EMBEDDED_SUBTITLES_ENABLED = true;
       PLAYER_UI_TICK_MS = 250;
@@ -27291,8 +34846,6 @@ ${cue.text}`).join("\n\n")}
       BROWSER_MAX_FALLBACK_ATTEMPTS = 3;
       PLAYER_PARENT_TIMEUPDATE_TICK_MS = 1e3;
       PROXY_RESTART_MIN_GAP_MS = 3e4;
-      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
-      LANDSCAPE_PHONE_QUERY = "(max-height: 519px) and (orientation: landscape)";
       PHONE_TOP_INSET = "max(env(safe-area-inset-top), var(--android-inset-top, 0px))";
       PHONE_LEFT_INSET = "env(safe-area-inset-left)";
       PHONE_RIGHT_INSET = "env(safe-area-inset-right)";
@@ -27302,6 +34855,8 @@ ${cue.text}`).join("\n\n")}
       isProxyUrl = (src) => src.startsWith("/api/proxy-stream");
       isHlsUrl2 = (src) => src.startsWith("/api/hls-stream/");
       isServerStreamUrl = (src) => isProxyUrl(src) || isHlsUrl2(src);
+      TV_SIDE_PANEL_WIDTH = "min(calc(440 * var(--tv-u) * var(--tv-font-scale, 1)), 40%)";
+      TV_CLIP_PANEL_WIDTH = "min(calc(380 * var(--tv-u) * var(--tv-font-scale, 1)), 34%)";
       MPV_TRANSITION_COVER_ATTR = "data-lumio-mpv-transition-cover";
     }
   });
@@ -27315,1112 +34870,6 @@ ${cue.text}`).join("\n\n")}
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
-    }
-  });
-
-  // ../../node_modules/qrcode.react/lib/esm/index.js
-  function generatePath(modules, margin = 0) {
-    const ops = [];
-    modules.forEach(function(row, y) {
-      let start2 = null;
-      row.forEach(function(cell, x) {
-        if (!cell && start2 !== null) {
-          ops.push(
-            `M${start2 + margin} ${y + margin}h${x - start2}v1H${start2 + margin}z`
-          );
-          start2 = null;
-          return;
-        }
-        if (x === row.length - 1) {
-          if (!cell) {
-            return;
-          }
-          if (start2 === null) {
-            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
-          } else {
-            ops.push(
-              `M${start2 + margin},${y + margin} h${x + 1 - start2}v1H${start2 + margin}z`
-            );
-          }
-          return;
-        }
-        if (cell && start2 === null) {
-          start2 = x;
-        }
-      });
-    });
-    return ops.join("");
-  }
-  function excavateModules(modules, excavation) {
-    return modules.slice().map((row, y) => {
-      if (y < excavation.y || y >= excavation.y + excavation.h) {
-        return row;
-      }
-      return row.map((cell, x) => {
-        if (x < excavation.x || x >= excavation.x + excavation.w) {
-          return cell;
-        }
-        return false;
-      });
-    });
-  }
-  function getImageSettings(cells, size, margin, imageSettings) {
-    if (imageSettings == null) {
-      return null;
-    }
-    const numCells = cells.length + margin * 2;
-    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
-    const scale = numCells / size;
-    const w = (imageSettings.width || defaultSize) * scale;
-    const h = (imageSettings.height || defaultSize) * scale;
-    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
-    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
-    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
-    let excavation = null;
-    if (imageSettings.excavate) {
-      let floorX = Math.floor(x);
-      let floorY = Math.floor(y);
-      let ceilW = Math.ceil(w + x - floorX);
-      let ceilH = Math.ceil(h + y - floorY);
-      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
-    }
-    const crossOrigin = imageSettings.crossOrigin;
-    return { x, y, h, w, excavation, opacity, crossOrigin };
-  }
-  function getMarginSize(includeMargin, marginSize) {
-    if (marginSize != null) {
-      return Math.max(Math.floor(marginSize), 0);
-    }
-    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
-  }
-  function useQRCode({
-    value,
-    level,
-    minVersion,
-    includeMargin,
-    marginSize,
-    imageSettings,
-    size,
-    boostLevel
-  }) {
-    let qrcode = react_shim_default.useMemo(() => {
-      const values = Array.isArray(value) ? value : [value];
-      const segments = values.reduce((accum, v) => {
-        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
-        return accum;
-      }, []);
-      return qrcodegen_default.QrCode.encodeSegments(
-        segments,
-        ERROR_LEVEL_MAP[level],
-        minVersion,
-        void 0,
-        void 0,
-        boostLevel
-      );
-    }, [value, level, minVersion, boostLevel]);
-    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
-      let cells2 = qrcode.getModules();
-      const margin2 = getMarginSize(includeMargin, marginSize);
-      const numCells2 = cells2.length + margin2 * 2;
-      const calculatedImageSettings2 = getImageSettings(
-        cells2,
-        size,
-        margin2,
-        imageSettings
-      );
-      return {
-        cells: cells2,
-        margin: margin2,
-        numCells: numCells2,
-        calculatedImageSettings: calculatedImageSettings2
-      };
-    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
-    return {
-      qrcode,
-      margin,
-      cells,
-      numCells,
-      calculatedImageSettings
-    };
-  }
-  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
-  var init_esm = __esm({
-    "../../node_modules/qrcode.react/lib/esm/index.js"() {
-      init_react_shim();
-      __defProp2 = Object.defineProperty;
-      __getOwnPropSymbols = Object.getOwnPropertySymbols;
-      __hasOwnProp2 = Object.prototype.hasOwnProperty;
-      __propIsEnum = Object.prototype.propertyIsEnumerable;
-      __defNormalProp = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-      __spreadValues = (a, b) => {
-        for (var prop in b || (b = {}))
-          if (__hasOwnProp2.call(b, prop))
-            __defNormalProp(a, prop, b[prop]);
-        if (__getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(b)) {
-            if (__propIsEnum.call(b, prop))
-              __defNormalProp(a, prop, b[prop]);
-          }
-        return a;
-      };
-      __objRest = (source, exclude) => {
-        var target2 = {};
-        for (var prop in source)
-          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
-            target2[prop] = source[prop];
-        if (source != null && __getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(source)) {
-            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-              target2[prop] = source[prop];
-          }
-        return target2;
-      };
-      ((qrcodegen2) => {
-        const _QrCode = class _QrCode2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code with the given version number,
-          // error correction level, data codeword bytes, and mask number.
-          // This is a low-level API that most users should not use directly.
-          // A mid-level API is the encodeSegments() function.
-          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version3;
-            this.errorCorrectionLevel = errorCorrectionLevel;
-            this.modules = [];
-            this.isFunction = [];
-            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version value out of range");
-            if (msk < -1 || msk > 7)
-              throw new RangeError("Mask value out of range");
-            this.size = version3 * 4 + 17;
-            let row = [];
-            for (let i = 0; i < this.size; i++)
-              row.push(false);
-            for (let i = 0; i < this.size; i++) {
-              this.modules.push(row.slice());
-              this.isFunction.push(row.slice());
-            }
-            this.drawFunctionPatterns();
-            const allCodewords = this.addEccAndInterleave(dataCodewords);
-            this.drawCodewords(allCodewords);
-            if (msk == -1) {
-              let minPenalty = 1e9;
-              for (let i = 0; i < 8; i++) {
-                this.applyMask(i);
-                this.drawFormatBits(i);
-                const penalty = this.getPenaltyScore();
-                if (penalty < minPenalty) {
-                  msk = i;
-                  minPenalty = penalty;
-                }
-                this.applyMask(i);
-              }
-            }
-            assert(0 <= msk && msk <= 7);
-            this.mask = msk;
-            this.applyMask(msk);
-            this.drawFormatBits(msk);
-            this.isFunction = [];
-          }
-          /*-- Static factory functions (high level) --*/
-          // Returns a QR Code representing the given Unicode text string at the given error correction level.
-          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
-          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
-          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
-          // ecl argument if it can be done without increasing the version.
-          static encodeText(text, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text);
-            return _QrCode2.encodeSegments(segs, ecl);
-          }
-          // Returns a QR Code representing the given binary data at the given error correction level.
-          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
-          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
-          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
-          static encodeBinary(data, ecl) {
-            const seg = qrcodegen2.QrSegment.makeBytes(data);
-            return _QrCode2.encodeSegments([seg], ecl);
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a QR Code representing the given segments with the given encoding parameters.
-          // The smallest possible QR Code version within the given range is automatically
-          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
-          // may be higher than the ecl argument if it can be done without increasing the
-          // version. The mask number is either between 0 to 7 (inclusive) to force that
-          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
-          // This function allows the user to create a custom sequence of segments that switches
-          // between modes (such as alphanumeric and byte) to encode text in less space.
-          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
-          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
-            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
-              throw new RangeError("Invalid value");
-            let version3;
-            let dataUsedBits;
-            for (version3 = minVersion; ; version3++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version3);
-              if (usedBits <= dataCapacityBits2) {
-                dataUsedBits = usedBits;
-                break;
-              }
-              if (version3 >= maxVersion)
-                throw new RangeError("Data too long");
-            }
-            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
-                ecl = newEcl;
-            }
-            let bb = [];
-            for (const seg of segs) {
-              appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
-              for (const b of seg.getData())
-                bb.push(b);
-            }
-            assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-            assert(bb.length <= dataCapacityBits);
-            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
-            appendBits(0, (8 - bb.length % 8) % 8, bb);
-            assert(bb.length % 8 == 0);
-            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
-              appendBits(padByte, 8, bb);
-            let dataCodewords = [];
-            while (dataCodewords.length * 8 < bb.length)
-              dataCodewords.push(0);
-            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version3, ecl, dataCodewords, mask);
-          }
-          /*-- Accessor methods --*/
-          // Returns the color of the module (pixel) at the given coordinates, which is false
-          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
-          // If the given coordinates are out of bounds, then false (light) is returned.
-          getModule(x, y) {
-            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
-          }
-          // Modified to expose modules for easy access
-          getModules() {
-            return this.modules;
-          }
-          /*-- Private helper methods for constructor: Drawing function modules --*/
-          // Reads this object's version field, and draws and marks all function modules.
-          drawFunctionPatterns() {
-            for (let i = 0; i < this.size; i++) {
-              this.setFunctionModule(6, i, i % 2 == 0);
-              this.setFunctionModule(i, 6, i % 2 == 0);
-            }
-            this.drawFinderPattern(3, 3);
-            this.drawFinderPattern(this.size - 4, 3);
-            this.drawFinderPattern(3, this.size - 4);
-            const alignPatPos = this.getAlignmentPatternPositions();
-            const numAlign = alignPatPos.length;
-            for (let i = 0; i < numAlign; i++) {
-              for (let j = 0; j < numAlign; j++) {
-                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
-                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
-              }
-            }
-            this.drawFormatBits(0);
-            this.drawVersion();
-          }
-          // Draws two copies of the format bits (with its own error correction code)
-          // based on the given mask and this object's error correction level field.
-          drawFormatBits(mask) {
-            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
-            let rem = data;
-            for (let i = 0; i < 10; i++)
-              rem = rem << 1 ^ (rem >>> 9) * 1335;
-            const bits = (data << 10 | rem) ^ 21522;
-            assert(bits >>> 15 == 0);
-            for (let i = 0; i <= 5; i++)
-              this.setFunctionModule(8, i, getBit(bits, i));
-            this.setFunctionModule(8, 7, getBit(bits, 6));
-            this.setFunctionModule(8, 8, getBit(bits, 7));
-            this.setFunctionModule(7, 8, getBit(bits, 8));
-            for (let i = 9; i < 15; i++)
-              this.setFunctionModule(14 - i, 8, getBit(bits, i));
-            for (let i = 0; i < 8; i++)
-              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
-            for (let i = 8; i < 15; i++)
-              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
-            this.setFunctionModule(8, this.size - 8, true);
-          }
-          // Draws two copies of the version bits (with its own error correction code),
-          // based on this object's version field, iff 7 <= version <= 40.
-          drawVersion() {
-            if (this.version < 7)
-              return;
-            let rem = this.version;
-            for (let i = 0; i < 12; i++)
-              rem = rem << 1 ^ (rem >>> 11) * 7973;
-            const bits = this.version << 12 | rem;
-            assert(bits >>> 18 == 0);
-            for (let i = 0; i < 18; i++) {
-              const color = getBit(bits, i);
-              const a = this.size - 11 + i % 3;
-              const b = Math.floor(i / 3);
-              this.setFunctionModule(a, b, color);
-              this.setFunctionModule(b, a, color);
-            }
-          }
-          // Draws a 9*9 finder pattern including the border separator,
-          // with the center module at (x, y). Modules can be out of bounds.
-          drawFinderPattern(x, y) {
-            for (let dy = -4; dy <= 4; dy++) {
-              for (let dx = -4; dx <= 4; dx++) {
-                const dist = Math.max(Math.abs(dx), Math.abs(dy));
-                const xx = x + dx;
-                const yy = y + dy;
-                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
-                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
-              }
-            }
-          }
-          // Draws a 5*5 alignment pattern, with the center module
-          // at (x, y). All modules must be in bounds.
-          drawAlignmentPattern(x, y) {
-            for (let dy = -2; dy <= 2; dy++) {
-              for (let dx = -2; dx <= 2; dx++)
-                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
-            }
-          }
-          // Sets the color of a module and marks it as a function module.
-          // Only used by the constructor. Coordinates must be in bounds.
-          setFunctionModule(x, y, isDark) {
-            this.modules[y][x] = isDark;
-            this.isFunction[y][x] = true;
-          }
-          /*-- Private helper methods for constructor: Codewords and masking --*/
-          // Returns a new byte string representing the given data with the appropriate error correction
-          // codewords appended to it, based on this object's version and error correction level.
-          addEccAndInterleave(data) {
-            const ver = this.version;
-            const ecl = this.errorCorrectionLevel;
-            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
-              throw new RangeError("Invalid argument");
-            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
-            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
-            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
-            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
-            let blocks = [];
-            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
-            for (let i = 0, k = 0; i < numBlocks; i++) {
-              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
-              k += dat.length;
-              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
-              if (i < numShortBlocks)
-                dat.push(0);
-              blocks.push(dat.concat(ecc));
-            }
-            let result = [];
-            for (let i = 0; i < blocks[0].length; i++) {
-              blocks.forEach((block, j) => {
-                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
-                  result.push(block[i]);
-              });
-            }
-            assert(result.length == rawCodewords);
-            return result;
-          }
-          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
-          // data area of this QR Code. Function modules need to be marked off before this is called.
-          drawCodewords(data) {
-            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
-              throw new RangeError("Invalid argument");
-            let i = 0;
-            for (let right = this.size - 1; right >= 1; right -= 2) {
-              if (right == 6)
-                right = 5;
-              for (let vert = 0; vert < this.size; vert++) {
-                for (let j = 0; j < 2; j++) {
-                  const x = right - j;
-                  const upward = (right + 1 & 2) == 0;
-                  const y = upward ? this.size - 1 - vert : vert;
-                  if (!this.isFunction[y][x] && i < data.length * 8) {
-                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
-                    i++;
-                  }
-                }
-              }
-            }
-            assert(i == data.length * 8);
-          }
-          // XORs the codeword modules in this QR Code with the given mask pattern.
-          // The function modules must be marked and the codeword bits must be drawn
-          // before masking. Due to the arithmetic of XOR, calling applyMask() with
-          // the same mask value a second time will undo the mask. A final well-formed
-          // QR Code needs exactly one (not zero, two, etc.) mask applied.
-          applyMask(mask) {
-            if (mask < 0 || mask > 7)
-              throw new RangeError("Mask value out of range");
-            for (let y = 0; y < this.size; y++) {
-              for (let x = 0; x < this.size; x++) {
-                let invert;
-                switch (mask) {
-                  case 0:
-                    invert = (x + y) % 2 == 0;
-                    break;
-                  case 1:
-                    invert = y % 2 == 0;
-                    break;
-                  case 2:
-                    invert = x % 3 == 0;
-                    break;
-                  case 3:
-                    invert = (x + y) % 3 == 0;
-                    break;
-                  case 4:
-                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
-                    break;
-                  case 5:
-                    invert = x * y % 2 + x * y % 3 == 0;
-                    break;
-                  case 6:
-                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  case 7:
-                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  default:
-                    throw new Error("Unreachable");
-                }
-                if (!this.isFunction[y][x] && invert)
-                  this.modules[y][x] = !this.modules[y][x];
-              }
-            }
-          }
-          // Calculates and returns the penalty score based on state of this QR Code's current modules.
-          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
-          getPenaltyScore() {
-            let result = 0;
-            for (let y = 0; y < this.size; y++) {
-              let runColor = false;
-              let runX = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let x = 0; x < this.size; x++) {
-                if (this.modules[y][x] == runColor) {
-                  runX++;
-                  if (runX == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runX > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runX, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runX = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let x = 0; x < this.size; x++) {
-              let runColor = false;
-              let runY = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let y = 0; y < this.size; y++) {
-                if (this.modules[y][x] == runColor) {
-                  runY++;
-                  if (runY == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runY > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runY, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runY = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let y = 0; y < this.size - 1; y++) {
-              for (let x = 0; x < this.size - 1; x++) {
-                const color = this.modules[y][x];
-                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
-                  result += _QrCode2.PENALTY_N2;
-              }
-            }
-            let dark = 0;
-            for (const row of this.modules)
-              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
-            const total = this.size * this.size;
-            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
-            assert(0 <= k && k <= 9);
-            result += k * _QrCode2.PENALTY_N4;
-            assert(0 <= result && result <= 2568888);
-            return result;
-          }
-          /*-- Private helper functions --*/
-          // Returns an ascending list of positions of alignment patterns for this version number.
-          // Each position is in the range [0,177), and are used on both the x and y axes.
-          // This could be implemented as lookup table of 40 variable-length lists of integers.
-          getAlignmentPatternPositions() {
-            if (this.version == 1)
-              return [];
-            else {
-              const numAlign = Math.floor(this.version / 7) + 2;
-              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
-              let result = [6];
-              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
-                result.splice(1, 0, pos);
-              return result;
-            }
-          }
-          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
-          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
-          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
-          static getNumRawDataModules(ver) {
-            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version number out of range");
-            let result = (16 * ver + 128) * ver + 64;
-            if (ver >= 2) {
-              const numAlign = Math.floor(ver / 7) + 2;
-              result -= (25 * numAlign - 10) * numAlign - 55;
-              if (ver >= 7)
-                result -= 36;
-            }
-            assert(208 <= result && result <= 29648);
-            return result;
-          }
-          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
-          // QR Code of the given version number and error correction level, with remainder bits discarded.
-          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
-          static getNumDataCodewords(ver, ecl) {
-            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-          }
-          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
-          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
-          static reedSolomonComputeDivisor(degree) {
-            if (degree < 1 || degree > 255)
-              throw new RangeError("Degree out of range");
-            let result = [];
-            for (let i = 0; i < degree - 1; i++)
-              result.push(0);
-            result.push(1);
-            let root = 1;
-            for (let i = 0; i < degree; i++) {
-              for (let j = 0; j < result.length; j++) {
-                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
-                if (j + 1 < result.length)
-                  result[j] ^= result[j + 1];
-              }
-              root = _QrCode2.reedSolomonMultiply(root, 2);
-            }
-            return result;
-          }
-          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
-          static reedSolomonComputeRemainder(data, divisor) {
-            let result = divisor.map((_) => 0);
-            for (const b of data) {
-              const factor = b ^ result.shift();
-              result.push(0);
-              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
-            }
-            return result;
-          }
-          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
-          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
-          static reedSolomonMultiply(x, y) {
-            if (x >>> 8 != 0 || y >>> 8 != 0)
-              throw new RangeError("Byte out of range");
-            let z = 0;
-            for (let i = 7; i >= 0; i--) {
-              z = z << 1 ^ (z >>> 7) * 285;
-              z ^= (y >>> i & 1) * x;
-            }
-            assert(z >>> 8 == 0);
-            return z;
-          }
-          // Can only be called immediately after a light run is added, and
-          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
-          finderPenaltyCountPatterns(runHistory) {
-            const n = runHistory[1];
-            assert(n <= this.size * 3);
-            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
-            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
-          }
-          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
-          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
-            if (currentRunColor) {
-              this.finderPenaltyAddHistory(currentRunLength, runHistory);
-              currentRunLength = 0;
-            }
-            currentRunLength += this.size;
-            this.finderPenaltyAddHistory(currentRunLength, runHistory);
-            return this.finderPenaltyCountPatterns(runHistory);
-          }
-          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
-          finderPenaltyAddHistory(currentRunLength, runHistory) {
-            if (runHistory[0] == 0)
-              currentRunLength += this.size;
-            runHistory.pop();
-            runHistory.unshift(currentRunLength);
-          }
-        };
-        _QrCode.MIN_VERSION = 1;
-        _QrCode.MAX_VERSION = 40;
-        _QrCode.PENALTY_N1 = 3;
-        _QrCode.PENALTY_N2 = 3;
-        _QrCode.PENALTY_N3 = 40;
-        _QrCode.PENALTY_N4 = 10;
-        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Low
-          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
-          // Medium
-          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Quartile
-          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
-          // High
-        ];
-        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
-          // Low
-          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
-          // Medium
-          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
-          // Quartile
-          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
-          // High
-        ];
-        let QrCode = _QrCode;
-        qrcodegen2.QrCode = _QrCode;
-        function appendBits(val, len, bb) {
-          if (len < 0 || len > 31 || val >>> len != 0)
-            throw new RangeError("Value out of range");
-          for (let i = len - 1; i >= 0; i--)
-            bb.push(val >>> i & 1);
-        }
-        function getBit(x, i) {
-          return (x >>> i & 1) != 0;
-        }
-        function assert(cond) {
-          if (!cond)
-            throw new Error("Assertion error");
-        }
-        const _QrSegment = class _QrSegment2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code segment with the given attributes and data.
-          // The character count (numChars) must agree with the mode and the bit buffer length,
-          // but the constraint isn't checked. The given bit buffer is cloned and stored.
-          constructor(mode, numChars, bitData) {
-            this.mode = mode;
-            this.numChars = numChars;
-            this.bitData = bitData;
-            if (numChars < 0)
-              throw new RangeError("Invalid argument");
-            this.bitData = bitData.slice();
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a segment representing the given binary data encoded in
-          // byte mode. All input byte arrays are acceptable. Any text string
-          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
-          static makeBytes(data) {
-            let bb = [];
-            for (const b of data)
-              appendBits(b, 8, bb);
-            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
-          }
-          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
-          static makeNumeric(digits) {
-            if (!_QrSegment2.isNumeric(digits))
-              throw new RangeError("String contains non-numeric characters");
-            let bb = [];
-            for (let i = 0; i < digits.length; ) {
-              const n = Math.min(digits.length - i, 3);
-              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
-              i += n;
-            }
-            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
-          }
-          // Returns a segment representing the given text string encoded in alphanumeric mode.
-          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
-          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text) {
-            if (!_QrSegment2.isAlphanumeric(text))
-              throw new RangeError("String contains unencodable characters in alphanumeric mode");
-            let bb = [];
-            let i;
-            for (i = 0; i + 2 <= text.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
-              appendBits(temp, 11, bb);
-            }
-            if (i < text.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
-          }
-          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
-          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text) {
-            if (text == "")
-              return [];
-            else if (_QrSegment2.isNumeric(text))
-              return [_QrSegment2.makeNumeric(text)];
-            else if (_QrSegment2.isAlphanumeric(text))
-              return [_QrSegment2.makeAlphanumeric(text)];
-            else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
-          }
-          // Returns a segment representing an Extended Channel Interpretation
-          // (ECI) designator with the given assignment value.
-          static makeEci(assignVal) {
-            let bb = [];
-            if (assignVal < 0)
-              throw new RangeError("ECI assignment value out of range");
-            else if (assignVal < 1 << 7)
-              appendBits(assignVal, 8, bb);
-            else if (assignVal < 1 << 14) {
-              appendBits(2, 2, bb);
-              appendBits(assignVal, 14, bb);
-            } else if (assignVal < 1e6) {
-              appendBits(6, 3, bb);
-              appendBits(assignVal, 21, bb);
-            } else
-              throw new RangeError("ECI assignment value out of range");
-            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
-          }
-          // Tests whether the given string can be encoded as a segment in numeric mode.
-          // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text) {
-            return _QrSegment2.NUMERIC_REGEX.test(text);
-          }
-          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
-          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
-          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
-          }
-          /*-- Methods --*/
-          // Returns a new copy of the data bits of this segment.
-          getData() {
-            return this.bitData.slice();
-          }
-          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
-          // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version3) {
-            let result = 0;
-            for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version3);
-              if (seg.numChars >= 1 << ccbits)
-                return Infinity;
-              result += 4 + ccbits + seg.bitData.length;
-            }
-            return result;
-          }
-          // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str) {
-            str = encodeURI(str);
-            let result = [];
-            for (let i = 0; i < str.length; i++) {
-              if (str.charAt(i) != "%")
-                result.push(str.charCodeAt(i));
-              else {
-                result.push(parseInt(str.substring(i + 1, i + 3), 16));
-                i += 2;
-              }
-            }
-            return result;
-          }
-        };
-        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
-        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
-        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
-        let QrSegment = _QrSegment;
-        qrcodegen2.QrSegment = _QrSegment;
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrCode;
-        ((QrCode2) => {
-          const _Ecc = class _Ecc {
-            // The QR Code can tolerate about 30% erroneous codewords
-            /*-- Constructor and fields --*/
-            constructor(ordinal, formatBits) {
-              this.ordinal = ordinal;
-              this.formatBits = formatBits;
-            }
-          };
-          _Ecc.LOW = new _Ecc(0, 1);
-          _Ecc.MEDIUM = new _Ecc(1, 0);
-          _Ecc.QUARTILE = new _Ecc(2, 3);
-          _Ecc.HIGH = new _Ecc(3, 2);
-          let Ecc = _Ecc;
-          QrCode2.Ecc = _Ecc;
-        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrSegment;
-        ((QrSegment2) => {
-          const _Mode = class _Mode {
-            /*-- Constructor and fields --*/
-            constructor(modeBits, numBitsCharCount) {
-              this.modeBits = modeBits;
-              this.numBitsCharCount = numBitsCharCount;
-            }
-            /*-- Method --*/
-            // (Package-private) Returns the bit width of the character count field for a segment in
-            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
-            numCharCountBits(ver) {
-              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
-            }
-          };
-          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
-          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
-          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
-          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
-          _Mode.ECI = new _Mode(7, [0, 0, 0]);
-          let Mode = _Mode;
-          QrSegment2.Mode = _Mode;
-        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      qrcodegen_default = qrcodegen;
-      ERROR_LEVEL_MAP = {
-        L: qrcodegen_default.QrCode.Ecc.LOW,
-        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
-        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
-        H: qrcodegen_default.QrCode.Ecc.HIGH
-      };
-      DEFAULT_SIZE = 128;
-      DEFAULT_LEVEL = "L";
-      DEFAULT_BGCOLOR = "#FFFFFF";
-      DEFAULT_FGCOLOR = "#000000";
-      DEFAULT_INCLUDEMARGIN = false;
-      DEFAULT_MINVERSION = 1;
-      SPEC_MARGIN_SIZE = 4;
-      DEFAULT_MARGIN_SIZE = 0;
-      DEFAULT_IMG_SCALE = 0.1;
-      SUPPORTS_PATH2D = (function() {
-        try {
-          new Path2D().addPath(new Path2D());
-        } catch (e) {
-          return false;
-        }
-        return true;
-      })();
-      QRCodeCanvas = react_shim_default.forwardRef(
-        function QRCodeCanvas2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            marginSize,
-            imageSettings
-          } = _a, extraProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
-          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
-          const _canvas = react_shim_default.useRef(null);
-          const _image = react_shim_default.useRef(null);
-          const setCanvasRef = react_shim_default.useCallback(
-            (node) => {
-              _canvas.current = node;
-              if (typeof forwardedRef === "function") {
-                forwardedRef(node);
-              } else if (forwardedRef) {
-                forwardedRef.current = node;
-              }
-            },
-            [forwardedRef]
-          );
-          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          react_shim_default.useEffect(() => {
-            if (_canvas.current != null) {
-              const canvas2 = _canvas.current;
-              const ctx = canvas2.getContext("2d");
-              if (!ctx) {
-                return;
-              }
-              let cellsToDraw = cells;
-              const image = _image.current;
-              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
-              if (haveImageToRender) {
-                if (calculatedImageSettings.excavation != null) {
-                  cellsToDraw = excavateModules(
-                    cells,
-                    calculatedImageSettings.excavation
-                  );
-                }
-              }
-              const pixelRatio = window.devicePixelRatio || 1;
-              canvas2.height = canvas2.width = size * pixelRatio;
-              const scale = size / numCells * pixelRatio;
-              ctx.scale(scale, scale);
-              ctx.fillStyle = bgColor;
-              ctx.fillRect(0, 0, numCells, numCells);
-              ctx.fillStyle = fgColor;
-              if (SUPPORTS_PATH2D) {
-                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
-              } else {
-                cells.forEach(function(row, rdx) {
-                  row.forEach(function(cell, cdx) {
-                    if (cell) {
-                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
-                    }
-                  });
-                });
-              }
-              if (calculatedImageSettings) {
-                ctx.globalAlpha = calculatedImageSettings.opacity;
-              }
-              if (haveImageToRender) {
-                ctx.drawImage(
-                  image,
-                  calculatedImageSettings.x + margin,
-                  calculatedImageSettings.y + margin,
-                  calculatedImageSettings.w,
-                  calculatedImageSettings.h
-                );
-              }
-            }
-          });
-          react_shim_default.useEffect(() => {
-            setIsImageLoaded(false);
-          }, [imgSrc]);
-          const canvasStyle = __spreadValues({ height: size, width: size }, style);
-          let img = null;
-          if (imgSrc != null) {
-            img = /* @__PURE__ */ react_shim_default.createElement(
-              "img",
-              {
-                src: imgSrc,
-                key: imgSrc,
-                style: { display: "none" },
-                onLoad: () => {
-                  setIsImageLoaded(true);
-                },
-                ref: _image,
-                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
-            "canvas",
-            __spreadValues({
-              style: canvasStyle,
-              height: size,
-              width: size,
-              ref: setCanvasRef,
-              role: "img"
-            }, otherProps)
-          ), img);
-        }
-      );
-      QRCodeCanvas.displayName = "QRCodeCanvas";
-      QRCodeSVG = react_shim_default.forwardRef(
-        function QRCodeSVG2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            title,
-            marginSize,
-            imageSettings
-          } = _a, otherProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "title",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          let cellsToDraw = cells;
-          let image = null;
-          if (imageSettings != null && calculatedImageSettings != null) {
-            if (calculatedImageSettings.excavation != null) {
-              cellsToDraw = excavateModules(
-                cells,
-                calculatedImageSettings.excavation
-              );
-            }
-            image = /* @__PURE__ */ react_shim_default.createElement(
-              "image",
-              {
-                href: imageSettings.src,
-                height: calculatedImageSettings.h,
-                width: calculatedImageSettings.w,
-                x: calculatedImageSettings.x + margin,
-                y: calculatedImageSettings.y + margin,
-                preserveAspectRatio: "none",
-                opacity: calculatedImageSettings.opacity,
-                crossOrigin: calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          const fgPath = generatePath(cellsToDraw, margin);
-          return /* @__PURE__ */ react_shim_default.createElement(
-            "svg",
-            __spreadValues({
-              height: size,
-              width: size,
-              viewBox: `0 0 ${numCells} ${numCells}`,
-              ref: forwardedRef,
-              role: "img"
-            }, otherProps),
-            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
-            /* @__PURE__ */ react_shim_default.createElement(
-              "path",
-              {
-                fill: bgColor,
-                d: `M0,0 h${numCells}v${numCells}H0z`,
-                shapeRendering: "crispEdges"
-              }
-            ),
-            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
-            image
-          );
-        }
-      );
-      QRCodeSVG.displayName = "QRCodeSVG";
     }
   });
 
@@ -28495,7 +34944,7 @@ ${cue.text}`).join("\n\n")}
     size = 18,
     color,
     style,
-    fill
+    fill: fill2
   }) {
     const path = ICON_PATHS[name];
     if (!path) return null;
@@ -28505,7 +34954,7 @@ ${cue.text}`).join("\n\n")}
         width: size,
         height: size,
         viewBox: "0 0 24 24",
-        fill: fill || "none",
+        fill: fill2 || "none",
         stroke: color || "currentColor",
         strokeWidth: "1.6",
         strokeLinecap: "round",
@@ -28576,6 +35025,9 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
+  function isSelectHeader(o) {
+    return typeof o === "object" && o !== null && "header" in o;
+  }
   function Select({
     value,
     options,
@@ -28583,11 +35035,15 @@ ${cue.text}`).join("\n\n")}
     width,
     dim,
     compact,
-    placeholder
+    placeholder,
+    maxMenuHeight = 260,
+    ariaLabel
   }) {
     const [open2, setOpen] = useState(false);
     const ref = useRef(null);
+    const triggerRef = useRef(null);
     const menuRef = useRef(null);
+    const optionRefs = useRef([]);
     const [menuPos, setMenuPos] = useState(null);
     useEffect(() => {
       const onDoc = (e) => {
@@ -28611,7 +35067,7 @@ ${cue.text}`).join("\n\n")}
         const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
         const spaceAbove = rect.top - gap - margin;
         const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
-        const maxHeight = Math.min(260, Math.max(120, openUp ? spaceAbove : spaceBelow));
+        const maxHeight = Math.min(maxMenuHeight, Math.max(120, openUp ? spaceAbove : spaceBelow));
         setMenuPos({
           // Bottom-anchor when opening upward so a short list still hugs the
           // trigger instead of floating maxHeight above it.
@@ -28628,18 +35084,103 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", update, true);
         window.removeEventListener("resize", update);
       };
-    }, [open2]);
-    const normalized = options.map(
-      (o) => typeof o === "object" ? o : { value: o, label: String(o) }
-    );
-    const current = normalized.find((o) => o.value === value);
-    const label = current ? current.label : placeholder ?? String(value);
+    }, [open2, maxMenuHeight]);
+    const rows = [];
+    const normalized = [];
+    for (const o of options) {
+      if (isSelectHeader(o)) {
+        rows.push({ kind: "header", header: o });
+        continue;
+      }
+      const opt = typeof o === "object" ? o : { value: o, label: String(o) };
+      rows.push({ kind: "option", option: opt, index: normalized.length });
+      normalized.push(opt);
+    }
+    const selectedIndex = normalized.findIndex((o) => o.value === value);
+    const current2 = selectedIndex >= 0 ? normalized[selectedIndex] : void 0;
+    const label = current2 ? current2.triggerLabel ?? current2.label : placeholder ?? String(value);
+    const focusOnOpen = useRef(false);
+    useEffect(() => {
+      if (!open2 || !menuPos || !focusOnOpen.current) return;
+      focusOnOpen.current = false;
+      optionRefs.current[Math.max(0, selectedIndex)]?.focus();
+    }, [open2, menuPos, selectedIndex]);
+    const close = (returnFocus) => {
+      setOpen(false);
+      if (returnFocus) triggerRef.current?.focus();
+    };
+    const choose = (o, returnFocus) => {
+      if (onChange) onChange(o.value);
+      close(returnFocus);
+    };
+    const onTriggerKeyDown = (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (open2) {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") optionRefs.current[Math.max(0, selectedIndex)]?.focus();
+          else close(false);
+          return;
+        }
+        focusOnOpen.current = true;
+        setOpen(true);
+      } else if (e.key === "Escape" && open2) {
+        e.preventDefault();
+        e.stopPropagation();
+        close(false);
+      }
+    };
+    const onMenuKeyDown = (e) => {
+      const at = optionRefs.current.findIndex((el) => el === document.activeElement);
+      const last2 = normalized.length - 1;
+      const focusAt = (i) => optionRefs.current[Math.min(last2, Math.max(0, i))]?.focus();
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusAt(at < 0 ? 0 : at + 1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusAt(at < 0 ? last2 : at - 1);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusAt(0);
+          break;
+        case "End":
+          e.preventDefault();
+          focusAt(last2);
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (at >= 0) choose(normalized[at], true);
+          break;
+        case "Escape":
+          e.preventDefault();
+          e.stopPropagation();
+          close(true);
+          break;
+        case "Tab":
+          e.preventDefault();
+          close(true);
+          break;
+      }
+    };
+    optionRefs.current.length = normalized.length;
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
         {
+          ref: triggerRef,
           type: "button",
-          onClick: () => setOpen((o) => !o),
+          "data-st-focus": "",
+          "aria-haspopup": "listbox",
+          "aria-expanded": open2,
+          "aria-label": ariaLabel,
+          onClick: () => {
+            setOpen((o) => !o);
+          },
+          onKeyDown: onTriggerKeyDown,
           style: {
             width: "100%",
             textAlign: "left",
@@ -28676,6 +35217,8 @@ ${cue.text}`).join("\n\n")}
           "div",
           {
             ref: menuRef,
+            role: "listbox",
+            onKeyDown: onMenuKeyDown,
             style: {
               position: "fixed",
               top: menuPos.top,
@@ -28691,35 +35234,73 @@ ${cue.text}`).join("\n\n")}
               maxHeight: menuPos.maxHeight,
               overflowY: "auto"
             },
-            children: normalized.map((o) => {
-              const active2 = o.value === value;
+            children: rows.map((row, ri) => {
+              if (row.kind === "header") {
+                return /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    role: "presentation",
+                    style: {
+                      padding: "10px 12px 4px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: TOKENS.textMute,
+                      userSelect: "none"
+                    },
+                    children: [
+                      row.header.header,
+                      row.header.badge ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                        " \xB7 ",
+                        /* @__PURE__ */ jsx("span", { style: { color: TOKENS.accent }, children: row.header.badge })
+                      ] }) : null
+                    ]
+                  },
+                  `h:${ri}`
+                );
+              }
+              const o = row.option;
+              const active3 = o.value === value;
+              const hoverOn = (el) => {
+                if (!active3) el.style.background = TOKENS.surface3;
+              };
+              const hoverOff = (el) => {
+                if (!active3) el.style.background = "transparent";
+              };
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
-                  onClick: () => {
-                    if (onChange) onChange(o.value);
-                    setOpen(false);
+                  ref: (el) => {
+                    optionRefs.current[row.index] = el;
                   },
+                  role: "option",
+                  "aria-selected": active3,
+                  tabIndex: -1,
+                  "data-st-focus": "",
+                  onClick: () => choose(o, false),
                   style: {
                     padding: "8px 10px",
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: TYPE.body,
-                    color: active2 ? TOKENS.text : TOKENS.textDim,
-                    background: active2 ? TOKENS.accentSoft : "transparent",
+                    color: active3 ? TOKENS.text : TOKENS.textDim,
+                    background: active3 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
+                    gap: 8
                   },
-                  onMouseEnter: (e) => {
-                    if (!active2) e.currentTarget.style.background = TOKENS.surface3;
-                  },
-                  onMouseLeave: (e) => {
-                    if (!active2) e.currentTarget.style.background = "transparent";
-                  },
+                  onMouseEnter: (e) => hoverOn(e.currentTarget),
+                  onMouseLeave: (e) => hoverOff(e.currentTarget),
+                  onFocus: (e) => hoverOn(e.currentTarget),
+                  onBlur: (e) => hoverOff(e.currentTarget),
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active2 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    o.mark || active3 ? /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }, children: [
+                      o.mark ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: "var(--st-dim, #8b8e99)", whiteSpace: "nowrap" }, children: o.mark }) : null,
+                      active3 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    ] }) : null
                   ]
                 },
                 String(o.value)
@@ -29141,12 +35722,36 @@ ${cue.text}`).join("\n\n")}
       desc: s.blurDescriptions
     };
   }
-  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS;
+  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS, LOCKED_THUMB_CLASS, LOCKED_TEXT_CLASS;
   var init_spoilers = __esm({
     "lib/spoilers.ts"() {
       CLEAR = { thumb: false, title: false, desc: false };
       SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
       SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
+      LOCKED_THUMB_CLASS = "blur-[14px] scale-[1.04]";
+      LOCKED_TEXT_CLASS = "blur-[5px] select-none";
+    }
+  });
+
+  // components/series-lock/copy.ts
+  function fill(text, vars) {
+    return text.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
+  }
+  function joinNames(names, t) {
+    if (names.length <= 1) return names[0] ?? "";
+    return `${names.slice(0, -1).join(", ")} ${t("slAnd")} ${names[names.length - 1]}`;
+  }
+  function useProfileNames() {
+    return useCallback((ids) => {
+      const byId = new Map(getProfiles().map((p) => [p.id, p.name]));
+      return ids.map((id) => byId.get(id)).filter((name) => Boolean(name));
+    }, []);
+  }
+  var init_copy = __esm({
+    "components/series-lock/copy.ts"() {
+      "use client";
+      init_react_shim();
+      init_profile_storage_shim();
     }
   });
 
@@ -29162,15 +35767,20 @@ ${cue.text}`).join("\n\n")}
     autoPlaySeconds = 5,
     binge = false,
     onPlaySameSeries,
+    locked = null,
     onDismiss,
     onPlayNow
   }) {
     const { t } = useLang();
+    const profileNames2 = useProfileNames();
+    const isLocked = Boolean(locked);
+    const countdownSeconds = isLocked ? null : autoPlaySeconds;
     const isTv = useTvMode();
     const tvStation = isTv ? { "data-f": "" } : {};
-    const [skipStraightToNext] = useState(
+    const [advanceAtOutroArmed] = useState(
       () => getAdvanceAtOutro() && getAutoPlayNextEpisode() && hasOutroFired()
     );
+    const skipStraightToNext = advanceAtOutroArmed && !isLocked;
     const [spoilerMask] = useState(
       () => spoilerMaskFor(getSpoilerMaskSettings(), { watched: false, isNextUp: true })
     );
@@ -29209,8 +35819,11 @@ ${cue.text}`).join("\n\n")}
       return () => clearTimeout(t2);
     }, []);
     useEffect(() => {
-      if (autoPlaySeconds == null) return;
-      setCountdown(autoPlaySeconds);
+      if (countdownSeconds == null) {
+        setCountdown(null);
+        return;
+      }
+      setCountdown(countdownSeconds);
       intervalRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev === null || prev <= 1) {
@@ -29223,7 +35836,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       };
-    }, [autoPlaySeconds]);
+    }, [countdownSeconds]);
     useEffect(() => {
       if (countdown !== 0 || didAutoPlayRef.current) return;
       if (urlReady || allowManualPlayWhenNotReady) {
@@ -29252,7 +35865,7 @@ ${cue.text}`).join("\n\n")}
               {
                 src: stillUrl,
                 alt: episodeTitle,
-                className: `h-full w-full object-cover ${spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
+                className: `h-full w-full object-cover ${isLocked ? LOCKED_THUMB_CLASS : spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
               }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center", children: /* @__PURE__ */ jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", className: "text-slate-600", children: [
               /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }),
@@ -29282,16 +35895,17 @@ ${cue.text}`).join("\n\n")}
                   ")"
                 ] })
               ] }),
-              /* @__PURE__ */ jsx("p", { className: `mt-0.5 line-clamp-1 text-[11px] text-slate-500 ${spoilerMask.title ? SPOILER_TEXT_CLASS : ""}`, children: episodeTitle })
+              /* @__PURE__ */ jsx("p", { className: `mt-0.5 line-clamp-1 text-[11px] text-slate-500 ${isLocked ? LOCKED_TEXT_CLASS : spoilerMask.title ? SPOILER_TEXT_CLASS : ""}`, children: episodeTitle }),
+              locked ? /* @__PURE__ */ jsx(LockedLine, { waitingFor: locked.waitingFor, text: fill(t("slNextLocked"), { names: joinNames(profileNames2(locked.waitingFor), t) }) }) : null
             ] })
           ] }),
           /* @__PURE__ */ jsx("div", { className: "relative h-1 w-full bg-white/5", children: urlReady && countdown !== null ? /* @__PURE__ */ jsx(
             "div",
             {
               className: "h-full bg-aurora-400 transition-none",
-              style: { width: `${countdown / (autoPlaySeconds ?? 5) * 100}%` }
+              style: { width: `${countdown / (countdownSeconds ?? 5) * 100}%` }
             }
-          ) : !urlReady ? /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) : /* @__PURE__ */ jsx("div", { className: "h-full w-full bg-white/10" }) }),
+          ) : !urlReady && !isLocked ? /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) : /* @__PURE__ */ jsx("div", { className: "h-full w-full bg-white/10" }) }),
           /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2 px-3 py-2", children: [
             /* @__PURE__ */ jsxs(
               "button",
@@ -29302,7 +35916,7 @@ ${cue.text}`).join("\n\n")}
                 className: "flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-slate-300",
                 children: [
                   /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) }),
-                  t("dismiss")
+                  isLocked ? t("slClose") : t("dismiss")
                 ]
               }
             ),
@@ -29317,7 +35931,17 @@ ${cue.text}`).join("\n\n")}
                 children: t("bingeOneMoreSame")
               }
             ),
-            urlReady ? /* @__PURE__ */ jsxs(
+            isLocked ? /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...tvStation,
+                ref: playButtonRef,
+                onClick: handlePlayNow,
+                className: "flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/10",
+                children: t("slWatchAnyway")
+              }
+            ) : urlReady ? /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
@@ -29353,6 +35977,13 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
+  function LockedLine({ waitingFor, text }) {
+    const avatar = getProfiles().find((p) => p.id === waitingFor[0]);
+    return /* @__PURE__ */ jsxs("p", { "data-series-lock-next": "", className: "mt-1 flex items-center gap-1.5 text-[0.6875rem] text-slate-300", children: [
+      avatar ? /* @__PURE__ */ jsx(ProfileAvatar, { profile: avatar, className: "h-[1.125rem] w-[1.125rem] shrink-0 text-[0.5rem]" }) : null,
+      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text })
+    ] });
+  }
   var init_next_episode_card = __esm({
     "components/player/next-episode-card.tsx"() {
       "use strict";
@@ -29363,6 +35994,9 @@ ${cue.text}`).join("\n\n")}
       init_autoplay_settings();
       init_spoiler_settings();
       init_spoilers();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_copy();
       init_jsx_runtime_shim();
     }
   });
@@ -29464,6 +36098,7 @@ ${cue.text}`).join("\n\n")}
       init_profile_storage_shim();
       init_i18n();
       init_tv_focus_shim();
+      init_pip();
       init_plugin_registry();
       init_client();
       init_mode();
@@ -29479,11 +36114,19 @@ ${cue.text}`).join("\n\n")}
       init_appearance_settings();
       init_plugin_storage();
       init_plugin_assets();
+      init_home_background_settings();
       init_home_override_settings();
       init_trakt_storage();
       init_trakt_sync();
       init_trakt_watchlist_limit();
       init_watchlist();
+      init_movie_watchlist();
+      init_watchlist_merge();
+      init_mutation_source();
+      init_rating_sources();
+      init_open_external();
+      init_esm();
+      init_playback_start_gate();
       init_watchlist_auto_remove();
       init_trakt_device_login();
       init_playback_settings();
@@ -29516,13 +36159,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-storage.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-storage.ts
   init_plugin_sdk();
   var AUTH_KEY2 = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
@@ -29801,7 +36444,7 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-provider.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-library-provider.ts
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
   var MAX_BATCH_BYTES = 1e6;
@@ -29946,7 +36589,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-sync.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-sync.ts
   init_plugin_sdk();
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -30575,7 +37218,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-utils.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -30655,7 +37298,7 @@ ${cue.text}`).join("\n\n")}
     return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-capability-provider.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
     id: "plex-playback",
     pluginId: "com.lumio.plex",
@@ -30693,11 +37336,11 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-browse-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-grid.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -31060,7 +37703,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-browse-page.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -31106,7 +37749,7 @@ ${cue.text}`).join("\n\n")}
     const showControls = !gridEmpty || hasActiveFilters;
     useEffect(() => {
       const incoming = params?.titleQuery ?? "";
-      setFilters((current) => current.titleQuery === incoming ? current : { ...current, titleQuery: incoming, page: 1 });
+      setFilters((current2) => current2.titleQuery === incoming ? current2 : { ...current2, titleQuery: incoming, page: 1 });
     }, [params?.titleQuery]);
     const buttonBase = "rounded-full border border-transparent bg-[#fcfcff14] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] backdrop-blur-md transition";
     const buttonActive = "bg-[#fcfcff2e] text-white";
@@ -31120,7 +37763,7 @@ ${cue.text}`).join("\n\n")}
               {
                 type: "button",
                 className: buttonBase + " " + (filters.mediaType == "all" ? buttonActive : buttonInactive),
-                onClick: () => setFilters((current) => ({ ...current, mediaType: "all", page: 1 })),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "all", page: 1 })),
                 children: t("all")
               }
             ),
@@ -31129,7 +37772,7 @@ ${cue.text}`).join("\n\n")}
               {
                 type: "button",
                 className: buttonBase + " " + (filters.mediaType == "movie" ? buttonActive : buttonInactive),
-                onClick: () => setFilters((current) => ({ ...current, mediaType: "movie", page: 1 })),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "movie", page: 1 })),
                 children: t("movies")
               }
             ),
@@ -31138,7 +37781,7 @@ ${cue.text}`).join("\n\n")}
               {
                 type: "button",
                 className: buttonBase + " " + (filters.mediaType == "tv" ? buttonActive : buttonInactive),
-                onClick: () => setFilters((current) => ({ ...current, mediaType: "tv", page: 1 })),
+                onClick: () => setFilters((current2) => ({ ...current2, mediaType: "tv", page: 1 })),
                 children: t("series")
               }
             )
@@ -31173,10 +37816,10 @@ ${cue.text}`).join("\n\n")}
           onRefreshStateChange: setRefreshingGrid,
           onFilterOptionsChange: setFilterOptions,
           onEmptyChange: setGridEmpty,
-          onGenreSelect: (genre) => setFilters((current) => ({
-            ...current,
+          onGenreSelect: (genre) => setFilters((current2) => ({
+            ...current2,
             page: 1,
-            genres: current.genres.includes(genre) ? current.genres : [...current.genres, genre]
+            genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
           })),
           onClearFilters: () => setFilters(defaultFilters)
         }
@@ -31184,7 +37827,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-home-override.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var defaultFilterOptions2 = {
@@ -31226,20 +37869,20 @@ ${cue.text}`).join("\n\n")}
         filters,
         onOpenDetails,
         onFilterOptionsChange: setFilterOptions,
-        onGenreSelect: (genre) => setFilters((current) => ({
-          ...current,
+        onGenreSelect: (genre) => setFilters((current2) => ({
+          ...current2,
           page: 1,
-          genres: current.genres.includes(genre) ? current.genres : [...current.genres, genre]
+          genres: current2.genres.includes(genre) ? current2.genres : [...current2.genres, genre]
         })),
         onClearFilters: () => setFilters(defaultFilters2)
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-index-panel.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-library-index-panel.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -31250,7 +37893,7 @@ ${cue.text}`).join("\n\n")}
   function PlexLibraryIndexPanel() {
     const { t, lang } = useLang();
     const [status, setStatus] = useState(null);
-    const [active2, setActive2] = useState(() => getActiveLibraryScan2());
+    const [active3, setActive3] = useState(() => getActiveLibraryScan2());
     const [error, setError] = useState(null);
     const [mode, setMode] = useState(() => getLibraryMode());
     const settings = ensureCanonicalPlexSettings();
@@ -31264,13 +37907,13 @@ ${cue.text}`).join("\n\n")}
       return onLibraryModeChanged(() => setMode(getLibraryMode()));
     }, []);
     useEffect(() => onLibraryScanChanged2((scan2) => {
-      setActive2(scan2);
+      setActive3(scan2);
       if (!scan2) refresh();
     }), []);
     const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null;
-    const progress = active2 && source && active2.sourceId === source.id ? active2.progress : null;
-    const running2 = active2 !== null;
-    const busyElsewhere = active2 !== null && progress === null;
+    const progress = active3 && source && active3.sourceId === source.id ? active3.progress : null;
+    const running2 = active3 !== null;
+    const busyElsewhere = active3 !== null && progress === null;
     const run = async (kind) => {
       if (!source || running2) return;
       setError(null);
@@ -31324,7 +37967,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-section.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
@@ -31838,12 +38481,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-episode-sidebar.tsx
+  // ../../../lumio-official-plugins/plugins/plex/runtime/plex-episode-sidebar.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
-  function formatDuration(ms) {
-    const totalMin = Math.round(ms / 6e4);
+  function formatDuration(ms2) {
+    const totalMin = Math.round(ms2 / 6e4);
     if (totalMin < 60) return `${totalMin} min`;
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
@@ -32151,19 +38794,19 @@ ${cue.text}`).join("\n\n")}
         setNextEpUrlReady(false);
       }
     }
-    function handleTimeUpdate(current, duration) {
+    function handleTimeUpdate(current2, duration) {
       const currentEpisode = playingEpisodeRef.current;
       if (!currentEpisode || !isFinite(duration) || duration === 0) return;
       if (!sawEarlyPlaybackForEpisodeRef.current) {
-        if (current <= 15) {
+        if (current2 <= 15) {
           sawEarlyPlaybackForEpisodeRef.current = true;
         } else {
           return;
         }
       }
       if (!watchedMarkedInSessionRef.current) {
-        const completionRatio = current / duration;
-        const secondsRemaining = duration - current;
+        const completionRatio = current2 / duration;
+        const secondsRemaining = duration - current2;
         if (completionRatio >= 0.92 || secondsRemaining <= 90) {
           markWatched(currentEpisode, true);
           watchedMarkedInSessionRef.current = true;
@@ -32171,12 +38814,12 @@ ${cue.text}`).join("\n\n")}
       }
       if (!getAutoPlayNextEpisode()) return;
       if (!nextEpArmedRef.current) {
-        if (current < 30) return;
-        const progressRatio = current / duration;
+        if (current2 < 30) return;
+        const progressRatio = current2 / duration;
         if (progressRatio > 0.25) return;
         nextEpArmedRef.current = true;
       }
-      const remaining = duration - current;
+      const remaining = duration - current2;
       const popupAt = getNextEpPopupSeconds();
       const preloadLead = getNextEpPreloadLeadSeconds();
       const preloadAt = popupAt + preloadLead;
@@ -32332,7 +38975,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/episode-sidebar-provider.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/episode-sidebar-provider.ts
   function isPlexItem(item) {
     return item.source === "plex" || item.id?.startsWith("plex-") || (item.providers ?? []).includes("Plex");
   }
@@ -32345,7 +38988,7 @@ ${cue.text}`).join("\n\n")}
     SidebarSection: PlexEpisodeSidebar
   };
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/sync-identity-provider.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -32408,7 +39051,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/plex/runtime/index.ts
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },
@@ -32456,17 +39099,6 @@ ${cue.text}`).join("\n\n")}
 })();
 /*! Bundled license information:
 
-react-dom/cjs/react-dom.production.js:
-  (**
-   * @license React
-   * react-dom.production.js
-   *
-   * Copyright (c) Meta Platforms, Inc. and affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   *)
-
 qrcode.react/lib/esm/index.js:
   (**
    * @license QR Code generator library (TypeScript)
@@ -32477,5 +39109,16 @@ qrcode.react/lib/esm/index.js:
    * @license qrcode.react
    * Copyright (c) Paul O'Shannessy
    * SPDX-License-Identifier: ISC
+   *)
+
+react-dom/cjs/react-dom.production.js:
+  (**
+   * @license React
+   * react-dom.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
    *)
 */

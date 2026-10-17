@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.37
+
+- On Android, Plex playback streams straight to the player, which gives smoother playback on TV boxes. Subtitle sync and short skips back keep working. Requires Lumio 0.1.630.
+
 ## 1.0.36
 
 - The index card keeps showing a running scan after you leave Settings and come back, and Cancel stops it. Rebuild and Update no longer answer "library scan already running" while a scan you can't see holds the lock; if another library is indexing, the card says so.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.5
+
+- Films and series from your playlist stream straight to the player on Android, which gives smoother playback on TV boxes. Subtitle sync, language detection and short skips back keep working. Requires Lumio 0.1.630.
+
 ## 0.16.4
 
 - Rename a playlist on the TV and the phone too: Rename sits next to Categories on each playlist. After adding a new playlist, Live TV asks what to call it (skip it to keep the server name). The Xtream account rows use the same names. Requires Lumio 0.1.625.

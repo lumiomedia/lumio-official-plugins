@@ -13,7 +13,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.36",
+      "version": "1.0.37",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -26,7 +26,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/plex",
-      "minAppVersion": "0.1.603"
+      "minAppVersion": "0.1.630"
     },
     {
       "id": "com.lumio.jellyfin",
@@ -82,8 +82,8 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.16.4",
-      "minAppVersion": "0.1.625",
+      "version": "0.16.5",
+      "minAppVersion": "0.1.630",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
         "sv": "Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio."
