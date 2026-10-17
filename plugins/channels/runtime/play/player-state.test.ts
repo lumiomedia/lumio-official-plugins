@@ -40,6 +40,23 @@ describe('spelarens tillstånd', () => {
     expect(playerReducer(early, { type: 'goto', channelId: 'c2', mode: 'live' }).between).toBeNull()
   })
 
+  it('strömmen dog efter start: samma version öppnas om en gång på liveläget, utan uppslag', () => {
+    let s = playerReducer(playing(), { type: 'firstPlay', seq: 0 })
+    s = playerReducer(s, { type: 'retrySame', seq: 0, initialTime: 42, now: 50_000 })
+    expect(s.status).toBe('playing')
+    expect(s.request.seq).toBe(1)
+    expect(s.onScreen).toMatchObject({ seq: 1, initialTime: 42, playable: { url: 'u1' } })
+    expect(s.tried?.urls).toEqual([])
+    expect(awaitingPicture(s)).toBe(true)
+    // Andra avbrottet: versionen räknas som fallerad — nästa version live.
+    s = playerReducer(s, { type: 'retrySame', seq: 1, initialTime: 60, now: 60_000 })
+    expect(s.status).toBe('resolving')
+    expect(s.request.seq).toBe(2)
+    expect(s.tried?.urls).toEqual(['u1'])
+    // En gammal visnings avbrott rör inget.
+    expect(playerReducer(s, { type: 'retrySame', seq: 1, initialTime: 1, now: 1 })).toBe(s)
+  })
+
   it('en fallerad version: nästa version av SAMMA program live, inget hopp till nästa program', () => {
     const s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1' })
     expect(s.status).toBe('resolving')

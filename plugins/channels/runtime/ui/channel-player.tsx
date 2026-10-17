@@ -11,6 +11,7 @@
  * Inget mediaId/tmdbId/imdbId till spelaren: kanaler ska inte hamna i
  * Fortsätt titta eller skrobblas.
  */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentType, type CSSProperties, type MutableRefObject, type ReactNode } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
@@ -19,13 +20,13 @@ import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
 import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, pastEndAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
-import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
+import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, slotKey, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
 import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
 import { noteDuration } from '../data/runtime-fix'
 import { readCachedRundown, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { HIDE_HOST_CHROME_CSS, useHostControls, useHostMenuClearLeft, useHostTopbarBottom } from './host-controls'
+import { HIDE_HOST_CHROME_CSS, useHostControls, useHostMenuClearSpot, useHostTopbarBottom } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
@@ -175,6 +176,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
 
   // ── Planering: varje begäran planeras EN gång ──────────────────────────────
   const plannedSeq = useRef<number | null>(null)
+  /** När visningens startposition räknades (liveläget = den + tiden sedan dess). */
+  const plannedAt = useRef<{ seq: number; at: number } | null>(null)
   const plannedChannel = useRef<string | null>(null)
   // Vid unmount: ett uppslag som väntar på zappfördröjningen ska aldrig starta.
   useEffect(() => () => { gate.begin() }, [gate])
@@ -195,6 +198,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     }
     mark(req.seq, 'pool')
     const initialTime = startSeconds(slot, req.mode)
+    plannedAt.current = { seq: req.seq, at: nowMs }
     const deadline = req.mode === 'start' ? nowMs + Math.max(1, slot.item.runtimeMin) * 60_000 : slot.stop
     dispatch({ type: 'planned', plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } })
     const token = gate.begin()
@@ -386,7 +390,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // Kanalpillen under värdens topprad (mätt; raden kan ligga lägre än sina 52 px).
   const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state) ? null : playerKey)
   // Utan appens spelare ligger skärmarna under appens toppkrom: pillen förbi menyknappen.
-  const menuLeft = useHostMenuClearLeft(osdRef, !(onScreen && Player))
+  const menuSpot = useHostMenuClearSpot(osdRef, !(onScreen && Player))
   // Samma villkor som OSD:n renderas med.
   const osdShownRef = useRef(true)
   osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== 'playing'
@@ -399,6 +403,37 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     durationNotedFor.current = seq
     const next = noteDuration(readRuntimeFixes(), ref, duration)
     if (next) writeRuntimeFixes(next)
+  }, [])
+
+  /** Senast kända position och längd per visning (avbrottsavgörandet). */
+  const lastPosition = useRef<{ seq: number; position: number; duration: number } | null>(null)
+  /**
+   * Strömmen dog efter att ha visat bild (tidigt filslut, hopp till början,
+   * värdens laddfel efter start): felet sitter i anslutningen, inte i filen.
+   * Samma version öppnas om EN gång på liveläget — utan nytt uppslag, ingen
+   * leverantörsfråga. Bär den inte heller: nästa version, sedan Ingen signal.
+   * Aldrig "Programmet är slut" för en fil som inte är slut.
+   */
+  const recoverStream = useCallback((seq: number, why: string) => {
+    const s = stateRef.current
+    const shown = s.onScreen
+    if (!shown || shown.seq !== seq || s.request.seq !== seq) return
+    endHandledFor.current = seq
+    if (s.tried && s.tried.key === slotKey(shown.slot) && s.tried.again) {
+      console.info(`[channels] ${why}: samma version bar inte två gånger, nästa version`)
+      resolver.forget(shown.slot.item.ref)
+      dispatch({ type: 'failed', seq, now: Date.now(), url: shown.playable.url })
+      return
+    }
+    const last = lastPosition.current?.seq === seq ? lastPosition.current.position : shown.initialTime
+    const nowMs = Date.now()
+    const since = plannedAt.current?.seq === seq ? (nowMs - plannedAt.current.at) / 1000 : 0
+    const initialTime = Math.max(0, shown.mode === 'live' ? shown.initialTime + since : last - 2)
+    console.info(`[channels] ${why}: öppnar samma version igen på ${Math.round(initialTime)} s`)
+    // Ingen ny planering: samma uppslagna adress, bara ny position.
+    plannedSeq.current = s.request.seq + 1
+    plannedAt.current = { seq: s.request.seq + 1, at: nowMs }
+    dispatch({ type: 'retrySame', seq, initialTime, now: nowMs })
   }, [])
 
   // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
@@ -600,7 +635,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       visible={osdIdleVisible || status !== 'playing'}
       lift={hostControls?.lift ?? null}
       topbarBottom={hostTopbar}
-      menuLeft={menuLeft}
+      menuSpot={menuSpot}
       channel={channel}
       meta={metaParts.join(' · ')}
       title={described?.slot.item.title ?? null}
@@ -645,6 +680,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     const { playable, slot, seq } = onScreen
     return (
       <div data-channels-player="" onMouseMove={poke}>
+        {/* Inställningskortet i ett eget lager ovanför värdspelaren (z 60): inne i
+            spelarens överlägg revs det med spelaren vid varje byte — laddning,
+            svart, laddning igen (2026-10-17). Lagret lever över bytet. */}
+        {typeof document !== 'undefined'
+          ? createPortal(<div data-channels-tuning-layer="" style={{ position: 'fixed', inset: 0, zIndex: 61, pointerEvents: 'none' }}>{tuningCard}</div>, document.body)
+          : null}
         <Player
           // Ny visning = ny instans: initialTime läses bara vid montering, och
           // "Från början" på samma program har samma URL.
@@ -660,7 +701,15 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           // och bytet (ny nyckel) rör inte fönstrets helskärmsläge.
           hideStartSplash
           onClose={onClose}
-          onPlaybackEnded={() => dispatch({ type: 'advance', seq, now: Date.now() })}
+          onPlaybackEnded={() => {
+            // Filslut långt före filens verkliga slut: anslutningen dog, inte programmet.
+            const last = lastPosition.current
+            if (last && last.seq === seq && last.duration > 0 && last.position < last.duration - 30 && Date.now() < slot.stop) {
+              recoverStream(seq, `filslut vid ${Math.round(last.position)} av ${Math.round(last.duration)} s`)
+              return
+            }
+            dispatch({ type: 'advance', seq, now: Date.now() })
+          }}
           // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
           // Värdens startvakt: tiden går (ljud) eller bild renderad — strömmen lever.
           onStartProgress={() => noteProgress(seq)}
@@ -687,6 +736,13 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             const cur = stateRef.current
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
+            // mpv laddade om strömmen från början mitt i (Adventure Time 2026-10-17:
+            // 502 s → 0,7 s, svart bild): samma version på liveläget igen.
+            if (cur.framedSeq === seq && onScreen.initialTime > 60 && position < 5) {
+              recoverStream(seq, `hopp till ${position.toFixed(1)} s från ${Math.round(onScreen.initialTime)} s`)
+              return
+            }
+            if (Number.isFinite(position) && position > 1) lastPosition.current = { seq, position, duration: Number.isFinite(duration) ? duration : 0 }
             const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 })
             if (!action) return
             endHandledFor.current = seq
@@ -715,6 +771,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             // Värdens bildrutevakt ger load-failed efter ~30 s utan räknade bildrutor
             // även när mpv spelar (playback-restart i loggen, tiden går). Ett fel
             // räknas bara utan framsteg — annars är det ingen Ingen signal.
+            // Bilden har synts: värden säger att strömmen dog (tidigt filslut).
+            // Solar Opposites 2026-10-17 visade då "Programmet är slut" mitt i filen.
+            if (stateRef.current.framedSeq === seq) {
+              recoverStream(seq, 'strömmen avbröts efter start')
+              return true
+            }
             const p = progressAt.current
             if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
               console.info(`[channels] värdens laddfel ignoreras: strömmen ${channel.number} spelar`)
@@ -723,7 +785,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             }
             // Utan längd från värden (filen tog slut innan bild): ett laddfel nära
             // programgränsen är programmets slut — liveläget låg efter filens slut.
-            if (onScreen.mode === 'live' && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+            if (onScreen.mode === 'live' && durationNotedFor.current !== seq && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
               dispatch({ type: 'advance', seq, now: Date.now() })
               return true
             }
@@ -734,7 +796,6 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           overlayContent={(
             <>
               {tuningNow ? <style>{HIDE_HOST_CHROME_CSS}</style> : null}
-              {tuningCard}
               {osd}
               {guide}
             </>
@@ -866,7 +927,7 @@ interface OsdProps {
   /** Värdens topprads nederkant i px från OSD:ns överkant (mätt); null = okänd. */
   topbarBottom?: number | null
   /** Utan värdspelare: pillens vänsterkant förbi appens menyknapp (px, mätt); null = 1rem. */
-  menuLeft?: number | null
+  menuSpot?: { left: number; top: number } | null
   channel: ChannelDef
   meta: string
   title: string | null
@@ -908,11 +969,12 @@ function ChannelOsd(props: OsdProps) {
           // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
           // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
           position: 'absolute',
-          top: props.topbarBottom != null && props.topbarBottom > 0
-            ? `calc(${props.topbarBottom}px + 0.5rem)`
-            : props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)',
-          left: props.menuLeft != null ? `${props.menuLeft}px` : '1rem',
-          maxWidth: props.menuLeft != null ? `min(26rem, calc(100vw - ${props.menuLeft}px - 5rem))` : 'min(26rem, calc(100vw - 6rem))',
+          top: props.menuSpot != null ? `${props.menuSpot.top}px`
+            : props.topbarBottom != null && props.topbarBottom > 0
+              ? `calc(${props.topbarBottom}px + 0.5rem)`
+              : props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)',
+          left: props.menuSpot != null ? `${props.menuSpot.left}px` : '1rem',
+          maxWidth: props.menuSpot != null ? `min(26rem, calc(100vw - ${props.menuSpot.left}px - 5rem))` : 'min(26rem, calc(100vw - 6rem))',
           display: 'flex', alignItems: 'center', gap: '0.6rem',
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
         }}

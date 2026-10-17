@@ -1,3 +1,10 @@
+## 0.1.27
+
+- En ström som dör efter att bilden kommit (tidigt filslut, hopp tillbaka till början, laddfel mitt i) öppnas om en gång på liveläget, utan nytt uppslag. Bär den inte heller provas nästa version, sedan Ingen signal. Visar aldrig längre "Programmet är slut" för en fil som inte är slut.
+- Kanalbyte: inställningskortet ligger i ett eget lager ovanför spelaren och blinkar inte längre till svart mellan uppslag och bild.
+- Kanalpillen på skärmarna utan spelare (Programmet är slut, Ingen signal, vila) ligger under menyknappen i stället för i toppmenyn.
+- Skrivbord: ett sidosvep på tablån drar inte längre med hela sidan (menyn, klockan, heron).
+
 ## 0.1.26
 
 - Kanaler av utvalda titlar: nytt fält "Titlar" i kanalstudion. Sök en film eller serie (först bland dina källor, sedan TMDb) och välj en eller flera — kanalen sänder då bara dem, från vilken av kanalens källor som helst. Genre, era, längd och typ gäller inte (fälten tonas ner); sändningstid och ordning gäller som vanligt.

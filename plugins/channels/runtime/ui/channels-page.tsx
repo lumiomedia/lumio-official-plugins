@@ -118,6 +118,31 @@ function useFillHeight(ref: { current: HTMLElement | null }, key: unknown): numb
  * hem-hero, -mx-4/6/8) så tablån och heron får bredden som i TV-läget.
  * Mäts från kolumnens padding, inte gissat. Mobil: ingen utdragning.
  */
+/**
+ * Sidledes rullning (styrplattans svep) på kanalsidan: tablån har fast
+ * tidslinje och rullar bara uppåt, så ett sidosvep fick hela sidan att glida
+ * — menyn, klockan och heron följde med (2026-10-17). Svepet stoppas vid
+ * sidans rot; vertikal rullning (tablån) rörs inte.
+ */
+function useNoSidewaysPageScroll(ref: { current: HTMLElement | null }, active: boolean): void {
+  useEffect(() => {
+    const el = ref.current
+    if (!active || !el) return
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault()
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    // WebKit gummibandar hela dokumentet i sidled (även utan bredare innehåll).
+    const roots = [document.documentElement, document.body]
+    const prev = roots.map((r) => r.style.overscrollBehaviorX)
+    for (const r of roots) r.style.overscrollBehaviorX = 'none'
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      roots.forEach((r, i) => { r.style.overscrollBehaviorX = prev[i] })
+    }
+  }, [ref, active])
+}
+
 function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): { left: number; right: number } {
   const [bleed, setBleed] = useState({ left: 0, right: 0 })
   useLayoutEffect(() => {
@@ -267,6 +292,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   // studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
   const viewRef = useRef<HTMLDivElement | null>(null)
   const bleed = useColumnBleed(viewRef, !isMobile)
+  useNoSidewaysPageScroll(viewRef, !isMobile)
   const view = player && sorted.length > 0 ? 'player' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
   useTvViewFocus(viewRef, isTv && view !== 'player', view)
   const fillHeight = useFillHeight(viewRef, view)

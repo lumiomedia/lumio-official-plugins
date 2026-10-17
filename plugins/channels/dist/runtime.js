@@ -20758,7 +20758,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -43782,6 +43781,7 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-player.tsx
+  var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_react_shim();
   init_plugin_sdk();
 
@@ -43969,6 +43969,26 @@ ${cue.text}`).join("\n\n")}
       case "progress":
         if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq || s.firstPlaySeq !== a.seq) return s;
         return Math.abs(a.position - s.onScreen.initialTime) <= POSITION_SLACK_S ? { ...s, framedSeq: a.seq } : s;
+      case "retrySame": {
+        if (a.seq !== s.request.seq || !s.onScreen || s.onScreen.seq !== a.seq) return s;
+        const shown = s.onScreen;
+        const key = slotKey(shown.slot);
+        const urls = triedFor(s, shown.slot);
+        if (s.tried && s.tried.key === key && s.tried.again) {
+          return playerReducer(s, { type: "failed", seq: a.seq, now: a.now, url: shown.playable.url });
+        }
+        const request = next(s, { mode: shown.mode });
+        return {
+          ...s,
+          request,
+          status: "playing",
+          pending: null,
+          noSignal: null,
+          between: null,
+          tried: { key, urls, again: true },
+          onScreen: { ...shown, seq: request.seq, initialTime: a.initialTime }
+        };
+      }
       case "reveal":
         if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s;
         return { ...s, framedSeq: a.seq };
@@ -44221,20 +44241,23 @@ ${cue.text}`).join("\n\n")}
     return bottom;
   }
   var HOST_MENU_SELECTOR = ".mc-chip";
-  var MENU_CLEAR_GAP_PX = 8;
+  var MENU_BELOW_GAP_PX = 14;
   var MENU_TOP_BAND_PX = 160;
-  function menuClearLeft(anchor, menu, scale = 1, defaultLeftPx = 16) {
+  function menuClearSpot(anchor, menu, scale = 1, defaultLeftPx = 16) {
     if (!menu || menu.width <= 0 && menu.height <= 0) return null;
     const k = scale > 0 ? scale : 1;
     if ((menu.left + menu.right) / 2 > anchor.left + anchor.width / 2) return null;
     if (menu.bottom <= anchor.top || (menu.top - anchor.top) / k > MENU_TOP_BAND_PX) return null;
-    return Math.max(defaultLeftPx, Math.round((menu.right - anchor.left) / k) + MENU_CLEAR_GAP_PX);
+    return {
+      left: Math.max(defaultLeftPx, Math.round((menu.left - anchor.left) / k)),
+      top: Math.round((menu.bottom - anchor.top) / k) + MENU_BELOW_GAP_PX
+    };
   }
-  function useHostMenuClearLeft(anchorRef, active3) {
-    const [left, setLeft] = useState(null);
+  function useHostMenuClearSpot(anchorRef, active3) {
+    const [spot, setSpot] = useState(null);
     useEffect(() => {
       if (!active3) {
-        setLeft(null);
+        setSpot(null);
         return;
       }
       const read10 = () => {
@@ -44243,8 +44266,8 @@ ${cue.text}`).join("\n\n")}
         const menu = document.querySelector(HOST_MENU_SELECTOR);
         const a = anchor.getBoundingClientRect();
         const scale = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1;
-        const next2 = menuClearLeft(a, menu ? menu.getBoundingClientRect() : null, scale);
-        setLeft((prev) => prev === next2 ? prev : next2);
+        const next2 = menuClearSpot(a, menu ? menu.getBoundingClientRect() : null, scale);
+        setSpot((prev) => prev?.left === next2?.left && prev?.top === next2?.top ? prev : next2);
       };
       read10();
       const timer3 = window.setInterval(read10, 500);
@@ -44252,10 +44275,10 @@ ${cue.text}`).join("\n\n")}
       return () => {
         window.clearInterval(timer3);
         window.removeEventListener("resize", read10);
-        setLeft(null);
+        setSpot(null);
       };
     }, [anchorRef, active3]);
-    return left;
+    return spot;
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tuning-card.tsx
@@ -44657,6 +44680,7 @@ ${cue.text}`).join("\n\n")}
       if (tm && tm.seq === seq && tm.marks[name] == null) tm.marks[name] = Math.round(clockNow() - tm.t0);
     }, []);
     const plannedSeq = useRef(null);
+    const plannedAt = useRef(null);
     const plannedChannel = useRef(null);
     useEffect(() => () => {
       gate.begin();
@@ -44676,6 +44700,7 @@ ${cue.text}`).join("\n\n")}
       }
       mark(req.seq, "pool");
       const initialTime = startSeconds(slot, req.mode);
+      plannedAt.current = { seq: req.seq, at: nowMs };
       const deadline = req.mode === "start" ? nowMs + Math.max(1, slot.item.runtimeMin) * 6e4 : slot.stop;
       dispatch({ type: "planned", plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } });
       const token = gate.begin();
@@ -44833,7 +44858,7 @@ ${cue.text}`).join("\n\n")}
     const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
     const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
     const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
-    const menuLeft = useHostMenuClearLeft(osdRef, !(onScreen && Player));
+    const menuSpot = useHostMenuClearSpot(osdRef, !(onScreen && Player));
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
     const endHandledFor = useRef(null);
@@ -44843,6 +44868,27 @@ ${cue.text}`).join("\n\n")}
       durationNotedFor.current = seq;
       const next2 = noteDuration(readRuntimeFixes(), ref, duration2);
       if (next2) writeRuntimeFixes(next2);
+    }, []);
+    const lastPosition = useRef(null);
+    const recoverStream = useCallback((seq, why) => {
+      const s = stateRef.current;
+      const shown = s.onScreen;
+      if (!shown || shown.seq !== seq || s.request.seq !== seq) return;
+      endHandledFor.current = seq;
+      if (s.tried && s.tried.key === slotKey(shown.slot) && s.tried.again) {
+        console.info(`[channels] ${why}: samma version bar inte tv\xE5 g\xE5nger, n\xE4sta version`);
+        resolver.forget(shown.slot.item.ref);
+        dispatch({ type: "failed", seq, now: Date.now(), url: shown.playable.url });
+        return;
+      }
+      const last2 = lastPosition.current?.seq === seq ? lastPosition.current.position : shown.initialTime;
+      const nowMs = Date.now();
+      const since = plannedAt.current?.seq === seq ? (nowMs - plannedAt.current.at) / 1e3 : 0;
+      const initialTime = Math.max(0, shown.mode === "live" ? shown.initialTime + since : last2 - 2);
+      console.info(`[channels] ${why}: \xF6ppnar samma version igen p\xE5 ${Math.round(initialTime)} s`);
+      plannedSeq.current = s.request.seq + 1;
+      plannedAt.current = { seq: s.request.seq + 1, at: nowMs };
+      dispatch({ type: "retrySame", seq, initialTime, now: nowMs });
     }, []);
     const commitNumber = useCallback((n) => {
       setDigits("");
@@ -45014,7 +45060,7 @@ ${cue.text}`).join("\n\n")}
         visible: osdIdleVisible || status !== "playing",
         lift: hostControls?.lift ?? null,
         topbarBottom: hostTopbar,
-        menuLeft,
+        menuSpot,
         channel,
         meta: metaParts.join(" \xB7 "),
         title: described?.slot.item.title ?? null,
@@ -45051,81 +45097,99 @@ ${cue.text}`).join("\n\n")}
     );
     if (onScreen && Player) {
       const { playable, slot, seq } = onScreen;
-      return /* @__PURE__ */ jsx("div", { "data-channels-player": "", onMouseMove: poke, children: /* @__PURE__ */ jsx(
-        Player,
-        {
-          url: playable.url,
-          requestHeaders: playable.requestHeaders,
-          forceProxy: playable.forceProxy,
-          initialTime: onScreen.initialTime,
-          title: slot.item.title,
-          posterUrl: slot.item.posterUrl ?? void 0,
-          backdropUrl: slot.item.backdropUrl ?? void 0,
-          hideStartSplash: true,
-          onClose,
-          onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
-          onStartProgress: () => noteProgress(seq),
-          onDurationKnown: (duration2) => {
-            noteFileDuration(seq, slot.item.ref, duration2);
-            if (endHandledFor.current === seq) return;
-            const action = pastEndAction({ initialTime: onScreen.initialTime, duration: duration2, runtimeS: slot.item.runtimeMin * 60 });
-            if (!action) return;
-            endHandledFor.current = seq;
-            console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration2)} s): ${action}`);
-            if (action === "ended") {
+      return /* @__PURE__ */ jsxs("div", { "data-channels-player": "", onMouseMove: poke, children: [
+        typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(/* @__PURE__ */ jsx("div", { "data-channels-tuning-layer": "", style: { position: "fixed", inset: 0, zIndex: 61, pointerEvents: "none" }, children: tuningCard }), document.body) : null,
+        /* @__PURE__ */ jsx(
+          Player,
+          {
+            url: playable.url,
+            requestHeaders: playable.requestHeaders,
+            forceProxy: playable.forceProxy,
+            initialTime: onScreen.initialTime,
+            title: slot.item.title,
+            posterUrl: slot.item.posterUrl ?? void 0,
+            backdropUrl: slot.item.backdropUrl ?? void 0,
+            hideStartSplash: true,
+            onClose,
+            onPlaybackEnded: () => {
+              const last2 = lastPosition.current;
+              if (last2 && last2.seq === seq && last2.duration > 0 && last2.position < last2.duration - 30 && Date.now() < slot.stop) {
+                recoverStream(seq, `filslut vid ${Math.round(last2.position)} av ${Math.round(last2.duration)} s`);
+                return;
+              }
               dispatch({ type: "advance", seq, now: Date.now() });
-              return;
-            }
-            resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: true });
-          },
-          onTimeUpdate: (position, duration2) => {
-            noteProgress(seq);
-            noteFileDuration(seq, slot.item.ref, duration2);
-            const cur = stateRef.current;
-            if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
-            if (endHandledFor.current === seq) return;
-            const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 });
-            if (!action) return;
-            endHandledFor.current = seq;
-            if (action === "ended") {
-              dispatch({ type: "advance", seq, now: Date.now() });
-              return;
-            }
-            resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: pastEndAction({ initialTime: onScreen.initialTime, duration: duration2 }) != null });
-          },
-          onFirstPlay: () => {
-            if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
-            mark(seq, "hostFirstPlay");
-            const mounted = shownAt.current?.seq === seq ? shownAt.current.at : null;
-            const trusted = mounted == null || clockNow() - mounted < TRUSTED_FIRST_PLAY_MS;
-            dispatch({ type: "firstPlay", seq, trusted });
-          },
-          onLoadFailed: () => {
-            const p = progressAt.current;
-            if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
-              console.info(`[channels] v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
-              dispatch({ type: "reveal", seq });
+            },
+            onStartProgress: () => noteProgress(seq),
+            onDurationKnown: (duration2) => {
+              noteFileDuration(seq, slot.item.ref, duration2);
+              if (endHandledFor.current === seq) return;
+              const action = pastEndAction({ initialTime: onScreen.initialTime, duration: duration2, runtimeS: slot.item.runtimeMin * 60 });
+              if (!action) return;
+              endHandledFor.current = seq;
+              console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration2)} s): ${action}`);
+              if (action === "ended") {
+                dispatch({ type: "advance", seq, now: Date.now() });
+                return;
+              }
+              resolver.forget(slot.item.ref);
+              dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: true });
+            },
+            onTimeUpdate: (position, duration2) => {
+              noteProgress(seq);
+              noteFileDuration(seq, slot.item.ref, duration2);
+              const cur = stateRef.current;
+              if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
+              if (endHandledFor.current === seq) return;
+              if (cur.framedSeq === seq && onScreen.initialTime > 60 && position < 5) {
+                recoverStream(seq, `hopp till ${position.toFixed(1)} s fr\xE5n ${Math.round(onScreen.initialTime)} s`);
+                return;
+              }
+              if (Number.isFinite(position) && position > 1) lastPosition.current = { seq, position, duration: Number.isFinite(duration2) ? duration2 : 0 };
+              const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 });
+              if (!action) return;
+              endHandledFor.current = seq;
+              if (action === "ended") {
+                dispatch({ type: "advance", seq, now: Date.now() });
+                return;
+              }
+              resolver.forget(slot.item.ref);
+              dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: pastEndAction({ initialTime: onScreen.initialTime, duration: duration2 }) != null });
+            },
+            onFirstPlay: () => {
+              if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
+              mark(seq, "hostFirstPlay");
+              const mounted = shownAt.current?.seq === seq ? shownAt.current.at : null;
+              const trusted = mounted == null || clockNow() - mounted < TRUSTED_FIRST_PLAY_MS;
+              dispatch({ type: "firstPlay", seq, trusted });
+            },
+            onLoadFailed: () => {
+              if (stateRef.current.framedSeq === seq) {
+                recoverStream(seq, "str\xF6mmen avbr\xF6ts efter start");
+                return true;
+              }
+              const p = progressAt.current;
+              if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
+                console.info(`[channels] v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
+                dispatch({ type: "reveal", seq });
+                return true;
+              }
+              if (onScreen.mode === "live" && durationNotedFor.current !== seq && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+                dispatch({ type: "advance", seq, now: Date.now() });
+                return true;
+              }
+              resolver.forget(slot.item.ref);
+              dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
               return true;
-            }
-            if (onScreen.mode === "live" && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
-              dispatch({ type: "advance", seq, now: Date.now() });
-              return true;
-            }
-            resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
-            return true;
+            },
+            overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
+              tuningNow ? /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }) : null,
+              osd,
+              guide
+            ] })
           },
-          overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
-            tuningNow ? /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }) : null,
-            tuningCard,
-            osd,
-            guide
-          ] })
-        },
-        `${seq}|${playable.url}`
-      ) });
+          `${seq}|${playable.url}`
+        )
+      ] });
     }
     const backdropUrl = described?.slot.item.backdropUrl ?? between?.slot.item.backdropUrl ?? void 0;
     return /* @__PURE__ */ jsxs(Screen, { backdropUrl: status === "resolving" ? void 0 : backdropUrl, isTv, onMouseMove: poke, children: [
@@ -45235,9 +45299,9 @@ ${cue.text}`).join("\n\n")}
                 // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
                 // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
                 position: "absolute",
-                top: props.topbarBottom != null && props.topbarBottom > 0 ? `calc(${props.topbarBottom}px + 0.5rem)` : props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
-                left: props.menuLeft != null ? `${props.menuLeft}px` : "1rem",
-                maxWidth: props.menuLeft != null ? `min(26rem, calc(100vw - ${props.menuLeft}px - 5rem))` : "min(26rem, calc(100vw - 6rem))",
+                top: props.menuSpot != null ? `${props.menuSpot.top}px` : props.topbarBottom != null && props.topbarBottom > 0 ? `calc(${props.topbarBottom}px + 0.5rem)` : props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
+                left: props.menuSpot != null ? `${props.menuSpot.left}px` : "1rem",
+                maxWidth: props.menuSpot != null ? `min(26rem, calc(100vw - ${props.menuSpot.left}px - 5rem))` : "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.6rem",
@@ -46474,6 +46538,25 @@ ${cue.text}`).join("\n\n")}
     }, [key]);
     return height;
   }
+  function useNoSidewaysPageScroll(ref, active3) {
+    useEffect(() => {
+      const el = ref.current;
+      if (!active3 || !el) return;
+      const onWheel = (e) => {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault();
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      const roots = [document.documentElement, document.body];
+      const prev = roots.map((r) => r.style.overscrollBehaviorX);
+      for (const r of roots) r.style.overscrollBehaviorX = "none";
+      return () => {
+        el.removeEventListener("wheel", onWheel);
+        roots.forEach((r, i) => {
+          r.style.overscrollBehaviorX = prev[i];
+        });
+      };
+    }, [ref, active3]);
+  }
   function useColumnBleed(ref, active3) {
     const [bleed, setBleed] = useState({ left: 0, right: 0 });
     useLayoutEffect(() => {
@@ -46603,6 +46686,7 @@ ${cue.text}`).join("\n\n")}
     playerRef.current = player;
     const viewRef = useRef(null);
     const bleed = useColumnBleed(viewRef, !isMobile);
+    useNoSidewaysPageScroll(viewRef, !isMobile);
     const view = player && sorted.length > 0 ? "player" : studio ? `studio:${studio}` : selected ? "main" : "empty";
     useTvViewFocus(viewRef, isTv && view !== "player", view);
     const fillHeight = useFillHeight(viewRef, view);

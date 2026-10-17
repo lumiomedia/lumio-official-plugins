@@ -159,42 +159,45 @@ export function useHostTopbarBottom(anchorRef: RefObject<HTMLElement | null>, se
 
 /** Appens menyknapp (rund ikonknapp/menypill, fast placerad uppe i ett hörn). */
 export const HOST_MENU_SELECTOR = '.mc-chip'
-/** Luft mellan menyknappen och kanalpillen (px). */
-export const MENU_CLEAR_GAP_PX = 8
+/** Luft mellan menyknappen och kanalpillen under den (px). */
+export const MENU_BELOW_GAP_PX = 14
 /** Menyknappar längre ner än så här under OSD:ns överkant krockar inte med pillen (px). */
 const MENU_TOP_BAND_PX = 160
 
 interface Box { left: number; right: number; top: number; bottom: number; width: number; height: number }
 
 /**
- * Var kanalpillen ska börja (px från OSD:ns vänsterkant) för att inte ligga
- * under appens menyknapp, eller null = ingen knapp i vägen (pillens vanliga
- * 1rem). Utan appens spelare ligger kanalsidans skärmar (Ingen signal,
- * Programmet är slut, vila) under appens toppkrom, och den runda menyknappen
- * ritades ovanpå pillen (2026-10-15). Bara en knapp i vänstra halvan, uppe
- * vid pillen, flyttar den — till höger om knappen. Skalan räknas bort.
+ * Var kanalpillen ska ligga (px i OSD:ns egna mått) för att inte krocka med
+ * appens toppkrom, eller null = ingen knapp i vägen (pillens vanliga plats).
+ * Utan appens spelare ligger kanalsidans skärmar (Ingen signal, Programmet är
+ * slut, vila) under appens toppkrom. Bredvid menyknappen krockade pillen med
+ * toppmenyns flikar (2026-10-17): den läggs UNDER knappen, i linje med dess
+ * vänsterkant. Bara en knapp i vänstra halvan, uppe vid pillen, flyttar den.
  */
-export function menuClearLeft(anchor: Box, menu: Box | null, scale = 1, defaultLeftPx = 16): number | null {
+export function menuClearSpot(anchor: Box, menu: Box | null, scale = 1, defaultLeftPx = 16): { left: number; top: number } | null {
   if (!menu || (menu.width <= 0 && menu.height <= 0)) return null
   const k = scale > 0 ? scale : 1
   if ((menu.left + menu.right) / 2 > anchor.left + anchor.width / 2) return null
   if (menu.bottom <= anchor.top || (menu.top - anchor.top) / k > MENU_TOP_BAND_PX) return null
-  return Math.max(defaultLeftPx, Math.round((menu.right - anchor.left) / k) + MENU_CLEAR_GAP_PX)
+  return {
+    left: Math.max(defaultLeftPx, Math.round((menu.left - anchor.left) / k)),
+    top: Math.round((menu.bottom - anchor.top) / k) + MENU_BELOW_GAP_PX,
+  }
 }
 
 /** Följer appens menyknapp medan `active` (ingen värdspelare monterad). */
-export function useHostMenuClearLeft(anchorRef: RefObject<HTMLElement | null>, active: boolean): number | null {
-  const [left, setLeft] = useState<number | null>(null)
+export function useHostMenuClearSpot(anchorRef: RefObject<HTMLElement | null>, active: boolean): { left: number; top: number } | null {
+  const [spot, setSpot] = useState<{ left: number; top: number } | null>(null)
   useEffect(() => {
-    if (!active) { setLeft(null); return }
+    if (!active) { setSpot(null); return }
     const read = () => {
       const anchor = anchorRef.current
       if (!anchor) return
       const menu = document.querySelector<HTMLElement>(HOST_MENU_SELECTOR)
       const a = anchor.getBoundingClientRect()
       const scale = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1
-      const next = menuClearLeft(a, menu ? menu.getBoundingClientRect() : null, scale)
-      setLeft((prev) => (prev === next ? prev : next))
+      const next = menuClearSpot(a, menu ? menu.getBoundingClientRect() : null, scale)
+      setSpot((prev) => (prev?.left === next?.left && prev?.top === next?.top ? prev : next))
     }
     read()
     // Knappen kan flyttas (dras till ett annat hörn), monteras sent eller döljas.
@@ -203,8 +206,8 @@ export function useHostMenuClearLeft(anchorRef: RefObject<HTMLElement | null>, a
     return () => {
       window.clearInterval(timer)
       window.removeEventListener('resize', read)
-      setLeft(null)
+      setSpot(null)
     }
   }, [anchorRef, active])
-  return left
+  return spot
 }

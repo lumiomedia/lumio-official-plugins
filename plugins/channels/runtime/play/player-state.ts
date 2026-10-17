@@ -51,7 +51,8 @@ export interface PlayerState {
    * `pastEnd`: en version tog slut före liveläget (filen kortare än tablåns
    * plats). Då provas högst EN annan version; sedan "Programmet är slut".
    */
-  tried: { key: string; urls: string[]; pastEnd?: boolean } | null
+  /** `again`: samma version har redan öppnats om en gång efter ett avbrott. */
+  tried: { key: string; urls: string[]; pastEnd?: boolean; again?: boolean } | null
   /** Ingen version fungerade: programmet och när kanalen försöker igen (nästa programgräns). */
   noSignal: { slot: ProgrammeSlot<PoolItem>; retryAt: number } | null
   /**
@@ -87,6 +88,12 @@ export type Action =
   | { type: 'progress'; seq: number; position: number }
   /** Reserv: visa ändå (positionen bekräftade aldrig). */
   | { type: 'reveal'; seq: number }
+  /**
+   * Strömmen dog efter att ha spelat (tidigt filslut, hopp till början): samma
+   * version öppnas om EN gång på `initialTime` (liveläget nu) — utan nytt
+   * uppslag. Andra gången räknas den som fallerad (nästa version).
+   */
+  | { type: 'retrySame'; seq: number; initialTime: number; now: number }
 
 export function initialPlayerState(channelId: string, mode: PlayMode): PlayerState {
   return {
@@ -195,6 +202,21 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
     case 'progress':
       if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq || s.firstPlaySeq !== a.seq) return s
       return Math.abs(a.position - s.onScreen.initialTime) <= POSITION_SLACK_S ? { ...s, framedSeq: a.seq } : s
+    case 'retrySame': {
+      if (a.seq !== s.request.seq || !s.onScreen || s.onScreen.seq !== a.seq) return s
+      const shown = s.onScreen
+      const key = slotKey(shown.slot)
+      const urls = triedFor(s, shown.slot)
+      if (s.tried && s.tried.key === key && s.tried.again) {
+        return playerReducer(s, { type: 'failed', seq: a.seq, now: a.now, url: shown.playable.url })
+      }
+      const request = next(s, { mode: shown.mode })
+      return {
+        ...s, request, status: 'playing', pending: null, noSignal: null, between: null,
+        tried: { key, urls, again: true },
+        onScreen: { ...shown, seq: request.seq, initialTime: a.initialTime },
+      }
+    }
     case 'reveal':
       if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s
       return { ...s, framedSeq: a.seq }
