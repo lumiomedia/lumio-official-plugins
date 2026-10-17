@@ -17,6 +17,7 @@ import {
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { registerSurfaceCutout, unregisterSurfaceCutout } from './surface-cutouts'
 import { HOST_PROXY_MIME, hostProxyUrl } from '../live-tv-playback-fallback'
+import { fallBackToTs, resolveLivePlayUrl, shouldFallBackToTs } from '../live-format-resolve'
 
 export interface SurfaceSource { channel: M3uChannel; url: string }
 export interface VideoSurfaceOptions { muted: boolean; audio?: boolean; enabled?: boolean }
@@ -321,8 +322,19 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     let closeSession: (() => Promise<void>) | null = null
     let readyTimer = 0
     let spent = false
+    // Liveformatet (live-format.ts): nativemotorerna öppnar HLS när listan
+    // vill det. HTML-motorn (webbläsaren) behåller kanalens egen URL — den
+    // går genom värdens proxy och omkodning ändå.
+    const playUrl = caps.engine === 'html' ? url : resolveLivePlayUrl(url)
     const markReady = () => { if (!cancelled) setReady(true) }
     const markFailed = () => {
+      // HLS föll: ta om rutan som TS (en gång per kanal och session).
+      if (!cancelled && shouldFallBackToTs(url, playUrl, 0)) {
+        fallBackToTs(url, 'surface')
+        dropCutout()
+        setAttempt((n) => n + 1)
+        return
+      }
       // Rutan faller tillbaka till kanalbilden och målas ogenomskinlig igen —
       // hålet måste stängas i samma veva, annars lyser skrivbordet igenom.
       dropCutout()
@@ -359,7 +371,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         cutoutLive = needsCutout
         setLive(true)
         sync()
-        await surface.open({ url, muted }).catch(markFailed)
+        await surface.open({ url: playUrl, muted }).catch(markFailed)
         sync()
         return
       }
@@ -391,7 +403,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       setLive(true)
       if (caps.engine === 'mpv') {
         closeSession = () => closeMpvPlayer()
-        await openMpvPlayer({ url }).catch(markFailed)
+        await openMpvPlayer({ url: playUrl }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         await host.mpvSetPropertyStrings?.([{ name: 'mute', value: muted ? 'yes' : 'no' }])?.catch(() => {})
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
@@ -399,7 +411,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         readyTimer = window.setTimeout(markReady, 800)
       } else if (caps.engine === 'droid') {
         closeSession = () => closeNativePlayer()
-        await openNativePlayer({ url, mimeType: isHls(url) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
+        await openNativePlayer({ url: playUrl, mimeType: isHls(playUrl) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         setBounds = (rect) => nativeSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)

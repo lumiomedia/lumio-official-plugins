@@ -12,6 +12,7 @@ import {
   ensureXtreamList,
   fetchXtreamAccount,
   fetchXtreamCategories,
+  getLiveTvListFormat,
   getLiveTvLists,
   getLiveTvUrlsKey,
   getM3uUrls,
@@ -26,6 +27,7 @@ import {
   removeChannelFromLiveTvList,
   saveXtreamLogin,
   renameLiveTvList,
+  setLiveTvListFormat,
   setLogoFallbackEnabled,
   updateLiveTvListEpg,
   xtreamPseudoUrl,
@@ -36,6 +38,8 @@ import {
   type XtreamLogin,
 } from '../live-tv-data'
 import { completeLogos } from '../index-client'
+import { nextLiveFormat, type LiveFormat } from '../live-format'
+import { liveFormatOptionLabel } from '../live-format-resolve'
 import type { ImportStatus } from '../index-client'
 import { recordListImportOutcome } from '../list-import-flags'
 import { activeProfileHasPin, getLockedChannelKeys, onChannelLocksChanged, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
@@ -464,6 +468,8 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
       password,
       format: account.allowedFormats.length === 0 || account.allowedFormats.includes('ts') ? 'ts' : 'm3u8',
       categoryIds: existing?.categoryIds ?? [],
+      // Liveformatets Auto (live-format.ts) läser dem när en kanal startar.
+      allowedFormats: account.allowedFormats,
     }
     saveXtreamLogin(login)
     const source = xtreamPseudoUrl(login)
@@ -769,6 +775,17 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
   const allLists = getLiveTvLists()
   const ownList = allLists.find((entry) => entry.xtreamLoginId === login.id)
   const title = ownList ? playlistTitle(ownList, allLists) : host
+  // Liveformatet bor på spellistan; eget tillstånd så knappen ritas om direkt.
+  const [liveFormat, setLiveFormat] = useState<LiveFormat>(() => getLiveTvListFormat(ownList))
+  const cycleLiveFormat = () => {
+    if (!ownList) return
+    const next = nextLiveFormat(liveFormat)
+    setLiveTvListFormat(ownList.id, next)
+    setLiveFormat(next)
+  }
+  const liveFormatLabel = ownList
+    ? `${tt('liveFormat')}: ${liveFormatOptionLabel({ ...ownList, liveFormat }, liveFormat, tt)}`
+    : null
   const expiry = account ? formatExpiry(account.expDate, locale) : null
   const meta = failed
     ? tt('xtreamAccountUnavailable')
@@ -798,6 +815,7 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
             label={`${tt('xtreamCategories')}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}`}
             onOk={onCategories}
           />
+          {liveFormatLabel ? <Action phone testId={`xtream-live-format-${login.id}`} label={liveFormatLabel} onOk={cycleLiveFormat} /> : null}
           <Action phone testId={`xtream-remove-${login.id}`} label={tt('orphanRemove')} onOk={onRemove} />
         </div>
       ) : (
@@ -807,6 +825,7 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
             label={`${tt('xtreamCategories')}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}`}
             onOk={onCategories}
           />
+          {liveFormatLabel ? <Action testId={`xtream-live-format-${login.id}`} label={liveFormatLabel} onOk={cycleLiveFormat} /> : null}
           <Action testId={`xtream-remove-${login.id}`} label={tt('orphanRemove')} onOk={onRemove} />
         </div>
       )}

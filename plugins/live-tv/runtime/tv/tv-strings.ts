@@ -9,6 +9,13 @@ import { useLang } from '@/lib/plugin-sdk'
  * äldre värdar. `{namn}` ersätts med vars.
  */
 const EN = {
+  liveFormat: 'Live stream format',
+  liveFormatHint: 'HLS fetches the channel in short segments and rides out connection drops without jumping back. TS is one continuous stream. If HLS does not start, the channel falls back to TS.',
+  liveFormatHintM3u: 'Auto plays the playlist\'s own addresses. HLS rewrites Xtream-style channel links (/live/…/id.ts) to .m3u8. If HLS does not start, the channel falls back to TS.',
+  liveFormatAuto: 'Auto',
+  liveFormatAutoIs: 'Auto ({format})',
+  liveFormatTs: 'TS',
+  liveFormatHls: 'HLS',
   categories: 'Categories',
   rename: 'Rename',
   renamePlaylist: 'Playlist name (empty = server name)',
@@ -766,6 +773,13 @@ const EN = {
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
+  liveFormat: 'Liveformat',
+  liveFormatHint: 'HLS hämtar kanalen i korta segment och klarar avbrott utan att hoppa bakåt. TS är en enda löpande ström. Startar inte HLS faller kanalen tillbaka på TS.',
+  liveFormatHintM3u: 'Auto spelar spellistans egna adresser. HLS skriver om Xtream-länkar (/live/…/id.ts) till .m3u8. Startar inte HLS faller kanalen tillbaka på TS.',
+  liveFormatAuto: 'Auto',
+  liveFormatAutoIs: 'Auto ({format})',
+  liveFormatTs: 'TS',
+  liveFormatHls: 'HLS',
   categories: 'Kategorier',
   rename: 'Byt namn',
   renamePlaylist: 'Spellistans namn (tomt = serverns namn)',

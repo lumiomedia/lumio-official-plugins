@@ -182,6 +182,8 @@ export function useXtreamLoginForm({ onImported, onPrefill }: { onImported?: (li
         password: pass,
         format: account.allowedFormats.length === 0 || account.allowedFormats.includes('ts') ? 'ts' : 'm3u8',
         categoryIds: existing?.categoryIds ?? [],
+        // Liveformatets Auto (live-format.ts) läser dem när en kanal startar.
+        allowedFormats: account.allowedFormats,
       }
       saveXtreamLogin(login)
       setReuse(null)

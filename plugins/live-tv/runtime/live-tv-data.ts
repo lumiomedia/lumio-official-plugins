@@ -22,6 +22,7 @@ import {
 } from './index-client'
 import { forgetVod } from './vod-client'
 import { normalizeCuration } from './list-curation'
+import { sanitizeLiveFormat, type LiveFormat } from './live-format'
 
 export interface M3uChannel {
   name: string
@@ -168,6 +169,12 @@ export interface LiveTvList {
    * (`loadChannelsShared`), inte i någon vy.
    */
   logoFallbackEnabled?: boolean
+  /**
+   * Liveformatet för listans kanaler (`live-format.ts`): Auto/TS/HLS.
+   * Frånvarande = Auto. Väljs när kanalen SPELAS — indexets URL:er och
+   * därmed kanalnycklarna rörs aldrig.
+   */
+  liveFormat?: LiveFormat
 }
 
 export function sanitizeChannels(channels: unknown[]): M3uChannel[] {
@@ -314,6 +321,8 @@ function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamL
     logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : undefined,
     curation: sanitizeCuration(entry.curation),
     curationSeen: entry.curationSeen === true ? true : undefined,
+    // Auto utelämnas: en lista utan fältet ÄR Auto.
+    ...(sanitizeLiveFormat(entry.liveFormat) !== 'auto' ? { liveFormat: sanitizeLiveFormat(entry.liveFormat) } : {}),
   }
 }
 
@@ -513,6 +522,22 @@ export function renameLiveTvList(listId: string, label: string): void {
       if (list.id !== listId) return list
       const { label: _old, ...rest } = list
       return clean ? { ...rest, label: clean } : rest
+    }),
+  )
+}
+
+/** Liveformatet för en lista (`live-format.ts`). Auto lagras som frånvaro. */
+export function getLiveTvListFormat(list: Pick<LiveTvList, 'liveFormat'> | null | undefined): LiveFormat {
+  return sanitizeLiveFormat(list?.liveFormat)
+}
+
+export function setLiveTvListFormat(listId: string, format: LiveFormat): void {
+  const clean = sanitizeLiveFormat(format)
+  writeLists(
+    readLists().map((list) => {
+      if (list.id !== listId) return list
+      const { liveFormat: _old, ...rest } = list
+      return clean === 'auto' ? rest : { ...rest, liveFormat: clean }
     }),
   )
 }
@@ -720,6 +745,11 @@ export interface XtreamLogin {
   format: 'ts' | 'm3u8'
   /// Valda kategori-id:n. Tom lista = alla kategorier (upp till kanalgränsen).
   categoryIds: string[]
+  /// Kontots `user_info.allowed_output_formats` senast panelen svarade.
+  /// Saknas för inloggningar sparade före fältet — då vet Auto inget och
+  /// spelar TS tills kontot frågats ut (kortet i inställningarna, eller
+  /// spelarens bakgrundsuppslag i `live-format-resolve.ts`).
+  allowedFormats?: string[]
 }
 
 const XTREAM_LOGINS_KEY = 'xtream_logins'
@@ -750,6 +780,7 @@ export function getXtreamLogins(): XtreamLogin[] {
       password: String(entry.password ?? ''),
       format: entry.format === 'm3u8' ? 'm3u8' as const : 'ts' as const,
       categoryIds: sanitizeStringArray(entry.categoryIds),
+      ...(Array.isArray(entry.allowedFormats) ? { allowedFormats: sanitizeStringArray(entry.allowedFormats) } : {}),
     }))
     .filter((entry) => entry.id && entry.base && entry.username && entry.password)
 }
@@ -1073,7 +1104,27 @@ export async function fetchXtreamAccount(
   }
   const account = await fetchXtreamAccountUncached(login)
   xtreamAccountCache.set(key, { at: Date.now(), password: login.password, account })
+  if (account.auth) rememberXtreamAllowedFormats(login, account.allowedFormats)
   return account
+}
+
+/**
+ * Sparar kontots tillåtna utformat på den sparade inloggningen (samma panel +
+ * användare) — liveformatets Auto läser dem när en kanal startar. Skriver
+ * bara vid ändring, och INTE via `saveXtreamLogin`: den rensar kontocachen
+ * som just fyllts.
+ */
+function rememberXtreamAllowedFormats(login: Pick<XtreamLogin, 'base' | 'username'>, formats: string[]): void {
+  const logins = getXtreamLogins()
+  let changed = false
+  const next = logins.map((entry) => {
+    if (entry.base !== login.base || entry.username !== login.username) return entry
+    const before = entry.allowedFormats
+    if (before && before.length === formats.length && before.every((f, i) => f === formats[i])) return entry
+    changed = true
+    return { ...entry, allowedFormats: [...formats] }
+  })
+  if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, next)
 }
 
 async function fetchXtreamAccountUncached(login: Pick<XtreamLogin, 'base' | 'username' | 'password'>): Promise<XtreamAccount> {

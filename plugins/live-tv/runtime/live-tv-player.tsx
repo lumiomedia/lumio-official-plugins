@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
@@ -38,6 +38,7 @@ import {
 import { recordChannelWatch } from './channel-history'
 import { channelSnapshot, runChannelCommand } from './couch-channel-player'
 import { channelKey } from './live-tv-data'
+import { fallBackToTs, resolveLivePlayUrl, shouldFallBackToTs } from './live-format-resolve'
 
 /* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
    hookordningen är densamma i varje rendering. */
@@ -47,6 +48,7 @@ import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { useOrientation } from './hooks/useOrientation'
 import { useWakeLock } from './hooks/useWakeLock'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
+import { isHlsPlayUrl } from './live-format'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
 import { PlayerGoalOverlay } from './sport/tv/player-goal-overlay'
 import { StreamFallbackPrompt } from './stream-fallback-prompt'
@@ -105,7 +107,7 @@ const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
 // Bara pausen: väntetiden styr appen (1 s vid start för snabb bild, 3 s efter
 // första omstarten). En egen 3 s här gav 3,5 s start i stället för 0,8 s.
 const TS_REFILL_ON_UNDERRUN = [{ name: 'cache-pause', value: 'yes' }]
-export const isHlsUrl = (url: string): boolean => /\.m3u8(?:$|[?#])/i.test(url)
+export { isHlsPlayUrl as isHlsUrl } from './live-format'
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv }: LiveTvPlayerProps) {
   const { t } = useLang()
@@ -158,6 +160,20 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
    * till samma ström och inte bara ett omtag.
    */
   const [nativeAttempt, setNativeAttempt] = useState(0)
+  /**
+   * Liveformatet (`live-format.ts`): URL:en motorn faktiskt öppnar. En
+   * Xtream-kanal kan spelas som HLS fast indexet bär `.ts`. Räknaren läser om
+   * valet när HLS fallit och kanalen ska tas om som TS.
+   */
+  const [hlsFallbacks, setHlsFallbacks] = useState(0)
+  const playUrl = useMemo(() => resolveLivePlayUrl(channel.url), [channel.url, hlsFallbacks])
+  /** Första försöket var omskrivet till HLS och föll: ta om kanalen som TS. Sant = hanterat. */
+  const tryTsFallback = (reason: string): boolean => {
+    if (!shouldFallBackToTs(channel.url, playUrl, nativeAttempt)) return false
+    fallBackToTs(channel.url, reason)
+    setHlsFallbacks((n) => n + 1)
+    return true
+  }
   // Guide-raden (favoriter med nu-titel) under kontrollerna — handoff §4.
   const [portalEl] = useState<HTMLElement | null>(() => {
     if (typeof document === 'undefined') return null
@@ -230,8 +246,10 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
     (url: string, viaProxy: boolean) => {
       const target = viaProxy ? hostProxyUrl(url) : url
+      // HLS ur liveformatet: säg det rakt ut till media3 i stället för att
+      // låta den gissa — panelen 302:ar `.m3u8` till en ändelselös /live/play/….
       return isDroidEngine
-        ? openNativePlayer({ url: target, ...(viaProxy ? { mimeType: HOST_PROXY_MIME } : {}) })
+        ? openNativePlayer({ url: target, ...(viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {}) })
         : openMpvPlayer({
           url: target,
           requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },
@@ -599,7 +617,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
           // ytan (v1: en yta, se video-surface.ts) — utan det här kunde
           // spelaren öppnas medan en förhandsvisning fortfarande höll den,
           // och den nya kanalen tystnade tyst i bakgrunden.
-          return releaseAllSurfaces().catch(() => {}).then(() => engineOpen(channel.url, nativeAttempt > 0))
+          return releaseAllSurfaces().catch(() => {}).then(() => engineOpen(playUrl, nativeAttempt > 0))
         })
         .then(() => {
           if (cancelled) return
@@ -802,6 +820,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     }
   }, [
     channel.url,
+    playUrl,
     nativeAttempt,
     portalEl,
     resetFileLoaded,
@@ -823,9 +842,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   // (CL-kvällen 2026-10-13). Pausa i stället och fyll på, som mpv gör
   // fristående. HLS behåller appens val.
   useEffect(() => {
-    if (engineKind !== 'mpv' || !mpvFileLoaded || isHlsUrl(channel.url)) return
+    if (engineKind !== 'mpv' || !mpvFileLoaded || isHlsPlayUrl(playUrl)) return
     void mpvSetPropertyStrings(TS_REFILL_ON_UNDERRUN).catch(() => {})
-  }, [engineKind, mpvFileLoaded, channel.url])
+  }, [engineKind, mpvFileLoaded, playUrl])
 
   // Hackar kanalen om och om igen: föreslå (och byt efter vald tid till) nästa källa.
   const fallback = useStreamFallback({
@@ -854,6 +873,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (!hasNativeSurface || !mpvLoadFailed) return
     if (handledFailTokenRef.current === mpvLoadFailedToken) return
     handledFailTokenRef.current = mpvLoadFailedToken
+    // HLS ur liveformatet föll: samma kanal som TS först, sedan trappan.
+    if (tryTsFallback('load-failed')) return
     // Andra försöket går genom värdens strömproxy. Laddläget står kvar: för
     // den som tittar är det fortfarande samma start.
     if (nativeFailureAction('load-failed', nativeAttempt, mpvTimePos) === 'retry-proxy') {
@@ -863,7 +884,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     setError(t('liveTvPlaybackFailed'))
     setLoading(false)
     void engineClose().catch(() => {})
-  }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos])
+  }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos, playUrl])
 
   // Startvakten läser klockan genom en ref: en ren ljudkanal rapporterar
   // aldrig en bildruta, men dess speltid rör sig — och då spelar den.
@@ -882,6 +903,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         return
       }
       if (action === 'retry-proxy') {
+        if (tryTsFallback('no-start')) return
         setNativeAttempt(1)
         return
       }
@@ -890,7 +912,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       void engineClose().catch(() => {})
     }, budget)
     return () => window.clearTimeout(timeout)
-  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt])
+  }, [error, loading, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt, playUrl])
 
   useEffect(() => {
     if (!hasNativeSurface) return

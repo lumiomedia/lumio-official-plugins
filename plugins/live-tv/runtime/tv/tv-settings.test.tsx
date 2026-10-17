@@ -407,6 +407,24 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
     expect(card).toHaveTextContent('2')
   })
 
+  it('Xtream-kortet har liveformatet som en knapp som stegar Auto → TS → HLS och sparar på spellistan', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [{ ...xtreamLogin, allowedFormats: ['m3u8', 'ts'] }])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
+    seedLiveTvIndex()
+    stubXtreamPanel()
+    mount('playlists')
+    const button = await screen.findByTestId('xtream-live-format-login-1')
+    expect(button).toHaveAttribute('data-f')
+    expect(button).toHaveTextContent('Live stream format: Auto (HLS)')
+    fireEvent.click(button)
+    expect(getLiveTvLists().find((l) => l.id === 'x1')?.liveFormat).toBe('ts')
+    expect(screen.getByTestId('xtream-live-format-login-1')).toHaveTextContent('Live stream format: TS')
+    fireEvent.click(screen.getByTestId('xtream-live-format-login-1'))
+    expect(getLiveTvLists().find((l) => l.id === 'x1')?.liveFormat).toBe('hls')
+    fireEvent.click(screen.getByTestId('xtream-live-format-login-1'))
+    expect(getLiveTvLists().find((l) => l.id === 'x1')?.liveFormat).toBeUndefined()
+  })
+
   it('500-taket ger ett kvitto i stället för ett tyst avslag', async () => {
     const full = Array.from({ length: 500 }, (_, i) => ({ name: `C${i}`, logo: null, group: 'Fyllnad', url: `http://x/C${i}`, tvgId: null }))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list, { ...list, id: 'c1', name: 'Mina kanaler', kind: 'custom', source: 'custom:c1', channels: full, channelCount: 500 }])

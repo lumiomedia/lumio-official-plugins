@@ -21,9 +21,11 @@ import { listGroups } from './index-client'
 import { groupOrderLabelKey, nextGroupOrder, rawGroupOrderFor, sortGroups, withRawOrder } from './group-order'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import {
+  getLiveTvListFormat,
   getLiveTvLists,
   getXtreamLogins,
   isLogoFallbackEnabled,
+  setLiveTvListFormat,
   markListCurationSeen,
   setLogoFallbackEnabled,
   updateLiveTvListCuration,
@@ -32,6 +34,9 @@ import {
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
+
+import { nextLiveFormat } from './live-format'
+import { listHasLiveFormat, liveFormatOptionLabel } from './live-format-resolve'
 
 /** Spellistans visningsnamn (eget namn, annars värd + konto). */
 const titleOf = (list: LiveTvList) => playlistTitle(list, getLiveTvLists())
@@ -352,6 +357,10 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
       ))}
       {epgSources.filter((s) => !s.disabled).length === 0 ? <TvNote size="panel">{h('noEpgSourceYet')}</TvNote> : null}
       <TvRow size="panel" label={h('tvAddXmltv')} hint={Keyboard ? h('tvAddXmltvMeta') : h('tvNoKeyboard')} value={h('add')} onOk={() => setAdding(true)} disabled={!Keyboard} />
+      {/* Liveformatet: en station (onOk) som stegar Auto → TS → HLS. */}
+      {listHasLiveFormat(list) ? (
+        <TvRow size="panel" testId="tv-live-format" label={h('liveFormat')} hint={list.kind === 'm3u' ? h('liveFormatHintM3u') : h('liveFormatHint')} value={liveFormatOptionLabel(list, getLiveTvListFormat(list), h)} onOk={() => setLiveTvListFormat(list.id, nextLiveFormat(getLiveTvListFormat(list)))} />
+      ) : null}
       <TvRow size="panel" label={h('logoFallbackToggle')} hint={h('logoFallbackHint')} toggle={isLogoFallbackEnabled(list)} onToggle={(value) => setLogoFallbackEnabled(list.id, value)} disabled={list.kind === 'custom'} />
       <TvRow size="panel" label={h('logoCompleteButton')} hint={h('completeLogosHint')} value={completing ? h('logoCompleteRunning') : h('tvUpdate')} onOk={() => void runCompleteLogos()} disabled={completing || !isLogoFallbackEnabled(list) || list.kind === 'custom'} />
       <TvEyebrow size="panel">{h('tvPlaylistEyebrow')}</TvEyebrow>

@@ -175,3 +175,23 @@ describe('PlaylistCard (handoff §3.1)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('HTTP 500')
   })
 })
+
+describe('PlaylistCard: liveformat (Auto/TS/HLS)', () => {
+  it('Xtream: raden visar vad Auto blir och sparar valet på listan', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [{ ...login, allowedFormats: ['m3u8', 'ts', 'rtmp'] }])
+    mount(xtream)
+    const row = screen.getByTestId('live-format-x1')
+    expect(row).toHaveTextContent('Live stream format')
+    expect(screen.getByTestId('live-format-x1-auto')).toHaveTextContent('Auto (HLS)')
+    expect(screen.getByTestId('live-format-x1-auto')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByTestId('live-format-x1-ts'))
+    expect(getLiveTvLists().find((l) => l.id === 'x1')?.liveFormat).toBe('ts')
+    fireEvent.click(screen.getByTestId('live-format-x1-hls'))
+    expect(getLiveTvLists().find((l) => l.id === 'x1')?.liveFormat).toBe('hls')
+  })
+  it('M3U: raden finns med M3U-förklaringen och Auto utan gissning', () => {
+    mount(m3u)
+    expect(screen.getByTestId('live-format-l1')).toHaveTextContent('Auto plays the playlist')
+    expect(screen.getByTestId('live-format-l1-auto')).toHaveTextContent(/^Auto$/)
+  })
+})

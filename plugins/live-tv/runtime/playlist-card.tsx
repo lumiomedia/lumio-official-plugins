@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { LtBtn, LtCard, LtCheck, LtChevron, LtConfirm, LtOverflowMenu, LtTextRow, UI, fmtInt, useLtNarrow } from './settings-ui'
+import { LtBtn, LtCard, LtCheck, LtChevron, LtChoiceRow, LtConfirm, LtOverflowMenu, LtTextRow, UI, fmtInt, useLtNarrow } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
 import { useXtreamAccountMeta } from './xtream-login-section'
 import { ServerCategoriesDialog, serverCategoriesLabel, useXtreamCategoryCount } from './server-categories'
 import { completeLogos } from './index-client'
-import { getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, renameLiveTvList, setLogoFallbackEnabled, updateLiveTvListEpg, type LiveTvList } from './live-tv-data'
+import { getLiveTvListFormat, getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, renameLiveTvList, setLiveTvListFormat, setLogoFallbackEnabled, updateLiveTvListEpg, type LiveTvList } from './live-tv-data'
+import { LIVE_FORMATS } from './live-format'
+import { listHasLiveFormat, liveFormatOptionLabel } from './live-format-resolve'
 import { playlistTitle } from './playlist-title'
 
 /**
@@ -206,6 +208,17 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
           <span style={{ fontSize: 12.5 }}>{h('curationSummary', { groups: summary.categories, hidden: summary.hidden, merged: summary.merged })}</span>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={UI.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m9 18 6-6-6-6" /></svg>
         </button>
+      ) : null}
+      {/* Liveformatet (live-format.ts): per spellista, valet görs när kanalen spelas. */}
+      {listHasLiveFormat(list) ? (
+        <LtChoiceRow
+          testId={`live-format-${list.id}`}
+          label={h('liveFormat')}
+          desc={kind === 'm3u' ? h('liveFormatHintM3u') : h('liveFormatHint')}
+          options={LIVE_FORMATS.map((key) => ({ key, label: liveFormatOptionLabel(list, key, h) }))}
+          value={getLiveTvListFormat(list)}
+          onChange={(format) => setLiveTvListFormat(list.id, format)}
+        />
       ) : null}
       <EpgSourcesSection
         testId={`epg-sources-${list.id}`}
