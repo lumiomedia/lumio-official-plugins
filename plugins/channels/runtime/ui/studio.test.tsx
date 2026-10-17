@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   libraryFails: false,
   debridQueue: [] as Array<{ resolve(v: unknown[]): void }>,
   debridDeferred: false,
+  searches: [] as string[],
 }))
 
 const item = (ref: string, over: Partial<PoolItem> = {}): PoolItem => ({
@@ -31,7 +32,13 @@ vi.mock('@/lib/plugin-sdk', () => ({
   getTvKeyboardPanel: () => null,
   channelListDebridCloud: (o?: { force?: boolean }) => { if (o?.force) state.forced += 1; return Promise.resolve([]) },
 }))
-vi.mock('../host', () => ({ sourceDeps: {} }))
+vi.mock('../host', () => ({
+  sourceDeps: {},
+  searchTmdbTitles: (q: string) => {
+    state.searches.push(q)
+    return Promise.resolve([{ kind: 'movie', tmdbId: 355460, title: 'Adventure Time', year: 2007 }])
+  },
+}))
 vi.mock('../data/sources', () => ({
   loadLibraryItems: () => {
     state.calls.library! += 1
@@ -44,6 +51,7 @@ vi.mock('../data/sources', () => ({
     return new Promise((resolve) => { state.debridQueue.push({ resolve }) })
   },
   loadVodItems: () => Promise.resolve([item('vod1', { source: 'vod' })]),
+  loadTitleFallback: () => Promise.resolve(),
 }))
 vi.mock('../state/store', () => ({
   saveChannel: (def: unknown) => { state.saved.push(def) },
@@ -70,6 +78,7 @@ beforeEach(() => {
   state.libraryFails = false
   state.debridQueue = []
   state.debridDeferred = false
+  state.searches = []
 })
 afterEach(cleanup)
 
@@ -189,5 +198,44 @@ describe('Kanalstudion', () => {
     fireEvent.click(chip)
     fireEvent.click(screen.getByText('Spara'))
     expect((state.saved[0] as ChannelDef).genres).toEqual([])
+  })
+
+  it('titelfältet: lokala förslag direkt, TMDb efter debounce, chip + tonade regler, namn och ordning från titeln', async () => {
+    const at = (n: number) => item(`at${n}`, {
+      kind: 'episode', title: `Avsnitt ${n}`, seriesTitle: 'Adventure Time', seriesKey: 'db:tv:15260', tmdbId: 15260, season: 1, episode: n,
+      source: 'debrid', genres: ['Animation'], play: { type: 'debrid', provider: 'torbox', fileRef: `f${n}` },
+    })
+    state.debridItems = [at(1), at(2)]
+    const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
+    await flush()
+    const input = container.querySelector('input[data-studio-titles]')!
+    fireEvent.change(input, { target: { value: 'adven' } })
+    // Lokalt: direkt, utan anrop.
+    expect([...container.querySelectorAll('[data-title-suggestion]')].map((e) => e.textContent)).toEqual(['Adventure TimeSerie · 1985 · I dina källor'])
+    expect(state.searches).toEqual([])
+    await act(async () => { await new Promise((r) => setTimeout(r, 400)) })
+    expect(state.searches).toEqual(['adven'])
+    expect(container.querySelectorAll('[data-title-suggestion]')).toHaveLength(2)
+    fireEvent.click(container.querySelector('[data-title-suggestion]')!)
+    expect(container.querySelector('[data-title-chip]')!.textContent).toContain('Adventure Time (1985)')
+    expect(container.querySelector('[data-titles-hint]')).toBeTruthy()
+    expect(container.querySelector('[data-studio-field="fieldGenre"]')!.hasAttribute('data-dimmed')).toBe(true)
+    expect(container.querySelector('[data-studio-field="fieldOrder"]')!.hasAttribute('data-dimmed')).toBe(false)
+    expect(summary(container)).toContain('≈ 2 titlar')
+    expect(container.querySelector('input[data-studio-name]')!.getAttribute('placeholder')).toBe('Adventure Time')
+    fireEvent.click(screen.getByText('Skapa kanal'))
+    expect(state.saved[0]).toMatchObject({
+      name: 'Adventure Time', order: 'episodes',
+      titles: [{ kind: 'tv', tmdbId: 15260, title: 'Adventure Time', year: 1985 }],
+    })
+  })
+
+  it('utan titlar sparas kanalen utan titelfält', async () => {
+    const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
+    await flush()
+    fireEvent.change(container.querySelector('input[data-studio-name]')!, { target: { value: 'Vanlig' } })
+    fireEvent.click(screen.getByText('Skapa kanal'))
+    expect(state.saved[0]).not.toHaveProperty('titles')
+    expect(container.querySelector('[data-studio-field="fieldGenre"]')!.hasAttribute('data-dimmed')).toBe(false)
   })
 })

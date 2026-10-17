@@ -18,6 +18,24 @@ export type KindRule = 'any' | 'movie' | 'tv'
 export type OrderRule = 'shuffle' | 'chrono' | 'episodes'
 export type AirWindow = 'always' | 'evenings' | 'late'
 
+/**
+ * En utvald titel: kanalen sänder då BARA dessa (från valfri av sina källor),
+ * och genre-, epok-, längd- och slagreglerna gäller inte. Matchas på tmdbId,
+ * sedan biblioteksnyckel/seriesKey, sist tvättad titel + år.
+ */
+export interface ChannelTitle {
+  kind: 'movie' | 'tv'
+  tmdbId?: number
+  libraryKey?: string
+  title: string
+  year?: number | null
+}
+
+/** Ett förslag i studions titelfält (lokal pool eller TMDb-sökning). */
+export interface TitleSuggestion extends ChannelTitle {
+  posterUrl?: string
+}
+
 export interface ChannelDef {
   id: string
   name: string
@@ -31,6 +49,8 @@ export interface ChannelDef {
   order: OrderRule
   airWindow: AirWindow
   showOnHome: boolean
+  /** Utvalda titlar; saknas eller tom = reglerna styr som vanligt. */
+  titles?: ChannelTitle[]
   seed: number
   createdAt: number
 }
@@ -116,8 +136,30 @@ export function presetSeed(id: string): number {
   return h % 2 ** 31
 }
 
+/** Kanalen är byggd av utvalda titlar (inte regler). */
+export const hasTitles = (c: { titles?: readonly ChannelTitle[] | null }): boolean => (c.titles?.length ?? 0) > 0
+
+/** Identitet för en utvald titel (dubblettkontroll, signaturer). */
+export function channelTitleKey(t: ChannelTitle): string {
+  if (t.tmdbId != null) return `${t.kind}:tmdb:${t.tmdbId}`
+  if (t.libraryKey) return `${t.kind}:key:${t.libraryKey}`
+  return `${t.kind}:name:${normTitle(t.title)}:${t.year ?? ''}`
+}
+
+/** Gemener, utan accenter och skiljetecken — för titeljämförelse. */
+export function normTitle(s: string): string {
+  return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+}
+
+/** Titlarnas identiteter sorterade: samma val i annan ordning ger samma signatur. */
+export function canonTitles(titles: readonly ChannelTitle[] | undefined): string[] {
+  return [...new Set((titles ?? []).map(channelTitleKey))].sort()
+}
+
 /** Samma regler (källor, genrer, epok, längd, slag, sändningstid) — namn och ordning räknas inte. */
-export function sameRules(a: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'airWindow'>, b: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'airWindow'>): boolean {
+export function sameRules(a: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'airWindow' | 'titles'>, b: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'airWindow' | 'titles'>): boolean {
+  // En titelkanal är aldrig en regeldubblett av ett förval.
+  if (hasTitles(a) || hasTitles(b)) return false
   const norm = (c: typeof a) => JSON.stringify([
     [...c.sources].sort(), canonGenres(c.genres).sort(), c.era, c.length, c.kind, c.airWindow,
   ])

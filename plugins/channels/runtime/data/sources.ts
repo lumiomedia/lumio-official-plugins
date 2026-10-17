@@ -2,10 +2,10 @@
  * Källadaptrar för titelpoolen. Alla beroenden kommer in som parametrar så
  * logiken kan testas utan SDK; host.ts kopplar in de riktiga.
  */
-import { DEFAULT_RUNTIME, dedupePool, filterPool, type PoolItem } from './pool'
-import type { createMetaCache, createTitleMatchCache, MatchRef } from './meta-cache'
+import { applyChannelRules, DEFAULT_RUNTIME, dedupePool, restrictToTitles, type PoolItem } from './pool'
+import type { createMetaCache, createTitleMatchCache, MatchRef, SeasonList } from './meta-cache'
 import { cleanTitle, looksLikeEpisode } from './title-clean'
-import type { ChannelDef, SourceId } from '../model/channel'
+import { hasTitles, type ChannelDef, type ChannelTitle, type SourceId } from '../model/channel'
 
 export interface LibraryTitleLike {
   key: string
@@ -58,6 +58,11 @@ export interface SourceDeps {
   getWatchlist(): WatchlistEntry[]
   /** Säsong 1–3 (värden slår ihop /api/tv-info per säsong). */
   fetchSeasons(tmdbId: number): Promise<Array<{ season: number; episodes: Array<{ episode: number; title: string; runtime: number | null }> }>>
+  /**
+   * Säsong 4 och framåt (för en utvald serie som inte finns i någon källa).
+   * Cachas som fetchSeasons; hämtas i bakgrunden efter de tre första.
+   */
+  fetchRestSeasons?(tmdbId: number): Promise<SeasonList>
   listDebridCloud(): Promise<DebridTitleLike[]>
   meta: ReturnType<typeof createMetaCache>
   /**
@@ -346,6 +351,86 @@ export const streamDebridItems: SourceStream = async (deps, emit) => {
   if (matched && !rebuilt) rebuild()
 }
 
+/**
+ * Reservvägen för utvalda titlar som inte finns i någon av kanalens källor:
+ * en film blir en strömpost (imdbId via /api/item), en serie avsnitt via
+ * säsongslistorna. Säsong 1–3 kommer direkt; med `allSeasons` hämtas resten
+ * efteråt, en serie åt gången bakom startgrinden. `emit` får hela listan
+ * varje gång den växer. Titlar utan tmdbId kan inte hämtas och hoppas över.
+ */
+export async function loadTitleFallback(titles: readonly ChannelTitle[], deps: SourceDeps, emit: Emit, opts: { allSeasons?: boolean } = {}): Promise<void> {
+  const wanted = titles.filter((t): t is ChannelTitle & { tmdbId: number } => t.tmdbId != null)
+  if (wanted.length === 0) return
+  const movies = wanted.filter((t) => t.kind === 'movie')
+  const shows = wanted.filter((t) => t.kind === 'tv')
+  const perShow: PoolItem[][] = shows.map(() => [])
+  const build = (): PoolItem[] => {
+    const out: PoolItem[] = []
+    for (const m of movies) {
+      const meta = deps.meta.get('movie', m.tmdbId)
+      if (!meta?.imdbId) continue
+      out.push({
+        ref: `ti:movie:${m.tmdbId}`, title: meta.title ?? m.title, kind: 'movie', source: 'watchlist',
+        genres: meta.genres, year: meta.year ?? m.year ?? null, tmdbId: m.tmdbId, imdbId: meta.imdbId,
+        ...(meta.posterUrl ? { posterUrl: meta.posterUrl } : {}),
+        ...(meta.backdropUrl ? { backdropUrl: meta.backdropUrl } : {}),
+        ...pickRuntime(null, meta.runtimeMin, DEFAULT_RUNTIME.movie),
+        play: { type: 'stream', imdbId: meta.imdbId, mediaType: 'movie' },
+      })
+    }
+    return [...out, ...perShow.flat()]
+  }
+  const addSeasons = (idx: number, seasons: SeasonList) => {
+    const s = shows[idx]!
+    const meta = deps.meta.get('tv', s.tmdbId)
+    const imdbId = meta?.imdbId
+    if (!imdbId) return
+    const name = meta.title ?? s.title
+    const out = perShow[idx]!
+    const have = new Set(out.map((i) => `${i.season}:${i.episode}`))
+    for (const season of seasons) {
+      if (season.season < 1) continue
+      for (const ep of season.episodes) {
+        if (have.has(`${season.season}:${ep.episode}`)) continue
+        out.push({
+          ref: `ti:tv:${s.tmdbId}:${season.season}:${ep.episode}`, title: ep.title || name, seriesTitle: name,
+          kind: 'episode', source: 'watchlist', seriesKey: `ti:tv:${s.tmdbId}`, season: season.season, episode: ep.episode,
+          genres: meta.genres, year: meta.year ?? s.year ?? null, tmdbId: s.tmdbId, imdbId,
+          ...(meta.posterUrl ? { posterUrl: meta.posterUrl } : {}),
+          ...(meta.backdropUrl ? { backdropUrl: meta.backdropUrl } : {}),
+          ...pickRuntime(ep.runtime, meta.runtimeMin, DEFAULT_RUNTIME.episode),
+          play: { type: 'stream', imdbId, mediaType: 'series', season: season.season, episode: ep.episode },
+        })
+      }
+    }
+  }
+  await idle(deps)
+  await deps.meta.ensure(wanted.map((t) => ({ kind: t.kind, tmdbId: t.tmdbId }))).catch(() => {})
+  emit(build())
+  if (shows.length === 0) return
+  // Säsong 1–3: högst två serier åt gången mot /api/tv-info, som watchlisten.
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < shows.length) {
+      const idx = cursor++
+      if (!deps.meta.get('tv', shows[idx]!.tmdbId)?.imdbId) continue
+      addSeasons(idx, await deps.fetchSeasons(shows[idx]!.tmdbId).catch(() => []))
+      emit(build())
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker))
+  if (!opts.allSeasons || !deps.fetchRestSeasons) return
+  // Resten i bakgrunden: en serie åt gången, aldrig mitt i en filmstart.
+  for (let idx = 0; idx < shows.length; idx += 1) {
+    if (!deps.meta.get('tv', shows[idx]!.tmdbId)?.imdbId) continue
+    await idle(deps)
+    const rest = await deps.fetchRestSeasons(shows[idx]!.tmdbId).catch(() => [])
+    if (rest.length === 0) continue
+    addSeasons(idx, rest)
+    emit(build())
+  }
+}
+
 /** Hela källan på en gång (studions förhandsvisning): sista listan när allt är klart. */
 async function collect(stream: SourceStream, deps: SourceDeps, opts: LoadOptions): Promise<PoolItem[]> {
   let last: PoolItem[] = []
@@ -413,13 +498,26 @@ function runShared(source: SourceId, deps: SourceDeps, emit: Emit): Promise<void
  */
 export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps, onUpdate?: (pool: PoolItem[]) => void): Promise<PoolItem[]> {
   const bySource = new Map<SourceId, PoolItem[]>()
-  const merged = () => filterPool(dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? [])), channel)
+  let extra: PoolItem[] = []
+  const all = () => dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? []))
+  const merged = () => applyChannelRules(all(), channel, extra)
   await Promise.all(channel.sources.map((s) =>
     runShared(s, deps, (items) => {
       bySource.set(s, items)
       onUpdate?.(merged())
     }).catch(() => {}),
   ))
+  // Utvalda titlar som ingen källa har: hämtas först när alla källor svarat,
+  // så inget uppslag görs för en titel som redan finns.
+  if (hasTitles(channel)) {
+    const { missing } = restrictToTitles(all(), channel.titles!)
+    if (missing.length > 0) {
+      await loadTitleFallback(missing, deps, (items) => {
+        extra = items
+        onUpdate?.(merged())
+      }, { allSeasons: true }).catch(() => {})
+    }
+  }
   return merged()
 }
 

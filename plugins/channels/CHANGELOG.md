@@ -1,3 +1,10 @@
+## 0.1.26
+
+- Kanaler av utvalda titlar: nytt fält "Titlar" i kanalstudion. Sök en film eller serie (först bland dina källor, sedan TMDb) och välj en eller flera — kanalen sänder då bara dem, från vilken av kanalens källor som helst. Genre, era, längd och typ gäller inte (fälten tonas ner); sändningstid och ordning gäller som vanligt.
+- En vald titel som inte finns i någon källa sänds ändå: en film via strömuppslag, en serie med alla säsonger (de tre första direkt, resten hämtas i bakgrunden).
+- En ensam vald serie ger "Avsnitt i följd" som ordning, och titeln föreslås som kanalnamn när namnet är tomt.
+- TV: titelfältet skrivs med skärmtangentbordet och förslagen nås med ▲▼.
+
 ## 0.1.25
 
 - Skrivbord: 50 px marginal på båda sidor (heron och tablån).

@@ -8,9 +8,10 @@ import {
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
-import type { ChannelDef, SourceId } from './model/channel'
+import type { ChannelDef, SourceId, TitleSuggestion } from './model/channel'
 import { createMetaCache, createSeasonsCache, createTitleMatchCache, type MatchRef, type MatchStore, type MetaStore, type SeasonList, type SeasonsStore, type TitleMeta } from './data/meta-cache'
 import type { SourceDeps } from './data/sources'
+import { MAX_POOL_ITEMS } from './data/pool'
 import { createResolver } from './play/resolve'
 
 export const PLUGIN_ID = 'com.lumio.channels'
@@ -139,6 +140,23 @@ async function searchTitle(ref: MatchRef): Promise<number | null | undefined> {
   return first
 }
 
+/**
+ * Studions titelsökning: värdens TMDb-sökning för film + serie i ett anrop
+ * (/api/local-files/search, samma som namnmatchningen). Kastar när anropet
+ * faller, så studion kan skilja fel från "inga träffar".
+ */
+export async function searchTmdbTitles(query: string, signal?: AbortSignal): Promise<TitleSuggestion[]> {
+  const res = await fetch(`/api/local-files/search?${new URLSearchParams({ query })}`, signal ? { signal } : undefined)
+  if (!res.ok) throw new Error(`search ${res.status}`)
+  const body = (await res.json()) as { results?: Array<{ type?: string; tmdbId?: number; title?: string; year?: number; posterUrl?: string | null }> }
+  const out: TitleSuggestion[] = []
+  for (const r of body.results ?? []) {
+    if ((r.type !== 'movie' && r.type !== 'tv') || typeof r.tmdbId !== 'number' || !r.title) continue
+    out.push({ kind: r.type, tmdbId: r.tmdbId, title: r.title, year: typeof r.year === 'number' ? r.year : null, ...(r.posterUrl ? { posterUrl: r.posterUrl } : {}) })
+  }
+  return out
+}
+
 const seasonsStore: SeasonsStore = {
   read: () => object(readPluginJson<unknown>(PLUGIN_ID, 'seasons', {})),
   write: (all) => writePluginJson(PLUGIN_ID, 'seasons', all, { emitChange: false }),
@@ -169,12 +187,26 @@ async function fetchMeta(kind: 'movie' | 'tv', tmdbId: number): Promise<Omit<Tit
 }
 
 /** /api/tv-info?tmdbId=N&season=S → { episodes: [{ episode_number, name, runtime }] }. Säsong 1–3. */
-async function fetchSeasonsUncached(tmdbId: number): Promise<SeasonList> {
+function fetchSeasonsUncached(tmdbId: number): Promise<SeasonList> {
+  return fetchSeasonRange(tmdbId, (n) => n >= 1 && n <= 3)
+}
+
+/**
+ * Säsong 4 och framåt för en utvald serie, en säsong åt gången. Slutar när
+ * poolens tak (MAX_POOL_ITEMS avsnitt) är nått — fler går ändå inte att sända.
+ */
+function fetchRestSeasonsUncached(tmdbId: number): Promise<SeasonList> {
+  return fetchSeasonRange(tmdbId, (n) => n > 3, MAX_POOL_ITEMS)
+}
+
+async function fetchSeasonRange(tmdbId: number, pick: (season: number) => boolean, maxEpisodes = Infinity): Promise<SeasonList> {
   const head = await getJson(`/api/tv-info?tmdbId=${tmdbId}`)
   const listed = Array.isArray(head?.seasons) ? (head!.seasons as Array<{ season_number?: number }>) : []
-  const numbers = listed.map((s) => s.season_number ?? 0).filter((n) => n >= 1 && n <= 3)
+  const numbers = listed.map((s) => s.season_number ?? 0).filter(pick)
   const out: SeasonList = []
+  let total = 0
   for (const season of numbers) {
+    if (total >= maxEpisodes) break
     const body = await getJson(`/api/tv-info?tmdbId=${tmdbId}&season=${season}`).catch(() => null)
     const episodes = Array.isArray(body?.episodes) ? (body!.episodes as Array<{ episode_number?: number; name?: string; runtime?: number | null }>) : []
     out.push({
@@ -183,6 +215,7 @@ async function fetchSeasonsUncached(tmdbId: number): Promise<SeasonList> {
         .filter((e) => typeof e.episode_number === 'number')
         .map((e) => ({ episode: e.episode_number!, title: e.name ?? '', runtime: e.runtime && e.runtime > 0 ? e.runtime : null })),
     })
+    total += episodes.length
   }
   return out
 }
@@ -192,6 +225,7 @@ export const sourceDeps: SourceDeps = {
   getMovieWatchlist: () => getMovieWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
+  fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, 'seasonsRest'),
   listDebridCloud: () => channelListDebridCloud() as never,
   meta: createMetaCache(metaStore, fetchMeta),
   waitForIdle: () => waitForStartIdle(),

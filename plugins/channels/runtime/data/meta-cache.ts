@@ -123,8 +123,9 @@ export interface SeasonsStore {
 /**
  * Cachar fetcher-svaret 30 dagar per tmdbId; samtida anrop för samma serie delar ett uppslag.
  * Skrivningen debounceas (en per skur, inte en per serie) och släpper utgångna poster.
+ * `prefix` skiljer flera cacher i samma lager (säsong 1–3 och resten av en utvald serie).
  */
-export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number) => Promise<SeasonList>, now: () => number = Date.now) {
+export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number) => Promise<SeasonList>, now: () => number = Date.now, prefix = 'seasons') {
   const inflight = new Map<number, Promise<SeasonList>>()
   const pending: Record<string, SeasonsEntry> = {}
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -144,7 +145,7 @@ export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number
   }
 
   function load(tmdbId: number): Promise<SeasonList> {
-    const key = `seasons:${tmdbId}`
+    const key = `${prefix}:${tmdbId}`
     const hit = pending[key] ?? (snapshot ??= store.read())[key]
     if (fresh(hit)) return Promise.resolve(hit.seasons)
     const running = inflight.get(tmdbId)

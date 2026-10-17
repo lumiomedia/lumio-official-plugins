@@ -13,7 +13,7 @@
  * Absoluta tidsstämplar: sommartidsbyten flyttar ingenting i ett lagt lås.
  * Ren logik; lagringen sköts av state/store.ts.
  */
-import type { ChannelDef } from './channel'
+import { canonTitles, hasTitles, type ChannelDef } from './channel'
 import type { ScheduleItem } from './schedule'
 
 const MIN = 60_000
@@ -29,9 +29,11 @@ export interface LockedSlot { r: string; s: number; e: number; o: number }
 export interface ScheduleLock { sig: string; slots: LockedSlot[] }
 
 /** Reglerna som avgör tablån; ändras de gäller inte låset längre. */
-export function lockSignature(channel: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'order' | 'airWindow' | 'seed'>): string {
+export function lockSignature(channel: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'order' | 'airWindow' | 'seed' | 'titles'>): string {
   const { sources, genres, era, length, kind, order, airWindow, seed } = channel
-  return JSON.stringify([sources, genres, era, length, kind, order, airWindow, seed])
+  const base = [sources, genres, era, length, kind, order, airWindow, seed]
+  // Titlarna bara när de finns, så befintliga lås behåller sin signatur.
+  return JSON.stringify(hasTitles(channel) ? [...base, canonTitles(channel.titles)] : base)
 }
 
 /** Låsets horisont: slutet på sista låsta programmet (null utan lås). */

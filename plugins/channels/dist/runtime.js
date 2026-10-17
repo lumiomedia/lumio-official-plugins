@@ -40837,6 +40837,19 @@ ${cue.text}`).join("\n\n")}
     fieldNamePlaceholder: { en: "E.g. 80s sci-fi", sv: "T.ex. 80-tals sci-fi" },
     fieldSources: { en: "Sources", sv: "K\xE4llor" },
     fieldKind: { en: "Type", sv: "Typ" },
+    fieldTitles: { en: "Titles", sv: "Titlar" },
+    fieldTitlesPlaceholder: { en: "Search for a film or series\u2026", sv: "S\xF6k en film eller serie\u2026" },
+    titlesHint: {
+      en: "Only the chosen titles are broadcast \u2014 genre, era, length and type are ignored.",
+      sv: "Bara de valda titlarna s\xE4nds \u2014 genre, era, l\xE4ngd och typ g\xE4ller inte."
+    },
+    titlesSearching: { en: "Searching\u2026", sv: "S\xF6ker\u2026" },
+    titlesNoHits: { en: "No matches", sv: "Inga tr\xE4ffar" },
+    titlesSearchFailed: { en: "The search did not respond", sv: "S\xF6kningen svarade inte" },
+    titlesInSources: { en: "In your sources", sv: "I dina k\xE4llor" },
+    titleMovie: { en: "Film", sv: "Film" },
+    titleSeries: { en: "Series", sv: "Serie" },
+    titleRemove: { en: "Remove {title}", sv: "Ta bort {title}" },
     fieldGenre: { en: "Genre", sv: "Genre" },
     fieldEra: { en: "Era", sv: "Era" },
     fieldLength: { en: "Length", sv: "L\xE4ngd" },
@@ -41039,7 +41052,20 @@ ${cue.text}`).join("\n\n")}
     }
     return h % 2 ** 31;
   }
+  var hasTitles = (c) => (c.titles?.length ?? 0) > 0;
+  function channelTitleKey(t) {
+    if (t.tmdbId != null) return `${t.kind}:tmdb:${t.tmdbId}`;
+    if (t.libraryKey) return `${t.kind}:key:${t.libraryKey}`;
+    return `${t.kind}:name:${normTitle(t.title)}:${t.year ?? ""}`;
+  }
+  function normTitle(s) {
+    return s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  }
+  function canonTitles(titles) {
+    return [...new Set((titles ?? []).map(channelTitleKey))].sort();
+  }
   function sameRules(a, b) {
+    if (hasTitles(a) || hasTitles(b)) return false;
     const norm = (c) => JSON.stringify([
       [...c.sources].sort(),
       canonGenres(c.genres).sort(),
@@ -41083,7 +41109,8 @@ ${cue.text}`).join("\n\n")}
   var LOCK_KEEP_PAST_MS = 36e5;
   function lockSignature(channel) {
     const { sources, genres, era, length, kind, order, airWindow, seed } = channel;
-    return JSON.stringify([sources, genres, era, length, kind, order, airWindow, seed]);
+    const base = [sources, genres, era, length, kind, order, airWindow, seed];
+    return JSON.stringify(hasTitles(channel) ? [...base, canonTitles(channel.titles)] : base);
   }
   function lockHorizon(lock) {
     const last2 = lock?.slots[lock.slots.length - 1];
@@ -41374,8 +41401,45 @@ ${cue.text}`).join("\n\n")}
       genres: canonGenres(channel.genres).sort(),
       era: channel.era,
       length: channel.length,
-      kind: channel.kind
+      kind: channel.kind,
+      ...hasTitles(channel) ? { titles: canonTitles(channel.titles) } : {}
     };
+  }
+  function itemKeys(item) {
+    const keys2 = [];
+    if (item.play.type === "library") keys2.push(item.play.key);
+    if (item.seriesKey) keys2.push(item.seriesKey);
+    else keys2.push(item.ref);
+    return keys2;
+  }
+  function itemMatchesTitle(item, title) {
+    if (title.kind === "movie" !== (item.kind === "movie")) return false;
+    if (title.tmdbId != null && item.tmdbId != null) return title.tmdbId === item.tmdbId;
+    if (title.libraryKey && itemKeys(item).includes(title.libraryKey)) return true;
+    const name = item.kind === "episode" ? item.seriesTitle ?? item.title : item.title;
+    if (normTitle(name) !== normTitle(title.title)) return false;
+    return title.year == null || item.year == null || title.year === item.year;
+  }
+  function restrictToTitles(items2, titles) {
+    const found = /* @__PURE__ */ new Set();
+    const kept = items2.filter((item) => {
+      let hit = false;
+      titles.forEach((t, i) => {
+        if (itemMatchesTitle(item, t)) {
+          found.add(i);
+          hit = true;
+        }
+      });
+      return hit;
+    });
+    return { items: kept, missing: titles.filter((_, i) => !found.has(i)) };
+  }
+  function applyChannelRules(items2, channel, extra = []) {
+    if (!hasTitles(channel)) return filterPool(items2, channel);
+    const { items: kept, missing } = restrictToTitles(items2, channel.titles);
+    if (extra.length === 0) return kept;
+    const add = extra.filter((e) => missing.some((t) => itemMatchesTitle(e, t)));
+    return [...kept, ...add];
   }
   var MAX_POOL_ITEMS = 2e3;
   function hash(text, seed) {
@@ -41770,6 +41834,92 @@ ${cue.text}`).join("\n\n")}
     const rebuilt = await enrich(deps, refs, rebuild);
     if (matched && !rebuilt) rebuild();
   };
+  async function loadTitleFallback(titles, deps, emit3, opts = {}) {
+    const wanted = titles.filter((t) => t.tmdbId != null);
+    if (wanted.length === 0) return;
+    const movies = wanted.filter((t) => t.kind === "movie");
+    const shows = wanted.filter((t) => t.kind === "tv");
+    const perShow = shows.map(() => []);
+    const build = () => {
+      const out = [];
+      for (const m of movies) {
+        const meta = deps.meta.get("movie", m.tmdbId);
+        if (!meta?.imdbId) continue;
+        out.push({
+          ref: `ti:movie:${m.tmdbId}`,
+          title: meta.title ?? m.title,
+          kind: "movie",
+          source: "watchlist",
+          genres: meta.genres,
+          year: meta.year ?? m.year ?? null,
+          tmdbId: m.tmdbId,
+          imdbId: meta.imdbId,
+          ...meta.posterUrl ? { posterUrl: meta.posterUrl } : {},
+          ...meta.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
+          ...pickRuntime(null, meta.runtimeMin, DEFAULT_RUNTIME.movie),
+          play: { type: "stream", imdbId: meta.imdbId, mediaType: "movie" }
+        });
+      }
+      return [...out, ...perShow.flat()];
+    };
+    const addSeasons = (idx, seasons) => {
+      const s = shows[idx];
+      const meta = deps.meta.get("tv", s.tmdbId);
+      const imdbId = meta?.imdbId;
+      if (!imdbId) return;
+      const name = meta.title ?? s.title;
+      const out = perShow[idx];
+      const have = new Set(out.map((i) => `${i.season}:${i.episode}`));
+      for (const season of seasons) {
+        if (season.season < 1) continue;
+        for (const ep of season.episodes) {
+          if (have.has(`${season.season}:${ep.episode}`)) continue;
+          out.push({
+            ref: `ti:tv:${s.tmdbId}:${season.season}:${ep.episode}`,
+            title: ep.title || name,
+            seriesTitle: name,
+            kind: "episode",
+            source: "watchlist",
+            seriesKey: `ti:tv:${s.tmdbId}`,
+            season: season.season,
+            episode: ep.episode,
+            genres: meta.genres,
+            year: meta.year ?? s.year ?? null,
+            tmdbId: s.tmdbId,
+            imdbId,
+            ...meta.posterUrl ? { posterUrl: meta.posterUrl } : {},
+            ...meta.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
+            ...pickRuntime(ep.runtime, meta.runtimeMin, DEFAULT_RUNTIME.episode),
+            play: { type: "stream", imdbId, mediaType: "series", season: season.season, episode: ep.episode }
+          });
+        }
+      }
+    };
+    await idle(deps);
+    await deps.meta.ensure(wanted.map((t) => ({ kind: t.kind, tmdbId: t.tmdbId }))).catch(() => {
+    });
+    emit3(build());
+    if (shows.length === 0) return;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < shows.length) {
+        const idx = cursor++;
+        if (!deps.meta.get("tv", shows[idx].tmdbId)?.imdbId) continue;
+        addSeasons(idx, await deps.fetchSeasons(shows[idx].tmdbId).catch(() => []));
+        emit3(build());
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker));
+    if (!opts.allSeasons || !deps.fetchRestSeasons) return;
+    for (let idx = 0; idx < shows.length; idx += 1) {
+      if (!deps.meta.get("tv", shows[idx].tmdbId)?.imdbId) continue;
+      await idle(deps);
+      const rest = await deps.fetchRestSeasons(shows[idx].tmdbId).catch(() => []);
+      if (rest.length === 0) continue;
+      addSeasons(idx, rest);
+      emit3(build());
+    }
+  }
   async function collect(stream, deps, opts) {
     let last2 = [];
     try {
@@ -41820,7 +41970,9 @@ ${cue.text}`).join("\n\n")}
   }
   async function loadPoolProgressive(channel, deps, onUpdate) {
     const bySource = /* @__PURE__ */ new Map();
-    const merged = () => filterPool(dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? [])), channel);
+    let extra = [];
+    const all = () => dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? []));
+    const merged = () => applyChannelRules(all(), channel, extra);
     await Promise.all(channel.sources.map(
       (s) => runShared(s, deps, (items2) => {
         bySource.set(s, items2);
@@ -41828,6 +41980,16 @@ ${cue.text}`).join("\n\n")}
       }).catch(() => {
       })
     ));
+    if (hasTitles(channel)) {
+      const { missing } = restrictToTitles(all(), channel.titles);
+      if (missing.length > 0) {
+        await loadTitleFallback(missing, deps, (items2) => {
+          extra = items2;
+          onUpdate?.(merged());
+        }, { allSeasons: true }).catch(() => {
+        });
+      }
+    }
     return merged();
   }
 
@@ -41932,7 +42094,7 @@ ${cue.text}`).join("\n\n")}
     }
     return { get, ensure };
   }
-  function createSeasonsCache(store2, fetcher, now2 = Date.now) {
+  function createSeasonsCache(store2, fetcher, now2 = Date.now, prefix = "seasons") {
     const inflight8 = /* @__PURE__ */ new Map();
     const pending5 = {};
     let timer3;
@@ -41952,7 +42114,7 @@ ${cue.text}`).join("\n\n")}
       snapshot = merged;
     }
     function load(tmdbId) {
-      const key = `seasons:${tmdbId}`;
+      const key = `${prefix}:${tmdbId}`;
       const hit = pending5[key] ?? (snapshot ?? (snapshot = store2.read()))[key];
       if (fresh(hit)) return Promise.resolve(hit.seasons);
       const running2 = inflight8.get(tmdbId);
@@ -42166,6 +42328,17 @@ ${cue.text}`).join("\n\n")}
     if (first === null && ref.year) return run(false);
     return first;
   }
+  async function searchTmdbTitles(query, signal) {
+    const res = await fetch(`/api/local-files/search?${new URLSearchParams({ query })}`, signal ? { signal } : void 0);
+    if (!res.ok) throw new Error(`search ${res.status}`);
+    const body = await res.json();
+    const out = [];
+    for (const r of body.results ?? []) {
+      if (r.type !== "movie" && r.type !== "tv" || typeof r.tmdbId !== "number" || !r.title) continue;
+      out.push({ kind: r.type, tmdbId: r.tmdbId, title: r.title, year: typeof r.year === "number" ? r.year : null, ...r.posterUrl ? { posterUrl: r.posterUrl } : {} });
+    }
+    return out;
+  }
   var seasonsStore = {
     read: () => object(readPluginJson(PLUGIN_ID, "seasons", {})),
     write: (all) => writePluginJson(PLUGIN_ID, "seasons", all, { emitChange: false })
@@ -42189,18 +42362,27 @@ ${cue.text}`).join("\n\n")}
       ...typeof item.imdbId === "string" && item.imdbId ? { imdbId: item.imdbId } : {}
     };
   }
-  async function fetchSeasonsUncached(tmdbId) {
+  function fetchSeasonsUncached(tmdbId) {
+    return fetchSeasonRange(tmdbId, (n) => n >= 1 && n <= 3);
+  }
+  function fetchRestSeasonsUncached(tmdbId) {
+    return fetchSeasonRange(tmdbId, (n) => n > 3, MAX_POOL_ITEMS);
+  }
+  async function fetchSeasonRange(tmdbId, pick2, maxEpisodes = Infinity) {
     const head = await getJson(`/api/tv-info?tmdbId=${tmdbId}`);
     const listed = Array.isArray(head?.seasons) ? head.seasons : [];
-    const numbers = listed.map((s) => s.season_number ?? 0).filter((n) => n >= 1 && n <= 3);
+    const numbers = listed.map((s) => s.season_number ?? 0).filter(pick2);
     const out = [];
+    let total = 0;
     for (const season of numbers) {
+      if (total >= maxEpisodes) break;
       const body = await getJson(`/api/tv-info?tmdbId=${tmdbId}&season=${season}`).catch(() => null);
       const episodes = Array.isArray(body?.episodes) ? body.episodes : [];
       out.push({
         season,
         episodes: episodes.filter((e) => typeof e.episode_number === "number").map((e) => ({ episode: e.episode_number, title: e.name ?? "", runtime: e.runtime && e.runtime > 0 ? e.runtime : null }))
       });
+      total += episodes.length;
     }
     return out;
   }
@@ -42209,6 +42391,7 @@ ${cue.text}`).join("\n\n")}
     getMovieWatchlist: () => getMovieWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
+    fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, "seasonsRest"),
     listDebridCloud: () => channelListDebridCloud(),
     meta: createMetaCache(metaStore, fetchMeta),
     waitForIdle: () => waitForStartIdle2(),
@@ -45217,9 +45400,81 @@ ${cue.text}`).join("\n\n")}
   function sourceCounts(pools) {
     return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length };
   }
-  function matchingPool(draft, pools) {
+  function matchingPool(draft, pools, extra = []) {
     const picked = draft.sources.flatMap((s) => pools[s] ?? []);
-    return filterPool(dedupePool(picked), draft);
+    return applyChannelRules(dedupePool(picked), draft, extra);
+  }
+  function missingTitles(draft, pools) {
+    if (!hasTitles(draft)) return [];
+    return restrictToTitles(dedupePool(draft.sources.flatMap((s) => pools[s] ?? [])), draft.titles).missing;
+  }
+  function effectiveName2(draft) {
+    const typed = draft.name.trim();
+    if (typed) return typed;
+    return draft.titles?.length === 1 ? draft.titles[0].title : "";
+  }
+  function orderForTitles(titles, current2, touched) {
+    if (touched) return current2;
+    return titles.length === 1 && titles[0].kind === "tv" ? "episodes" : current2;
+  }
+  function titleOfItem(item) {
+    const tv = item.kind === "episode";
+    const libraryKey = item.tmdbId != null ? void 0 : item.play.type === "library" ? item.play.key : item.seriesKey ?? item.ref;
+    return {
+      kind: tv ? "tv" : "movie",
+      ...item.tmdbId != null ? { tmdbId: item.tmdbId } : {},
+      ...libraryKey ? { libraryKey } : {},
+      title: tv ? item.seriesTitle ?? item.title : item.title,
+      year: item.year,
+      ...item.posterUrl ? { posterUrl: item.posterUrl } : {}
+    };
+  }
+  function sameTitle(a, b) {
+    if (a.kind !== b.kind) return false;
+    if (a.tmdbId != null && b.tmdbId != null) return a.tmdbId === b.tmdbId;
+    if (a.libraryKey && b.libraryKey && a.libraryKey === b.libraryKey) return true;
+    return normTitle(a.title) === normTitle(b.title) && (a.year == null || b.year == null || a.year === b.year);
+  }
+  var SUGGESTION_LIMIT = 8;
+  function localTitleSuggestions(pools, query, limit = SUGGESTION_LIMIT) {
+    const q = normTitle(query);
+    if (q.length < 2) return [];
+    const byKey = /* @__PURE__ */ new Map();
+    for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid, ...pools.vod]) {
+      const s = titleOfItem(item);
+      const name = normTitle(s.title);
+      const at = name.indexOf(q);
+      if (at < 0) continue;
+      const key = channelTitleKey(s);
+      const current2 = byKey.get(key);
+      if (!current2) byKey.set(key, { s, rank: at === 0 ? 0 : 1 });
+      else if (!current2.s.posterUrl && s.posterUrl) current2.s = { ...current2.s, posterUrl: s.posterUrl };
+    }
+    return [...byKey.values()].sort((a, b) => a.rank - b.rank || (a.s.title.toLowerCase() < b.s.title.toLowerCase() ? -1 : a.s.title.toLowerCase() > b.s.title.toLowerCase() ? 1 : 0)).slice(0, limit).map((x) => x.s);
+  }
+  function mergeSuggestions(local, remote, selected, limit = SUGGESTION_LIMIT) {
+    const out = [];
+    for (const s of [...local, ...remote]) {
+      if (selected.some((t) => sameTitle(t, s))) continue;
+      const dup = out.findIndex((o) => sameTitle(o, s));
+      if (dup >= 0) {
+        const o = out[dup];
+        out[dup] = { ...o, ...o.tmdbId == null && s.tmdbId != null ? { tmdbId: s.tmdbId } : {}, ...!o.posterUrl && s.posterUrl ? { posterUrl: s.posterUrl } : {} };
+        continue;
+      }
+      out.push(s);
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+  function toChannelTitle(s) {
+    return {
+      kind: s.kind,
+      title: s.title,
+      ...s.tmdbId != null ? { tmdbId: s.tmdbId } : {},
+      ...s.libraryKey ? { libraryKey: s.libraryKey } : {},
+      ...s.year != null ? { year: s.year } : {}
+    };
   }
   function tonightEnd(now2) {
     const d = new Date(now2);
@@ -45242,8 +45497,8 @@ ${cue.text}`).join("\n\n")}
     parts.push(`${Math.round(item.runtimeMin)} min`);
     return parts.join(" \xB7 ");
   }
-  function previewFor(draft, pools, seed, now2) {
-    const pool = matchingPool(draft, pools);
+  function previewFor(draft, pools, seed, now2, extra = []) {
+    const pool = matchingPool(draft, pools, extra);
     const minutes = pool.reduce((sum, item) => sum + Math.max(0, item.runtimeMin), 0);
     const hours = minutes / 60;
     const totalHours = hours < 10 ? Math.round(hours * 10) / 10 : Math.round(hours);
@@ -45275,6 +45530,301 @@ ${cue.text}`).join("\n\n")}
   }
   function genreLabel(name, lang) {
     return GENRE_TEXT[name]?.[lang] ?? name;
+  }
+  function createTitleSearch(search, onState, debounceMs = 350, minChars = 2) {
+    const cache7 = /* @__PURE__ */ new Map();
+    let current2 = "";
+    let timer3;
+    let inflight8 = false;
+    let queued = null;
+    let disposed = false;
+    const emit3 = (state2) => {
+      if (!disposed) onState(state2);
+    };
+    const keyOf = (q) => q.toLowerCase();
+    function run(q) {
+      inflight8 = true;
+      search(q).then(
+        (results) => {
+          cache7.set(keyOf(q), results);
+          if (keyOf(q) === current2) emit3({ query: q, results, status: "done" });
+        },
+        () => {
+          if (keyOf(q) === current2) emit3({ query: q, results: [], status: "failed" });
+        }
+      ).finally(() => {
+        inflight8 = false;
+        const next2 = queued;
+        queued = null;
+        if (!disposed && next2 != null && keyOf(next2) === current2 && !cache7.has(current2)) run(next2);
+      });
+    }
+    function fire(q) {
+      const hit = cache7.get(keyOf(q));
+      if (hit) {
+        emit3({ query: q, results: hit, status: "done" });
+        return;
+      }
+      if (inflight8) {
+        queued = q;
+        return;
+      }
+      run(q);
+    }
+    return {
+      set(raw) {
+        const q = raw.trim();
+        current2 = keyOf(q);
+        if (timer3) {
+          clearTimeout(timer3);
+          timer3 = void 0;
+        }
+        if (q.length < minChars) {
+          queued = null;
+          emit3({ query: q, results: [], status: "idle" });
+          return;
+        }
+        const hit = cache7.get(current2);
+        if (hit) {
+          emit3({ query: q, results: hit, status: "done" });
+          return;
+        }
+        emit3({ query: q, results: [], status: "searching" });
+        timer3 = setTimeout(() => {
+          timer3 = void 0;
+          fire(q);
+        }, debounceMs);
+      },
+      dispose() {
+        disposed = true;
+        if (timer3) clearTimeout(timer3);
+      }
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/title-picker.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_jsx_runtime_shim();
+  var FIELD = "[data-studio-titles]";
+  var FIRST_SUGGESTION = "[data-title-suggestion]";
+  function TitlePicker({ selected, onChange, pools, extra, isTv, t, labelStyle }) {
+    const fs = (px) => fontSize(px, isTv);
+    const [query, setQuery] = useState("");
+    const [remote, setRemote] = useState({ query: "", results: [], status: "idle" });
+    const [kbOpen, setKbOpen] = useState(false);
+    const posters = useRef(/* @__PURE__ */ new Map());
+    const listRef = useRef(null);
+    const inputRef = useRef(null);
+    const searcher = useMemo(() => createTitleSearch((q) => searchTmdbTitles(q), setRemote), []);
+    useEffect(() => () => searcher.dispose(), [searcher]);
+    useEffect(() => {
+      searcher.set(query);
+    }, [query, searcher]);
+    const local = useMemo(() => localTitleSuggestions(pools, query), [pools, query]);
+    const active3 = query.trim().length >= 2;
+    const remoteHits = remote.query.toLowerCase() === query.trim().toLowerCase() ? remote.results : [];
+    const suggestions = active3 ? mergeSuggestions(local, remoteHits, selected) : [];
+    const localKeys = useMemo(() => new Set(local.map(channelTitleKey)), [local]);
+    const posterFor = (title) => {
+      const remembered = posters.current.get(channelTitleKey(title));
+      if (remembered) return remembered;
+      for (const item of [...extra, ...pools.library, ...pools.vod, ...pools.debrid, ...pools.watchlist]) {
+        if (item.posterUrl && itemMatchesTitle(item, title)) return item.posterUrl;
+      }
+      return void 0;
+    };
+    const add = (s) => {
+      const title = toChannelTitle(s);
+      if (s.posterUrl) posters.current.set(channelTitleKey(title), s.posterUrl);
+      onChange([...selected, title]);
+      setQuery("");
+      refocusLater(() => isTv ? document.querySelector(FIELD) : inputRef.current);
+    };
+    const remove = (key) => {
+      onChange(selected.filter((x) => channelTitleKey(x) !== key));
+      refocusLater(() => document.querySelector("[data-title-chip]") ?? document.querySelector(FIELD));
+    };
+    const onInputKey = (e) => {
+      if (e.key === "ArrowDown") {
+        const first = listRef.current?.querySelector(FIRST_SUGGESTION);
+        if (first) {
+          e.preventDefault();
+          first.focus();
+        }
+      } else if (e.key === "Escape" && query) {
+        e.preventDefault();
+        e.stopPropagation();
+        setQuery("");
+      }
+    };
+    const onListKey = (e) => {
+      if (isTv || e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const rows = [...listRef.current?.querySelectorAll(FIRST_SUGGESTION) ?? []];
+      const at = rows.indexOf(document.activeElement);
+      if (at < 0) return;
+      e.preventDefault();
+      if (e.key === "ArrowUp" && at === 0) {
+        inputRef.current?.focus();
+        return;
+      }
+      rows[Math.min(rows.length - 1, Math.max(0, at + (e.key === "ArrowDown" ? 1 : -1)))]?.focus();
+    };
+    const KeyboardPanel = isTv ? getTvKeyboardPanel() : null;
+    const fieldStyle = { ...inputStyle, fontSize: fs(14), ...isTv ? { minHeight: tvu(48), padding: `0 ${tvu(16)}`, maxWidth: tvu(640), boxSizing: "border-box" } : {} };
+    const thumb = (url, w, h) => /* @__PURE__ */ jsx(
+      "span",
+      {
+        "aria-hidden": "true",
+        style: {
+          width: dim(w, isTv),
+          height: dim(h, isTv),
+          flexShrink: 0,
+          borderRadius: 4,
+          background: url ? `center / cover no-repeat url("${url}")` : TOKENS.surface2,
+          border: `1px solid ${TOKENS.border}`
+        }
+      }
+    );
+    const status = !active3 ? null : remote.status === "searching" && suggestions.length === 0 ? t("titlesSearching") : remote.status === "failed" && suggestions.length === 0 ? t("titlesSearchFailed") : remote.status === "done" && suggestions.length === 0 ? t("titlesNoHits") : null;
+    return /* @__PURE__ */ jsxs("div", { "data-studio-field": "fieldTitles", style: { marginBottom: dim(18, isTv, 22) }, children: [
+      /* @__PURE__ */ jsx("p", { style: labelStyle, children: t("fieldTitles") }),
+      selected.length > 0 ? /* @__PURE__ */ jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: dim(8, isTv), marginBottom: dimS(10, isTv) }, children: selected.map((title) => {
+        const key = channelTitleKey(title);
+        const name = title.year ? `${title.title} (${title.year})` : title.title;
+        return /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            "data-f": "",
+            "data-title-chip": key,
+            "aria-label": t("titleRemove", { title: name }),
+            onClick: () => remove(key),
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: dim(8, isTv),
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: isTv ? `${tvu(4)} ${tvu(12)} ${tvu(4)} ${tvu(4)}` : "3px 10px 3px 3px",
+              fontSize: fs(13),
+              fontWeight: 500,
+              lineHeight: 1.25,
+              border: `1px solid ${TOKENS.accent}`,
+              background: TOKENS.accentSoft,
+              color: TOKENS.text,
+              ...isTv ? { minHeight: tvu(40), boxSizing: "border-box" } : {}
+            },
+            children: [
+              thumb(posterFor(title), 20, 30),
+              /* @__PURE__ */ jsx("span", { children: name }),
+              /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: TOKENS.textMute, fontSize: fs(14) }, children: "\xD7" })
+            ]
+          },
+          key
+        );
+      }) }) : null,
+      KeyboardPanel ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          "data-f": "",
+          "data-studio-titles": "",
+          onClick: () => setKbOpen(true),
+          style: { ...fieldStyle, textAlign: "left", cursor: "pointer", color: query ? TOKENS.text : TOKENS.textMute },
+          children: query || t("fieldTitlesPlaceholder")
+        }
+      ) : /* @__PURE__ */ jsx(
+        "input",
+        {
+          ref: inputRef,
+          "data-f": "",
+          "data-studio-titles": "",
+          value: query,
+          maxLength: 80,
+          placeholder: t("fieldTitlesPlaceholder"),
+          onChange: (e) => setQuery(e.target.value),
+          onKeyDown: onInputKey,
+          style: fieldStyle
+        }
+      ),
+      suggestions.length > 0 ? /* @__PURE__ */ jsx(
+        "div",
+        {
+          ref: listRef,
+          "data-title-suggestions": "",
+          role: "listbox",
+          onKeyDown: onListKey,
+          style: {
+            marginTop: dimS(8, isTv),
+            border: `1px solid ${TOKENS.border}`,
+            borderRadius: 10,
+            overflow: "hidden",
+            background: TOKENS.surface1,
+            ...isTv ? { maxWidth: tvu(640) } : {}
+          },
+          children: suggestions.map((s, i) => {
+            const meta = [t(s.kind === "tv" ? "titleSeries" : "titleMovie"), s.year != null ? String(s.year) : null, localKeys.has(channelTitleKey(s)) ? t("titlesInSources") : null].filter(Boolean).join(" \xB7 ");
+            return /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                role: "option",
+                "aria-selected": false,
+                "data-f": "",
+                "data-title-suggestion": channelTitleKey(s),
+                onClick: () => add(s),
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: dim(12, isTv),
+                  width: "100%",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  padding: isTv ? `${tvu(8)} ${tvu(14)}` : "7px 12px",
+                  background: "transparent",
+                  color: TOKENS.text,
+                  border: "none",
+                  borderTop: i === 0 ? "none" : `1px solid ${TOKENS.border}`
+                },
+                children: [
+                  thumb(s.posterUrl, 28, 42),
+                  /* @__PURE__ */ jsxs("span", { style: { minWidth: 0 }, children: [
+                    /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: fs(13.5), fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: s.title }),
+                    /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: fs(11.5), color: TOKENS.textMute, marginTop: 2, fontFamily: FONT3.ui }, children: meta })
+                  ] })
+                ]
+              },
+              `${channelTitleKey(s)}-${i}`
+            );
+          })
+        }
+      ) : null,
+      status ? /* @__PURE__ */ jsx("p", { "data-titles-status": "", style: { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12), color: TOKENS.textDim }, children: status }) : null,
+      selected.length > 0 ? /* @__PURE__ */ jsx("p", { "data-titles-hint": "", style: { margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(12.5), color: TOKENS.textDim, lineHeight: 1.4 }, children: t("titlesHint") }) : null,
+      kbOpen && KeyboardPanel ? /* @__PURE__ */ jsx("div", { style: { position: "fixed", inset: 0, zIndex: 80 }, children: /* @__PURE__ */ jsx(
+        KeyboardPanel,
+        {
+          title: t("fieldTitles"),
+          initial: query,
+          placeholder: t("fieldTitlesPlaceholder"),
+          maxLength: 80,
+          field: "short",
+          onChange: (value) => setQuery(value),
+          onDone: (value) => {
+            setKbOpen(false);
+            setQuery(value);
+            refocusLater(() => document.querySelector(FIRST_SUGGESTION) ?? document.querySelector(FIELD));
+          },
+          onClose: () => {
+            setKbOpen(false);
+            refocusLater(() => document.querySelector(FIELD));
+          }
+        }
+      ) }) : null
+    ] });
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/studio.tsx
@@ -45328,8 +45878,19 @@ ${cue.text}`).join("\n\n")}
   var CLOCK_MS = 3e4;
   function draftOf(channel) {
     if (!channel) return emptyDraft();
-    const { name, sources, genres, era, length, kind, order, airWindow, showOnHome } = channel;
-    return { name, sources: [...sources], genres: [...genres], era, length, kind, order, airWindow, showOnHome };
+    const { name, sources, genres, era, length, kind, order, airWindow, showOnHome, titles } = channel;
+    return {
+      name,
+      sources: [...sources],
+      genres: [...genres],
+      era,
+      length,
+      kind,
+      order,
+      airWindow,
+      showOnHome,
+      ...titles?.length ? { titles: titles.map((x) => ({ ...x })) } : {}
+    };
   }
   function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }) {
     const { lang } = useLang();
@@ -45346,6 +45907,11 @@ ${cue.text}`).join("\n\n")}
     const [pools, setPools] = useState({});
     const [failedSources, setFailedSources] = useState({});
     const patch = useCallback((next2) => setDraft((d) => ({ ...d, ...next2 })), []);
+    const orderTouched = useRef(editing != null && hasTitles(editing));
+    const setTitles = (titles) => {
+      const order = orderForTitles(titles, draft.order, orderTouched.current);
+      patch(titles.length > 0 ? { titles, order } : { titles: [], order });
+    };
     const alive = useRef(true);
     useEffect(() => {
       alive.current = true;
@@ -45393,13 +45959,29 @@ ${cue.text}`).join("\n\n")}
       [pools]
     );
     const loading2 = draft.sources.some((s) => pools[s] === void 0);
-    const preview = useMemo(() => previewFor(draft, full, seed, now2), [draft, full, seed, now2]);
+    const [fallback, setFallback] = useState({});
+    const fallbackStarted = useRef(/* @__PURE__ */ new Set());
+    useEffect(() => {
+      if (loading2 || !hasTitles(draft)) return;
+      for (const title of missingTitles(draft, full)) {
+        const key = channelTitleKey(title);
+        if (title.tmdbId == null || fallbackStarted.current.has(key)) continue;
+        fallbackStarted.current.add(key);
+        void loadTitleFallback([title], sourceDeps, (items2) => {
+          if (alive.current) setFallback((f) => ({ ...f, [key]: items2 }));
+        }).catch(() => {
+        });
+      }
+    }, [draft, full, loading2]);
+    const extra = useMemo(() => (draft.titles ?? []).flatMap((x) => fallback[channelTitleKey(x)] ?? []), [draft.titles, fallback]);
+    const titled = hasTitles(draft);
+    const preview = useMemo(() => previewFor(draft, full, seed, now2, extra), [draft, full, seed, now2, extra]);
     const counts = useMemo(() => sourceCounts(full), [full]);
     const genres = useMemo(() => {
       const list = genreOptions(full);
       const known = new Set(list.map((g) => canonGenre(g)[0]));
-      const extra = canonGenres(draft.genres).filter((token) => !known.has(token)).map((token) => genreName(token));
-      return [...list, ...extra];
+      const extra2 = canonGenres(draft.genres).filter((token) => !known.has(token)).map((token) => genreName(token));
+      return [...list, ...extra2];
     }, [full, draft.genres]);
     const chosenGenres = useMemo(() => new Set(canonGenres(draft.genres)), [draft.genres]);
     const toggleGenre = (name) => {
@@ -45410,14 +45992,16 @@ ${cue.text}`).join("\n\n")}
       });
     };
     const anyFailed = draft.sources.some((s) => failedSources[s]);
-    const validation = validateDraft(draft, loading2 || anyFailed ? null : preview.count);
+    const validation = validateDraft({ ...draft, name: effectiveName2(draft) }, loading2 || anyFailed ? null : preview.count);
     const showError = (field2) => attempted && validation.errors.includes(field2);
     const save = () => {
       setAttempted(true);
       if (validation.errors.length > 0) return;
-      const clean = { ...draft, name: draft.name.trim() };
+      const { titles, ...rest } = draft;
+      const clean = { ...rest, name: effectiveName2(draft), ...titles?.length ? { titles } : {} };
       if (editing) {
-        saveChannel({ ...editing, ...clean });
+        const { titles: _old, ...base } = editing;
+        saveChannel({ ...base, ...clean });
         onDone(editing.id);
         return;
       }
@@ -45470,16 +46054,17 @@ ${cue.text}`).join("\n\n")}
     };
     const errorStyle = { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12.5), color: TOKENS.red };
     const twoCols = !isMobile;
-    const field = (label, children, extra, error) => /* @__PURE__ */ jsxs("div", { "data-studio-field": label, style: { marginBottom: dim(18, isTv, 22) }, children: [
+    const field = (label, children, extra2, error, dimmed = false) => /* @__PURE__ */ jsxs("div", { "data-studio-field": label, "data-dimmed": dimmed ? "" : void 0, style: { marginBottom: dim(18, isTv, 22), opacity: dimmed ? 0.4 : 1, transition: "opacity 160ms" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dim(10, isTv) }, children: [
         /* @__PURE__ */ jsx("p", { style: labelStyle, children: t(label) }),
-        extra
+        extra2
       ] }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: dim(8, isTv) }, children }),
       error
     ] });
     const single = (options, value, set) => options.map((o) => /* @__PURE__ */ jsx(Chip, { isTv, selected: value === o.id, onClick: () => set(o.id), children: t(o.label) }, o.id));
     const toggleIn = (list, value) => list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+    const namePlaceholder = draft.titles?.length === 1 ? draft.titles[0].title : t("fieldNamePlaceholder");
     const nameField = KeyboardPanel ? /* @__PURE__ */ jsx(
       "button",
       {
@@ -45489,7 +46074,7 @@ ${cue.text}`).join("\n\n")}
         "data-studio-name": "",
         onClick: () => setKbOpen(true),
         style: { ...inputStyle, fontSize: fs(14), textAlign: "left", cursor: "pointer", color: draft.name ? TOKENS.text : TOKENS.textMute, ...isTv ? { minHeight: tvu(48), padding: `0 ${tvu(16)}`, maxWidth: tvu(640), boxSizing: "border-box" } : {} },
-        children: draft.name || t("fieldNamePlaceholder")
+        children: draft.name || namePlaceholder
       }
     ) : /* @__PURE__ */ jsx(
       "input",
@@ -45499,7 +46084,7 @@ ${cue.text}`).join("\n\n")}
         "data-studio-name": "",
         value: draft.name,
         maxLength: 60,
-        placeholder: t("fieldNamePlaceholder"),
+        placeholder: namePlaceholder,
         onChange: (e) => patch({ name: e.target.value }),
         style: { ...inputStyle, fontSize: fs(14), borderColor: showError("name") ? TOKENS.red : void 0 }
       }
@@ -45548,7 +46133,8 @@ ${cue.text}`).join("\n\n")}
         ),
         showError("sources") ? /* @__PURE__ */ jsx("p", { style: errorStyle, children: t("errorSources") }) : null
       ),
-      field("fieldKind", single(KINDS, draft.kind, (kind) => patch({ kind }))),
+      /* @__PURE__ */ jsx(TitlePicker, { selected: draft.titles ?? [], onChange: setTitles, pools: full, extra, isTv, t, labelStyle }),
+      field("fieldKind", single(KINDS, draft.kind, (kind) => patch({ kind })), void 0, void 0, titled),
       field(
         "fieldGenre",
         genres.map((g) => /* @__PURE__ */ jsx(
@@ -45560,12 +46146,18 @@ ${cue.text}`).join("\n\n")}
             children: genreLabel(g, genreLang)
           },
           g
-        ))
+        )),
+        void 0,
+        void 0,
+        titled
       ),
       /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: twoCols ? "minmax(0, 1fr) minmax(0, 1fr)" : "minmax(0, 1fr)", columnGap: dim(24, isTv) }, children: [
-        field("fieldEra", single(ERAS, draft.era, (era) => patch({ era }))),
-        field("fieldLength", single(LENGTHS, draft.length, (length) => patch({ length }))),
-        field("fieldOrder", single(ORDERS, draft.order, (order) => patch({ order }))),
+        field("fieldEra", single(ERAS, draft.era, (era) => patch({ era })), void 0, void 0, titled),
+        field("fieldLength", single(LENGTHS, draft.length, (length) => patch({ length })), void 0, void 0, titled),
+        field("fieldOrder", single(ORDERS, draft.order, (order) => {
+          orderTouched.current = true;
+          patch({ order });
+        })),
         field("fieldWindow", single(WINDOWS, draft.airWindow, (airWindow) => patch({ airWindow })))
       ] }),
       /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", gap: dim(16, isTv), marginBottom: 0, ...isTv ? { padding: `${tvu(14)} ${tvu(18)}`, maxWidth: tvu(900) } : {} }, children: [
@@ -45613,7 +46205,7 @@ ${cue.text}`).join("\n\n")}
           }
         ),
         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: fs(16), fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: draft.name.trim() || t("previewUnnamed") }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: fs(16), fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: effectiveName2(draft) || t("previewUnnamed") }),
           /* @__PURE__ */ jsx("div", { "data-studio-summary": "", style: { fontFamily: FONT3.mono, fontSize: fs(12), color: TOKENS.textDim, marginTop: 2 }, children: loading2 ? t("previewLoading") : t("previewSummary", { n: preview.count, h: preview.totalHours, window: t(preview.windowLabel) }) })
         ] })
       ] }),
@@ -45688,7 +46280,7 @@ ${cue.text}`).join("\n\n")}
             {
               title: t("fieldName"),
               initial: draft.name,
-              placeholder: t("fieldNamePlaceholder"),
+              placeholder: namePlaceholder,
               maxLength: 60,
               field: "short",
               onDone: (value) => {
@@ -46265,7 +46857,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.25",
+    version: "0.1.26",
     description: S.description,
     preinstalled: false,
     register(ctx) {

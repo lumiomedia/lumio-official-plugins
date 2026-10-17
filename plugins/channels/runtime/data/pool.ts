@@ -2,7 +2,7 @@
  * Titelpoolen: allt en kanal KAN sända, efter regler och dubbletter.
  * Ren logik — källorna hämtas i sources.ts.
  */
-import { ERA_RANGES, type ChannelDef, type SourceId } from '../model/channel'
+import { canonTitles, ERA_RANGES, hasTitles, normTitle, type ChannelDef, type ChannelTitle, type SourceId } from '../model/channel'
 import type { ScheduleItem } from '../model/schedule'
 import { canonGenres } from './genres'
 
@@ -88,13 +88,70 @@ export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<So
   })
 }
 
-/** Reglerna som avgör poolens innehåll (signaturens regeldel). */
-export function poolRules(channel: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind'>) {
+/**
+ * Reglerna som avgör poolens innehåll (signaturens regeldel). Utvalda titlar
+ * tas med bara när de finns, så kanaler utan titlar behåller sin signatur
+ * (och sin sparade pool).
+ */
+export function poolRules(channel: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind' | 'titles'>) {
   return {
     sources: [...channel.sources].sort(),
     genres: canonGenres(channel.genres).sort(),
     era: channel.era, length: channel.length, kind: channel.kind,
+    ...(hasTitles(channel) ? { titles: canonTitles(channel.titles) } : {}),
   }
+}
+
+/** Postens biblioteksnyckel (bibliotek/VOD), annars seriens/postens egen nyckel. */
+function itemKeys(item: PoolItem): string[] {
+  const keys: string[] = []
+  if (item.play.type === 'library') keys.push(item.play.key)
+  if (item.seriesKey) keys.push(item.seriesKey)
+  else keys.push(item.ref)
+  return keys
+}
+
+/**
+ * Hör posten till den utvalda titeln? tmdbId avgör när båda har ett (ingen
+ * namngissning mellan två olika id), annars biblioteksnyckel/seriesKey, sist
+ * tvättad titel + år (året jämförs bara när båda har ett).
+ */
+export function itemMatchesTitle(item: PoolItem, title: ChannelTitle): boolean {
+  if ((title.kind === 'movie') !== (item.kind === 'movie')) return false
+  if (title.tmdbId != null && item.tmdbId != null) return title.tmdbId === item.tmdbId
+  if (title.libraryKey && itemKeys(item).includes(title.libraryKey)) return true
+  const name = item.kind === 'episode' ? item.seriesTitle ?? item.title : item.title
+  if (normTitle(name) !== normTitle(title.title)) return false
+  return title.year == null || item.year == null || title.year === item.year
+}
+
+/**
+ * Bara posterna som hör till någon av titlarna, plus titlarna som inte
+ * hittades i någon källa (de fylls på via reservvägen i sources.ts).
+ */
+export function restrictToTitles(items: PoolItem[], titles: readonly ChannelTitle[]): { items: PoolItem[]; missing: ChannelTitle[] } {
+  const found = new Set<number>()
+  const kept = items.filter((item) => {
+    let hit = false
+    titles.forEach((t, i) => {
+      if (itemMatchesTitle(item, t)) { found.add(i); hit = true }
+    })
+    return hit
+  })
+  return { items: kept, missing: titles.filter((_, i) => !found.has(i)) }
+}
+
+/**
+ * Kanalens regelfilter: utvalda titlar ersätter genre/epok/längd/slag.
+ * `extra` = reservposter för titlar som saknas i källorna.
+ */
+export function applyChannelRules(items: PoolItem[], channel: Pick<ChannelDef, 'kind' | 'era' | 'length' | 'titles'> & { genres: readonly string[] }, extra: PoolItem[] = []): PoolItem[] {
+  if (!hasTitles(channel)) return filterPool(items, channel)
+  const { items: kept, missing } = restrictToTitles(items, channel.titles!)
+  if (extra.length === 0) return kept
+  // Bara reservposter för titlar som inte redan finns i någon källa.
+  const add = extra.filter((e) => missing.some((t) => itemMatchesTitle(e, t)))
+  return [...kept, ...add]
 }
 
 /** Högst så många poster per kanal (lagringen är trång på Android). */

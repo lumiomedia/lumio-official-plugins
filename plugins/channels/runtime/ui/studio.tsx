@@ -14,12 +14,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Card, Switch, TOKENS, channelListDebridCloud, getTvKeyboardPanel, inputStyle, useLang } from '@/lib/plugin-sdk'
-import { emptyDraft, nextChannelNumber, createChannel, validateDraft, type ChannelDef, type ChannelDraft, type SourceId } from '../model/channel'
+import { channelTitleKey, emptyDraft, hasTitles, nextChannelNumber, createChannel, validateDraft, type ChannelDef, type ChannelDraft, type ChannelTitle, type SourceId } from '../model/channel'
 import type { PoolItem } from '../data/pool'
-import { loadDebridItems, loadLibraryItems, loadVodItems, loadWatchlistItems } from '../data/sources'
+import { loadDebridItems, loadLibraryItems, loadTitleFallback, loadVodItems, loadWatchlistItems } from '../data/sources'
 import { sourceDeps } from '../host'
 import { deleteChannel, saveChannel } from '../state/store'
-import { genreLabel, genreName, genreOptions, previewFor, sourceCounts, type SourcePools } from './studio-logic'
+import { effectiveName, genreLabel, genreName, genreOptions, missingTitles, orderForTitles, previewFor, sourceCounts, type SourcePools } from './studio-logic'
+import { TitlePicker } from './title-picker'
 import { canonGenre, canonGenres } from '../data/genres'
 import { formatClock } from './guide-layout'
 import { belowMenuPill, C, FONT, fontSize } from './tokens'
@@ -66,8 +67,11 @@ const CLOCK_MS = 30_000
 
 function draftOf(channel: ChannelDef | null): ChannelDraft {
   if (!channel) return emptyDraft()
-  const { name, sources, genres, era, length, kind, order, airWindow, showOnHome } = channel
-  return { name, sources: [...sources], genres: [...genres], era, length, kind, order, airWindow, showOnHome }
+  const { name, sources, genres, era, length, kind, order, airWindow, showOnHome, titles } = channel
+  return {
+    name, sources: [...sources], genres: [...genres], era, length, kind, order, airWindow, showOnHome,
+    ...(titles?.length ? { titles: titles.map((x) => ({ ...x })) } : {}),
+  }
 }
 
 export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
@@ -94,6 +98,12 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   const [failedSources, setFailedSources] = useState<Partial<Record<SourceId, boolean>>>({})
 
   const patch = useCallback((next: Partial<ChannelDraft>) => setDraft((d) => ({ ...d, ...next })), [])
+  // Har användaren valt ordning själv? Då byter ett titelval den aldrig.
+  const orderTouched = useRef(editing != null && hasTitles(editing))
+  const setTitles = (titles: ChannelTitle[]) => {
+    const order = orderForTitles(titles, draft.order, orderTouched.current)
+    patch(titles.length > 0 ? { titles, order } : { titles: [], order })
+  }
 
   // ── Källor: en hämtning per källa och öppning ─────────────────────────────
   const alive = useRef(true)
@@ -147,7 +157,24 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     [pools],
   )
   const loading = draft.sources.some((s) => pools[s] === undefined)
-  const preview = useMemo(() => previewFor(draft, full, seed, now), [draft, full, seed, now])
+
+  // ── Utvalda titlar som ingen vald källa har: reservvägen (säsong 1–3) ─────
+  const [fallback, setFallback] = useState<Record<string, PoolItem[]>>({})
+  const fallbackStarted = useRef(new Set<string>())
+  useEffect(() => {
+    if (loading || !hasTitles(draft)) return
+    for (const title of missingTitles(draft, full)) {
+      const key = channelTitleKey(title)
+      if (title.tmdbId == null || fallbackStarted.current.has(key)) continue
+      fallbackStarted.current.add(key)
+      void loadTitleFallback([title], sourceDeps, (items) => {
+        if (alive.current) setFallback((f) => ({ ...f, [key]: items }))
+      }).catch(() => {})
+    }
+  }, [draft, full, loading])
+  const extra = useMemo(() => (draft.titles ?? []).flatMap((x) => fallback[channelTitleKey(x)] ?? []), [draft.titles, fallback])
+  const titled = hasTitles(draft)
+  const preview = useMemo(() => previewFor(draft, full, seed, now, extra), [draft, full, seed, now, extra])
   const counts = useMemo(() => sourceCounts(full), [full])
   const genres = useMemo(() => {
     const list = genreOptions(full)
@@ -166,17 +193,20 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   }
   // En källa som inte svarade ger inget antal att varna för: räkningen vore bara källfelet.
   const anyFailed = draft.sources.some((s) => failedSources[s])
-  const validation = validateDraft(draft, loading || anyFailed ? null : preview.count)
+  const validation = validateDraft({ ...draft, name: effectiveName(draft) }, loading || anyFailed ? null : preview.count)
   const showError = (field: 'name' | 'sources') => attempted && validation.errors.includes(field)
 
   // ── Spara / ta bort ───────────────────────────────────────────────────────
   const save = () => {
     setAttempted(true)
     if (validation.errors.length > 0) return
-    const clean = { ...draft, name: draft.name.trim() }
+    const { titles, ...rest } = draft
+    // Inga titlar = inget fält, så en vanlig kanal sparas precis som förut.
+    const clean: ChannelDraft = { ...rest, name: effectiveName(draft), ...(titles?.length ? { titles } : {}) }
     if (editing) {
       // Behåll id, nummer, färgton, frö och skapad-tid.
-      saveChannel({ ...editing, ...clean })
+      const { titles: _old, ...base } = editing
+      saveChannel({ ...base, ...clean })
       onDone(editing.id)
       return
     }
@@ -228,8 +258,9 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   const errorStyle: CSSProperties = { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12.5), color: TOKENS.red }
   const twoCols = !isMobile
 
-  const field = (label: TextKey, children: ReactNode, extra?: ReactNode, error?: ReactNode) => (
-    <div data-studio-field={label} style={{ marginBottom: dim(18, isTv, 22) }}>
+  // Med utvalda titlar gäller inte genre/era/längd/typ: fälten tonas ner (men går att ändra).
+  const field = (label: TextKey, children: ReactNode, extra?: ReactNode, error?: ReactNode, dimmed = false) => (
+    <div data-studio-field={label} data-dimmed={dimmed ? '' : undefined} style={{ marginBottom: dim(18, isTv, 22), opacity: dimmed ? 0.4 : 1, transition: 'opacity 160ms' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dim(10, isTv) }}>
         <p style={labelStyle}>{t(label)}</p>
         {extra}
@@ -246,6 +277,8 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
 
   const toggleIn = <V extends string>(list: V[], value: V): V[] => (list.includes(value) ? list.filter((x) => x !== value) : [...list, value])
 
+  // Tomt namn och en enda titel: titeln föreslås (och sparas om inget skrivs).
+  const namePlaceholder = draft.titles?.length === 1 ? draft.titles[0]!.title : t('fieldNamePlaceholder')
   const nameField = KeyboardPanel ? (
     <button
       type="button"
@@ -255,7 +288,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
       onClick={() => setKbOpen(true)}
       style={{ ...inputStyle, fontSize: fs(14), textAlign: 'left', cursor: 'pointer', color: draft.name ? TOKENS.text : TOKENS.textMute, ...(isTv ? { minHeight: tvu(48), padding: `0 ${tvu(16)}`, maxWidth: tvu(640), boxSizing: 'border-box' } : {}) }}
     >
-      {draft.name || t('fieldNamePlaceholder')}
+      {draft.name || namePlaceholder}
     </button>
   ) : (
     <input
@@ -264,7 +297,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
       data-studio-name=""
       value={draft.name}
       maxLength={60}
-      placeholder={t('fieldNamePlaceholder')}
+      placeholder={namePlaceholder}
       onChange={(e) => patch({ name: e.target.value })}
       style={{ ...inputStyle, fontSize: fs(14), borderColor: showError('name') ? TOKENS.red : undefined }}
     />
@@ -306,7 +339,8 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
         </button>,
         showError('sources') ? <p style={errorStyle}>{t('errorSources')}</p> : null,
       )}
-      {field('fieldKind', single(KINDS, draft.kind, (kind) => patch({ kind })))}
+      <TitlePicker selected={draft.titles ?? []} onChange={setTitles} pools={full} extra={extra} isTv={isTv} t={t} labelStyle={labelStyle} />
+      {field('fieldKind', single(KINDS, draft.kind, (kind) => patch({ kind })), undefined, undefined, titled)}
       {field(
         'fieldGenre',
         genres.map((g) => (
@@ -319,11 +353,12 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
             {genreLabel(g, genreLang)}
           </Chip>
         )),
+        undefined, undefined, titled,
       )}
       <div style={{ display: 'grid', gridTemplateColumns: twoCols ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', columnGap: dim(24, isTv) }}>
-        {field('fieldEra', single(ERAS, draft.era, (era) => patch({ era })))}
-        {field('fieldLength', single(LENGTHS, draft.length, (length) => patch({ length })))}
-        {field('fieldOrder', single(ORDERS, draft.order, (order) => patch({ order })))}
+        {field('fieldEra', single(ERAS, draft.era, (era) => patch({ era })), undefined, undefined, titled)}
+        {field('fieldLength', single(LENGTHS, draft.length, (length) => patch({ length })), undefined, undefined, titled)}
+        {field('fieldOrder', single(ORDERS, draft.order, (order) => { orderTouched.current = true; patch({ order }) }))}
         {field('fieldWindow', single(WINDOWS, draft.airWindow, (airWindow) => patch({ airWindow })))}
       </div>
       <Card style={{ display: 'flex', alignItems: 'center', gap: dim(16, isTv), marginBottom: 0, ...(isTv ? { padding: `${tvu(14)} ${tvu(18)}`, maxWidth: tvu(900) } : {}) }}>
@@ -361,7 +396,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: fs(16), fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {draft.name.trim() || t('previewUnnamed')}
+            {effectiveName(draft) || t('previewUnnamed')}
           </div>
           <div data-studio-summary="" style={{ fontFamily: FONT.mono, fontSize: fs(12), color: TOKENS.textDim, marginTop: 2 }}>
             {loading ? t('previewLoading') : t('previewSummary', { n: preview.count, h: preview.totalHours, window: t(preview.windowLabel) })}
@@ -450,7 +485,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
           <KeyboardPanel
             title={t('fieldName')}
             initial={draft.name}
-            placeholder={t('fieldNamePlaceholder')}
+            placeholder={namePlaceholder}
             maxLength={60}
             field="short"
             // Fokus tillbaka till namnfältet, aldrig kvar på body när panelen stängs.
