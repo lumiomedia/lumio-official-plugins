@@ -183,7 +183,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     (TV 100 enheter) och herons vänsterkant (skrivbord 30 px).
   */
   // Lika på båda sidor (Jerry 2026-10-17): tablåns kanter speglar herons 60.
-  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : '0 12px'
+  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 2px'
   return (
     <section
       data-channels-guide=""

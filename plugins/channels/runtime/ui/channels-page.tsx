@@ -114,9 +114,9 @@ function useFillHeight(ref: { current: HTMLElement | null }, key: unknown): numb
 }
 
 /**
- * Skrivbord: sidan går ut över appkolumnens sidomarginaler (som appens
+ * Skrivbord och TV: sidan går ut över appkolumnens sidomarginaler (som appens
  * hem-hero, -mx-4/6/8) så tablån och heron får bredden som i TV-läget.
- * Mäts från kolumnens padding, inte gissat. TV och mobil: ingen utdragning.
+ * Mäts från kolumnens padding, inte gissat. Mobil: ingen utdragning.
  */
 function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): { left: number; right: number } {
   const [bleed, setBleed] = useState({ left: 0, right: 0 })
@@ -252,7 +252,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   // TV: varje vy får sitt startfokus när den öppnas (sidan: vald kanals rad;
   // studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
   const viewRef = useRef<HTMLDivElement | null>(null)
-  const bleed = useColumnBleed(viewRef, !isTv && !isMobile)
+  const bleed = useColumnBleed(viewRef, !isMobile)
   const view = player && sorted.length > 0 ? 'player' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
   useTvViewFocus(viewRef, isTv && view !== 'player', view)
   const fillHeight = useFillHeight(viewRef, view)

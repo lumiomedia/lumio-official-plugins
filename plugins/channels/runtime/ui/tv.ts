@@ -52,10 +52,10 @@ export function typeSize(px: number, tv: boolean, role?: TypeRole): string {
 export const TV_HERO_TITLE = '2.25rem'
 
 /** Appens TV-innehållslinje (TV_CONTENT_LEFT_PX i appens lib/tv-metrics.ts): herons text och radrubriker. */
-// Jerry 2026-10-17: samma marginal på båda sidor (60), inte appens 100-linje.
-export const TV_CONTENT_LEFT = 60
+// Jerry 2026-10-17: sidan går kant i kant, innehållet ~20 från sidorna.
+export const TV_CONTENT_LEFT = 20
 /** Högermarginalen på TV-sidor. */
-export const TV_CONTENT_RIGHT = 60
+export const TV_CONTENT_RIGHT = 20
 
 /**
  * Herons knappar som appens heroknappar (h-10, px-6, text-sm), gånger

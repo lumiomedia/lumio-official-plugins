@@ -41760,8 +41760,8 @@ ${cue.text}`).join("\n\n")}
     return `var(--st-${r}, ${tvu(TV_TYPE_U[r])})`;
   }
   var TV_HERO_TITLE = "2.25rem";
-  var TV_CONTENT_LEFT = 60;
-  var TV_CONTENT_RIGHT = 60;
+  var TV_CONTENT_LEFT = 20;
+  var TV_CONTENT_RIGHT = 20;
   function tvHeroButton() {
     const k = "var(--tv-button-scale, 1)";
     return {
@@ -42230,7 +42230,7 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
-    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : "0 12px";
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 2px";
     return /* @__PURE__ */ jsx(
       "section",
       {
@@ -42587,7 +42587,7 @@ ${cue.text}`).join("\n\n")}
           flexShrink: 0,
           minHeight,
           boxSizing: "border-box",
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "32px 16px 30px"}`,
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "20px 16px 20px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
@@ -45167,7 +45167,7 @@ ${cue.text}`).join("\n\n")}
     const playerRef = useRef(player);
     playerRef.current = player;
     const viewRef = useRef(null);
-    const bleed = useColumnBleed(viewRef, !isTv && !isMobile);
+    const bleed = useColumnBleed(viewRef, !isMobile);
     const view = player && sorted.length > 0 ? "player" : studio ? `studio:${studio}` : selected ? "main" : "empty";
     useTvViewFocus(viewRef, isTv && view !== "player", view);
     const fillHeight = useFillHeight(viewRef, view);
@@ -45428,7 +45428,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.20",
+    version: "0.1.21",
     description: S.description,
     preinstalled: false,
     register(ctx) {

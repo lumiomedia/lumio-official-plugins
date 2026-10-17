@@ -1,3 +1,7 @@
+## 0.1.21
+
+- Kant i kant: sidan går ut över appkolumnens sidomarginaler även på TV; innehållet ~20 från sidorna (TV i TV-enheter, skrivbord 20 px).
+
 ## 0.1.20
 
 - Tablån har samma marginal till vänster och höger (TV och skrivbord).
