@@ -655,6 +655,7 @@
   var STORAGE_KEY;
   var init_plugin_state = __esm({
     "lib/plugin-state.ts"() {
+      "use strict";
       init_profile_storage_shim();
       STORAGE_KEY = "lumio:plugin-state";
     }
@@ -20918,7 +20919,6 @@
   var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor2, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
   var init_barcode_store = __esm({
     "lib/barcode/barcode-store.ts"() {
-      "use strict";
       init_profile_storage_shim();
       init_barcode_model();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
@@ -29135,7 +29135,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (useMpv) {
         let cancelled = false;
-        const probe = async () => {
+        const probe2 = async () => {
           try {
             const [w, h, codec] = await Promise.all([
               mpvCommand2(["get_property", "video-params/w"]),
@@ -29152,7 +29152,7 @@ ${cue.text}`).join("\n\n")}
           }
         };
         const timer4 = window.setTimeout(() => {
-          void probe();
+          void probe2();
         }, 1200);
         return () => {
           cancelled = true;
@@ -35542,8 +35542,8 @@ ${cue.text}`).join("\n\n")}
                             }
                           });
                           if (typeof season === "number" && typeof episode === "number") {
-                            const probe = `${mpvMediaTitle ?? ""} ${mpvFilename ?? ""}`;
-                            const m = /S(\d{1,2})E(\d{1,3})/i.exec(probe);
+                            const probe2 = `${mpvMediaTitle ?? ""} ${mpvFilename ?? ""}`;
+                            const m = /S(\d{1,2})E(\d{1,3})/i.exec(probe2);
                             if (m) {
                               const foundS = Number(m[1]);
                               const foundE = Number(m[2]);
@@ -41102,7 +41102,9 @@ ${cue.text}`).join("\n\n")}
       if (choice.format === "ts") return withXtreamLiveExt(url, "ts");
       if (choice.format === "hls") return withXtreamLiveExt(url, "m3u8");
       const allowed = (choice.allowedFormats ?? []).map((f) => f.toLowerCase());
-      return allowed.includes("m3u8") ? withXtreamLiveExt(url, "m3u8") : url;
+      if (allowed.includes("m3u8") && choice.hlsProxy) return withXtreamLiveExt(url, "m3u8");
+      if (parsed.ext === "m3u8" && !choice.hlsProxy && allowed.includes("ts")) return withXtreamLiveExt(url, "ts");
+      return url;
     }
     if (choice.kind === "m3u" && choice.format === "hls") return withXtreamLiveExt(url, "m3u8");
     return url;
@@ -41812,6 +41814,44 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hls-playlist-proxy.ts
+  function detectHlsPlaylistProxy() {
+    if (available !== null) return Promise.resolve(available);
+    if (probe) return probe;
+    if (typeof fetch !== "function") return Promise.resolve(false);
+    probe = fetch("/api/app-info").then((res) => res.ok ? res.json() : Promise.reject(new Error(`app-info ${res.status}`))).then((info) => {
+      const features = info?.features;
+      available = Array.isArray(features) && features.includes(HLS_PLAYLIST_PROXY_FEATURE);
+      return available;
+    }).catch(() => false).finally(() => {
+      probe = null;
+    });
+    return probe;
+  }
+  function hasHlsPlaylistProxy() {
+    if (available === null) void detectHlsPlaylistProxy();
+    return available === true;
+  }
+  function hlsPlaylistProxyUrl(origin, src) {
+    return `${origin}${HLS_PLAYLIST_PROXY_PATH}?src=${encodeURIComponent(src)}`;
+  }
+  function nativeLiveOpenUrl(playUrl, origin = globalThis.location?.origin ?? "") {
+    if (!origin || !hasHlsPlaylistProxy()) return playUrl;
+    if (parseXtreamLiveUrl(playUrl)?.ext !== "m3u8") return playUrl;
+    return hlsPlaylistProxyUrl(origin, playUrl);
+  }
+  var HLS_PLAYLIST_PROXY_FEATURE, HLS_PLAYLIST_PROXY_PATH, available, probe;
+  var init_hls_playlist_proxy = __esm({
+    "../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
+      "use strict";
+      init_live_format();
+      HLS_PLAYLIST_PROXY_FEATURE = "hlsPlaylistProxy";
+      HLS_PLAYLIST_PROXY_PATH = "/api/live-tv/hls/playlist.m3u8";
+      available = null;
+      probe = null;
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/live-format-resolve.ts
   function decode(part) {
     try {
@@ -41854,13 +41894,17 @@ ${cue.text}`).join("\n\n")}
     if (ctx.kind === null) return url;
     if (ctx.login && ctx.format === "auto") learnAllowedFormats(ctx.login);
     const key = accountKeyOf(url);
-    return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) || key !== null && hlsBrokenAccounts.has(key) });
+    return chooseLiveUrl(url, {
+      ...ctx,
+      hlsFailed: hasHlsFailed(url) || key !== null && hlsBrokenAccounts.has(key),
+      hlsProxy: hasHlsPlaylistProxy()
+    });
   }
   function autoFormatFor(list) {
     if (list.kind !== "xtream") return null;
     const login = getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId);
     if (!login?.allowedFormats) return null;
-    return login.allowedFormats.map((f) => f.toLowerCase()).includes("m3u8") ? "hls" : "ts";
+    return login.allowedFormats.map((f) => f.toLowerCase()).includes("m3u8") && hasHlsPlaylistProxy() ? "hls" : "ts";
   }
   function shouldFallBackToTs(originalUrl, playUrl, attempt) {
     return attempt === 0 && playUrl !== originalUrl && isHlsPlayUrl(playUrl) && !isHlsPlayUrl(originalUrl);
@@ -41919,6 +41963,7 @@ ${cue.text}`).join("\n\n")}
     "../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/live-format-resolve.ts"() {
       "use strict";
       init_live_tv_data();
+      init_hls_playlist_proxy();
       init_live_format();
       askedLogins = /* @__PURE__ */ new Set();
       hlsBrokenAccounts = /* @__PURE__ */ new Set();
@@ -46625,10 +46670,10 @@ ${cue.text}`).join("\n\n")}
         }
         async prime(sport, bucket) {
           if (this.primed.has(bucket) || this.quota(bucket).remaining != null) return;
-          const probe = this.provider.quotaProbe(sport);
+          const probe2 = this.provider.quotaProbe(sport);
           this.primed.add(bucket);
-          if (!probe) return;
-          for (const req of probe.requests) {
+          if (!probe2) return;
+          for (const req of probe2.requests) {
             const res = await this.fetchImpl({ provider: this.provider.id, key: this.key ?? "", req, mode: "cache-first" });
             if (res.quota) this.noteQuota(res.quota);
             if (res.error === "unauthorized") {
@@ -49420,7 +49465,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (opts.userPaused) return false;
     return opts.now - opts.lastProgressAt >= HLS_STALL_MS;
   }
-  var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O;
+  function hlsDemuxerLavfO(isHls2, viaPlaylistProxy) {
+    if (!isHls2) return "";
+    return viaPlaylistProxy ? HLS_DEMUXER_LAVF_O_PROXIED : HLS_DEMUXER_LAVF_O;
+  }
+  var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O, HLS_DEMUXER_LAVF_O_PROXIED;
   var init_hls_recovery = __esm({
     "../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hls-recovery.ts"() {
       "use strict";
@@ -49429,6 +49478,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       HLS_RECOVERY_RESET_MS = 3e4;
       RECENT_ACCOUNT_SESSION_MS = 6e4;
       HLS_DEMUXER_LAVF_O = "http_multiple=0,http_persistent=0,seg_max_retry=2";
+      HLS_DEMUXER_LAVF_O_PROXIED = "http_multiple=0,http_persistent=1,seg_max_retry=2";
     }
   });
 
@@ -52861,6 +52911,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       let readyTimer = 0;
       let spent = false;
       const playUrl = caps.engine === "html" ? url : resolveLivePlayUrl(url);
+      const openUrl = caps.engine === "html" ? url : nativeLiveOpenUrl(playUrl);
       const markReady = () => {
         if (!cancelled) setReady(true);
       };
@@ -52912,7 +52963,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           cutoutLive = needsCutout;
           setLive(true);
           sync2();
-          await surface.open({ url: playUrl, muted }).catch(markFailed);
+          await surface.open({ url: openUrl, muted }).catch(markFailed);
           sync2();
           return;
         }
@@ -52937,9 +52988,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         setLive(true);
         if (caps.engine === "mpv") {
           closeSession = () => closeMpvPlayer();
-          await host.mpvSetPropertyStrings?.([{ name: "demuxer-lavf-o", value: isHlsPlayUrl(playUrl) ? HLS_DEMUXER_LAVF_O : "" }])?.catch(() => {
+          await host.mpvSetPropertyStrings?.([{ name: "demuxer-lavf-o", value: hlsDemuxerLavfO(isHlsPlayUrl(playUrl), openUrl !== playUrl) }])?.catch(() => {
           });
-          await openMpvPlayer({ url: playUrl }).catch(markFailed);
+          await openMpvPlayer({ url: openUrl }).catch(markFailed);
           if (cancelled || owner !== idRef.current) {
             await closeOnce();
             return;
@@ -52954,7 +53005,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           readyTimer = window.setTimeout(markReady, 800);
         } else if (caps.engine === "droid") {
           closeSession = () => closeNativePlayer();
-          await openNativePlayer({ url: playUrl, mimeType: isHls(playUrl) ? HOST_PROXY_MIME : void 0 }).catch(markFailed);
+          await openNativePlayer({ url: openUrl, mimeType: isHls(playUrl) ? HOST_PROXY_MIME : void 0 }).catch(markFailed);
           if (cancelled || owner !== idRef.current) {
             await closeOnce();
             return;
@@ -53034,6 +53085,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_live_tv_playback_fallback();
       init_live_format_resolve();
       init_hls_recovery();
+      init_hls_playlist_proxy();
       init_live_format();
       host = plugin_sdk_exports;
       owner = null;
@@ -53154,11 +53206,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
       // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
       async (url, viaProxy) => {
-        const target2 = viaProxy ? hostProxyUrl2(url) : url;
+        const direct = viaProxy ? url : nativeLiveOpenUrl(url, window.location.origin);
+        const viaPlaylistProxy = direct !== url;
+        if (viaPlaylistProxy) logLiveTv(`HLS via app playlist proxy: ${redactLiveUrl(url)}`);
+        const target2 = viaProxy ? hostProxyUrl2(url) : direct;
         if (isDroidEngine) {
           return openNativePlayer({ url: target2, ...viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {} });
         }
-        await mpvSetPropertyStrings([{ name: "demuxer-lavf-o", value: isHlsPlayUrl(url) ? HLS_DEMUXER_LAVF_O : "" }]).catch(() => {
+        await mpvSetPropertyStrings([{ name: "demuxer-lavf-o", value: hlsDemuxerLavfO(isHlsPlayUrl(url), viaPlaylistProxy) }]).catch(() => {
         });
         return openMpvPlayer({
           url: target2,
@@ -53559,10 +53614,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       async function setup() {
         const proxied = proxyUrl(channel.url);
         try {
-          const probe = await fetch(`${proxied}&probe=1`, { signal: AbortSignal.timeout(6e3) }).then((response) => response.json()).catch(() => ({ isPlaylist: false, contentType: null }));
+          const probe2 = await fetch(`${proxied}&probe=1`, { signal: AbortSignal.timeout(6e3) }).then((response) => response.json()).catch(() => ({ isPlaylist: false, contentType: null }));
           if (cancelled) return;
           const shouldUseHls = Boolean(
-            probe.isPlaylist || probe.contentType?.includes("mpegurl") || probe.contentType?.includes("m3u")
+            probe2.isPlaylist || probe2.contentType?.includes("mpegurl") || probe2.contentType?.includes("m3u")
           );
           if (shouldUseHls) {
             playPlaylist(proxied);
@@ -53983,6 +54038,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_useWakeLock();
       init_live_tv_playback_fallback();
       init_live_format();
+      init_hls_playlist_proxy();
       init_tv_player_chrome();
       init_player_goal_overlay();
       init_stream_fallback_prompt();
@@ -69987,9 +70043,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_surface();
   init_jsx_runtime_shim();
   var lastTab = { team: null, league: null, matchday: null };
-  function usePageTab(kind, available) {
+  function usePageTab(kind, available2) {
     const [chosen, setChosen] = useState(() => lastTab[kind] ?? null);
-    const tab = chosen && available.includes(chosen) ? chosen : available[0];
+    const tab = chosen && available2.includes(chosen) ? chosen : available2[0];
     const set = (k) => {
       setChosen(k);
       lastTab[kind] = k;
@@ -70074,8 +70130,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var subU = Object.assign((n) => Math.round(dp(n) * 1.1), { tv: true, dim: TV2.muted });
   function MatchdayTv({ ctx, matches, dayFrom, replays, hero, next }) {
-    const available = [...matches.length > 0 ? ["timeline", "matches"] : [], ...replays.length > 0 ? ["replays"] : []];
-    const [tab, setTab] = usePageTab("matchday", available.length ? available : ["timeline"]);
+    const available2 = [...matches.length > 0 ? ["timeline", "matches"] : [], ...replays.length > 0 ? ["replays"] : []];
+    const [tab, setTab] = usePageTab("matchday", available2.length ? available2 : ["timeline"]);
     const label = { timeline: ctx.tt("sportMatchday"), matches: ctx.tt("sportMatches"), replays: ctx.tt("sportReplays") };
     const topRef = useRef(null);
     useLayoutEffect(() => {
@@ -70086,7 +70142,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         hero ? /* @__PURE__ */ jsx(SportHero, { ctx, match: hero }) : null,
         /* @__PURE__ */ jsx(NextOnChannels, { ctx, matches: next })
       ] }) : null,
-      /* @__PURE__ */ jsx(PageTabs, { u: subU, scope: SUBTAB_SCOPE, tabs: available.map((k) => ({ key: k, label: label[k] })), value: tab, onChange: setTab }),
+      /* @__PURE__ */ jsx(PageTabs, { u: subU, scope: SUBTAB_SCOPE, tabs: available2.map((k) => ({ key: k, label: label[k] })), value: tab, onChange: setTab }),
       /* @__PURE__ */ jsxs(TabBody, { scope: SUBTAB_SCOPE, gap: dp(20), children: [
         tab === "timeline" && matches.length > 0 ? /* @__PURE__ */ jsx(MatchdayTimeline, { ctx, matches, dayFrom }) : null,
         tab === "matches" ? /* @__PURE__ */ jsx(MatchGrid, { matches, ctx }) : null,
@@ -71629,8 +71685,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const ref = data.ref ?? target2.ref;
     const round2 = data.round;
     const nothing = data.state === "ready" && !data.standings && !round2 && !data.scorers;
-    const available = [...data.standings ? ["table"] : [], ...round2 && round2.fixtures.length > 0 ? ["round"] : [], ...data.scorers?.length ? ["scorers"] : []];
-    const [tab, setTab] = usePageTab("league", available.length ? available : ["table"]);
+    const available2 = [...data.standings ? ["table"] : [], ...round2 && round2.fixtures.length > 0 ? ["round"] : [], ...data.scorers?.length ? ["scorers"] : []];
+    const [tab, setTab] = usePageTab("league", available2.length ? available2 : ["table"]);
     const headPart = /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsxs("div", { "data-testid": "lp-head", style: { display: "flex", alignItems: "center", gap: u(16) }, children: [
       /* @__PURE__ */ jsx("span", { style: { width: u(64), height: u(64), borderRadius: u(16), flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: TV2.s10, color: TV2.text }, children: /* @__PURE__ */ jsx(SportIcon, { kind: target2.sport, size: u(34) }) }),
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
@@ -71669,7 +71725,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const scope = `[data-page-depth="${depth}"]`;
     const head = /* @__PURE__ */ jsxs("div", { "data-page-depth": depth, style: { display: "flex", flexDirection: "column", gap: u(12) }, children: [
       headPart,
-      /* @__PURE__ */ jsx(PageTabs, { u, scope, tabs: available.map((k) => ({ key: k, label: tabLabel[k] })), value: tab, onChange: setTab })
+      /* @__PURE__ */ jsx(PageTabs, { u, scope, tabs: available2.map((k) => ({ key: k, label: tabLabel[k] })), value: tab, onChange: setTab })
     ] });
     return /* @__PURE__ */ jsx(SportPageDrawer, { nav: ctx.nav, depth, phone, full: u.tv, testId: "league-page", label: target2.name, onClose, head, children: /* @__PURE__ */ jsx("div", { "data-page-depth": depth, style: { display: "contents" }, children: /* @__PURE__ */ jsxs(TabBody, { scope, gap: u(20), children: [
       tab === "table" ? tablePart : tab === "round" ? roundPart : scorersPart,
@@ -71774,8 +71830,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const played = useMemo(() => playedFixtures(data.fixtures), [data.fixtures]);
     const allUpcoming = useMemo(() => upcomingFixtures(data.fixtures, ctx.now, 60), [data.fixtures, ctx.now]);
     const hasMatches = played.length + allUpcoming.length > 0;
-    const available = ["overview", ...hasMatches ? ["matches"] : [], ...data.squad?.length ? ["squad"] : [], ...data.trophies?.length ? ["trophies"] : []];
-    const [tab, setTab] = usePageTab("team", available);
+    const available2 = ["overview", ...hasMatches ? ["matches"] : [], ...data.squad?.length ? ["squad"] : [], ...data.trophies?.length ? ["trophies"] : []];
+    const [tab, setTab] = usePageTab("team", available2);
     const epg2 = useEpgMatches(allUpcoming, matches, ctx.now);
     const spoilers = useSpoilerVersion();
     const form = useMemo(() => formOf(data.fixtures.filter((f) => !fixtureScoreHidden(f)), target2, data.teamId), [data.fixtures, target2, data.teamId, spoilers]);
@@ -71948,7 +72004,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       nothing ? /* @__PURE__ */ jsx(PageNote, { u, testId: "tp-no-data", text: ctx.tt("sportTeamNoData") }) : null
     ] });
     const tabLabel = { overview: ctx.tt("sportTabForYou"), matches: ctx.tt("sportTeamMatches"), squad: ctx.tt("sportTeamSquad"), trophies: ctx.tt("sportTeamTrophies") };
-    const tabsNode = /* @__PURE__ */ jsx(PageTabs, { u, scope, tabs: available.map((k) => ({ key: k, label: tabLabel[k] })), value: tab, onChange: setTab });
+    const tabsNode = /* @__PURE__ */ jsx(PageTabs, { u, scope, tabs: available2.map((k) => ({ key: k, label: tabLabel[k] })), value: tab, onChange: setTab });
     const overview = u.tv ? /* @__PURE__ */ jsxs("div", { "data-testid": "tp-columns", style: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.1fr)", gap: u(32), alignItems: "start" }, children: [
       /* @__PURE__ */ jsxs("div", { "data-col": "left", style: { display: "flex", flexDirection: "column", gap: u(20), minWidth: 0 }, children: [
         infoPart,
@@ -74065,6 +74121,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
 
   // ../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/index.ts
+  init_hls_playlist_proxy();
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
@@ -74091,6 +74148,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     },
     preinstalled: true,
     register(ctx) {
+      void detectHlsPlaylistProxy();
       ctx.registerBootstrap({ id: "live-tv-reminders", Mount: LiveTvRemindersMount });
       ctx.registerBootstrap({ id: "live-tv-sport-goals", Mount: SportGoalMount });
       ctx.registerBootstrap({ id: "live-tv-sport-couch", Mount: SportCouchMount });
