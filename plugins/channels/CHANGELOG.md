@@ -5,6 +5,8 @@
 - En ensam vald serie ger "Avsnitt i följd" som ordning, och titeln föreslås som kanalnamn när namnet är tomt.
 - TV: titelfältet skrivs med skärmtangentbordet och förslagen nås med ▲▼.
 
+- Valda titlar hämtas parallellt med källorna (kanalen fylls direkt), och sökförslagen visar exakta namnträffar först, serier före filmer.
+
 ## 0.1.25
 
 - Skrivbord: 50 px marginal på båda sidor (heron och tablån).

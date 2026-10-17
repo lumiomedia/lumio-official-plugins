@@ -120,7 +120,7 @@ export function localTitleSuggestions(pools: SourcePools, query: string, limit =
  * Förslagslistan: lokala träffar först, sedan TMDb:s, utan dubbletter
  * (samma titel från båda håll visas en gång) och utan redan valda titlar.
  */
-export function mergeSuggestions(local: readonly TitleSuggestion[], remote: readonly TitleSuggestion[], selected: readonly ChannelTitle[], limit = SUGGESTION_LIMIT): TitleSuggestion[] {
+export function mergeSuggestions(local: readonly TitleSuggestion[], remote: readonly TitleSuggestion[], selected: readonly ChannelTitle[], limit = SUGGESTION_LIMIT, query?: string): TitleSuggestion[] {
   const out: TitleSuggestion[] = []
   for (const s of [...local, ...remote]) {
     if (selected.some((t) => sameTitle(t, s))) continue
@@ -132,9 +132,26 @@ export function mergeSuggestions(local: readonly TitleSuggestion[], remote: read
       continue
     }
     out.push(s)
-    if (out.length >= limit) break
   }
-  return out
+  return rankSuggestions(out, query).slice(0, limit)
+}
+
+/**
+ * Bäst först: exakt namnträff, sedan namn som börjar med sökordet, sedan resten.
+ * Vid samma nivå serier före filmer (en kanal av en titel är oftast en serie),
+ * annars sökningens egen ordning. Utan sökord: oförändrad ordning.
+ */
+export function rankSuggestions<T extends { title: string; kind: 'movie' | 'tv' }>(list: readonly T[], query?: string): T[] {
+  const q = (query ?? '').trim().toLowerCase()
+  if (!q) return [...list]
+  const level = (t: T) => {
+    const n = t.title.trim().toLowerCase()
+    return n === q ? 0 : n.startsWith(q) ? 1 : 2
+  }
+  return list
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => level(a.t) - level(b.t) || (a.t.kind === b.t.kind ? 0 : a.t.kind === 'tv' ? -1 : 1) || a.i - b.i)
+    .map((x) => x.t)
 }
 
 /** Titelvalet som sparas i kanalen (utan affisch: den hör till visningen). */

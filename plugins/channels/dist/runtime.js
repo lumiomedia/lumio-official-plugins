@@ -41973,23 +41973,21 @@ ${cue.text}`).join("\n\n")}
     let extra = [];
     const all = () => dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? []));
     const merged = () => applyChannelRules(all(), channel, extra);
-    await Promise.all(channel.sources.map(
-      (s) => runShared(s, deps, (items2) => {
-        bySource.set(s, items2);
-        onUpdate?.(merged());
-      }).catch(() => {
-      })
-    ));
-    if (hasTitles(channel)) {
-      const { missing } = restrictToTitles(all(), channel.titles);
-      if (missing.length > 0) {
-        await loadTitleFallback(missing, deps, (items2) => {
-          extra = items2;
+    const fallback = hasTitles(channel) ? loadTitleFallback(channel.titles, deps, (items2) => {
+      extra = items2;
+      onUpdate?.(merged());
+    }, { allSeasons: true }).catch(() => {
+    }) : Promise.resolve();
+    await Promise.all([
+      ...channel.sources.map(
+        (s) => runShared(s, deps, (items2) => {
+          bySource.set(s, items2);
           onUpdate?.(merged());
-        }, { allSeasons: true }).catch(() => {
-        });
-      }
-    }
+        }).catch(() => {
+        })
+      ),
+      fallback
+    ]);
     return merged();
   }
 
@@ -45452,7 +45450,7 @@ ${cue.text}`).join("\n\n")}
     }
     return [...byKey.values()].sort((a, b) => a.rank - b.rank || (a.s.title.toLowerCase() < b.s.title.toLowerCase() ? -1 : a.s.title.toLowerCase() > b.s.title.toLowerCase() ? 1 : 0)).slice(0, limit).map((x) => x.s);
   }
-  function mergeSuggestions(local, remote, selected, limit = SUGGESTION_LIMIT) {
+  function mergeSuggestions(local, remote, selected, limit = SUGGESTION_LIMIT, query) {
     const out = [];
     for (const s of [...local, ...remote]) {
       if (selected.some((t) => sameTitle(t, s))) continue;
@@ -45463,9 +45461,17 @@ ${cue.text}`).join("\n\n")}
         continue;
       }
       out.push(s);
-      if (out.length >= limit) break;
     }
-    return out;
+    return rankSuggestions(out, query).slice(0, limit);
+  }
+  function rankSuggestions(list, query) {
+    const q = (query ?? "").trim().toLowerCase();
+    if (!q) return [...list];
+    const level = (t) => {
+      const n = t.title.trim().toLowerCase();
+      return n === q ? 0 : n.startsWith(q) ? 1 : 2;
+    };
+    return list.map((t, i) => ({ t, i })).sort((a, b) => level(a.t) - level(b.t) || (a.t.kind === b.t.kind ? 0 : a.t.kind === "tv" ? -1 : 1) || a.i - b.i).map((x) => x.t);
   }
   function toChannelTitle(s) {
     return {
@@ -45624,7 +45630,7 @@ ${cue.text}`).join("\n\n")}
     const local = useMemo(() => localTitleSuggestions(pools, query), [pools, query]);
     const active3 = query.trim().length >= 2;
     const remoteHits = remote.query.toLowerCase() === query.trim().toLowerCase() ? remote.results : [];
-    const suggestions = active3 ? mergeSuggestions(local, remoteHits, selected) : [];
+    const suggestions = active3 ? mergeSuggestions(local, remoteHits, selected, void 0, query) : [];
     const localKeys = useMemo(() => new Set(local.map(channelTitleKey)), [local]);
     const posterFor = (title) => {
       const remembered = posters.current.get(channelTitleKey(title));

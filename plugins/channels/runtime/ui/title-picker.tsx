@@ -54,7 +54,7 @@ export function TitlePicker({ selected, onChange, pools, extra, isTv, t, labelSt
   const active = query.trim().length >= 2
   // TMDb-svaret gäller bara när det hör till det som står i fältet.
   const remoteHits = remote.query.toLowerCase() === query.trim().toLowerCase() ? remote.results : []
-  const suggestions = active ? mergeSuggestions(local, remoteHits, selected) : []
+  const suggestions = active ? mergeSuggestions(local, remoteHits, selected, undefined, query) : []
   const localKeys = useMemo(() => new Set(local.map(channelTitleKey)), [local])
 
   const posterFor = (title: ChannelTitle): string | undefined => {

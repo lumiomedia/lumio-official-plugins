@@ -501,23 +501,25 @@ export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps,
   let extra: PoolItem[] = []
   const all = () => dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? []))
   const merged = () => applyChannelRules(all(), channel, extra)
-  await Promise.all(channel.sources.map((s) =>
-    runShared(s, deps, (items) => {
-      bySource.set(s, items)
+  // Utvalda titlar hämtas PARALLELLT med källorna (Jerry 2026-10-17: en
+  // titelkanal stod tom tills debrid-listningen svarat). Dubbletter mot
+  // biblioteket slås ihop som vanligt — biblioteket vinner. Titlarna är få,
+  // och avsnittslistorna ligger i säsongscachen.
+  const fallback = hasTitles(channel)
+    ? loadTitleFallback(channel.titles!, deps, (items) => {
+      extra = items
       onUpdate?.(merged())
-    }).catch(() => {}),
-  ))
-  // Utvalda titlar som ingen källa har: hämtas först när alla källor svarat,
-  // så inget uppslag görs för en titel som redan finns.
-  if (hasTitles(channel)) {
-    const { missing } = restrictToTitles(all(), channel.titles!)
-    if (missing.length > 0) {
-      await loadTitleFallback(missing, deps, (items) => {
-        extra = items
+    }, { allSeasons: true }).catch(() => {})
+    : Promise.resolve()
+  await Promise.all([
+    ...channel.sources.map((s) =>
+      runShared(s, deps, (items) => {
+        bySource.set(s, items)
         onUpdate?.(merged())
-      }, { allSeasons: true }).catch(() => {})
-    }
-  }
+      }).catch(() => {}),
+    ),
+    fallback,
+  ])
   return merged()
 }
 
