@@ -1,3 +1,7 @@
+## 0.1.28
+
+- Kanalens beslut (programgräns, filslut, omförsök, laddfel, kanalbyte) skrivs till appens felsökningslogg, så att ett oväntat "Programmet är slut" kan spåras.
+
 ## 0.1.27
 
 - En ström som dör efter att bilden kommit (tidigt filslut, hopp tillbaka till början, laddfel mitt i) öppnas om en gång på liveläget, utan nytt uppslag. Bär den inte heller provas nästa version, sedan Ingen signal. Visar aldrig längre "Programmet är slut" för en fil som inte är slut.

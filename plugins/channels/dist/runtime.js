@@ -20758,6 +20758,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -44592,6 +44593,14 @@ ${cue.text}`).join("\n\n")}
     return readCachedRundown(c);
   }
   var clockNow = () => typeof performance !== "undefined" ? performance.now() : Date.now();
+  function trace(msg) {
+    console.info(`[channels] ${msg}`);
+    try {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[channels] ${msg}`)}`).catch(() => {
+      });
+    } catch {
+    }
+  }
   function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }) {
     const t = useText();
     const isTv = useTvMode();
@@ -44718,6 +44727,7 @@ ${cue.text}`).join("\n\n")}
             dispatch({ type: "resolved", seq: req.seq, playable });
           } else {
             resolver.forget(slot.item.ref);
+            trace(`ingen (fler) version av ${slot.item.title}: Ingen signal till gr\xE4nsen`);
             dispatch({ type: "failed", seq: req.seq, now: Date.now() });
           }
         });
@@ -44741,7 +44751,10 @@ ${cue.text}`).join("\n\n")}
       }
       if (replanOnNewRundown(s)) dispatch({ type: "goto", channelId: channel.id, mode: "live" });
     }, [request.seq, channel?.id, channel?.airWindow, loading2, rundown, plan]);
-    const goToChannel = useCallback((id) => dispatch({ type: "goto", channelId: id, mode: "live" }), []);
+    const goToChannel = useCallback((id) => {
+      trace(`kanalbyte till ${id}`);
+      dispatch({ type: "goto", channelId: id, mode: "live" });
+    }, []);
     const closeGuide = useCallback(() => {
       setGuideOpen(false);
       window.setTimeout(() => document.querySelector("[data-osd-guide]")?.focus({ preventScroll: true }), 0);
@@ -44779,8 +44792,10 @@ ${cue.text}`).join("\n\n")}
         preloadLeadMs: PRELOAD_LEAD_MS,
         preloaded: preloadedFor.current === shown.seq
       });
-      if (action === "advance") dispatch({ type: "advance", seq: shown.seq, now: Date.now() });
-      else if (action === "preload") {
+      if (action === "advance") {
+        trace(`programgr\xE4nsen n\xE5dd (${shown.slot.item.title}, deadline ${new Date(shown.deadline).toLocaleTimeString()})`);
+        dispatch({ type: "advance", seq: shown.seq, now: Date.now() });
+      } else if (action === "preload") {
         preloadedFor.current = shown.seq;
         const after = Math.max(shown.deadline, shown.slot.stop) + 1e3;
         const next2 = programmeAt(rundown, channel.airWindow, after);
@@ -44844,7 +44859,7 @@ ${cue.text}`).join("\n\n")}
       timing.current = null;
       const m = tm.marks;
       const ms2 = (v) => v == null ? "?" : `${v}`;
-      console.info(`[channels] switch ${tm.ch} resolve=${ms2(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms (pool=${ms2(m.pool)} resolveStart=${ms2(m.resolveStart)} type=${tm.type ?? "?"} mount=${ms2(m.mount)} hostFirstPlay=${ms2(m.hostFirstPlay)}${tm.rapid ? " rapid" : ""})`);
+      trace(`switch ${tm.ch} resolve=${ms2(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms (pool=${ms2(m.pool)} resolveStart=${ms2(m.resolveStart)} type=${tm.type ?? "?"} mount=${ms2(m.mount)} hostFirstPlay=${ms2(m.hostFirstPlay)}${tm.rapid ? " rapid" : ""})`);
     }, [state2.framedSeq]);
     const listRundowns = useMemo(
       () => listOpen ? new Map(channels.map((c) => [c.id, cachedRundown(c)])) : null,
@@ -44876,7 +44891,7 @@ ${cue.text}`).join("\n\n")}
       if (!shown || shown.seq !== seq || s.request.seq !== seq) return;
       endHandledFor.current = seq;
       if (s.tried && s.tried.key === slotKey(shown.slot) && s.tried.again) {
-        console.info(`[channels] ${why}: samma version bar inte tv\xE5 g\xE5nger, n\xE4sta version`);
+        trace(`${why}: samma version bar inte tv\xE5 g\xE5nger, n\xE4sta version`);
         resolver.forget(shown.slot.item.ref);
         dispatch({ type: "failed", seq, now: Date.now(), url: shown.playable.url });
         return;
@@ -44885,7 +44900,7 @@ ${cue.text}`).join("\n\n")}
       const nowMs = Date.now();
       const since = plannedAt.current?.seq === seq ? (nowMs - plannedAt.current.at) / 1e3 : 0;
       const initialTime = Math.max(0, shown.mode === "live" ? shown.initialTime + since : last2 - 2);
-      console.info(`[channels] ${why}: \xF6ppnar samma version igen p\xE5 ${Math.round(initialTime)} s`);
+      trace(`${why}: \xF6ppnar samma version igen p\xE5 ${Math.round(initialTime)} s`);
       plannedSeq.current = s.request.seq + 1;
       plannedAt.current = { seq: s.request.seq + 1, at: nowMs };
       dispatch({ type: "retrySame", seq, initialTime, now: nowMs });
@@ -45117,6 +45132,7 @@ ${cue.text}`).join("\n\n")}
                 recoverStream(seq, `filslut vid ${Math.round(last2.position)} av ${Math.round(last2.duration)} s`);
                 return;
               }
+              trace(`v\xE4rden: uppspelningen slut (${slot.item.title}, position ${last2?.seq === seq ? Math.round(last2.position) : "?"} s)`);
               dispatch({ type: "advance", seq, now: Date.now() });
             },
             onStartProgress: () => noteProgress(seq),
@@ -45126,7 +45142,7 @@ ${cue.text}`).join("\n\n")}
               const action = pastEndAction({ initialTime: onScreen.initialTime, duration: duration2, runtimeS: slot.item.runtimeMin * 60 });
               if (!action) return;
               endHandledFor.current = seq;
-              console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration2)} s): ${action}`);
+              trace(`start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration2)} s): ${action}`);
               if (action === "ended") {
                 dispatch({ type: "advance", seq, now: Date.now() });
                 return;
@@ -45148,6 +45164,7 @@ ${cue.text}`).join("\n\n")}
               const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 });
               if (!action) return;
               endHandledFor.current = seq;
+              trace(`filslut vid ${Math.round(position)} av ${Math.round(duration2)} s (start ${Math.round(onScreen.initialTime)} s): ${action}`);
               if (action === "ended") {
                 dispatch({ type: "advance", seq, now: Date.now() });
                 return;
@@ -45169,14 +45186,16 @@ ${cue.text}`).join("\n\n")}
               }
               const p = progressAt.current;
               if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
-                console.info(`[channels] v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
+                trace(`v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
                 dispatch({ type: "reveal", seq });
                 return true;
               }
               if (onScreen.mode === "live" && durationNotedFor.current !== seq && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+                trace(`laddfel utan fill\xE4ngd n\xE4ra gr\xE4nsen (${slot.item.title}): programmet r\xE4knas som slut`);
                 dispatch({ type: "advance", seq, now: Date.now() });
                 return true;
               }
+              trace(`laddfel f\xF6re bild (${slot.item.title}): n\xE4sta version`);
               resolver.forget(slot.item.ref);
               dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
               return true;

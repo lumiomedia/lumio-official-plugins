@@ -76,6 +76,15 @@ interface SwitchTiming {
 }
 
 const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+/**
+ * Kanalens beslut (byte, slut, omförsök) till appens debuglogg: konsolen når
+ * inte loggen, och "Programmet är slut" mitt i en frisk ström gick inte att
+ * spåra (Solar Opposites 2026-10-17). Ett GET-anrop, inget svar väntas.
+ */
+function trace(msg: string): void {
+  console.info(`[channels] ${msg}`)
+  try { void fetch(`/api/debug-log?msg=${encodeURIComponent(`[channels] ${msg}`)}`).catch(() => {}) } catch { /* utan värd */ }
+}
 
 export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }: ChannelPlayerProps) {
   const t = useText()
@@ -219,6 +228,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         } else {
           // Ingen (fler) version: Ingen signal till nästa programgräns.
           resolver.forget(slot.item.ref)
+          trace(`ingen (fler) version av ${slot.item.title}: Ingen signal till gränsen`)
           dispatch({ type: 'failed', seq: req.seq, now: Date.now() })
         }
       })
@@ -249,7 +259,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     if (replanOnNewRundown(s)) dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
   }, [request.seq, channel?.id, channel?.airWindow, loading, rundown, plan]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const goToChannel = useCallback((id: string) => dispatch({ type: 'goto', channelId: id, mode: 'live' }), [])
+  const goToChannel = useCallback((id: string) => {
+    trace(`kanalbyte till ${id}`)
+    dispatch({ type: 'goto', channelId: id, mode: 'live' })
+  }, [])
   // Tablålagret stängt (utan byte): fokus tillbaka till TABLÅ-knappen, aldrig kvar på body.
   const closeGuide = useCallback(() => {
     setGuideOpen(false)
@@ -294,7 +307,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       preloadLeadMs: PRELOAD_LEAD_MS,
       preloaded: preloadedFor.current === shown.seq,
     })
-    if (action === 'advance') dispatch({ type: 'advance', seq: shown.seq, now: Date.now() })
+    if (action === 'advance') {
+      trace(`programgränsen nådd (${shown.slot.item.title}, deadline ${new Date(shown.deadline).toLocaleTimeString()})`)
+      dispatch({ type: 'advance', seq: shown.seq, now: Date.now() })
+    }
     else if (action === 'preload') {
       preloadedFor.current = shown.seq
       // Det program som tar vid efter visningen. Resolvern cachar: när bytet
@@ -366,7 +382,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     timing.current = null
     const m = tm.marks
     const ms = (v: number | undefined) => (v == null ? '?' : `${v}`)
-    console.info(`[channels] switch ${tm.ch} resolve=${ms(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`
+    trace(`switch ${tm.ch} resolve=${ms(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`
       + ` (pool=${ms(m.pool)} resolveStart=${ms(m.resolveStart)} type=${tm.type ?? '?'} mount=${ms(m.mount)} hostFirstPlay=${ms(m.hostFirstPlay)}${tm.rapid ? ' rapid' : ''})`)
   }, [state.framedSeq])
 
@@ -420,7 +436,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     if (!shown || shown.seq !== seq || s.request.seq !== seq) return
     endHandledFor.current = seq
     if (s.tried && s.tried.key === slotKey(shown.slot) && s.tried.again) {
-      console.info(`[channels] ${why}: samma version bar inte två gånger, nästa version`)
+      trace(`${why}: samma version bar inte två gånger, nästa version`)
       resolver.forget(shown.slot.item.ref)
       dispatch({ type: 'failed', seq, now: Date.now(), url: shown.playable.url })
       return
@@ -429,7 +445,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     const nowMs = Date.now()
     const since = plannedAt.current?.seq === seq ? (nowMs - plannedAt.current.at) / 1000 : 0
     const initialTime = Math.max(0, shown.mode === 'live' ? shown.initialTime + since : last - 2)
-    console.info(`[channels] ${why}: öppnar samma version igen på ${Math.round(initialTime)} s`)
+    trace(`${why}: öppnar samma version igen på ${Math.round(initialTime)} s`)
     // Ingen ny planering: samma uppslagna adress, bara ny position.
     plannedSeq.current = s.request.seq + 1
     plannedAt.current = { seq: s.request.seq + 1, at: nowMs }
@@ -708,6 +724,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
               recoverStream(seq, `filslut vid ${Math.round(last.position)} av ${Math.round(last.duration)} s`)
               return
             }
+            trace(`värden: uppspelningen slut (${slot.item.title}, position ${last?.seq === seq ? Math.round(last.position) : '?'} s)`)
             dispatch({ type: 'advance', seq, now: Date.now() })
           }}
           // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
@@ -722,7 +739,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             const action = pastEndAction({ initialTime: onScreen.initialTime, duration, runtimeS: slot.item.runtimeMin * 60 })
             if (!action) return
             endHandledFor.current = seq
-            console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration)} s): ${action}`)
+            trace(`start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration)} s): ${action}`)
             if (action === 'ended') {
               dispatch({ type: 'advance', seq, now: Date.now() })
               return
@@ -746,6 +763,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 })
             if (!action) return
             endHandledFor.current = seq
+            trace(`filslut vid ${Math.round(position)} av ${Math.round(duration)} s (start ${Math.round(onScreen.initialTime)} s): ${action}`)
             if (action === 'ended') {
               dispatch({ type: 'advance', seq, now: Date.now() })
               return
@@ -779,16 +797,18 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             }
             const p = progressAt.current
             if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
-              console.info(`[channels] värdens laddfel ignoreras: strömmen ${channel.number} spelar`)
+              trace(`värdens laddfel ignoreras: strömmen ${channel.number} spelar`)
               dispatch({ type: 'reveal', seq })
               return true
             }
             // Utan längd från värden (filen tog slut innan bild): ett laddfel nära
             // programgränsen är programmets slut — liveläget låg efter filens slut.
             if (onScreen.mode === 'live' && durationNotedFor.current !== seq && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+              trace(`laddfel utan fillängd nära gränsen (${slot.item.title}): programmet räknas som slut`)
               dispatch({ type: 'advance', seq, now: Date.now() })
               return true
             }
+            trace(`laddfel före bild (${slot.item.title}): nästa version`)
             resolver.forget(slot.item.ref)
             dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
             return true
