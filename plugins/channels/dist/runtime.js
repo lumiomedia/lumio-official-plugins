@@ -20758,7 +20758,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -42978,6 +42977,7 @@ ${cue.text}`).join("\n\n")}
       if (next2 < 0 || next2 >= channels.length) return false;
       const target2 = scrollRef.current?.querySelector(`[data-channel-row="${channels[next2].id}"]`);
       if (!target2) return false;
+      if (!target2.hasAttribute("data-f")) target2.setAttribute("data-f", "");
       target2.focus({ preventScroll: true });
       if (!band) {
         const el = scrollRef.current;
@@ -46264,7 +46264,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.23",
+    version: "0.1.24",
     description: S.description,
     preinstalled: false,
     register(ctx) {

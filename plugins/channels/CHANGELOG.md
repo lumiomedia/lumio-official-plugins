@@ -1,3 +1,7 @@
+## 0.1.24
+
+- TV: ▲ från första kanalen går till toppmenyn (fokusmotorn följer nu tablåns radbyten; förut stod den kvar på startraden och ▲ hoppade tillbaka ner).
+
 ## 0.1.23
 
 - Skrivbord: 30 px marginal på båda sidor.

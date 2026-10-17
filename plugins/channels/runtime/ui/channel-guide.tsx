@@ -104,6 +104,11 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     if (next < 0 || next >= channels.length) return false
     const target = scrollRef.current?.querySelector<HTMLElement>(`[data-channel-row="${channels[next]!.id}"]`)
     if (!target) return false
+    // Raden ovanför bandet är ingen station förrän bandet flyttats. Markera den
+    // FÖRE fokus: appens fokusmotor följer bara fokus till [data-f]-element, och
+    // annars stod den kvar på en gammal rad — ▲ från första kanalen hamnade då
+    // fel (eller på sidans startfokus) i stället för i toppmenyn.
+    if (!target.hasAttribute('data-f')) target.setAttribute('data-f', '')
     target.focus({ preventScroll: true })
     if (!band) {
       const el = scrollRef.current!
