@@ -18,7 +18,8 @@ import { channelKey, type M3uChannel } from '../live-tv-data'
 import { registerSurfaceCutout, unregisterSurfaceCutout } from './surface-cutouts'
 import { HOST_PROXY_MIME, hostProxyUrl } from '../live-tv-playback-fallback'
 import { fallBackToTs, noteLiveStreamEnded, resolveLivePlayUrl, shouldFallBackToTs } from '../live-format-resolve'
-import { HLS_DEMUXER_LAVF_O } from '../hls-recovery'
+import { hlsDemuxerLavfO } from '../hls-recovery'
+import { nativeLiveOpenUrl } from '../hls-playlist-proxy'
 import { isHlsPlayUrl } from '../live-format'
 
 export interface SurfaceSource { channel: M3uChannel; url: string }
@@ -328,6 +329,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     // vill det. HTML-motorn (webbläsaren) behåller kanalens egen URL — den
     // går genom värdens proxy och omkodning ändå.
     const playUrl = caps.engine === 'html' ? url : resolveLivePlayUrl(url)
+    // Adressen nativemotorn öppnar: HLS via appens spellisteproxy när den
+    // finns (hls-playlist-proxy.ts). `playUrl` förblir panelens adress för
+    // TS-reserven och loggen.
+    const openUrl = caps.engine === 'html' ? url : nativeLiveOpenUrl(playUrl)
     const markReady = () => { if (!cancelled) setReady(true) }
     const markFailed = () => {
       // HLS föll: ta om rutan som TS (en gång per kanal och session).
@@ -375,7 +380,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         cutoutLive = needsCutout
         setLive(true)
         sync()
-        await surface.open({ url: playUrl, muted }).catch(markFailed)
+        await surface.open({ url: openUrl, muted }).catch(markFailed)
         sync()
         return
       }
@@ -409,8 +414,8 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         closeSession = () => closeMpvPlayer()
         // Samma demuxerval som spelaren (live-tv-player.tsx): inga parallella
         // HLS-anslutningar, och tomt för allt annat.
-        await host.mpvSetPropertyStrings?.([{ name: 'demuxer-lavf-o', value: isHlsPlayUrl(playUrl) ? HLS_DEMUXER_LAVF_O : '' }])?.catch(() => {})
-        await openMpvPlayer({ url: playUrl }).catch(markFailed)
+        await host.mpvSetPropertyStrings?.([{ name: 'demuxer-lavf-o', value: hlsDemuxerLavfO(isHlsPlayUrl(playUrl), openUrl !== playUrl) }])?.catch(() => {})
+        await openMpvPlayer({ url: openUrl }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         await host.mpvSetPropertyStrings?.([{ name: 'mute', value: muted ? 'yes' : 'no' }])?.catch(() => {})
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
@@ -418,7 +423,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         readyTimer = window.setTimeout(markReady, 800)
       } else if (caps.engine === 'droid') {
         closeSession = () => closeNativePlayer()
-        await openNativePlayer({ url: playUrl, mimeType: isHls(playUrl) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
+        await openNativePlayer({ url: openUrl, mimeType: isHls(playUrl) ? HOST_PROXY_MIME : undefined }).catch(markFailed)
         if (cancelled || owner !== idRef.current) { await closeOnce(); return }
         setBounds = (rect) => nativeSetBounds(rect)
         readyTimer = window.setTimeout(markReady, 800)

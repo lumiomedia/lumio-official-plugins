@@ -16,6 +16,7 @@ import {
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
+import { hasHlsPlaylistProxy } from './hls-playlist-proxy'
 import { chooseLiveUrl, hasHlsFailed, isHlsPlayUrl, markHlsFailed, parseXtreamLiveUrl, type LiveFormat, type LiveUrlChoice } from './live-format'
 
 function decode(part: string): string {
@@ -84,7 +85,11 @@ export function resolveLivePlayUrl(url: string): string {
   if (ctx.kind === null) return url
   if (ctx.login && ctx.format === 'auto') learnAllowedFormats(ctx.login)
   const key = accountKeyOf(url)
-  return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) || (key !== null && hlsBrokenAccounts.has(key)) })
+  return chooseLiveUrl(url, {
+    ...ctx,
+    hlsFailed: hasHlsFailed(url) || (key !== null && hlsBrokenAccounts.has(key)),
+    hlsProxy: hasHlsPlaylistProxy(),
+  })
 }
 
 /** Vad Auto blir för en lista just nu — till inställningsradens förklaring. */
@@ -92,7 +97,8 @@ export function autoFormatFor(list: LiveTvList): 'ts' | 'hls' | null {
   if (list.kind !== 'xtream') return null
   const login = getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId)
   if (!login?.allowedFormats) return null
-  return login.allowedFormats.map((f) => f.toLowerCase()).includes('m3u8') ? 'hls' : 'ts'
+  // Utan appens spellisteproxy blir Auto alltid TS (live-format.ts).
+  return login.allowedFormats.map((f) => f.toLowerCase()).includes('m3u8') && hasHlsPlaylistProxy() ? 'hls' : 'ts'
 }
 
 /**

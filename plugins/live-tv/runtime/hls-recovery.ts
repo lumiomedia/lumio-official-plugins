@@ -83,3 +83,19 @@ export function isHlsStalled(opts: { now: number; lastProgressAt: number; ended:
  * trappan ovan.
  */
 export const HLS_DEMUXER_LAVF_O = 'http_multiple=0,http_persistent=0,seg_max_retry=2'
+
+/**
+ * Samma sak när spellistan kommer från appens proxy (`hls-playlist-proxy.ts`):
+ * omladdningen går då till 127.0.0.1 och segmenten till panelen — två olika
+ * värdar, så en kvarhängande keep-alive kan aldrig krocka med omladdningen.
+ * `http_persistent=1` låter segmenten återanvända EN anslutning till panelen
+ * i stället för att öppna en ny per segment; `http_multiple=0` håller den
+ * till en.
+ */
+export const HLS_DEMUXER_LAVF_O_PROXIED = 'http_multiple=0,http_persistent=1,seg_max_retry=2'
+
+/** Demuxervalet för den adress motorn faktiskt öppnar. Tomt = inte HLS. */
+export function hlsDemuxerLavfO(isHls: boolean, viaPlaylistProxy: boolean): string {
+  if (!isHls) return ''
+  return viaPlaylistProxy ? HLS_DEMUXER_LAVF_O_PROXIED : HLS_DEMUXER_LAVF_O
+}

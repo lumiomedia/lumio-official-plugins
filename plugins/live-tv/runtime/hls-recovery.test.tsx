@@ -47,8 +47,11 @@ import { __resetForTests, surfaceCalls, writePluginJson } from '@/lib/plugin-sdk
 import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
 import { __resetHlsFailuresForTests, hasHlsFailed } from './live-format'
 import { __resetAccountSessionsForTests, __resetLiveFormatResolveForTests, noteLiveStreamEnded, resolveLivePlayUrl } from './live-format-resolve'
+import { __setHlsPlaylistProxyForTests, hlsPlaylistProxyUrl } from './hls-playlist-proxy'
 import {
   HLS_DEMUXER_LAVF_O,
+  HLS_DEMUXER_LAVF_O_PROXIED,
+  hlsDemuxerLavfO,
   HLS_REOPEN_BACKOFF_MS,
   HLS_STALL_MS,
   hlsFailureAction,
@@ -89,17 +92,29 @@ describe('återhämtningens regler', () => {
   it('HLS-demuxern öppnar aldrig en andra anslutning', () => {
     expect(HLS_DEMUXER_LAVF_O).toContain('http_multiple=0')
     expect(HLS_DEMUXER_LAVF_O).toContain('http_persistent=0')
+    // Via appens proxy: omladdningen går till 127.0.0.1, segmenten på EN
+    // återanvänd anslutning till panelen.
+    expect(HLS_DEMUXER_LAVF_O_PROXIED).toContain('http_multiple=0')
+    expect(HLS_DEMUXER_LAVF_O_PROXIED).toContain('http_persistent=1')
+    expect(hlsDemuxerLavfO(true, true)).toBe(HLS_DEMUXER_LAVF_O_PROXIED)
+    expect(hlsDemuxerLavfO(true, false)).toBe(HLS_DEMUXER_LAVF_O)
+    expect(hlsDemuxerLavfO(false, true)).toBe('')
   })
 })
 
-describe('LiveTvPlayer: återhämtning för HLS', () => {
+describe('LiveTvPlayer: återhämtning för P', () => {
   const opens = () => surfaceCalls.filter((c) => c.startsWith('mpv:open:')).map((c) => c.slice('mpv:open:'.length))
   const closedSinceLastOpen = () => surfaceCalls.lastIndexOf('mpv:close') > surfaceCalls.reduce((last, c, i) => (c.startsWith('mpv:open:') ? i : last), -1)
   const flush = async (ms = 0) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms) }) }
   /** Strömmen spelar: bild och speltid som rör sig. */
   const play = async (pos: number) => { await act(async () => { engine.set({ firstFrameRendered: true, playbackRestarted: true, fileLoaded: true, timePos: pos }) }) }
 
+  /** Vad mpv öppnar: panelens .m3u8 genom appens spellisteproxy. */
+  let P = ''
+
   beforeEach(() => {
+    __setHlsPlaylistProxyForTests(true)
+    P = hlsPlaylistProxyUrl(window.location.origin, HLS)
     __resetForTests()
     __resetHlsFailuresForTests()
     __resetLiveFormatResolveForTests()
@@ -112,11 +127,22 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [{ id: 'login-1', base: 'http://tv.kkz.test:8080', username: 'u', password: 'p', format: 'ts', categoryIds: [], allowedFormats: ['m3u8', 'ts'] }])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'x1', name: 'tv.kkz.test:8080', kind: 'xtream', source: 'xtream://tv.kkz.test:8080/login-1', xtreamLoginId: 'login-1', createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }])
   })
-  afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
+  afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); __setHlsPlaylistProxyForTests(null) })
 
   it('HLS öppnas med demuxervalet satt FÖRE loadfile', async () => {
     render(<LiveTvPlayer channel={channel} onClose={() => {}} />)
     await flush()
+    const prop = surfaceCalls.indexOf(`mpv:prop:demuxer-lavf-o=${HLS_DEMUXER_LAVF_O_PROXIED}`)
+    expect(prop).toBeGreaterThanOrEqual(0)
+    expect(prop).toBeLessThan(surfaceCalls.indexOf(`mpv:open:${P}`))
+  })
+
+  it('uttryckligt HLS utan appens spellisteproxy: rå .m3u8 med det gamla demuxervalet', async () => {
+    __setHlsPlaylistProxyForTests(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'x1', name: 'tv.kkz.test:8080', kind: 'xtream', source: 'xtream://tv.kkz.test:8080/login-1', xtreamLoginId: 'login-1', createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, liveFormat: 'hls' }])
+    render(<LiveTvPlayer channel={channel} onClose={() => {}} />)
+    await flush()
+    expect(opens()).toEqual([HLS])
     const prop = surfaceCalls.indexOf(`mpv:prop:demuxer-lavf-o=${HLS_DEMUXER_LAVF_O}`)
     expect(prop).toBeGreaterThanOrEqual(0)
     expect(prop).toBeLessThan(surfaceCalls.indexOf(`mpv:open:${HLS}`))
@@ -126,7 +152,7 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     render(<LiveTvPlayer channel={channel} onClose={() => {}} />)
     await flush()
     await play(1)
-    expect(opens()).toEqual([HLS])
+    expect(opens()).toEqual([P])
 
     for (const [i, delay] of HLS_REOPEN_BACKOFF_MS.entries()) {
       await flush(HLS_STALL_MS + 1_000)
@@ -135,7 +161,7 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
       expect(opens()).toHaveLength(i + 1)
       await flush(delay)
       expect(opens()).toHaveLength(i + 2)
-      expect(opens().at(-1)).toBe(HLS)
+      expect(opens().at(-1)).toBe(P)
       // Omtaget kommer igång en stund, sedan stannar det igen.
       await play(i + 2)
     }
@@ -143,7 +169,7 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     await flush(HLS_STALL_MS + 1_000)
     expect(hasHlsFailed(TS)).toBe(true)
     expect(opens().at(-1)).toBe(TS)
-    expect(opens().filter((u) => u === HLS)).toHaveLength(4)
+    expect(opens().filter((u) => u === P)).toHaveLength(4)
   })
 
   it('filslut (misslyckad omladdning) är ett stopp direkt', async () => {
@@ -154,7 +180,7 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     await flush(0)
     expect(closedSinceLastOpen()).toBe(true)
     await flush(3_000)
-    expect(opens()).toEqual([HLS, HLS])
+    expect(opens()).toEqual([P, P])
   })
 
   it('ett omtag som spelar ostört nollar trappan', async () => {
@@ -176,16 +202,16 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     noteLiveStreamEnded(TS)
     render(<LiveTvPlayer channel={channel} onClose={() => {}} />)
     await flush()
-    expect(opens()).toEqual([HLS])
+    expect(opens()).toEqual([P])
     await act(async () => { engine.set({ loadFailed: true, loadFailedToken: 1 }) })
     await flush(0)
     expect(hasHlsFailed(TS)).toBe(false)
     await flush(3_000)
-    expect(opens()).toEqual([HLS, HLS])
+    expect(opens()).toEqual([P, P])
     await act(async () => { engine.set({ loadFailed: false }) })
     await play(1)
     await flush(5_000)
-    expect(opens()).toEqual([HLS, HLS])
+    expect(opens()).toEqual([P, P])
   })
 
   it('HLS som aldrig spelar på kontot: nästa kanal på samma konto tar TS direkt', async () => {
@@ -193,7 +219,7 @@ describe('LiveTvPlayer: återhämtning för HLS', () => {
     await flush()
     await act(async () => { engine.set({ loadFailed: true, loadFailedToken: 1 }) })
     await flush(0)
-    expect(opens()).toEqual([HLS, TS])
+    expect(opens()).toEqual([P, TS])
     expect(resolveLivePlayUrl('http://tv.kkz.test:8080/live/u/p/9000.ts')).toBe('http://tv.kkz.test:8080/live/u/p/9000.ts')
   })
 })

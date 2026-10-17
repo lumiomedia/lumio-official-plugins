@@ -39,7 +39,7 @@ import { recordChannelWatch } from './channel-history'
 import { channelSnapshot, runChannelCommand } from './couch-channel-player'
 import { channelKey } from './live-tv-data'
 import { fallBackToTs, logLiveTv, msSinceAccountStreamEnded, noteLiveStreamEnded, redactLiveUrl, resolveLivePlayUrl, shouldFallBackToTs } from './live-format-resolve'
-import { HLS_DEMUXER_LAVF_O, HLS_RECOVERY_RESET_MS, hlsFailureAction, isHlsStalled, nextRecoveryStep, type HlsFailureReason } from './hls-recovery'
+import { hlsDemuxerLavfO, HLS_RECOVERY_RESET_MS, hlsFailureAction, isHlsStalled, nextRecoveryStep, type HlsFailureReason } from './hls-recovery'
 
 /* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
    hookordningen är densamma i varje rendering. */
@@ -50,6 +50,7 @@ import { useOrientation } from './hooks/useOrientation'
 import { useWakeLock } from './hooks/useWakeLock'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { isHlsPlayUrl } from './live-format'
+import { nativeLiveOpenUrl } from './hls-playlist-proxy'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
 import { PlayerGoalOverlay } from './sport/tv/player-goal-overlay'
 import { StreamFallbackPrompt } from './stream-fallback-prompt'
@@ -281,7 +282,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
     // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
     async (url: string, viaProxy: boolean) => {
-      const target = viaProxy ? hostProxyUrl(url) : url
+      // HLS ur liveformatet går genom appens spellisteproxy när den finns
+      // (hls-playlist-proxy.ts): varje omladdning mot den ursprungliga
+      // `.m3u8`, aldrig mot adressen ffmpeg härleder och panelen 509:ar.
+      const direct = viaProxy ? url : nativeLiveOpenUrl(url, window.location.origin)
+      const viaPlaylistProxy = direct !== url
+      if (viaPlaylistProxy) logLiveTv(`HLS via app playlist proxy: ${redactLiveUrl(url)}`)
+      const target = viaProxy ? hostProxyUrl(url) : direct
       // HLS ur liveformatet: säg det rakt ut till media3 i stället för att
       // låta den gissa — panelen 302:ar `.m3u8` till en ändelselös /live/play/….
       if (isDroidEngine) {
@@ -290,7 +297,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       // HLS-demuxern utan parallella anslutningar (hls-recovery.ts). Sätts
       // före VARJE öppning — tomt för allt annat — eftersom egenskapen lever
       // kvar i mpv mellan filerna. Köas före loadfile i appens mpv-kö.
-      await mpvSetPropertyStrings([{ name: 'demuxer-lavf-o', value: isHlsPlayUrl(url) ? HLS_DEMUXER_LAVF_O : '' }]).catch(() => {})
+      await mpvSetPropertyStrings([{ name: 'demuxer-lavf-o', value: hlsDemuxerLavfO(isHlsPlayUrl(url), viaPlaylistProxy) }]).catch(() => {})
       return openMpvPlayer({
         url: target,
         requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },

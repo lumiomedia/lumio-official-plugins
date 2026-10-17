@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
@@ -28,6 +28,7 @@ vi.mock('@/lib/plugin-sdk', async (importOriginal) => {
 import { LiveTvTvShell } from './tv-shell'
 import { ListRow } from './settings-tabs'
 import { tvText } from './tv-strings'
+import { __setHlsPlaylistProxyForTests } from '../hls-playlist-proxy'
 import { completeLogos } from '../index-client'
 
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [{ name: 'A', logo: null, group: 'Sport', url: 'http://x/A', tvgId: null }], createdAt: '', urlTvg: null, epgUrls: ['http://x/epg.xml'], autoEpgDisabled: false, fetchedAt: '2026-09-12T10:00:00Z' }
@@ -408,6 +409,9 @@ describe('TvSettingsView: snabbknapparna (spec 4.4)', () => {
   })
 
   it('Xtream-kortet har liveformatet som en knapp som stegar Auto → TS → HLS och sparar på spellistan', async () => {
+    // Auto blir HLS bara med appens spellisteproxy.
+    __setHlsPlaylistProxyForTests(true)
+    onTestFinished(() => __setHlsPlaylistProxyForTests(null))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [{ ...xtreamLogin, allowedFormats: ['m3u8', 'ts'] }])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, id: 'x1', name: 'panel.test:8080', kind: 'xtream', source: 'xtream://panel.test:8080/login-1', xtreamLoginId: 'login-1' }])
     seedLiveTvIndex()

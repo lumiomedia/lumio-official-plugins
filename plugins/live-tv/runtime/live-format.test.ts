@@ -28,6 +28,7 @@ import {
   resolveLivePlayUrl,
   shouldFallBackToTs,
 } from './live-format-resolve'
+import { __setHlsPlaylistProxyForTests } from './hls-playlist-proxy'
 
 const TS = 'http://tv.kkz.test:8080/live/u/p/8171.ts'
 const HLS = 'http://tv.kkz.test:8080/live/u/p/8171.m3u8'
@@ -59,11 +60,21 @@ describe('liveformatets rena delar', () => {
     expect(nextLiveFormat('hls')).toBe('auto')
   })
 
-  it('Xtream Auto: HLS när kontot tillåter m3u8, annars kanalens egen URL', () => {
-    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts', 'rtmp'] })).toBe(HLS)
-    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['ts'] })).toBe(TS)
-    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: [] })).toBe(TS)
-    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: null })).toBe(TS)
+  it('Xtream Auto: HLS när kontot tillåter m3u8 och appens spellisteproxy finns, annars kanalens egen URL', () => {
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts', 'rtmp'], hlsProxy: true })).toBe(HLS)
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['ts'], hlsProxy: true })).toBe(TS)
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: [], hlsProxy: true })).toBe(TS)
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: null, hlsProxy: true })).toBe(TS)
+  })
+
+  it('Xtream Auto utan appens spellisteproxy: alltid TS (rå HLS 509:ar på omladdningen)', () => {
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts'] })).toBe(TS)
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts'], hlsProxy: false })).toBe(TS)
+    // En .m3u8 i indexet blir TS när kontot tillåter det.
+    expect(chooseLiveUrl(HLS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts'] })).toBe(TS)
+    expect(chooseLiveUrl(HLS, { kind: 'xtream', format: 'auto', allowedFormats: ['m3u8', 'ts'], hlsProxy: true })).toBe(HLS)
+    // Uttryckligt HLS får försöka rå HLS även utan proxyn.
+    expect(chooseLiveUrl(TS, { kind: 'xtream', format: 'hls', allowedFormats: ['m3u8'] })).toBe(HLS)
   })
 
   it('Xtream TS/HLS: det uttryckliga valet vinner', () => {
@@ -102,8 +113,9 @@ describe('liveformatet mot lagringen', () => {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) } as unknown as Response)
     }) as typeof fetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
+    __setHlsPlaylistProxyForTests(true)
   })
-  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); __setHlsPlaylistProxyForTests(null) })
 
   it('valet sparas per spellista; Auto lagras som frånvaro', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [xtreamList(), m3uList()])
@@ -127,6 +139,16 @@ describe('liveformatet mot lagringen', () => {
     expect(fetches.some((u) => u.includes('/live/'))).toBe(false)
     expect(resolveLivePlayUrl(TS)).toBe(HLS)
     expect(autoFormatFor(getLiveTvLists()[0])).toBe('hls')
+  })
+
+  it('appen utan spellisteproxy → Auto blir TS även när kontot tillåter m3u8', () => {
+    __setHlsPlaylistProxyForTests(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [xtreamList()])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [login({ allowedFormats: ['m3u8', 'ts'] })])
+    expect(resolveLivePlayUrl(TS)).toBe(TS)
+    expect(autoFormatFor(getLiveTvLists()[0])).toBe('ts')
+    setLiveTvListFormat('x1', 'hls')
+    expect(resolveLivePlayUrl(TS)).toBe(HLS)
   })
 
   it('panelen utan m3u8 → Auto blir TS; uttryckligt TS gäller oavsett', () => {

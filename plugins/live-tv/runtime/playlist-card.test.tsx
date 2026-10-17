@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import * as liveTvData from './live-tv-data'
 import { LIVE_TV_PLUGIN_ID, __resetXtreamAccountCacheForTests, getLiveTvLists, isLogoFallbackEnabled, type LiveTvList, type XtreamLogin } from './live-tv-data'
 import { ToastHost } from './settings-ui'
 import { PlaylistCard } from './playlist-card'
+import { __setHlsPlaylistProxyForTests } from './hls-playlist-proxy'
 
 function list(overrides: Partial<LiveTvList> & { id: string; name: string }): LiveTvList {
   return { createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, ...overrides } as LiveTvList
@@ -178,6 +179,9 @@ describe('PlaylistCard (handoff §3.1)', () => {
 
 describe('PlaylistCard: liveformat (Auto/TS/HLS)', () => {
   it('Xtream: raden visar vad Auto blir och sparar valet på listan', () => {
+    // Auto blir HLS bara med appens spellisteproxy.
+    __setHlsPlaylistProxyForTests(true)
+    onTestFinished(() => __setHlsPlaylistProxyForTests(null))
     writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [{ ...login, allowedFormats: ['m3u8', 'ts', 'rtmp'] }])
     mount(xtream)
     const row = screen.getByTestId('live-format-x1')

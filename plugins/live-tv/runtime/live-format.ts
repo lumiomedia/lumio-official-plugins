@@ -79,12 +79,20 @@ export interface LiveUrlChoice {
   allowedFormats: readonly string[] | null | undefined
   /** HLS föll redan för kanalen i den här sessionen. */
   hlsFailed?: boolean
+  /**
+   * Appens spellisteproxy för HLS finns (`hls-playlist-proxy.ts`). Utan den
+   * väljer Auto aldrig HLS: rå HLS laddar om spellistan mot en adress som
+   * paneler med en anslutning svarar 509 på.
+   */
+  hlsProxy?: boolean
 }
 
 /**
  * Vilken URL spelaren ska öppna.
  *
- * - Xtream, Auto: HLS när kontot tillåter `m3u8`, annars kanalens egen URL.
+ * - Xtream, Auto: HLS när kontot tillåter `m3u8` OCH appens spellisteproxy
+ *   finns, annars TS (kanalens egen URL; en `.m3u8` i indexet blir `.ts` när
+ *   kontot tillåter det).
  * - Xtream, TS/HLS: den valda ändelsen.
  * - M3U: spellistans URL orörd — utom när användaren uttryckligen valt HLS
  *   och adressen är en Xtream-länk (`/live/u/p/id.ts`).
@@ -97,7 +105,9 @@ export function chooseLiveUrl(url: string, choice: LiveUrlChoice): string {
     if (choice.format === 'ts') return withXtreamLiveExt(url, 'ts')
     if (choice.format === 'hls') return withXtreamLiveExt(url, 'm3u8')
     const allowed = (choice.allowedFormats ?? []).map((f) => f.toLowerCase())
-    return allowed.includes('m3u8') ? withXtreamLiveExt(url, 'm3u8') : url
+    if (allowed.includes('m3u8') && choice.hlsProxy) return withXtreamLiveExt(url, 'm3u8')
+    if (parsed.ext === 'm3u8' && !choice.hlsProxy && allowed.includes('ts')) return withXtreamLiveExt(url, 'ts')
+    return url
   }
   if (choice.kind === 'm3u' && choice.format === 'hls') return withXtreamLiveExt(url, 'm3u8')
   return url

@@ -17,6 +17,7 @@ import { useChannelSchedule } from './hooks/useChannelSchedule'
 import { vodLibraryProvider } from './vod-library-provider'
 import { LiveTvLibraryFrame } from './tv/live-tv-library-frame'
 import { LIVE_TV_FRAME_ID } from './vod-home'
+import { detectHlsPlaylistProxy } from './hls-playlist-proxy'
 
 declare global {
   interface Window {
@@ -86,6 +87,9 @@ export const LiveTvPlugin: LumioPlugin = {
   preinstalled: true,
 
   register(ctx) {
+    // Finns appens HLS-spellisteproxy? Svaret behövs före första kanalstarten
+    // (Auto väljer HLS bara med proxyn, se live-format.ts).
+    void detectHlsPlaylistProxy()
     // Påminnelser om kommande program, oavsett var i appen man står.
     ctx.registerBootstrap({ id: 'live-tv-reminders', Mount: LiveTvRemindersMount })
     ctx.registerBootstrap({ id: 'live-tv-sport-goals', Mount: SportGoalMount })
