@@ -43132,6 +43132,7 @@ ${cue.text}`).join("\n\n")}
   var TV_ROW_H = 72;
   var TV_ROW_H_COMPACT = 70;
   var MIN4 = 6e4;
+  var WHEEL_STEP_PX = 90;
   var GUIDE_FADE = { desktop: 28, tv: 40 };
   function guideFadeMask(isTv) {
     const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
@@ -43180,6 +43181,17 @@ ${cue.text}`).join("\n\n")}
       const row = document.elementFromPoint(p.x, p.y)?.closest?.("[data-channel-row]");
       const id = row?.getAttribute("data-channel-row") ?? null;
       if (id && el.contains(row)) onHover(id);
+    };
+    const sideways = useRef(0);
+    const onGuideWheel = (event) => {
+      if (isTv || isMobile) return;
+      const dx = event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX;
+      if (Math.abs(dx) <= Math.abs(event.shiftKey ? 0 : event.deltaY)) return;
+      sideways.current += dx;
+      if (Math.abs(sideways.current) < WHEEL_STEP_PX) return;
+      const dir = sideways.current > 0 ? 1 : -1;
+      sideways.current = 0;
+      onShift(dir);
     };
     const ring = fill3 && !isMobile ? dimS(10, isTv) : "0px";
     const header = /* @__PURE__ */ jsxs("div", { "data-guide-axis": "", style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, marginInline: ring }, children: [
@@ -43259,6 +43271,7 @@ ${cue.text}`).join("\n\n")}
                   "data-guide-band": band ? String(bandAt) : void 0,
                   "data-scroll": band ? void 0 : "",
                   onScroll: onGuideScroll,
+                  onWheel: onGuideWheel,
                   onMouseMove: onHover ? (e) => {
                     pointer.current = { x: e.clientX, y: e.clientY };
                   } : void 0,

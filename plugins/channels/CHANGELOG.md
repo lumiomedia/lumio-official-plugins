@@ -1,3 +1,7 @@
+## 0.1.29
+
+- Skrivbord: sidosvep på tablån (styrplatta, eller skift + hjul) flyttar tidsfönstret en halvtimme åt gången, som ◀▶ på TV. Bara tablån rör sig.
+
 ## 0.1.28
 
 - Kanalens beslut (programgräns, filslut, omförsök, laddfel, kanalbyte) skrivs till appens felsökningslogg, så att ett oväntat "Programmet är slut" kan spåras.

@@ -34,6 +34,8 @@ const ROW_H = 54
 export const TV_ROW_H = 72
 export const TV_ROW_H_COMPACT = 70
 const MIN = 60_000
+/** Så långt sidosvep (px) flyttar tidsfönstret en halvtimme på skrivbordet. */
+const WHEEL_STEP_PX = 90
 
 export interface ChannelGuideProps {
   channels: ChannelDef[]
@@ -130,6 +132,20 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     const id = row?.getAttribute('data-channel-row') ?? null
     if (id && el.contains(row!)) onHover(id)
   }
+  // Skrivbord: sidosvep (styrplatta, shift+hjul) flyttar tidsfönstret i samma
+  // halvtimmessteg som TV:ns ◀▶. Bara tablån rör sig; sidan står still
+  // (kanalsidan stoppar sidosvepet vid roten).
+  const sideways = useRef(0)
+  const onGuideWheel = (event: { deltaX: number; deltaY: number; shiftKey: boolean }) => {
+    if (isTv || isMobile) return
+    const dx = event.shiftKey && event.deltaX === 0 ? event.deltaY : event.deltaX
+    if (Math.abs(dx) <= Math.abs(event.shiftKey ? 0 : event.deltaY)) return
+    sideways.current += dx
+    if (Math.abs(sideways.current) < WHEEL_STEP_PX) return
+    const dir: -1 | 1 = sideways.current > 0 ? 1 : -1
+    sideways.current = 0
+    onShift(dir)
+  }
   // Ringmarginal i sidled (se padding nedan).
   const ring = fill && !isMobile ? dimS(10, isTv) : '0px'
   const header = (
@@ -220,6 +236,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
               // TV: ingen rullning alls — bandet flyttar spåret.
               data-scroll={band ? undefined : ''}
               onScroll={onGuideScroll}
+              onWheel={onGuideWheel}
               onMouseMove={onHover ? (e) => { pointer.current = { x: e.clientX, y: e.clientY } } : undefined}
               onMouseLeave={onHover ? () => { pointer.current = null } : undefined}
               style={{
