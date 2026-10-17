@@ -655,7 +655,6 @@
   var STORAGE_KEY;
   var init_plugin_state = __esm({
     "lib/plugin-state.ts"() {
-      "use strict";
       init_profile_storage_shim();
       STORAGE_KEY = "lumio:plugin-state";
     }
@@ -41854,7 +41853,8 @@ ${cue.text}`).join("\n\n")}
     const ctx = liveUrlContext(url);
     if (ctx.kind === null) return url;
     if (ctx.login && ctx.format === "auto") learnAllowedFormats(ctx.login);
-    return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) });
+    const key = accountKeyOf(url);
+    return chooseLiveUrl(url, { ...ctx, hlsFailed: hasHlsFailed(url) || key !== null && hlsBrokenAccounts.has(key) });
   }
   function autoFormatFor(list) {
     if (list.kind !== "xtream") return null;
@@ -41875,9 +41875,16 @@ ${cue.text}`).join("\n\n")}
     }
     return `${host2}/live/\u2026/${parsed.streamId}.${parsed.ext}`;
   }
-  function fallBackToTs(originalUrl, reason) {
+  function fallBackToTs(originalUrl, reason, opts = {}) {
     markHlsFailed(originalUrl);
-    const msg = `[live-tv] HLS fallback \u2192 TS (${reason}): ${redactLiveUrl(originalUrl)}`;
+    if (opts.wholeAccount) {
+      const key = accountKeyOf(originalUrl);
+      if (key) hlsBrokenAccounts.add(key);
+    }
+    logLiveTv(`HLS fallback \u2192 TS (${reason}${opts.wholeAccount ? ", whole account" : ""}): ${redactLiveUrl(originalUrl)}`);
+  }
+  function logLiveTv(text2) {
+    const msg = `[live-tv] ${text2}`;
     console.warn(msg);
     if (typeof fetch === "function") {
       void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {
@@ -41893,13 +41900,29 @@ ${cue.text}`).join("\n\n")}
   function listHasLiveFormat(list) {
     return list.kind === "xtream" || list.kind === "m3u";
   }
-  var askedLogins;
+  function accountKeyOf(url) {
+    const parsed = parseXtreamLiveUrl(url);
+    if (!parsed) return null;
+    return `${normalizeXtreamBase(parsed.origin) ?? parsed.origin}|${decode(parsed.username)}`;
+  }
+  function noteLiveStreamEnded(url, now2 = Date.now()) {
+    const key = accountKeyOf(url);
+    if (key) accountStreamEndedAt.set(key, now2);
+  }
+  function msSinceAccountStreamEnded(url, now2 = Date.now()) {
+    const key = accountKeyOf(url);
+    const at = key ? accountStreamEndedAt.get(key) : void 0;
+    return at === void 0 ? null : Math.max(0, now2 - at);
+  }
+  var askedLogins, hlsBrokenAccounts, accountStreamEndedAt;
   var init_live_format_resolve = __esm({
     "../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/live-format-resolve.ts"() {
       "use strict";
       init_live_tv_data();
       init_live_format();
       askedLogins = /* @__PURE__ */ new Set();
+      hlsBrokenAccounts = /* @__PURE__ */ new Set();
+      accountStreamEndedAt = /* @__PURE__ */ new Map();
     }
   });
 
@@ -49382,6 +49405,33 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hls-recovery.ts
+  function nextRecoveryStep(failures) {
+    if (failures >= HLS_REOPEN_BACKOFF_MS.length) return { kind: "fallback-ts" };
+    return { kind: "reopen", delayMs: HLS_REOPEN_BACKOFF_MS[Math.max(0, failures)], attempt: Math.max(0, failures) + 1 };
+  }
+  function hlsFailureAction(opts) {
+    if (opts.reason === "stall" || opts.playedBefore || opts.failures > 0) return "ladder";
+    if (opts.msSinceAccountSession !== null && opts.msSinceAccountSession < RECENT_ACCOUNT_SESSION_MS) return "ladder";
+    return "fallback-ts";
+  }
+  function isHlsStalled(opts) {
+    if (opts.ended) return true;
+    if (opts.userPaused) return false;
+    return opts.now - opts.lastProgressAt >= HLS_STALL_MS;
+  }
+  var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O;
+  var init_hls_recovery = __esm({
+    "../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hls-recovery.ts"() {
+      "use strict";
+      HLS_STALL_MS = 8e3;
+      HLS_REOPEN_BACKOFF_MS = [3e3, 6e3, 12e3];
+      HLS_RECOVERY_RESET_MS = 3e4;
+      RECENT_ACCOUNT_SESSION_MS = 6e4;
+      HLS_DEMUXER_LAVF_O = "http_multiple=0,http_persistent=0,seg_max_retry=2";
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/xtream-hls/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
@@ -52830,6 +52880,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const closeOnce = async () => {
         if (spent) return;
         spent = true;
+        if (closeSession) noteLiveStreamEnded(url);
         await closeSession?.().catch(() => {
         });
       };
@@ -52886,6 +52937,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         setLive(true);
         if (caps.engine === "mpv") {
           closeSession = () => closeMpvPlayer();
+          await host.mpvSetPropertyStrings?.([{ name: "demuxer-lavf-o", value: isHlsPlayUrl(playUrl) ? HLS_DEMUXER_LAVF_O : "" }])?.catch(() => {
+          });
           await openMpvPlayer({ url: playUrl }).catch(markFailed);
           if (cancelled || owner !== idRef.current) {
             await closeOnce();
@@ -52980,6 +53033,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_surface_cutouts();
       init_live_tv_playback_fallback();
       init_live_format_resolve();
+      init_hls_recovery();
+      init_live_format();
       host = plugin_sdk_exports;
       owner = null;
       ownerClose = null;
@@ -53005,6 +53060,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function isMobileBrowser() {
     if (typeof navigator === "undefined") return false;
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  }
+  function hasNativeSurfaceEngine() {
+    return isDesktopTauriEnv || isAndroidTauriEnv;
   }
   function proxyUrl(url) {
     return `/api/m3u?stream=${encodeURIComponent(url)}`;
@@ -53034,10 +53092,30 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [nativeAttempt, setNativeAttempt] = useState(0);
     const [hlsFallbacks, setHlsFallbacks] = useState(0);
     const playUrl = useMemo(() => resolveLivePlayUrl(channel.url), [channel.url, hlsFallbacks]);
-    const tryTsFallback = (reason) => {
-      if (!shouldFallBackToTs(channel.url, playUrl, nativeAttempt)) return false;
-      fallBackToTs(channel.url, reason);
-      setHlsFallbacks((n) => n + 1);
+    const [reopenNonce, setReopenNonce] = useState(0);
+    const recoveryRef = useRef({ failures: 0, played: false, pending: false, timer: 0, lastPos: -1, lastProgressAt: 0, reopenedAt: 0 });
+    const hlsRecoverable = hasNativeSurfaceEngine() && nativeAttempt === 0 && shouldFallBackToTs(channel.url, playUrl, 0);
+    const handleHlsFailure = (reason) => {
+      if (!hlsRecoverable) return false;
+      const r = recoveryRef.current;
+      if (r.pending) return true;
+      const action = hlsFailureAction({ reason, failures: r.failures, playedBefore: r.played, msSinceAccountSession: msSinceAccountStreamEnded(channel.url) });
+      const step = nextRecoveryStep(r.failures);
+      if (action === "fallback-ts" || step.kind === "fallback-ts") {
+        const why = action === "fallback-ts" ? reason : `${reason} after ${r.failures} reopens`;
+        fallBackToTs(channel.url, why, { wholeAccount: !r.played });
+        setHlsFallbacks((n) => n + 1);
+        return true;
+      }
+      r.failures += 1;
+      r.pending = true;
+      logLiveTv(`HLS ${reason} \u2192 reopen ${step.attempt}/3 in ${step.delayMs / 1e3} s: ${redactLiveUrl(channel.url)}`);
+      noteLiveStreamEnded(channel.url);
+      void engineClose().catch(() => {
+      });
+      setLoading(true);
+      window.clearTimeout(r.timer);
+      r.timer = window.setTimeout(() => setReopenNonce((n) => n + 1), step.delayMs);
       return true;
     };
     const [portalEl] = useState(() => {
@@ -53075,9 +53153,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       // HLS-spellista som en progressiv fil och föll på
       // PARSING_CONTAINER_UNSUPPORTED — bevisat på telefon med en kanal som
       // spelar direkt men inte genom proxyn (Jerry 2026-09-08).
-      (url, viaProxy) => {
+      async (url, viaProxy) => {
         const target2 = viaProxy ? hostProxyUrl2(url) : url;
-        return isDroidEngine ? openNativePlayer({ url: target2, ...viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {} }) : openMpvPlayer({
+        if (isDroidEngine) {
+          return openNativePlayer({ url: target2, ...viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {} });
+        }
+        await mpvSetPropertyStrings([{ name: "demuxer-lavf-o", value: isHlsPlayUrl(url) ? HLS_DEMUXER_LAVF_O : "" }]).catch(() => {
+        });
+        return openMpvPlayer({
           url: target2,
           requestHeaders: /\.ts(?:[?#]|$)/i.test(target2) ? void 0 : { "User-Agent": IPTV_USER_AGENT }
         });
@@ -53349,6 +53432,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         resetFileLoaded();
         resetPlaybackRestarted();
         resetFirstFrameRendered();
+        mpv.resetEnded?.();
+        const recovery = recoveryRef.current;
+        if (recovery.pending) {
+          recovery.pending = false;
+          recovery.reopenedAt = Date.now();
+        }
+        recovery.lastProgressAt = Date.now();
+        recovery.lastPos = -1;
         void engineClose().catch(() => {
         }).then(() => {
           if (cancelled2) return;
@@ -53375,7 +53466,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync2);
           window.removeEventListener("scroll", sync2, true);
-          void engineClose();
+          noteLiveStreamEnded(channel.url);
+          void engineClose().then(() => {
+            if (engineKind === "mpv" && isHlsPlayUrl(playUrl)) {
+              return mpvSetPropertyStrings([{ name: "demuxer-lavf-o", value: "" }]).catch(() => {
+              });
+            }
+          }).catch(() => {
+          });
         };
       }
       const videoEl = videoRef.current;
@@ -53502,6 +53600,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       channel.url,
       playUrl,
       nativeAttempt,
+      reopenNonce,
       portalEl,
       resetFileLoaded,
       resetFirstFrameRendered,
@@ -53533,7 +53632,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (!hasNativeSurface || !mpvLoadFailed) return;
       if (handledFailTokenRef.current === mpvLoadFailedToken) return;
       handledFailTokenRef.current = mpvLoadFailedToken;
-      if (tryTsFallback("load-failed")) return;
+      if (handleHlsFailure("load-failed")) return;
       if (nativeFailureAction("load-failed", nativeAttempt, mpvTimePos) === "retry-proxy") {
         setNativeAttempt(1);
         return;
@@ -53543,19 +53642,63 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       void engineClose().catch(() => {
       });
     }, [hasNativeSurface, mpvLoadFailed, mpvLoadFailedToken, nativeAttempt, mpvTimePos, playUrl]);
+    useEffect(() => {
+      const r = recoveryRef.current;
+      window.clearTimeout(r.timer);
+      recoveryRef.current = { failures: 0, played: false, pending: false, timer: 0, lastPos: -1, lastProgressAt: Date.now(), reopenedAt: 0 };
+    }, [channel.url, playUrl]);
+    useEffect(() => () => window.clearTimeout(recoveryRef.current.timer), []);
+    useEffect(() => {
+      const r = recoveryRef.current;
+      if (mpvTimePos === r.lastPos) return;
+      r.lastPos = mpvTimePos;
+      const now2 = Date.now();
+      r.lastProgressAt = now2;
+      if (mpvTimePos > 0 && !r.pending) r.played = true;
+      if (r.failures > 0 && r.reopenedAt > 0 && now2 - r.reopenedAt >= HLS_RECOVERY_RESET_MS) {
+        logLiveTv(`HLS recovered after ${r.failures} reopen(s): ${redactLiveUrl(channel.url)}`);
+        r.failures = 0;
+        r.reopenedAt = 0;
+      }
+    }, [mpvTimePos]);
+    useEffect(() => {
+      if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
+        const r = recoveryRef.current;
+        if (!r.pending) r.played = true;
+      }
+    }, [mpvFirstFrameRendered, mpvPlaybackRestarted]);
+    const handleHlsFailureRef = useRef(handleHlsFailure);
+    handleHlsFailureRef.current = handleHlsFailure;
+    const stallInputsRef = useRef({ ended: false, paused: false });
+    stallInputsRef.current = { ended: Boolean(mpv.ended), paused: mpvPaused };
+    useEffect(() => {
+      if (!hlsRecoverable || loading2 || error) return;
+      const check = () => {
+        const r = recoveryRef.current;
+        if (!r.played || r.pending) return;
+        const { ended, paused } = stallInputsRef.current;
+        if (isHlsStalled({ now: Date.now(), lastProgressAt: r.lastProgressAt, ended, userPaused: paused })) {
+          handleHlsFailureRef.current("stall");
+        }
+      };
+      check();
+      const timer4 = window.setInterval(check, 1e3);
+      return () => window.clearInterval(timer4);
+    }, [hlsRecoverable, loading2, error, mpv.ended]);
     const timePosRef = useRef(0);
     timePosRef.current = mpvTimePos;
     useEffect(() => {
       if (!hasNativeSurface || !loading2 || error || mpvFileLoaded || mpvPlaybackRestarted || mpvFirstFrameRendered) return;
       const budget = nativeAttempt === 0 ? MPV_FIRST_ATTEMPT_TIMEOUT_MS : MPV_STARTUP_TIMEOUT_MS;
       const timeout = window.setTimeout(() => {
+        if (recoveryRef.current.pending) return;
         const action = nativeFailureAction("no-start", nativeAttempt, timePosRef.current);
         if (action === "settle") {
           setLoading(false);
           return;
         }
         if (action === "retry-proxy") {
-          if (tryTsFallback("no-start")) return;
+          if (handleHlsFailure("no-start")) return;
           setNativeAttempt(1);
           return;
         }
@@ -53565,7 +53708,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         });
       }, budget);
       return () => window.clearTimeout(timeout);
-    }, [error, loading2, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt, playUrl]);
+    }, [error, loading2, mpvFileLoaded, mpvFirstFrameRendered, mpvPlaybackRestarted, hasNativeSurface, nativeAttempt, playUrl, reopenNonce]);
     useEffect(() => {
       if (!hasNativeSurface) return;
       if (mpvFirstFrameRendered || mpvPlaybackRestarted) {
@@ -53834,6 +53977,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_couch_channel_player();
       init_live_tv_data();
       init_live_format_resolve();
+      init_hls_recovery();
       init_useHtmlVideoPlayer();
       init_useOrientation();
       init_useWakeLock();
