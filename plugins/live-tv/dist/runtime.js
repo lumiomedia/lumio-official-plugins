@@ -20919,6 +20919,7 @@
   var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor2, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
   var init_barcode_store = __esm({
     "lib/barcode/barcode-store.ts"() {
+      "use strict";
       init_profile_storage_shim();
       init_barcode_model();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
