@@ -69,6 +69,9 @@ export interface ChannelGuideProps {
 /** Uttoningens längd i rullbehållarens överkant (designpx; TV i TV-enheter). */
 export const GUIDE_FADE = { desktop: 28, tv: 40 } as const
 
+/** Högerkantens uttoning på skrivbordet (programmen fortsätter förbi bilden). */
+const GUIDE_RIGHT_FADE = 'linear-gradient(to right, black calc(100% - 48px), transparent 100%)'
+
 /** Masken som tonar ut raderna upptill i rullbehållaren. */
 export function guideFadeMask(isTv: boolean): string {
   const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`
@@ -244,7 +247,11 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
                 // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
                 // ovanför bandplatsen så raden där står helt synlig.
                 paddingTop: fade, paddingBottom: band ? 0 : dim(24, isTv, 40), paddingInline: ring,
-                WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv),
+                // Skrivbord: programmen tonar även ut i högerkanten (tidsaxeln
+                // fortsätter förbi bilden, sidosvep flyttar den).
+                ...(!isTv && !isMobile
+                  ? { WebkitMaskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, maskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, WebkitMaskComposite: 'source-in', maskComposite: 'intersect' }
+                  : { WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv) }),
                 scrollbarWidth: 'none',
               }}
             >

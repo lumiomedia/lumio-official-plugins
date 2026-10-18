@@ -2,6 +2,7 @@
 
 - Kanalsidan förskjuts aldrig i sidled: fokus (t.ex. tillbaka från spelaren) kunde rulla sidan så heron och tablån hamnade utanför bild.
 - Marginalerna mäts om när sidan byter storlek och efter sidbytets animation.
+- Skrivbord: programmen i tablån tonar ut i högerkanten.
 
 ## 0.1.34
 

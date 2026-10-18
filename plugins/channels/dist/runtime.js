@@ -43303,6 +43303,7 @@ ${cue.text}`).join("\n\n")}
   var MIN4 = 6e4;
   var WHEEL_STEP_PX = 90;
   var GUIDE_FADE = { desktop: 28, tv: 40 };
+  var GUIDE_RIGHT_FADE = "linear-gradient(to right, black calc(100% - 48px), transparent 100%)";
   function guideFadeMask(isTv) {
     const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
     return `linear-gradient(to bottom, transparent 0, black ${fade})`;
@@ -43458,8 +43459,9 @@ ${cue.text}`).join("\n\n")}
                     paddingTop: fade,
                     paddingBottom: band ? 0 : dim(24, isTv, 40),
                     paddingInline: ring,
-                    WebkitMaskImage: guideFadeMask(isTv),
-                    maskImage: guideFadeMask(isTv),
+                    // Skrivbord: programmen tonar även ut i högerkanten (tidsaxeln
+                    // fortsätter förbi bilden, sidosvep flyttar den).
+                    ...!isTv && !isMobile ? { WebkitMaskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, maskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, WebkitMaskComposite: "source-in", maskComposite: "intersect" } : { WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv) },
                     scrollbarWidth: "none"
                   },
                   children: band ? /* @__PURE__ */ jsx(
