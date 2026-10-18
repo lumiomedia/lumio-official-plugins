@@ -54,6 +54,8 @@ const RAPID_ZAP_MS = 700
 const REVEAL_FALLBACK_MS = 12_000
 /** Ett laddfel räknas inte medan strömmen visat framsteg så här nyligen. */
 const PROGRESS_GRACE_MS = 30_000
+/** Över appens svarta täckskärm vid spelarbyte (showMpvTransitionCover, z 999999). */
+const TUNING_LAYER_Z = 1_000_000
 const OSD_HIDE_MS = 5_000
 /** Bakåt: samma tangenter som värdens fokusmotor (Escape/Backspace) plus webbens namn. */
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
@@ -699,19 +701,21 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     />
   )
 
+  // Inställningskortet i ett eget översta lager, samma med och utan spelare:
+  // inne i spelarens överlägg revs det med spelaren vid varje byte, och appens
+  // svarta täckskärm (z 999999, 1,8 s när en spelare rivs) låg över allt
+  // annat — laddning, svart, laddning igen (2026-10-17/18).
+  // data-cinema-overlay: appen döljer allt i body utom spelarens portal medan
+  // mpv spelar (html.mpv-playing); biokvällens undantag släpper igenom lagret.
+  const tuningLayer = typeof document !== 'undefined'
+    ? createPortal(<div data-channels-tuning-layer="" data-cinema-overlay="" style={{ position: 'fixed', inset: 0, zIndex: TUNING_LAYER_Z, pointerEvents: 'none' }}>{tuningCard}</div>, document.body)
+    : null
+
   if (onScreen && Player) {
     const { playable, slot, seq } = onScreen
     return (
       <div data-channels-player="" onMouseMove={poke}>
-        {/* Inställningskortet i ett eget lager ovanför värdspelaren (z 60): inne i
-            spelarens överlägg revs det med spelaren vid varje byte — laddning,
-            svart, laddning igen (2026-10-17). Lagret lever över bytet.
-            data-cinema-overlay: appen döljer allt i body utom spelarens portal
-            medan mpv spelar (html.mpv-playing); biokvällens undantag släpper
-            igenom lagret — utan det syntes ingen laddning alls. */}
-        {typeof document !== 'undefined'
-          ? createPortal(<div data-channels-tuning-layer="" data-cinema-overlay="" style={{ position: 'fixed', inset: 0, zIndex: 61, pointerEvents: 'none' }}>{tuningCard}</div>, document.body)
-          : null}
+        {tuningLayer}
         <Player
           // Ny visning = ny instans: initialTime läses bara vid montering, och
           // "Från början" på samma program har samma URL.
@@ -865,7 +869,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           </p>
         </div>
       ) : null}
-      {tuningCard}
+      {tuningLayer}
       {osd}
       {guide}
     </Screen>

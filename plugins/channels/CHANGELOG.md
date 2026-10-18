@@ -1,3 +1,7 @@
+## 0.1.33
+
+- Kanalbyte i spelaren: den gamla kanalens ljud tystnar direkt (spelaren rivs i stället för att spela vidare under uppslaget), och laddningskortet ligger över appens svarta övergång — en laddning, inte två.
+
 ## 0.1.32
 
 - Live-start på närmaste nyckelbild i stället för exakt sekund: den exakta sökningen kostade cirka 6 s per kanalbyte, oavsett källa. Kräver appen med snabbstart (äldre appar startar som förut).

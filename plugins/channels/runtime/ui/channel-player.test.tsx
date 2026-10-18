@@ -241,14 +241,16 @@ describe('kanalspelaren: inställningskortet', () => {
     expect(info.mock.calls.some(([m]) => /^\[channels\] switch 1 resolve=\d+ms firstFrame=\d+ms \(pool=\d+ resolveStart=\d+ type=library mount=\d+ hostFirstPlay=\d+\)$/.test(String(m)))).toBe(true)
     expect(document.querySelector('[data-channels-osd]')).toBeTruthy()
     fireEvent.keyDown(window, { key: 'PageUp' })
-    // Samma bildruta som trycket, och ingen krom (kanal-OSD, värdens kontroller) under kortet.
+    // Samma bildruta som trycket, ingen krom under kortet, och den gamla
+    // kanalens spelare är borta direkt (dess ljud hördes under uppslaget).
     expect(card().getAttribute('data-visible')).toBe('1')
     expect(document.querySelector('[data-channels-osd]')).toBeNull()
-    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-controls'))).toBe(true)
+    expect(screen.queryByTestId('first-play')).toBeNull()
     await flush()
     expect(screen.getByTestId('first-play').getAttribute('data-url')).toBe('http://l2')
-    // Ny värdspelare utan bild än: kortet täcker den tomma rutan.
+    // Ny värdspelare utan bild än: kortet täcker den tomma rutan, värdens kontroller dolda.
     expect(card().getAttribute('data-visible')).toBe('1')
+    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-controls'))).toBe(true)
     expect(card().textContent).toContain('l2')
     fireEvent.click(screen.getByTestId('first-play'))
     expect(card().getAttribute('data-visible')).toBe('0')

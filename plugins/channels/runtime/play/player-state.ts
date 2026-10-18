@@ -143,8 +143,10 @@ const next = (s: PlayerState, patch: Partial<Request>): Request => ({ ...s.reque
 export function playerReducer(s: PlayerState, a: Action): PlayerState {
   switch (a.type) {
     case 'goto':
-      // Manuellt byte: nya försök, ingen gammal felvy.
-      return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode }), pending: null, status: 'resolving', tried: null, noSignal: null, between: null }
+      // Manuellt byte: nya försök, ingen gammal felvy. Den gamla kanalens
+      // spelare rivs direkt — annars hördes dess ljud under hela uppslaget
+      // (strömuppslag 1–10 s, 2026-10-18). Inställningskortet täcker bytet.
+      return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode }), onScreen: null, pending: null, status: 'resolving', tried: null, noSignal: null, between: null }
     case 'planned':
       if (a.plan.seq !== s.request.seq) return s
       return { ...s, pending: a.plan, status: 'resolving', rest: null, noSignal: null, between: null }

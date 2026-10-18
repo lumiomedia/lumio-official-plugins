@@ -20758,6 +20758,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -43964,7 +43965,7 @@ ${cue.text}`).join("\n\n")}
   function playerReducer(s, a) {
     switch (a.type) {
       case "goto":
-        return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode }), pending: null, status: "resolving", tried: null, noSignal: null, between: null };
+        return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode }), onScreen: null, pending: null, status: "resolving", tried: null, noSignal: null, between: null };
       case "planned":
         if (a.plan.seq !== s.request.seq) return s;
         return { ...s, pending: a.plan, status: "resolving", rest: null, noSignal: null, between: null };
@@ -44635,6 +44636,7 @@ ${cue.text}`).join("\n\n")}
   var RAPID_ZAP_MS = 700;
   var REVEAL_FALLBACK_MS = 12e3;
   var PROGRESS_GRACE_MS = 3e4;
+  var TUNING_LAYER_Z = 1e6;
   var OSD_HIDE_MS = 5e3;
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function cachedRundown(c) {
@@ -45166,10 +45168,11 @@ ${cue.text}`).join("\n\n")}
         t
       }
     );
+    const tuningLayer = typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(/* @__PURE__ */ jsx("div", { "data-channels-tuning-layer": "", "data-cinema-overlay": "", style: { position: "fixed", inset: 0, zIndex: TUNING_LAYER_Z, pointerEvents: "none" }, children: tuningCard }), document.body) : null;
     if (onScreen && Player) {
       const { playable, slot, seq } = onScreen;
       return /* @__PURE__ */ jsxs("div", { "data-channels-player": "", onMouseMove: poke, children: [
-        typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(/* @__PURE__ */ jsx("div", { "data-channels-tuning-layer": "", "data-cinema-overlay": "", style: { position: "fixed", inset: 0, zIndex: 61, pointerEvents: "none" }, children: tuningCard }), document.body) : null,
+        tuningLayer,
         /* @__PURE__ */ jsx(
           Player,
           {
@@ -45282,7 +45285,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "1.4rem", fontWeight: 700 }, children: t("playerBetween") }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontFamily: FONT3.title }, children: nextTitle ? t("playerBetweenNext", { time: clock2(between.until), title: nextTitle }) : t("playerBetweenNextUntitled", { time: clock2(between.until) }) })
       ] }) : null,
-      tuningCard,
+      tuningLayer,
       osd,
       guide
     ] });

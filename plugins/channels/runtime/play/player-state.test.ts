@@ -96,6 +96,8 @@ describe('spelarens tillstånd', () => {
     expect(s.onScreen?.playable.url).toBe('u1')
     const switched = playerReducer(s, { type: 'goto', channelId: 'c2', mode: 'live' })
     expect(switched.tried).toBeNull()
+    // Den gamla kanalen tystnar direkt: ingen spelare under uppslaget.
+    expect(switched.onScreen).toBeNull()
     expect(switched.request).toMatchObject({ channelId: 'c2', seq: 2 })
     const advanced = playerReducer(playing(), { type: 'advance', seq: 0, now: 100_500 })
     expect(advanced.tried).toBeNull()
