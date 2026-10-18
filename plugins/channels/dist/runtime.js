@@ -46696,13 +46696,38 @@ ${cue.text}`).join("\n\n")}
       const roots = [document.documentElement, document.body];
       const prev = roots.map((r) => r.style.overscrollBehaviorX);
       for (const r of roots) r.style.overscrollBehaviorX = "none";
+      const ancestors = [];
+      for (let p = el.parentElement; p; p = p.parentElement) ancestors.push(p);
+      const pin = (target2) => {
+        if (target2.scrollLeft !== 0) target2.scrollLeft = 0;
+      };
+      const onScroll = (e) => {
+        const t = e.target;
+        if (ancestors.includes(t)) pin(t);
+      };
+      const onDocScroll = () => {
+        if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+      };
+      ancestors.forEach(pin);
+      onDocScroll();
+      document.addEventListener("scroll", onScroll, true);
+      window.addEventListener("scroll", onDocScroll);
       return () => {
         el.removeEventListener("wheel", onWheel);
+        document.removeEventListener("scroll", onScroll, true);
+        window.removeEventListener("scroll", onDocScroll);
         roots.forEach((r, i) => {
           r.style.overscrollBehaviorX = prev[i];
         });
       };
     }, [ref, active3]);
+  }
+  function traceLayout(msg) {
+    try {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[channels] ${msg}`)}`).catch(() => {
+      });
+    } catch {
+    }
   }
   function useColumnBleed(ref, active3) {
     const [bleed, setBleed] = useState({ left: 0, right: 0 });
@@ -46727,11 +46752,27 @@ ${cue.text}`).join("\n\n")}
         const scrollbar = clip3 ? Math.max(0, (clip3.offsetWidth - clip3.clientWidth) * k - borderL - borderR) : 0;
         const left = Math.max(0, Math.floor((natLeft - box.left - borderL) / k));
         const right = Math.max(0, Math.floor((box.right - borderR - scrollbar - natRight) / k));
-        setBleed((b) => b.left === left && b.right === right ? b : { left, right });
+        setBleed((b) => {
+          if (b.left === left && b.right === right) return b;
+          traceLayout(`bleed vw=${window.innerWidth} clip=${Math.round(box.left)}..${Math.round(box.right)} nat=${Math.round(natLeft)}..${Math.round(natRight)} k=${k.toFixed(3)} \u2192 ${left}/${right}`);
+          return { left, right };
+        });
       };
       measure();
       window.addEventListener("resize", measure);
-      return () => window.removeEventListener("resize", measure);
+      const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => measure()) : null;
+      let clipEl = el.parentElement;
+      while (clipEl && getComputedStyle(clipEl).overflowX === "visible") clipEl = clipEl.parentElement;
+      if (ro) {
+        ro.observe(el);
+        if (clipEl) ro.observe(clipEl);
+      }
+      const timers2 = [250, 700, 1500].map((ms2) => window.setTimeout(measure, ms2));
+      return () => {
+        window.removeEventListener("resize", measure);
+        ro?.disconnect();
+        for (const id of timers2) window.clearTimeout(id);
+      };
     }, [active3]);
     return bleed;
   }

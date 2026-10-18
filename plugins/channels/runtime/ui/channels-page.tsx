@@ -141,11 +141,31 @@ function useNoSidewaysPageScroll(ref: { current: HTMLElement | null }, active: b
     const roots = [document.documentElement, document.body]
     const prev = roots.map((r) => r.style.overscrollBehaviorX)
     for (const r of roots) r.style.overscrollBehaviorX = 'none'
+    // Fokus (tillbaka från spelaren, tangentbord) rullar en klippande förälder
+    // i sidled för att visa elementet — även med overflow: hidden — och hela
+    // sidan stod förskjuten (2026-10-18). Sidan rullar aldrig i sidled:
+    // varje förälder hålls på 0.
+    const ancestors: HTMLElement[] = []
+    for (let p = el.parentElement; p; p = p.parentElement) ancestors.push(p)
+    const pin = (target: HTMLElement) => { if (target.scrollLeft !== 0) target.scrollLeft = 0 }
+    const onScroll = (e: Event) => { const t = e.target as HTMLElement; if (ancestors.includes(t)) pin(t) }
+    const onDocScroll = () => { if (window.scrollX !== 0) window.scrollTo(0, window.scrollY) }
+    ancestors.forEach(pin)
+    onDocScroll()
+    document.addEventListener('scroll', onScroll, true)
+    window.addEventListener('scroll', onDocScroll)
     return () => {
       el.removeEventListener('wheel', onWheel)
+      document.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('scroll', onDocScroll)
       roots.forEach((r, i) => { r.style.overscrollBehaviorX = prev[i] })
     }
   }, [ref, active])
+}
+
+/** Layoutmått till appens felsökningslogg (GET, inget svar väntas). */
+function traceLayout(msg: string): void {
+  try { void fetch(`/api/debug-log?msg=${encodeURIComponent(`[channels] ${msg}`)}`).catch(() => {}) } catch { /* utan värd */ }
 }
 
 function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): { left: number; right: number } {
@@ -173,11 +193,28 @@ function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): 
       const scrollbar = clip ? Math.max(0, (clip.offsetWidth - clip.clientWidth) * k - borderL - borderR) : 0
       const left = Math.max(0, Math.floor((natLeft - box.left - borderL) / k))
       const right = Math.max(0, Math.floor((box.right - borderR - scrollbar - natRight) / k))
-      setBleed((b) => (b.left === left && b.right === right ? b : { left, right }))
+      setBleed((b) => {
+        if (b.left === left && b.right === right) return b
+        traceLayout(`bleed vw=${window.innerWidth} clip=${Math.round(box.left)}..${Math.round(box.right)} nat=${Math.round(natLeft)}..${Math.round(natRight)} k=${k.toFixed(3)} → ${left}/${right}`)
+        return { left, right }
+      })
     }
     measure()
+    // Appens sidbyte glider in sidan och klippbehållaren kan byta bredd efter
+    // monteringen: ett enda mått vid start låg kvar fel i appen (innehållet
+    // förskjutet åt höger och ut ur bild, 2026-10-18). Mät om när storleken
+    // ändras och när animationen hunnit klart.
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => measure()) : null
+    let clipEl: HTMLElement | null = el.parentElement
+    while (clipEl && getComputedStyle(clipEl).overflowX === 'visible') clipEl = clipEl.parentElement
+    if (ro) { ro.observe(el); if (clipEl) ro.observe(clipEl) }
+    const timers = [250, 700, 1500].map((ms) => window.setTimeout(measure, ms))
+    return () => {
+      window.removeEventListener('resize', measure)
+      ro?.disconnect()
+      for (const id of timers) window.clearTimeout(id)
+    }
   }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
   return bleed
 }

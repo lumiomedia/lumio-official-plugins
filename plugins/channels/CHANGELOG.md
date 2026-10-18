@@ -1,3 +1,8 @@
+## 0.1.35
+
+- Kanalsidan förskjuts aldrig i sidled: fokus (t.ex. tillbaka från spelaren) kunde rulla sidan så heron och tablån hamnade utanför bild.
+- Marginalerna mäts om när sidan byter storlek och efter sidbytets animation.
+
 ## 0.1.34
 
 - Avsnitt utan känd längd (debrid, WebDAV, Plex) får TMDb-säsongernas längd per avsnitt i stället för standardvärdet 45 min, och ett spelat avsnitt lär resten av serien sin verkliga längd. Adventure Time sände annars "Programmet är slut" tre fjärdedelar av tiden.
