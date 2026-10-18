@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildDefaultChannels, type ChannelDef } from '../model/channel'
 import { attachedLock, buildRundown, programmeAt, withLock } from '../model/schedule'
-import { extendLock, lockHorizon, lockSignature, LOCK_RENEW_MS, parseLock, type ScheduleLock } from '../model/lock'
+import { extendLock, lockHorizon, lockSignature, LOCK_RENEW_MS, parseLock, repairLock, type ScheduleLock } from '../model/lock'
 import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from '../data/pool'
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
@@ -55,7 +55,10 @@ export function lockRundown<T extends PoolItem>(channel: ChannelDef, rundown: T[
   if (rundown.length === 0) return rundown
   const stored = parseLock(readScheduleLock(channel.id))
   const free = attachedLock(rundown) ? rundown.slice() : rundown
-  const next = extendLock(stored, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now)
+  // Platser vars program visat sig vara mycket kortare läggs om (repairLock).
+  const known = new Map(rundown.filter((x) => x.runtimeKnown).map((x) => [x.ref, x.runtimeMin] as const))
+  const repaired = repairLock(stored, (ref) => known.get(ref) ?? null, now)
+  const next = extendLock(repaired, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now)
   if (next && next !== stored) {
     try { writeScheduleLock(channel.id, next) } catch { /* fullt lager: låset gäller ändå i minnet */ }
   }

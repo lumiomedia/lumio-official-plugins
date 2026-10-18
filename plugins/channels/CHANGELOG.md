@@ -1,3 +1,8 @@
+## 0.1.34
+
+- Avsnitt utan känd längd (debrid, WebDAV, Plex) får TMDb-säsongernas längd per avsnitt i stället för standardvärdet 45 min, och ett spelat avsnitt lär resten av serien sin verkliga längd. Adventure Time sände annars "Programmet är slut" tre fjärdedelar av tiden.
+- Tablålåset lägger om platser vars program visat sig vara mycket kortare än platsen; det som redan sänts rörs inte.
+
 ## 0.1.33
 
 - Kanalbyte i spelaren: den gamla kanalens ljud tystnar direkt (spelaren rivs i stället för att spela vidare under uppslaget), och laddningskortet ligger över appens svarta övergång — en laddning, inte två.

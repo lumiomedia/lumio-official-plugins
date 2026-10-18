@@ -41148,6 +41148,20 @@ ${cue.text}`).join("\n\n")}
     if (slots.length === 0) return valid && kept.length === valid.slots.length ? valid : kept.length > 0 ? { sig, slots: kept } : null;
     return { sig, slots };
   }
+  function repairLock(lock, knownMinutes, now2) {
+    if (!lock) return lock;
+    const broken = lock.slots.findIndex((x) => {
+      if (x.e <= now2 || !x.r) return false;
+      const runtime2 = knownMinutes(x.r);
+      if (runtime2 == null) return false;
+      const content = runtime2 - x.o;
+      return (x.e - x.s) / MIN > content * BROKEN_SLOT_RATIO + BROKEN_SLOT_SLACK_MIN;
+    });
+    if (broken < 0) return lock;
+    return { sig: lock.sig, slots: lock.slots.slice(0, broken) };
+  }
+  var BROKEN_SLOT_RATIO = 1.25;
+  var BROKEN_SLOT_SLACK_MIN = 2;
   function lockedSlotAt(lock, t) {
     const slots = lock.slots;
     if (slots.length === 0 || t < slots[0].s || t >= slots[slots.length - 1].e) return null;
@@ -41585,6 +41599,44 @@ ${cue.text}`).join("\n\n")}
     return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/runtime-fix.ts
+  var MAX_FIXES = 600;
+  function noteDuration(fixes, ref, seconds) {
+    if (!Number.isFinite(seconds) || seconds < 60 || seconds > 12 * 3600) return null;
+    const prev = fixes[ref];
+    if (prev != null && Math.abs(prev - seconds) < 30) return null;
+    const next2 = { ...fixes };
+    delete next2[ref];
+    next2[ref] = Math.round(seconds);
+    const keys2 = Object.keys(next2);
+    for (let i = 0; i < keys2.length - MAX_FIXES; i += 1) delete next2[keys2[i]];
+    return next2;
+  }
+  var toMin = (seconds) => Math.max(1, Math.ceil(seconds / 60));
+  function applyRuntimeFixes(items2, fixes) {
+    if (Object.keys(fixes).length === 0) return items2;
+    const bySeries = /* @__PURE__ */ new Map();
+    for (const item of items2) {
+      const s = fixes[item.ref];
+      if (s == null || !item.seriesKey) continue;
+      const list = bySeries.get(item.seriesKey) ?? [];
+      list.push(s);
+      bySeries.set(item.seriesKey, list);
+    }
+    const seriesMin = new Map([...bySeries].map(([k, list]) => [k, toMin(median(list))]));
+    return items2.map((item) => {
+      const s = fixes[item.ref];
+      const runtimeMin = s != null ? toMin(s) : !item.runtimeKnown && item.seriesKey ? seriesMin.get(item.seriesKey) : void 0;
+      if (runtimeMin == null) return item;
+      return runtimeMin === item.runtimeMin && item.runtimeKnown ? item : { ...item, runtimeMin, runtimeKnown: true };
+    });
+  }
+  function median(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = sorted.length >> 1;
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/sources.ts
   var isVodSourceId = (id) => id.startsWith("xtream-vod:");
   function librarySides(t) {
@@ -41974,6 +42026,39 @@ ${cue.text}`).join("\n\n")}
     });
     return run.done;
   }
+  function applySeasonRuntimes(items2, seasons) {
+    if (seasons.size === 0) return items2;
+    const medians = /* @__PURE__ */ new Map();
+    for (const [id, list] of seasons) {
+      const all = list.flatMap((x) => x.episodes.map((e) => e.runtime)).filter((r) => r != null && r > 0);
+      if (all.length > 0) medians.set(id, Math.round(median(all)));
+    }
+    return items2.map((item) => {
+      if (item.runtimeKnown || item.kind !== "episode" || item.tmdbId == null) return item;
+      const list = seasons.get(item.tmdbId);
+      if (!list) return item;
+      const exact = list.find((x) => x.season === item.season)?.episodes.find((e) => e.episode === item.episode)?.runtime;
+      const runtimeMin = exact != null && exact > 0 ? exact : medians.get(item.tmdbId);
+      return runtimeMin != null ? { ...item, runtimeMin, runtimeKnown: true } : item;
+    });
+  }
+  var MAX_RUNTIME_SERIES = 12;
+  async function withEpisodeRuntimes(items2, deps) {
+    const ids = [...new Set(items2.filter((x) => x.kind === "episode" && !x.runtimeKnown && x.tmdbId != null).map((x) => x.tmdbId))].slice(0, MAX_RUNTIME_SERIES);
+    if (ids.length === 0) return items2;
+    await idle(deps);
+    const seasons = /* @__PURE__ */ new Map();
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < ids.length) {
+        const id = ids[cursor++];
+        const list = await deps.fetchSeasons(id).catch(() => []);
+        if (list.length > 0) seasons.set(id, list);
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    return applySeasonRuntimes(items2, seasons);
+  }
   async function loadPoolProgressive(channel, deps, onUpdate) {
     const bySource = /* @__PURE__ */ new Map();
     let extra = [];
@@ -41994,30 +42079,10 @@ ${cue.text}`).join("\n\n")}
       ),
       fallback
     ]);
-    return merged();
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/runtime-fix.ts
-  var MAX_FIXES = 600;
-  function noteDuration(fixes, ref, seconds) {
-    if (!Number.isFinite(seconds) || seconds < 60 || seconds > 12 * 3600) return null;
-    const prev = fixes[ref];
-    if (prev != null && Math.abs(prev - seconds) < 30) return null;
-    const next2 = { ...fixes };
-    delete next2[ref];
-    next2[ref] = Math.round(seconds);
-    const keys2 = Object.keys(next2);
-    for (let i = 0; i < keys2.length - MAX_FIXES; i += 1) delete next2[keys2[i]];
-    return next2;
-  }
-  function applyRuntimeFixes(items2, fixes) {
-    if (Object.keys(fixes).length === 0) return items2;
-    return items2.map((item) => {
-      const s = fixes[item.ref];
-      if (s == null) return item;
-      const runtimeMin = Math.max(1, Math.ceil(s / 60));
-      return runtimeMin === item.runtimeMin && item.runtimeKnown ? item : { ...item, runtimeMin, runtimeKnown: true };
-    });
+    const pool = merged();
+    const timed = await withEpisodeRuntimes(pool, deps).catch(() => pool);
+    if (timed !== pool) onUpdate?.(timed);
+    return timed;
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/host.ts
@@ -42472,7 +42537,9 @@ ${cue.text}`).join("\n\n")}
     if (rundown.length === 0) return rundown;
     const stored = parseLock(readScheduleLock(channel.id));
     const free = attachedLock(rundown) ? rundown.slice() : rundown;
-    const next2 = extendLock(stored, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now2);
+    const known = new Map(rundown.filter((x) => x.runtimeKnown).map((x) => [x.ref, x.runtimeMin]));
+    const repaired = repairLock(stored, (ref) => known.get(ref) ?? null, now2);
+    const next2 = extendLock(repaired, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now2);
     if (next2 && next2 !== stored) {
       try {
         writeScheduleLock(channel.id, next2);

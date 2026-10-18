@@ -4,7 +4,7 @@ process.env.TZ = 'Europe/Stockholm'
 import { describe, expect, it } from 'vitest'
 import { createChannel, emptyDraft, type ChannelDef } from './channel'
 import { buildRundown, listing, programmeAt, withLock, type ScheduleItem } from './schedule'
-import { extendLock, lockHorizon, lockSignature, LOCK_RENEW_MS, LOCK_SPAN_MS, parseLock, type ScheduleLock } from './lock'
+import { extendLock, lockHorizon, lockSignature, LOCK_RENEW_MS, LOCK_SPAN_MS, parseLock, repairLock, type ScheduleLock } from './lock'
 
 const H = 3600_000
 const item = (ref: string, runtimeMin: number): ScheduleItem => ({ ref, title: ref, runtimeMin, year: 2000, kind: 'movie' })
@@ -156,5 +156,25 @@ describe('tablålås: tablån är alltid sammanhängande', () => {
       const result = contiguous(locked, ch, from, from + 8 * H)
       expect(result, `runda ${round} (${ch.airWindow})`).toBe('ok')
     }
+  })
+})
+
+describe('trasiga låsta platser läggs om', () => {
+  const MIN = 60_000
+  const lockOf = (slots: Array<[string, number, number]>) => ({ sig: 's', slots: slots.map(([r, s, e]) => ({ r, s: s * MIN, e: e * MIN, o: 0 })) })
+
+  it('ett 12-minutersavsnitt på en 45-minutersplats kapar låset före platsen (Adventure Time 2026-10-18)', () => {
+    const lock = lockOf([['a', 0, 45], ['b', 45, 90], ['c', 90, 135]])
+    const known = (r: string) => (r === 'a' || r === 'b' ? 12 : null)
+    // Nu mitt i b: a är redan sänd, b och allt efter läggs om.
+    const fixed = repairLock(lock, known, 50 * MIN)
+    expect(fixed?.slots.map((x) => x.r)).toEqual(['a'])
+  })
+
+  it('rätt längd, okänd längd, redan sänt eller vila: låset står kvar', () => {
+    const lock = lockOf([['a', 0, 45], ['', 45, 60], ['b', 60, 105]])
+    expect(repairLock(lock, (r) => (r === 'a' ? 12 : r === 'b' ? 44 : null), 50 * MIN)).toBe(lock)
+    expect(repairLock(lock, () => null, 0)).toBe(lock)
+    expect(repairLock(null, () => 1, 0)).toBeNull()
   })
 })

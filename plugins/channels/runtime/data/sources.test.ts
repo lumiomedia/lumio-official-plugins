@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { librarySides, loadDebridItems, loadLibraryItems, loadPool, loadPoolProgressive, loadVodItems, loadWatchlistItems, type SourceDeps } from './sources'
+import { applySeasonRuntimes, librarySides, loadDebridItems, loadLibraryItems, loadPool, loadPoolProgressive, loadVodItems, loadWatchlistItems, type SourceDeps } from './sources'
 import { createSeasonsCache, type SeasonsEntry } from './meta-cache'
 import { createChannel, emptyDraft } from '../model/channel'
 
@@ -274,5 +274,20 @@ describe('progressiv laddning', () => {
     const b = await loadPoolProgressive(ch, deps({ meta, queryLibrary: vi.fn(async () => ({ items: [good, raw] })) }))
     expect(a.map((i) => i.ref)).toEqual(['lib:good'])
     expect(b.map((i) => i.ref)).toEqual(['lib:good'])
+  })
+})
+
+describe('avsnittslängd ur TMDb-säsongerna', () => {
+  const ep = (ref: string, season: number, episode: number, extra: Record<string, unknown> = {}) =>
+    ({ ref, title: ref, kind: 'episode', tmdbId: 15260, season, episode, runtimeMin: 45, runtimeKnown: false, ...extra } as never)
+
+  it('exakt längd per avsnitt, annars seriens median; kända längder rörs inte', () => {
+    const seasons = new Map([[15260, [
+      { season: 1, episodes: [{ episode: 1, title: 'a', runtime: 11 }, { episode: 2, title: 'b', runtime: 12 }, { episode: 3, title: 'c', runtime: null }] },
+    ]]])
+    const out = applySeasonRuntimes([ep('e1', 1, 1), ep('e5', 5, 1), ep('k', 1, 2, { runtimeMin: 30, runtimeKnown: true }), ep('x', 1, 1, { tmdbId: 1 })], seasons) as Array<{ ref: string; runtimeMin: number; runtimeKnown: boolean }>
+    expect(out.map((x) => [x.ref, x.runtimeMin, x.runtimeKnown])).toEqual([
+      ['e1', 11, true], ['e5', 12, true], ['k', 30, true], ['x', 45, false],
+    ])
   })
 })

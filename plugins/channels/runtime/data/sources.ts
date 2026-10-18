@@ -5,6 +5,7 @@
 import { applyChannelRules, DEFAULT_RUNTIME, dedupePool, restrictToTitles, type PoolItem } from './pool'
 import type { createMetaCache, createTitleMatchCache, MatchRef, SeasonList } from './meta-cache'
 import { cleanTitle, looksLikeEpisode } from './title-clean'
+import { median } from './runtime-fix'
 import { hasTitles, type ChannelDef, type ChannelTitle, type SourceId } from '../model/channel'
 
 export interface LibraryTitleLike {
@@ -496,6 +497,50 @@ function runShared(source: SourceId, deps: SourceDeps, emit: Emit): Promise<void
  * troliga — hellre det än att t.ex. en kortfilmskanal tillfälligt visar
  * spelfilmer som sedan försvinner när längden blir känd.
  */
+/**
+ * Avsnitt utan känd längd (debrid, WebDAV, Plex …) fick standardlängden 45 min
+ * — appens metadata har ingen avsnittslängd för serier. Adventure Time (11,7
+ * min) sände då "Programmet är slut" tre fjärdedelar av tiden (2026-10-18).
+ * TMDb-säsongerna har längden per avsnitt; avsnitt utanför de hämtade
+ * säsongerna får seriens median. Ren logik.
+ */
+export function applySeasonRuntimes(items: PoolItem[], seasons: ReadonlyMap<number, SeasonList>): PoolItem[] {
+  if (seasons.size === 0) return items
+  const medians = new Map<number, number>()
+  for (const [id, list] of seasons) {
+    const all = list.flatMap((x) => x.episodes.map((e) => e.runtime)).filter((r): r is number => r != null && r > 0)
+    if (all.length > 0) medians.set(id, Math.round(median(all)))
+  }
+  return items.map((item) => {
+    if (item.runtimeKnown || item.kind !== 'episode' || item.tmdbId == null) return item
+    const list = seasons.get(item.tmdbId)
+    if (!list) return item
+    const exact = list.find((x) => x.season === item.season)?.episodes.find((e) => e.episode === item.episode)?.runtime
+    const runtimeMin = exact != null && exact > 0 ? exact : medians.get(item.tmdbId)
+    return runtimeMin != null ? { ...item, runtimeMin, runtimeKnown: true } : item
+  })
+}
+
+/** Högst så många serier slås upp per poolbygge (säsongerna cachas). */
+const MAX_RUNTIME_SERIES = 12
+
+async function withEpisodeRuntimes(items: PoolItem[], deps: SourceDeps): Promise<PoolItem[]> {
+  const ids = [...new Set(items.filter((x) => x.kind === 'episode' && !x.runtimeKnown && x.tmdbId != null).map((x) => x.tmdbId!))].slice(0, MAX_RUNTIME_SERIES)
+  if (ids.length === 0) return items
+  await idle(deps)
+  const seasons = new Map<number, SeasonList>()
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const id = ids[cursor++]!
+      const list = await deps.fetchSeasons(id).catch(() => [])
+      if (list.length > 0) seasons.set(id, list)
+    }
+  }
+  await Promise.all([worker(), worker()])
+  return applySeasonRuntimes(items, seasons)
+}
+
 export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps, onUpdate?: (pool: PoolItem[]) => void): Promise<PoolItem[]> {
   const bySource = new Map<SourceId, PoolItem[]>()
   let extra: PoolItem[] = []
@@ -520,7 +565,10 @@ export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps,
     ),
     fallback,
   ])
-  return merged()
+  const pool = merged()
+  const timed = await withEpisodeRuntimes(pool, deps).catch(() => pool)
+  if (timed !== pool) onUpdate?.(timed)
+  return timed
 }
 
 export function loadPool(channel: ChannelDef, deps: SourceDeps): Promise<PoolItem[]> {

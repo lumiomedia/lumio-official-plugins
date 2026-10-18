@@ -84,6 +84,32 @@ export function extendLock(
   return { sig, slots }
 }
 
+/**
+ * Lagar ett lås vars program visat sig vara mycket kortare än sin plats:
+ * avsnitt utan känd längd fick standardlängden (45 min) och Adventure Time
+ * (11,7 min) sände "Programmet är slut" tre fjärdedelar av tiden
+ * (2026-10-18). När den verkliga längden blir känd (TMDb-säsongen, eller
+ * filen själv) kapas låset före första trasiga plats som inte redan är
+ * slut, så den platsen och allt efter läggs om med rätt längd. Det som
+ * redan sänts rörs inte. `knownMinutes(ref)` = känd längd i minuter, annars null.
+ */
+export function repairLock(lock: ScheduleLock | null, knownMinutes: (ref: string) => number | null, now: number): ScheduleLock | null {
+  if (!lock) return lock
+  const broken = lock.slots.findIndex((x) => {
+    if (x.e <= now || !x.r) return false
+    const runtime = knownMinutes(x.r)
+    if (runtime == null) return false
+    const content = runtime - x.o
+    return (x.e - x.s) / MIN > content * BROKEN_SLOT_RATIO + BROKEN_SLOT_SLACK_MIN
+  })
+  if (broken < 0) return lock
+  return { sig: lock.sig, slots: lock.slots.slice(0, broken) }
+}
+
+/** En plats längre än så här gånger programmets innehåll (plus marginalen) är trasig. */
+const BROKEN_SLOT_RATIO = 1.25
+const BROKEN_SLOT_SLACK_MIN = 2
+
 /** Det låsta programmet som täcker t, eller null (utanför låset). */
 export function lockedSlotAt(lock: ScheduleLock, t: number): LockedSlot | null {
   const slots = lock.slots

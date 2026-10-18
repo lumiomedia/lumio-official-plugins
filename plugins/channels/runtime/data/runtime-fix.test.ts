@@ -22,3 +22,15 @@ describe('verkliga fillängder', () => {
     expect(out[1]!.runtimeMin).toBe(22)
   })
 })
+
+describe('seriens längd ur spelade avsnitt', () => {
+  const ep = (ref: string, seriesKey: string, runtimeMin = 45, runtimeKnown = false) =>
+    ({ ref, title: ref, kind: 'episode', seriesKey, runtimeMin, runtimeKnown } as never)
+
+  it('ett spelat avsnitt ger resten av serien dess längd; kända längder och andra serier rörs inte', () => {
+    const out = applyRuntimeFixes([ep('a1', 'at'), ep('a2', 'at'), ep('a3', 'at', 22, true), ep('b1', 'bb')], { a1: 704 }) as Array<{ ref: string; runtimeMin: number; runtimeKnown: boolean }>
+    expect(out.map((x) => [x.ref, x.runtimeMin, x.runtimeKnown])).toEqual([
+      ['a1', 12, true], ['a2', 12, true], ['a3', 22, true], ['b1', 45, false],
+    ])
+  })
+})
