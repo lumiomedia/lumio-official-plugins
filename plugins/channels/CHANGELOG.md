@@ -1,3 +1,7 @@
+## 0.1.32
+
+- Live-start på närmaste nyckelbild i stället för exakt sekund: den exakta sökningen kostade cirka 6 s per kanalbyte, oavsett källa. Kräver appen med snabbstart (äldre appar startar som förut).
+
 ## 0.1.31
 
 - Snabbare kanalbyten: filens början och index förvärms för kanalen i heron, grannkanalerna (CH ▲▼) och nästa program — bibliotek (WebDAV, Plex, Jellyfin, Emby) och debrid-filer. Strömuppslag förvärms aldrig (leverantörens anropsgräns). Kräver appen med indexcachen.

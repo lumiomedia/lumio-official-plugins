@@ -720,6 +720,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           requestHeaders={playable.requestHeaders}
           forceProxy={playable.forceProxy}
           initialTime={onScreen.initialTime}
+          // Liveläget: närmaste nyckelbild räcker (sparar den exakta sökningens
+          // 5–10 s avkodning). Från början börjar på 0 ändå.
+          fastStart={onScreen.mode === 'live'}
           title={slot.item.title}
           posterUrl={slot.item.posterUrl ?? undefined}
           backdropUrl={slot.item.backdropUrl ?? undefined}

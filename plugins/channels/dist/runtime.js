@@ -20758,7 +20758,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -28775,7 +28774,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, onDurationKnown, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     useEffect(() => {
       if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
@@ -30760,6 +30759,7 @@ ${cue.text}`).join("\n\n")}
             suppressedByMatchingAudio: Boolean(getDisableSubtitlesWhenAudioMatches() && getDefaultAudioLanguage())
           }) ?? void 0 : void 0,
           requestHeaders,
+          fastStart,
           shouldAbort: () => cancelled
         }).then(() => {
           if (silent && !cancelled && silentStartRef.current.held) void mpvCommand2(["set_property", "mute", "yes"]);
@@ -45177,6 +45177,7 @@ ${cue.text}`).join("\n\n")}
             requestHeaders: playable.requestHeaders,
             forceProxy: playable.forceProxy,
             initialTime: onScreen.initialTime,
+            fastStart: onScreen.mode === "live",
             title: slot.item.title,
             posterUrl: slot.item.posterUrl ?? void 0,
             backdropUrl: slot.item.backdropUrl ?? void 0,
