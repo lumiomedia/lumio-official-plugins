@@ -1,3 +1,8 @@
+## 0.1.36
+
+- Heter nu LumioTV (meny, inställningar, hemraden). Pluginets id är oförändrat, så kanaler och tablåer följer med.
+- Med appens segmentcache startar filer med utspritt index (AVI) snabbt från andra gången.
+
 ## 0.1.35
 
 - Kanalsidan förskjuts aldrig i sidled: fokus (t.ex. tillbaka från spelaren) kunde rulla sidan så heron och tablån hamnade utanför bild.

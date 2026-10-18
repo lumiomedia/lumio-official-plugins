@@ -41,7 +41,7 @@ describe('hemradens komponent', () => {
     storage.set('channels', [ch])
     const onNavigate = vi.fn()
     render(<ChannelsHomeRow onNavigate={onNavigate} />)
-    expect(screen.getByRole('heading', { name: 'Sänds nu på dina kanaler' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Sänds nu på LumioTV' })).toBeTruthy()
     const card = await screen.findByRole('button', { name: /Alien/ })
     expect(card.hasAttribute('data-f')).toBe(true)
     fireEvent.click(card)

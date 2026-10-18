@@ -40763,15 +40763,15 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/strings.ts
   var S = {
-    pluginName: { en: "Channels", sv: "Kanaler" },
+    pluginName: { en: "LumioTV", sv: "LumioTV" },
     description: { en: "Personal linear TV channels", sv: "Personliga linj\xE4ra TV-kanaler" },
-    menuLabel: { en: "Channels", sv: "Kanaler" },
-    homeRowTitle: { en: "On now on your channels", sv: "S\xE4nds nu p\xE5 dina kanaler" },
+    menuLabel: { en: "LumioTV", sv: "LumioTV" },
+    homeRowTitle: { en: "On now on LumioTV", sv: "S\xE4nds nu p\xE5 LumioTV" },
     homeRowSubtitle: { en: "It is {time} \u2014 jump in where the channel is", sv: "Klockan {time} \u2014 hoppa in d\xE4r kanalen \xE4r" },
     homeRowShowGuide: { en: "SHOW GUIDE \u203A", sv: "VISA TABL\xC5 \u203A" },
     homeCardRest: { en: "Off air", sv: "Vila" },
     homeCardNext: { en: "Next: {title}", sv: "Sedan: {title}" },
-    settingsLabel: { en: "Channels", sv: "Kanaler" },
+    settingsLabel: { en: "LumioTV", sv: "LumioTV" },
     // Spelaren
     playerClose: { en: "Close", sv: "St\xE4ng" },
     playerFromStart: { en: "From start", sv: "Fr\xE5n b\xF6rjan" },
@@ -40831,8 +40831,8 @@ ${cue.text}`).join("\n\n")}
       sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna."
     },
     emptySettingsHint: {
-      en: "Create and edit your own channels under Settings \u2192 Channels.",
-      sv: "Skapa och redigera egna kanaler under Inst\xE4llningar \u2192 Kanaler."
+      en: "Create and edit your own channels under Settings \u2192 LumioTV.",
+      sv: "Skapa och redigera egna kanaler under Inst\xE4llningar \u2192 LumioTV."
     },
     emptyRestore: { en: "Restore default channels", sv: "\xC5terst\xE4ll standardkanaler" },
     // Kanalstudion

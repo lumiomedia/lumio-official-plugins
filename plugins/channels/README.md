@@ -1,4 +1,4 @@
-# Kanaler / Channels
+# LumioTV
 
 Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln.
 Varje kanal är en uppsättning regler (genre, årtionde, längd, ordning, sändningstid);

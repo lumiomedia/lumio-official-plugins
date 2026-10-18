@@ -1,13 +1,13 @@
 export const S = {
-  pluginName: { en: 'Channels', sv: 'Kanaler' },
+  pluginName: { en: 'LumioTV', sv: 'LumioTV' },
   description: { en: 'Personal linear TV channels', sv: 'Personliga linjära TV-kanaler' },
-  menuLabel: { en: 'Channels', sv: 'Kanaler' },
-  homeRowTitle: { en: 'On now on your channels', sv: 'Sänds nu på dina kanaler' },
+  menuLabel: { en: 'LumioTV', sv: 'LumioTV' },
+  homeRowTitle: { en: 'On now on LumioTV', sv: 'Sänds nu på LumioTV' },
   homeRowSubtitle: { en: 'It is {time} — jump in where the channel is', sv: 'Klockan {time} — hoppa in där kanalen är' },
   homeRowShowGuide: { en: 'SHOW GUIDE ›', sv: 'VISA TABLÅ ›' },
   homeCardRest: { en: 'Off air', sv: 'Vila' },
   homeCardNext: { en: 'Next: {title}', sv: 'Sedan: {title}' },
-  settingsLabel: { en: 'Channels', sv: 'Kanaler' },
+  settingsLabel: { en: 'LumioTV', sv: 'LumioTV' },
   // Spelaren
   playerClose: { en: 'Close', sv: 'Stäng' },
   playerFromStart: { en: 'From start', sv: 'Från början' },
@@ -67,8 +67,8 @@ export const S = {
     sv: 'En kanal är några regler. Lumio bygger en tablå som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna.',
   },
   emptySettingsHint: {
-    en: 'Create and edit your own channels under Settings → Channels.',
-    sv: 'Skapa och redigera egna kanaler under Inställningar → Kanaler.',
+    en: 'Create and edit your own channels under Settings → LumioTV.',
+    sv: 'Skapa och redigera egna kanaler under Inställningar → LumioTV.',
   },
   emptyRestore: { en: 'Restore default channels', sv: 'Återställ standardkanaler' },
   // Kanalstudion
