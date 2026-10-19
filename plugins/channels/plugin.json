@@ -9,7 +9,7 @@
     "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln — en riktig tablå som rullar med klockan."
   },
   "official": true,
-  "bundled": false,
+  "bundled": true,
   "removable": true,
   "runtimeBundlePath": "dist/runtime.js",
   "sdkCapabilities": ["settings-section", "browse-page", "main-menu-item", "home-row", "home-source"]

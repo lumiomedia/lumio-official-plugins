@@ -230,7 +230,7 @@
       "readmePath": "plugins/channels/README.md",
       "changelogPath": "plugins/channels/CHANGELOG.md",
       "official": true,
-      "bundled": false,
+      "bundled": true,
       "removable": true,
       "repoPath": "plugins/channels",
       "minAppVersion": "0.1.625"
