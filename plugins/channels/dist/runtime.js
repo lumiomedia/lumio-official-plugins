@@ -41732,11 +41732,21 @@ ${cue.text}`).join("\n\n")}
       const identified = item.tmdbId != null && (item.kind === "movie" || item.season != null && item.episode != null);
       const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ""}:${item.episode ?? ""}` : `ref:${item.ref}`;
       const current2 = best.get(key);
-      if (!current2 || better(item, current2)) best.set(key, item);
+      if (!current2) best.set(key, item);
+      else best.set(key, better(item, current2) ? withVersions(item, current2) : withVersions(current2, item));
     }
     return [...best.values()];
   }
-  var POOL_LOGIC_VERSION = 3;
+  var versionOf = (play) => ({ provider: play.provider, fileRef: play.fileRef, ...play.size != null ? { size: play.size } : {}, ...play.name ? { name: play.name } : {} });
+  function withVersions(winner, loser) {
+    if (winner.play.type !== "debrid" || loser.play.type !== "debrid") return winner;
+    const known = new Set([winner.play, ...winner.play.alts ?? []].map((v) => `${v.provider}:${v.fileRef}`));
+    const extra = [versionOf(loser.play), ...loser.play.alts ?? []].filter((v) => !known.has(`${v.provider}:${v.fileRef}`));
+    if (extra.length === 0) return winner;
+    const alts = [...winner.play.alts ?? [], ...extra].sort((a, b) => `${a.provider}:${a.fileRef}` < `${b.provider}:${b.fileRef}` ? -1 : 1);
+    return { ...winner, play: { ...winner.play, alts } };
+  }
+  var POOL_LOGIC_VERSION = 4;
   function poolSignature(channel, sourceSigs) {
     const rules = poolRules(channel);
     return JSON.stringify({
@@ -42203,7 +42213,7 @@ ${cue.text}`).join("\n\n")}
           ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
           ...tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
           ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef }
+          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef, ...f.size ? { size: f.size } : {}, ...f.name ? { name: f.name } : {} }
         });
       }
     }
@@ -42587,20 +42597,59 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/debrid-versions.ts
+  function resolutionOf(name) {
+    const n = (name ?? "").toLowerCase();
+    if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
+    if (/\b1440p\b/.test(n)) return 1440;
+    if (/\b1080[pi]\b/.test(n)) return 1080;
+    if (/\b720p\b/.test(n)) return 720;
+    if (/\b576p\b/.test(n)) return 576;
+    if (/\b480p\b/.test(n)) return 480;
+    return null;
+  }
+  function withinCaps(v, caps) {
+    if (caps.maxBytes != null && v.size != null && v.size > caps.maxBytes) return false;
+    const res = resolutionOf(v.name);
+    if (caps.maxResolution != null && res != null && res > caps.maxResolution) return false;
+    return true;
+  }
+  function orderDebridVersions(versions, caps) {
+    const quality = (v) => (resolutionOf(v.name) ?? 0) * 1e13 + (v.size ?? 0);
+    const inside = versions.filter((v) => withinCaps(v, caps)).sort((a, b) => quality(b) - quality(a));
+    const outside = versions.filter((v) => !withinCaps(v, caps)).sort((a, b) => quality(a) - quality(b));
+    return [...inside, ...outside];
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
     const pending5 = /* @__PURE__ */ new Map();
-    function call(play, exclude, allowCatalog) {
+    const debridTried = /* @__PURE__ */ new Map();
+    async function callDebrid(ref, play, fresh) {
+      const tried = !fresh && debridTried.get(ref) || /* @__PURE__ */ new Set();
+      debridTried.set(ref, tried);
+      const caps = deps.debridCaps?.() ?? { maxBytes: null, maxResolution: null };
+      const { alts, type: _type, ...main } = play;
+      for (const version3 of orderDebridVersions([main, ...alts ?? []], caps)) {
+        const key = `${version3.provider}:${version3.fileRef}`;
+        if (tried.has(key)) continue;
+        tried.add(key);
+        const playable = await deps.debrid({ provider: version3.provider, fileRef: version3.fileRef }).catch(() => null);
+        if (playable) return playable;
+      }
+      return null;
+    }
+    function call(ref, play, exclude, allowCatalog) {
       if (play.type === "library") return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude);
       if (play.type === "stream") return deps.stream(play, exclude);
-      return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play);
+      return callDebrid(ref, play, !exclude || exclude.length === 0);
     }
     const keyOf = (ref, allowCatalog) => allowCatalog === false ? `${ref}|novod` : ref;
     async function resolveNext(item, exclude, allowCatalog) {
       cache7.delete(keyOf(item.ref, allowCatalog));
-      const value = await Promise.resolve().then(() => call(item.play, exclude, allowCatalog)).catch(() => null);
+      const value = await Promise.resolve().then(() => call(item.ref, item.play, exclude, allowCatalog)).catch(() => null);
       return value && !exclude.includes(value.url) ? value : null;
     }
     async function resolve(item, exclude = [], opts = {}) {
@@ -42611,7 +42660,7 @@ ${cue.text}`).join("\n\n")}
       if (hit && now2() - hit.at < TTL_MS2) return hit.value;
       const running2 = pending5.get(key);
       if (running2) return running2;
-      const job = Promise.resolve().then(() => call(item.play, void 0, allowCatalog)).catch(() => null).then((value) => {
+      const job = Promise.resolve().then(() => call(item.ref, item.play, void 0, allowCatalog)).catch(() => null).then((value) => {
         if (value) cache7.set(key, { at: now2(), value });
         return value;
       }).finally(() => {
@@ -42843,8 +42892,18 @@ ${cue.text}`).join("\n\n")}
     // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
     library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...exclude?.length ? { exclude } : {}, ...allowCatalog === false ? { allowCatalog: false } : {} }),
     stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-    debrid: (r) => channelUnrestrictDebridFile(r)
+    debrid: (r) => channelUnrestrictDebridFile(r),
+    debridCaps: () => autoplayCaps()
   });
+  function autoplayCaps() {
+    try {
+      const settings = typeof window === "undefined" ? null : window.__lumioPluginRuntime?.modules?.playbackSettings;
+      const gb = settings?.getAutoPlayMaxStreamSizeGb?.() ?? null;
+      return { maxBytes: gb ? gb * 1024 ** 3 : null, maxResolution: settings?.getAutoPlayMaxResolution?.() ?? null };
+    } catch {
+      return { maxBytes: null, maxResolution: null };
+    }
+  }
   function rememberPlayedStream(token) {
     if (token) channelRememberStream(token);
   }

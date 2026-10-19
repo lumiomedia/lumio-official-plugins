@@ -9,7 +9,15 @@ import { canonGenres } from './genres'
 export type PlayRef =
   | { type: 'library'; key: string; mediaType: 'movie' | 'tv'; season?: number; episode?: number }
   | { type: 'stream'; imdbId: string; mediaType: 'movie' | 'series'; season?: number; episode?: number }
-  | { type: 'debrid'; provider: 'realdebrid' | 'torbox' | 'alldebrid'; fileRef: string }
+  | ({ type: 'debrid'; alts?: DebridVersion[] } & DebridVersion)
+
+/** En fil i debrid-molnet. `alts` på posten = andra versioner av samma titel (se play/debrid-versions). */
+export interface DebridVersion {
+  provider: 'realdebrid' | 'torbox' | 'alldebrid'
+  fileRef: string
+  size?: number
+  name?: string
+}
 
 export interface PoolItem extends ScheduleItem {
   source: SourceId
@@ -66,17 +74,31 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
     const identified = item.tmdbId != null && (item.kind === 'movie' || (item.season != null && item.episode != null))
     const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ''}:${item.episode ?? ''}` : `ref:${item.ref}`
     const current = best.get(key)
-    if (!current || better(item, current)) best.set(key, item)
+    if (!current) best.set(key, item)
+    else best.set(key, better(item, current) ? withVersions(item, current) : withVersions(current, item))
   }
   return [...best.values()]
+}
+
+const versionOf = (play: Extract<PlayRef, { type: 'debrid' }>): DebridVersion =>
+  ({ provider: play.provider, fileRef: play.fileRef, ...(play.size != null ? { size: play.size } : {}), ...(play.name ? { name: play.name } : {}) })
+
+/** Två debridposter för samma titel: vinnaren behåller förlorarens filer som andra versioner. */
+function withVersions(winner: PoolItem, loser: PoolItem): PoolItem {
+  if (winner.play.type !== 'debrid' || loser.play.type !== 'debrid') return winner
+  const known = new Set([winner.play, ...(winner.play.alts ?? [])].map((v) => `${v.provider}:${v.fileRef}`))
+  const extra = [versionOf(loser.play), ...(loser.play.alts ?? [])].filter((v) => !known.has(`${v.provider}:${v.fileRef}`))
+  if (extra.length === 0) return winner
+  const alts = [...(winner.play.alts ?? []), ...extra].sort((a, b) => (`${a.provider}:${a.fileRef}` < `${b.provider}:${b.fileRef}` ? -1 : 1))
+  return { ...winner, play: { ...winner.play, alts } }
 }
 
 /**
  * Bara kanalens egna källor räknas: en debridkanal ska inte byggas om för att
  * biblioteket synkat, och tvärtom.
  */
-/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster, 3 = IPTV-VOD utbrutet ur biblioteket. */
-export const POOL_LOGIC_VERSION = 3
+/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster, 3 = IPTV-VOD utbrutet ur biblioteket, 4 = debrid-versioner (alts). */
+export const POOL_LOGIC_VERSION = 4
 
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {
   const rules = poolRules(channel)
