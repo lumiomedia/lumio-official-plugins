@@ -217,10 +217,10 @@
       "slug": "channels",
       "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
-        "en": "Channels",
-        "sv": "Kanaler"
+        "en": "LumioTV",
+        "sv": "LumioTV"
       },
-      "version": "0.1.0",
+      "version": "0.1.37",
       "description": {
         "en": "Personal linear TV channels built from your library, watchlist and debrid cloud.",
         "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln."
