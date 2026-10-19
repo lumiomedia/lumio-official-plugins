@@ -349,7 +349,8 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   // TV: varje vy får sitt startfokus när den öppnas (sidan: vald kanals rad;
   // studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
   const viewRef = useRef<HTMLDivElement | null>(null)
-  const bleed = useColumnBleed(viewRef, !isMobile)
+  // Även telefonen: sidan klippte vid kolumnens 16 px och tablån nådde aldrig kanten (2026-10-19).
+  const bleed = useColumnBleed(viewRef, true)
   useNoSidewaysPageScroll(viewRef, !isMobile)
   const view = player && sorted.length > 0 ? 'player' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
   useTvViewFocus(viewRef, isTv && view !== 'player', view)
@@ -449,6 +450,8 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         height: fillHeight ?? 'var(--lumio-vh, 100vh)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
         // Skrivbord: ut över kolumnens sidomarginaler (bredare tablå, som TV-läget).
         ...(bleed.left || bleed.right ? { marginLeft: -bleed.left, marginRight: -bleed.right } : null),
+        // Telefon: heron och resten står kvar på kolumnens linje; bara tablån går kant i kant.
+        ...(isMobile && (bleed.left || bleed.right) ? { paddingLeft: bleed.left, paddingRight: bleed.right } : null),
       }}
     >
       {banner}

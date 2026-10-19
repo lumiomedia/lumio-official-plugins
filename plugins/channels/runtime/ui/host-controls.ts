@@ -117,7 +117,33 @@ export function hostTopbarBottom(anchor: HTMLElement, bar: HTMLElement): number 
   const b = bar.getBoundingClientRect()
   if (b.width <= 0 && b.height <= 0) return null
   const k = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1
-  return Math.max(0, Math.round((b.bottom - a.top) / k))
+  // Radens innehåll (titel, chips, Stäng) kan sticka ut nedanför själva raden
+  // (telefonen, 2026-10-19: kanalpillen låg över Stäng). Lägsta synliga barnet räknas.
+  let bottom = b.bottom
+  for (const child of Array.from(bar.querySelectorAll<HTMLElement>('button, a, h1, h2, h3, [role="button"]'))) {
+    const c = child.getBoundingClientRect()
+    if (c.width > 0 && c.height > 0) bottom = Math.max(bottom, c.bottom)
+  }
+  return Math.max(0, Math.round((bottom - a.top) / k))
+}
+
+/**
+ * Telefonens spelare ritar sin topprad (titel, Stäng) utan `.vp-topbar`: en
+ * absolut rad överst i spelaren med knappar. Kanalpillen föll då tillbaka på
+ * fasta 52 px och låg över Stäng (2026-10-19). Raden = spelarens översta
+ * barn med en knapp, som inte är kanalens egen OSD.
+ */
+function findMobileTopbar(anchor: HTMLElement): HTMLElement | null {
+  const root = anchor.closest<HTMLElement>('[data-lumio-player-open]') ?? document.querySelector<HTMLElement>('[data-lumio-player-open]')
+  if (!root) return null
+  const rootTop = root.getBoundingClientRect().top
+  for (const child of Array.from(root.children) as HTMLElement[]) {
+    if (child.contains(anchor) || child.querySelector('[data-channels-osd]')) continue
+    const r = child.getBoundingClientRect()
+    if (r.height <= 0 || r.top - rootTop > 8 || r.height > 160) continue
+    if (child.querySelector('button')) return child
+  }
+  return null
 }
 
 /** Följer värdens topprad medan `session` gäller (null: ingen rad, eller omätt). */
@@ -139,6 +165,7 @@ export function useHostTopbarBottom(anchorRef: RefObject<HTMLElement | null>, se
       resize = null
       bar = null
       for (let node = anchorRef.current?.parentElement ?? null; node && !bar; node = node.parentElement) bar = node.querySelector<HTMLElement>(HOST_TOPBAR_SELECTOR)
+      if (!bar && anchorRef.current) bar = findMobileTopbar(anchorRef.current)
       if (!bar) return
       read()
       if (typeof ResizeObserver !== 'undefined') { resize = new ResizeObserver(read); resize.observe(bar) }

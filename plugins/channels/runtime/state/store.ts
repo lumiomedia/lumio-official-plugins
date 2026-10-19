@@ -9,7 +9,7 @@ import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
 import { applyRuntimeFixes } from '../data/runtime-fix'
-import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, readScheduleLock, removePoolCache, removeScheduleLock, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache, writeScheduleLock } from '../host'
+import { libraryItemOnThisDevice, onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, readScheduleLock, removePoolCache, removeScheduleLock, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache, writeScheduleLock } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
@@ -157,7 +157,14 @@ export async function loadPoolCached(channel: ChannelDef, deps: SourceDeps = sou
 /** Sparad pool utan uppslag: null när cachen är kall. Signaturen kontrolleras inte (visning, inte planering). */
 export function readCachedPool(channelId: string): PoolItem[] | null {
   const cached = readPoolCache(channelId)
-  return cached ? unpackPool(cached.pool) : null
+  return cached ? onThisDevice(unpackPool(cached.pool)) : null
+}
+
+/** Bara det som går att spela här: biblioteksfiler från en annan enhet tas bort (se host.ts). */
+function onThisDevice(items: PoolItem[] | null): PoolItem[] | null {
+  if (!items) return items
+  const kept = items.filter((item) => libraryItemOnThisDevice(item.ref))
+  return kept.length === items.length ? items : kept
 }
 
 /** Sparad pool med samma regler som kanalen (källsignaturen okontrollerad), annars null. */
@@ -170,7 +177,7 @@ function readStalePool(channel: ChannelDef): PoolItem[] | null {
   } catch {
     return null
   }
-  return unpackPool(cached.pool)
+  return onThisDevice(unpackPool(cached.pool))
 }
 
 export function useChannels(): ChannelDef[] {

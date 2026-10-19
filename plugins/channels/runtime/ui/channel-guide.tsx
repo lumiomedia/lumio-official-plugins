@@ -79,7 +79,8 @@ export function guideFadeMask(isTv: boolean): string {
 }
 
 export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId, onHover, onHold, fill }: ChannelGuideProps) {
-  const labelW = isMobile ? 96 : compact ? 180 : 220
+  // Telefon: 8 px smalare namnkolumn (siffran hade luft kvar mot tablån, Jerry 2026-10-19).
+  const labelW = isMobile ? 68 : compact ? 180 : 220
   const rowH = isTv ? tvu(compact ? TV_ROW_H_COMPACT : TV_ROW_H) : compact ? 44 : ROW_H
   const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`
   const nowPct = now >= win.from && now <= win.to ? nowLinePct(now, win) : null
@@ -153,7 +154,10 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
   const ring = fill && !isMobile ? dimS(10, isTv) : '0px'
   const header = (
     <div data-guide-axis="" style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, marginInline: ring }}>
-      <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0, paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textSoft }}>
+      <span style={{
+        // Rubriken rullar med tidsaxeln på telefonen (låg den fast hamnade
+        // tiderna under texten). Bara kanalnumren står kvar.
+        paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0, paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textSoft }}>
         {t('guideHeader')}
       </span>
       <div style={{ position: 'relative', height: '100%' }}>
@@ -210,12 +214,17 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     (TV 100 enheter) och herons vänsterkant (skrivbord 30 px).
   */
   // Lika på båda sidor (Jerry 2026-10-17): tablåns kanter speglar herons 60.
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const edge = useMobileEdgeBleed(sectionRef, isMobile && !compact)
   const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : '0 40px'
   return (
     <section
+      ref={sectionRef}
       data-channels-guide=""
       style={{
         position: 'relative', color: C.text, fontFamily: FONT.ui, padding,
+        // Telefon: tablån går ut till skärmens kanter, ingen sidomarginal (Jerry 2026-10-19).
+        ...(edge ? { marginLeft: -edge.left, marginRight: -edge.right } : {}),
         ...(fill ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
         ...(!fill && !compact ? { paddingBottom: isMobile ? 24 : dim(32, isTv, 40) } : {}),
       }}
@@ -224,7 +233,13 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
         data-row={isMobile ? '' : undefined}
         style={{ overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch', ...(fill ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}) }}
       >
-        <div style={{ minWidth: isMobile ? 640 : undefined, ...(fill ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}) }}>
+        <div style={{ minWidth: isMobile ? 640 : undefined, ...(isMobile ? { position: 'relative' } : {}), ...(fill ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}) }}>
+          {/* Telefon: kanalkolumnens svarta botten ända upp till linjen under
+              GUIDE — utanför rullbehållarens uttoning, som annars gjorde
+              toppen gråaktig (Jerry 2026-10-19). */}
+          {isMobile && fill ? (
+            <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: dim(34, isTv, 42), bottom: 0, width: labelW, background: C.solid, pointerEvents: 'none' }} />
+          ) : null}
           {header}
           {/* Tidsaxeln ovan står still; bara raderna nedan rör sig. */}
           {fill ? (
@@ -243,13 +258,19 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
               onMouseMove={onHover ? (e) => { pointer.current = { x: e.clientX, y: e.clientY } } : undefined}
               onMouseLeave={onHover ? () => { pointer.current = null } : undefined}
               style={{
-                flex: 1, minHeight: 0, overflowY: band ? 'hidden' : 'auto', overflowX: 'hidden', overscrollBehavior: 'contain',
+                flex: 1, minHeight: 0, overflowY: band ? 'hidden' : 'auto', overflowX: 'hidden',
+                // Ovanpå kanalkolumnens svarta botten (telefon), annars täckte den numren.
+                ...(isMobile ? { position: 'relative' } : {}),
+                // Bara lodrätt: 'contain' i båda led stoppade telefonens sidosvep från
+                // att nå behållaren som rullar tablån i sidled (2026-10-19).
+                overscrollBehaviorY: 'contain',
                 // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
                 // ovanför bandplatsen så raden där står helt synlig.
-                paddingTop: fade, paddingBottom: band ? 0 : dim(24, isTv, 40), paddingInline: ring,
+                paddingTop: isMobile ? 3 : fade, paddingBottom: band ? 0 : dim(24, isTv, 40), paddingInline: ring,
                 // Skrivbord: programmen tonar även ut i högerkanten (tidsaxeln
                 // fortsätter förbi bilden, sidosvep flyttar den).
-                ...(!isTv && !isMobile
+                // Telefon: ingen uttoning i toppen, första kanalen 3 px under linjen (Jerry 2026-10-19).
+                ...(isMobile ? {} : !isTv
                   ? { WebkitMaskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, maskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, WebkitMaskComposite: 'source-in', maskComposite: 'intersect' }
                   : { WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv) }),
                 scrollbarWidth: 'none',
@@ -269,6 +290,31 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       </div>
     </section>
   )
+}
+
+/**
+ * Telefon: hur långt tablån har kvar till skärmens kanter (sidans marginal).
+ * Tablån ska gå kant i kant utan sidomarginal. Mätt, så att olika
+ * sidmarginaler (inset, bredd) följer med.
+ */
+function useMobileEdgeBleed(ref: { current: HTMLElement | null }, active: boolean): { left: number; right: number } | null {
+  const [edge, setEdge] = useState<{ left: number; right: number } | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!active || !el || typeof window === 'undefined') { setEdge(null); return }
+    const measure = () => {
+      const r = el.getBoundingClientRect()
+      const own = getComputedStyle(el)
+      const left = Math.max(0, Math.round(r.left - (parseFloat(own.marginLeft) || 0)))
+      const right = Math.max(0, Math.round(window.innerWidth - r.right - (parseFloat(own.marginRight) || 0)))
+      setEdge((prev) => (prev && prev.left === left && prev.right === right ? prev : left || right ? { left, right } : null))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    const timer = window.setTimeout(measure, 400)
+    return () => { window.removeEventListener('resize', measure); window.clearTimeout(timer) }
+  }, [ref, active])
+  return edge
 }
 
 /** Namnkolumnen står kvar när tidsdelen rullar på mobil. */
@@ -379,7 +425,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
         boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : 'none',
       }}
     >
-      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 6 : dim(12, isTv), padding: isMobile ? '0 6px 0 16px' : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? (selected ? C.solidSelected : C.solid) : undefined }}>
+      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 4 : dim(12, isTv), padding: isMobile ? '0 2px 0 16px' : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? (selected ? C.solidSelected : C.solid) : undefined }}>
         {!isMobile ? (
           <span style={{ width: dim(18, isTv, 24), textAlign: 'right', fontFamily: FONT.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textMute, flexShrink: 0 }}>{channel.number}</span>
         ) : null}

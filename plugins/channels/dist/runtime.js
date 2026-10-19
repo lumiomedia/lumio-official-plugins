@@ -1163,6 +1163,10 @@
     if (typeof window === "undefined") return true;
     return (getScopedStorageItem(KEY_SUBTITLE_AUTO_SYNC) ?? "1") === "1";
   }
+  function getSubtitleSyncFastReadAhead() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_SUBTITLE_SYNC_FAST_READ_AHEAD) === "1";
+  }
   function getMatchFrameRateMode() {
     if (typeof window === "undefined") return "off";
     const value = getScopedStorageItem(KEY_MATCH_FRAME_RATE);
@@ -1376,7 +1380,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1397,6 +1401,7 @@
       KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
       KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
       KEY_SUBTITLE_AUTO_SYNC = "playback_subtitleAutoSync";
+      KEY_SUBTITLE_SYNC_FAST_READ_AHEAD = "playback_subtitleSyncFastReadAhead";
       KEY_MATCH_FRAME_RATE = "playback_matchFrameRateMode";
       KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
@@ -5808,6 +5813,9 @@
           disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
           subtitleAutoSyncSetting: "Sync subtitles automatically",
           subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
+          subtitleAutoSyncGroup: "Auto-sync",
+          subtitleSyncFastReadAhead: "Faster sync (uses more data)",
+          subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
           subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
           subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
@@ -9916,6 +9924,9 @@
           disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
           subtitleAutoSyncSetting: "Synka undertexter automatiskt",
           subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
+          subtitleAutoSyncGroup: "Autosynk",
+          subtitleSyncFastReadAhead: "Snabbare synk (anv\xE4nder mer data)",
+          subtitleSyncFastReadAheadHint: "L\xE4ser upp till 6 minuter ljud i f\xF6rv\xE4g i st\xE4llet f\xF6r 3, s\xE5 att undertexterna synkas tidigare i sv\xE5ra partier som s\xE5ng och musik. Anv\xE4nder mer mobildata. P\xE5verkar aldrig uppspelningen.",
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
           subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
           subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
@@ -20760,7 +20771,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -25612,47 +25622,68 @@
     await fetch("/api/subtitles/sync/prefetch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) }).catch(() => {
     });
   }
+  function postPlaybackHealth(url, health) {
+    void fetch("/api/source-tee/read-ahead/health", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, ...health }) }).catch(() => {
+    });
+  }
+  function postReadAheadStop() {
+    void fetch("/api/source-tee/read-ahead/stop", { method: "POST" }).catch(() => {
+    });
+  }
+  function postSubtitleSyncStop() {
+    void fetch("/api/subtitles/sync/stop", { method: "POST" }).catch(() => {
+    });
+  }
+  function syncRequestExtras(health, fast) {
+    if (!health) return {};
+    return { ...health, ...fast && health.playerBufferAheadS !== null ? { fastReadAhead: true } : {} };
+  }
   var init_client2 = __esm({
     "lib/subtitle-sync/client.ts"() {
     }
   });
 
-  // lib/subtitle-sync/loop.ts
-  function awaitsReferenceAudioCheck(r) {
-    return (r.status === "synced" || r.status === "already_synced") && r.provisional === true && r.reason === "rac_pending";
+  // lib/subtitle-sync/health.ts
+  function healthStep(deps, st, elapsedS = 1) {
+    const h = deps.getHealth();
+    if (!h || h.playerBufferAheadS === null) return { tick: st.tick + 1, lastPos: null, bad: false };
+    const pos = deps.getPlayTime();
+    const jumped = st.lastPos !== null && (pos - st.lastPos > elapsedS + SEEK_JUMP_S2 || pos < st.lastPos - 1);
+    const bad = h.isBuffering || !!h.isPaused || deps.isHidden() || jumped;
+    if (bad && (!st.bad || jumped)) deps.stop();
+    if (!bad && (st.bad || st.tick % HEALTH_PING_TICKS === 0)) deps.ping({ ...h, playPositionS: pos });
+    return { tick: st.tick + 1, lastPos: pos, bad };
   }
-  function nextWaitPlayedS(r, pendingRetries, played) {
-    const floor = Math.max(1, r.retryAfterPlayedS ?? 0);
-    if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) {
-      if (pendingRetries >= PENDING_RETRY_PLAYED_S.length) return null;
-      return Math.max(PENDING_RETRY_PLAYED_S[pendingRetries] - played, floor);
-    }
-    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) {
-      if (r.retryAfterPlayedS === void 0) return null;
-      const wait = Math.max(PROVISIONAL_RECHECK_PLAYED_S, floor);
-      return played + wait <= PROVISIONAL_RECHECK_UNTIL_PLAYED_S ? wait : null;
-    }
-    return null;
+  function watchPlaybackHealth(deps) {
+    let st = { tick: 0, lastPos: null, bad: false };
+    let active3 = false;
+    const step = () => {
+      st = healthStep(deps, st);
+      if (st.lastPos !== null) active3 = true;
+    };
+    step();
+    const id = setInterval(step, 1e3);
+    const onVisibility = () => {
+      if (deps.isHidden()) {
+        st = { ...st, bad: true };
+        deps.stop();
+      }
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
+    let ended = false;
+    return () => {
+      if (ended) return;
+      ended = true;
+      clearInterval(id);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
+      if (active3) deps.stop();
+    };
   }
-  async function driveSync(deps) {
-    let played = 0;
-    let pendingRetries = 0;
-    for (; ; ) {
-      const r = await deps.request();
-      const wait = nextWaitPlayedS(r, pendingRetries, played);
-      await deps.onResult(r, wait === null);
-      if (wait === null) return r;
-      if (!await deps.waitPlayed(wait)) return null;
-      played += wait;
-      if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) pendingRetries++;
-    }
-  }
-  var PENDING_RETRY_PLAYED_S, PROVISIONAL_RECHECK_PLAYED_S, PROVISIONAL_RECHECK_UNTIL_PLAYED_S;
-  var init_loop = __esm({
-    "lib/subtitle-sync/loop.ts"() {
-      PENDING_RETRY_PLAYED_S = [30, 60, 120, 300];
-      PROVISIONAL_RECHECK_PLAYED_S = 300;
-      PROVISIONAL_RECHECK_UNTIL_PLAYED_S = 1800;
+  var HEALTH_PING_TICKS, SEEK_JUMP_S2;
+  var init_health = __esm({
+    "lib/subtitle-sync/health.ts"() {
+      HEALTH_PING_TICKS = 5;
+      SEEK_JUMP_S2 = 3;
     }
   });
 
@@ -25680,13 +25711,25 @@
     if (r.status === "ambiguous") return "subtitleAutoSyncAmbiguous";
     return null;
   }
+  function isTransientNoFit(r) {
+    if (r.status !== "no_fit" || !r.reason) return false;
+    return TRANSIENT_REASONS.has(r.reason) || r.reason.startsWith("http_");
+  }
   function isFinalOutcome(r) {
     if (r.status === "reference_pending") return false;
+    if (isTransientNoFit(r)) return false;
     if ((r.status === "synced" || r.status === "already_synced") && r.provisional) return false;
     return true;
   }
   function withdrawsProvisional(r, applied) {
-    return applied && r.status === "no_fit" && (r.reason === "text_veto" || r.reason === "anchor_veto");
+    return applied && r.status === "no_fit" && WITHDRAW_REASONS.has(r.reason ?? "");
+  }
+  function pathLabel(path) {
+    if (path === "text") return "text";
+    if (path === "text+audio") return "text+ljud";
+    if (path === "audio") return "ljud";
+    if (path === "rolling") return "rullande";
+    return null;
   }
   function formatCorrection(ms2) {
     const sign = ms2 < 0 ? "\u2212" : "+";
@@ -25768,14 +25811,112 @@
     return `${url}
 ${effectiveName(url, id)}`;
   }
-  var PENDING_MESSAGE_KEY, FETCH_REASONS, MEDIA_EXTENSIONS;
+  async function waitForPlayerReady(isReady, signal, opts = {}) {
+    const { settleMs = 2e3, maxMs = 15e3, stepMs = 250 } = opts;
+    const sleep3 = opts.sleep ?? ((ms2) => new Promise((resolve) => setTimeout(resolve, ms2)));
+    let waited = 0;
+    while (waited < maxMs) {
+      await sleep3(stepMs);
+      waited += stepMs;
+      if (signal.aborted) return false;
+      if (waited >= settleMs && isReady()) return true;
+    }
+    return !signal.aborted;
+  }
+  async function applyWithRetry(apply, waitReady, onRetry) {
+    try {
+      await apply();
+      return true;
+    } catch (err) {
+      if (err?.name === "AbortError") throw err;
+      onRetry?.(err);
+      if (!await waitReady()) return false;
+      await apply();
+      return true;
+    }
+  }
+  function seekStep(st, pos, elapsedS = 1) {
+    const jumped = st.lastPos !== null && Math.abs(pos - st.lastPos - elapsedS) > SEEK_TRIGGER_S;
+    if (jumped) return { st: { lastPos: pos, settle: 0 }, fire: false };
+    if (st.settle === null) return { st: { lastPos: pos, settle: null }, fire: false };
+    const settle = st.settle + elapsedS;
+    if (settle >= SEEK_SETTLE_S) return { st: { lastPos: pos, settle: null }, fire: true };
+    return { st: { lastPos: pos, settle }, fire: false };
+  }
+  var PENDING_MESSAGE_KEY, FETCH_REASONS, TRANSIENT_REASONS, WITHDRAW_REASONS, MEDIA_EXTENSIONS, SEEK_TRIGGER_S, SEEK_SETTLE_S;
   var init_plan = __esm({
     "lib/subtitle-sync/plan.ts"() {
       "use strict";
       init_playback_settings();
       PENDING_MESSAGE_KEY = "subtitleAutoSyncReadingTracks";
       FETCH_REASONS = /* @__PURE__ */ new Set(["fetch", "timeout", "network"]);
+      TRANSIENT_REASONS = /* @__PURE__ */ new Set(["fetch", "timeout", "network", "internal"]);
+      WITHDRAW_REASONS = /* @__PURE__ */ new Set(["text_veto", "anchor_veto", "text_audio_disagree"]);
       MEDIA_EXTENSIONS = ["mkv", "mp4", "m4v", "avi", "mov", "webm", "wmv", "mpg", "mpeg", "ts", "m2ts"];
+      SEEK_TRIGGER_S = 30;
+      SEEK_SETTLE_S = 2;
+    }
+  });
+
+  // lib/subtitle-sync/loop.ts
+  function awaitsReferenceAudioCheck(r) {
+    return (r.status === "synced" || r.status === "already_synced") && r.provisional === true && r.reason === "rac_pending";
+  }
+  function nextPendingPoint(played) {
+    for (const p of PENDING_RETRY_PLAYED_S) if (p > played) return p;
+    const last2 = PENDING_RETRY_PLAYED_S[PENDING_RETRY_PLAYED_S.length - 1];
+    return last2 + (Math.floor((played - last2) / PENDING_LONG_STEP_S) + 1) * PENDING_LONG_STEP_S;
+  }
+  function nextWaitPlayedS(r, pendingRetries, played, transientRetries = 0) {
+    const floor = Math.max(1, r.retryAfterPlayedS ?? 0);
+    if (r.status === "reference_pending") {
+      if (played >= PENDING_UNTIL_PLAYED_S) return null;
+      if (r.reason === "awaiting_audio" && r.retryAfterPlayedS !== void 0) return Math.max(PENDING_MIN_WAIT_S, r.retryAfterPlayedS);
+      return Math.max(nextPendingPoint(played) - played, PENDING_MIN_WAIT_S, floor);
+    }
+    if (awaitsReferenceAudioCheck(r)) {
+      if (pendingRetries >= PENDING_RETRY_PLAYED_S.length) return null;
+      return Math.max(PENDING_RETRY_PLAYED_S[pendingRetries] - played, floor);
+    }
+    if (isTransientNoFit(r)) return transientRetries < TRANSIENT_MAX_RETRIES ? TRANSIENT_RETRY_PLAYED_S : null;
+    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) {
+      if (r.retryAfterPlayedS === void 0) return null;
+      if (r.reason === AUDIO_RECHECK || r.reason === ROLLING_RECHECK) return Math.max(PENDING_MIN_WAIT_S, r.retryAfterPlayedS);
+      const wait = Math.max(PROVISIONAL_RECHECK_PLAYED_S, floor);
+      return played + wait <= PROVISIONAL_RECHECK_UNTIL_PLAYED_S ? wait : null;
+    }
+    return null;
+  }
+  async function driveSync(deps) {
+    let played = 0;
+    let pendingRetries = 0;
+    let transientRetries = 0;
+    for (; ; ) {
+      const r = await deps.request();
+      const wait = nextWaitPlayedS(r, pendingRetries, played, transientRetries);
+      await deps.onResult(r, wait === null, wait);
+      if (wait === null) return r;
+      const waited = await deps.waitPlayed(wait);
+      if (waited === false) return null;
+      played += typeof waited === "number" ? waited : wait;
+      if (awaitsReferenceAudioCheck(r)) pendingRetries++;
+      if (isTransientNoFit(r)) transientRetries++;
+    }
+  }
+  var PENDING_RETRY_PLAYED_S, PENDING_LONG_STEP_S, PENDING_UNTIL_PLAYED_S, PENDING_MIN_WAIT_S, PROVISIONAL_RECHECK_PLAYED_S, AUDIO_RECHECK, ROLLING_RECHECK, PROVISIONAL_RECHECK_UNTIL_PLAYED_S, TRANSIENT_RETRY_PLAYED_S, TRANSIENT_MAX_RETRIES;
+  var init_loop = __esm({
+    "lib/subtitle-sync/loop.ts"() {
+      init_plan();
+      PENDING_RETRY_PLAYED_S = [30, 60, 120, 300];
+      PENDING_LONG_STEP_S = 300;
+      PENDING_UNTIL_PLAYED_S = 1800;
+      PENDING_MIN_WAIT_S = 20;
+      PROVISIONAL_RECHECK_PLAYED_S = 300;
+      AUDIO_RECHECK = "audio_recheck";
+      ROLLING_RECHECK = "rolling";
+      PROVISIONAL_RECHECK_UNTIL_PLAYED_S = 1800;
+      TRANSIENT_RETRY_PLAYED_S = 60;
+      TRANSIENT_MAX_RETRIES = 3;
     }
   });
 
@@ -25868,6 +26009,8 @@ ${effectiveName(url, id)}`;
     if (typeof r.correctionMs === "number") parts.push(`offset=${r.correctionMs}ms`);
     if (r.provisional) parts.push("provisoriskt");
     if (typeof r.retryAfterPlayedS === "number") parts.push(`igen-om=${r.retryAfterPlayedS}s`);
+    const path = pathLabel(r.path);
+    if (path) parts.push(`v\xE4g=${path}`);
     return parts.join(" ");
   }
   function logSubsyncClient(line) {
@@ -25899,12 +26042,30 @@ ${effectiveName(url, id)}`;
     const inFlightRef = useRef(false);
     const loggedSkipRef = useRef(null);
     useEffect(() => {
+      let on = getSubtitleAutoSync();
+      return onPlaybackSettingsChanged(() => {
+        const next2 = getSubtitleAutoSync();
+        if (on && !next2) {
+          logSubsyncClient(`${CLIENT_PREFIX} autosynken avst\xE4ngd: k\xF6rningen och serverns arbete stoppas`);
+          abortRef.current?.abort();
+          abortRef.current = null;
+          if (inFlightRef.current) {
+            inFlightRef.current = false;
+            latest2.current.setStatus({ type: "idle" });
+          }
+          postSubtitleSyncStop();
+        }
+        on = next2;
+      });
+    }, []);
+    useEffect(() => {
       if (!args.firstFrameRendered || !args.mediaUrl || args.isLive) return;
       const identity = syncIdentity({ fileName: args.fileName, title: args.title, year: args.year, season: args.season, episode: args.episode });
       const key = prefetchKey(args.mediaUrl, identity);
       if (prefetchedUrlRef.current === key || !getSubtitleAutoSync()) return;
       const mediaUrl = args.mediaUrl;
       const send = () => {
+        if (!getSubtitleAutoSync()) return;
         prefetchedUrlRef.current = key;
         const { fileName, ...extra } = identity;
         logSubsyncClient(`${CLIENT_PREFIX} f\xF6rh\xE4mtning skickad fil=${fileLabel(mediaUrl, identity)}`);
@@ -25932,6 +26093,7 @@ ${effectiveName(url, id)}`;
     useEffect(() => {
       if (args.selectionToken === handledTokenRef.current) return;
       const a = latest2.current;
+      const live2 = () => latest2.current;
       const sel = a.selected;
       const key = a.mediaKey ?? `file:${a.fileName ?? a.mediaUrl}`;
       const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
@@ -25988,7 +26150,7 @@ ${effectiveName(url, id)}`;
         }
         if (current2() && inFlightRef.current) {
           inFlightRef.current = false;
-          a.setStatus({ type: "idle" });
+          live2().setStatus({ type: "idle" });
         }
       };
       let applied = null;
@@ -26004,40 +26166,56 @@ ${effectiveName(url, id)}`;
           drop();
           return true;
         }
-        const sub = a.options.find((o) => o.id === r.subtitleId) ?? sel;
+        const l = live2();
+        const sub = l.options.find((o) => o.id === r.subtitleId) ?? sel;
         inFlightRef.current = false;
-        await a.applySynced(sub, r.vttUrl);
-        applied = r.vttUrl;
-        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad offset=${r.correctionMs ?? 0}ms undertext=${subLabel(sub.id)}${sub.id !== sel.id ? ` (utbytt fr\xE5n ${subLabel(sel.id)})` : ""}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""} fil=${file}`);
-        const offset = formatCorrection(r.correctionMs ?? 0);
-        if (refined) {
-          a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
+        const vttUrl = r.vttUrl;
+        const done = await applyWithRetry(
+          () => live2().applySynced(sub, vttUrl),
+          async () => await waitForPlayerReady(() => live2().isPlayerReady?.() ?? true, controller.signal) && valid(),
+          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sub.id)} fil=${file}`)
+        );
+        if (!done) {
+          inFlightRef.current = true;
+          drop();
           return true;
         }
-        const message = sub.id !== sel.id ? a.t("subtitleAutoSyncSwapped") : a.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
-        a.showNotice({
+        applied = r.vttUrl;
+        const path = pathLabel(r.path);
+        const late = playedSoFar > 0 ? ` efter ${Math.round(playedSoFar)}s spelat` : "";
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad offset=${r.correctionMs ?? 0}ms undertext=${subLabel(sub.id)}${sub.id !== sel.id ? ` (utbytt fr\xE5n ${subLabel(sel.id)})` : ""}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
+        const offset = formatCorrection(r.correctionMs ?? 0);
+        if (refined) {
+          l.setStatus({ type: "done", message: l.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
+          return true;
+        }
+        const message = sub.id !== sel.id ? l.t("subtitleAutoSyncSwapped") : l.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
+        l.showNotice({
           message,
-          actionLabel: a.t("subtitleAutoSyncUndo"),
+          actionLabel: l.t("subtitleAutoSyncUndo"),
           onAction: () => {
             setAutoSyncOptOut(key, sub.id);
             setAutoSyncOptOut(key, sel.id);
             logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file}`);
             controller.abort();
-            void a.restoreOriginal(sel, { undo: true });
+            void live2().restoreOriginal(sel, { undo: true });
           }
         });
-        a.setStatus({ type: "done", message });
+        l.setStatus({ type: "done", message });
         return true;
       };
       const finish = (r) => {
         inFlightRef.current = false;
+        const l = live2();
         const k = outcomeMessageKey(r);
-        a.setStatus(k ? { type: "done", message: a.t(k) } : { type: "idle" });
-        if (sel && r.status === "no_fit" && !/^(network|http_)/.test(r.reason ?? "")) a.onNoFit?.(sel);
+        l.setStatus(k ? { type: "done", message: l.t(k) } : { type: "idle" });
+        if (sel && r.status === "no_fit" && !isTransientNoFit(r)) l.onNoFit?.(sel);
       };
+      let playedSoFar = 0;
       const waitPlayed = async (seconds) => {
         let played = 0;
-        let last2 = a.getPlayTime();
+        let last2 = live2().getPlayTime();
+        let seek = { lastPos: last2, settle: null };
         while (played < seconds) {
           await new Promise((resolve) => {
             const id = setTimeout(done, 1e3);
@@ -26052,35 +26230,60 @@ ${effectiveName(url, id)}`;
             drop();
             return false;
           }
-          const now2 = a.getPlayTime();
-          played += playedDelta(last2, now2);
+          const now2 = live2().getPlayTime();
+          const d = playedDelta(last2, now2);
+          played += d;
+          playedSoFar += d;
           last2 = now2;
+          const s = seekStep(seek, now2);
+          seek = s.st;
+          if (s.fire) {
+            logSubsyncClient(`${CLIENT_PREFIX} hopp till ${Math.round(now2)}s: fr\xE5gar direkt undertext=${subLabel(sel.id)} fil=${file}`);
+            return played;
+          }
         }
         return true;
       };
       let attempt = 0;
+      const stopWatch = a.getPlaybackHealth ? watchPlaybackHealth({
+        getHealth: () => live2().getPlaybackHealth?.(),
+        getPlayTime: () => live2().getPlayTime(),
+        isHidden: () => typeof document !== "undefined" && document.visibilityState === "hidden",
+        ping: (h) => postPlaybackHealth(a.mediaUrl, h),
+        stop: postReadAheadStop
+      }) : () => {
+      };
+      controller.signal.addEventListener("abort", stopWatch);
       void (async () => {
         try {
           a.setStatus({ type: "analyzing", message: a.t("subtitleAutoSyncChecking") });
           const last2 = await driveSync({
             request: () => {
               attempt += 1;
-              const candidates = buildCandidates(toCandidate(sel), a.options.filter((o) => o.source === "opensubtitles").map(toCandidate));
+              const candidates = buildCandidates(toCandidate(sel), live2().options.filter((o) => o.source === "opensubtitles").map(toCandidate));
               logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file} undertext=${subLabel(sel.id)} spr\xE5k=${sel.lang3 || "-"} kandidater=${candidates.length}`);
+              const l = live2();
+              const health = l.getPlaybackHealth?.();
               return requestSubtitleSync({
                 url: a.mediaUrl,
                 ...identity,
                 selected: toCandidate(sel),
-                candidates
+                candidates,
+                ...syncRequestExtras(health ? { playerBufferAheadS: health.playerBufferAheadS, isBuffering: health.isBuffering, isPaused: health.isPaused, playPositionS: l.getPlayTime() } : null, getSubtitleSyncFastReadAhead())
               }, controller.signal);
             },
             waitPlayed,
-            onResult: async (r) => {
+            onResult: async (r, final, wait) => {
               logSubsyncClient(describeResult(r, attempt));
               if (!current2()) return;
               markIfFinal(r);
+              if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
+                logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel.id)} fil=${file}`);
+              } else if (final && r.status === "reference_pending") {
+                logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel.id)} fil=${file}`);
+              }
               if (r.status === "reference_pending") {
-                if (applied === null && valid()) a.setStatus({ type: "analyzing", message: a.t(PENDING_MESSAGE_KEY) });
+                if (applied === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
                 return;
               }
               if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
@@ -26096,8 +26299,8 @@ ${effectiveName(url, id)}`;
                 restored = true;
                 inFlightRef.current = false;
                 logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file}`);
-                await a.restoreOriginal(sel);
-                a.clearNotice?.();
+                await live2().restoreOriginal(sel);
+                live2().clearNotice?.();
                 finish(r);
                 return;
               }
@@ -26110,15 +26313,15 @@ ${effectiveName(url, id)}`;
                 restored = true;
                 inFlightRef.current = false;
                 logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file}`);
-                await a.restoreOriginal(sel);
-                a.clearNotice?.();
-                a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
+                await live2().restoreOriginal(sel);
+                live2().clearNotice?.();
+                live2().setStatus({ type: "done", message: live2().t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
               }
             }
           });
           if (!last2 || !current2()) return;
           if (last2.status === "ambiguous" && last2.jobId) {
-            if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
+            if (await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS) === false) return;
             logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
             logSubsyncClient(describeResult(v, "ljud"));
@@ -26136,6 +26339,8 @@ ${effectiveName(url, id)}`;
         } catch (err) {
           if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel.id)}`);
           drop();
+        } finally {
+          stopWatch();
         }
       })();
     }, [args.selectionToken, args.firstFrameRendered, args.selected?.id]);
@@ -26149,6 +26354,7 @@ ${effectiveName(url, id)}`;
       init_subtitle_delay_store();
       init_playback_settings();
       init_client2();
+      init_health();
       init_loop();
       init_plan();
       init_opt_out();
@@ -26209,6 +26415,67 @@ ${effectiveName(url, id)}`;
       init_client2();
       init_plan();
       DETECT_SCHEDULE_MS = [1e4, 3e4, 75e3, 15e4, 3e5];
+    }
+  });
+
+  // lib/subtitle-sync/mpv-swap.ts
+  function createSyncedTrackState() {
+    return { mediaUrl: null, current: null, owned: /* @__PURE__ */ new Set() };
+  }
+  async function readTracks(deps) {
+    try {
+      const t = await deps.tracks();
+      return Array.isArray(t) ? t : null;
+    } catch {
+      return null;
+    }
+  }
+  async function removeOwned(deps, state2, keep) {
+    const tracks = await readTracks(deps);
+    if (!tracks) return;
+    const listed = /* @__PURE__ */ new Set();
+    for (const t of tracks) {
+      const p = t.external ? t.externalFilename : null;
+      if (!p || !state2.owned.has(p)) continue;
+      listed.add(p);
+      if (p === keep) continue;
+      try {
+        await deps.command(["sub-remove", String(t.sid)]);
+        listed.delete(p);
+      } catch {
+      }
+    }
+    state2.owned = new Set([...state2.owned].filter((p) => listed.has(p) || p === keep));
+  }
+  async function swapSyncedTrack(deps, state2, mediaUrl, path) {
+    if (state2.mediaUrl !== mediaUrl) {
+      state2.mediaUrl = mediaUrl;
+      state2.current = null;
+      state2.owned = /* @__PURE__ */ new Set();
+    }
+    const sidRaw = await Promise.resolve(deps.command(["get_property", "sid"])).catch(() => null);
+    const sid = sidRaw === null || sidRaw === void 0 ? null : String(sidRaw);
+    const off = sid === "no" || sid === "false";
+    let select;
+    if (state2.current === null) {
+      select = !off;
+    } else {
+      const tracks = await readTracks(deps) ?? [];
+      const ours = tracks.find((t) => t.external && t.externalFilename === state2.current);
+      select = !off && ours !== void 0 && sid === String(ours.sid);
+    }
+    await deps.command(["sub-add", path, select ? "select" : "auto"]);
+    state2.owned.add(path);
+    state2.current = path;
+    await removeOwned(deps, state2, path);
+    return select;
+  }
+  async function forgetSyncedTracks(deps, state2) {
+    await removeOwned(deps, state2, null);
+    state2.current = null;
+  }
+  var init_mpv_swap = __esm({
+    "lib/subtitle-sync/mpv-swap.ts"() {
     }
   });
 
@@ -29417,6 +29684,7 @@ ${cue.text}`).join("\n\n")}
     const [subtitleAutoSyncState, setSubtitleAutoSyncState] = useState({ type: "idle" });
     const [subtitleSelectionToken, setSubtitleSelectionToken] = useState(0);
     const syncedVttRef = useRef(/* @__PURE__ */ new Map());
+    const mpvSyncedTracksRef = useRef(createSyncedTrackState());
     const applySyncedSubtitleRef = useRef(null);
     const subDelayRef = useRef(0);
     const subDriftRef = useRef(null);
@@ -30097,6 +30365,15 @@ ${cue.text}`).join("\n\n")}
     const subtitleClockBase = subtitleClockOverride ?? realTime;
     const subtitleTime = subtitleClockBase - subDelay + (subDrift ? subDrift.slope * (subtitleClockBase - subDrift.anchor) : 0);
     const activeCue = isMpvEngine ? null : cues.find((c) => subtitleTime >= c.start && subtitleTime <= c.end) ?? null;
+    useEffect(() => {
+      if (!useMpv || subtitleClockOverride === null) return;
+      if (Math.abs(realTime - subtitleClockOverride) <= 1.5) setSubtitleClockOverride(null);
+    }, [useMpv, realTime, subtitleClockOverride]);
+    useEffect(() => {
+      if (!useMpv || subtitleClockOverride === null) return;
+      const timer3 = window.setTimeout(() => setSubtitleClockOverride(null), 5e3);
+      return () => window.clearTimeout(timer3);
+    }, [useMpv, subtitleClockOverride]);
     useEffect(() => {
       if (!isDroidEngine) return;
       setNativeFineTime(controlsVisible);
@@ -32779,7 +33056,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (isMpvEngine) {
         const path = await (0, import_core5.invoke)("download_subtitle_to_temp", { url: `${window.location.origin}${vttUrl}` });
-        await mpvCommand2(["sub-add", path, "select"]);
+        await swapSyncedTrack({ command: (args) => Promise.resolve(mpvCommand2(args)), tracks: getMpvSubtitleTracks2 }, mpvSyncedTracksRef.current, url, path);
         await refreshMpvSubtitleTracks();
       }
       setCues(parseVtt(await (await fetch(vttUrl)).text()));
@@ -32798,7 +33075,11 @@ ${cue.text}`).join("\n\n")}
         setSubDelay(cleared);
       }
       await selectSubtitle(sub, { manual: true });
-    }, [selectSubtitle]);
+      if (isMpvEngine) {
+        await forgetSyncedTracks({ command: (args) => Promise.resolve(mpvCommand2(args)), tracks: getMpvSubtitleTracks2 }, mpvSyncedTracksRef.current).catch(() => {
+        });
+      }
+    }, [selectSubtitle, isMpvEngine]);
     useSubtitleAutoSync({
       mediaUrl: url,
       fileName: filename,
@@ -32818,7 +33099,15 @@ ${cue.text}`).join("\n\n")}
       options: subtitleOptions,
       firstFrameRendered: useMpv ? mpv.firstFrameRendered : hasStarted,
       getPlayTime: () => realTimeRef.current,
+      // Android (ExoPlayer): bufferten framåt och buffring ur bryggans status; serverns ljudläsning i
+      // förväg kräver båda. Datorn: okänt (källcachen läser redan i förväg, ingen läsning behövs).
+      getPlaybackHealth: () => ({
+        playerBufferAheadS: isDroidEngine ? droid.stats?.buffered ?? null : null,
+        isBuffering: !!mpv.pausedForCache,
+        isPaused: !!mpv.paused
+      }),
       applySynced: applySyncedSubtitle,
+      isPlayerReady: () => !useMpv || firstFrameRenderedRef.current,
       restoreOriginal: restoreOriginalSubtitle,
       showNotice: showSyncNotice,
       clearNotice: () => setSyncNotice(null),
@@ -32830,6 +33119,19 @@ ${cue.text}`).join("\n\n")}
       ),
       t
     });
+    const droidBuffering = isDroidEngine && (!!mpv.pausedForCache || !!mpv.paused);
+    useEffect(() => {
+      if (!droidBuffering) return;
+      void fetch("/api/source-tee/read-ahead/stop", { method: "POST" }).catch(() => {
+      });
+    }, [droidBuffering]);
+    useEffect(() => {
+      if (!isDroidEngine) return;
+      return () => {
+        void fetch("/api/source-tee/read-ahead/stop", { method: "POST" }).catch(() => {
+        });
+      };
+    }, [isDroidEngine, url]);
     useEffect(() => {
       setSyncNoFit(null);
     }, [url]);
@@ -37530,6 +37832,7 @@ ${cue.text}`).join("\n\n")}
       init_subtitle_delay_store();
       init_user_delay();
       init_diag();
+      init_mpv_swap();
       init_tauri_mpv();
       init_tauri_native_player();
       init_tauri_avplayer();
@@ -42486,10 +42789,21 @@ ${cue.text}`).join("\n\n")}
     });
     return promise;
   }
+  var deviceLibrarySources = null;
+  function libraryItemOnThisDevice(ref) {
+    if (!ref.startsWith("lib:") || !deviceLibrarySources) return true;
+    for (const id of deviceLibrarySources) if (ref.startsWith(`lib:${id}:`)) return true;
+    return false;
+  }
   async function computeSourceSignatures() {
     const movies = getMovieWatchlist();
     const shows = getWatchlist();
     const status = await fetchLibraryStatus().catch(() => null);
+    if (status) {
+      const list = status.sources ?? [];
+      const ids = list.map((x) => x.id).filter((id) => typeof id === "string");
+      deviceLibrarySources = ids.length === list.length ? new Set(ids) : null;
+    }
     const sources = status?.sources ?? [];
     const fullSync = sources.reduce((max, s) => Math.max(max, s.lastFullSync ?? 0), 0);
     const changed = sources.reduce((max, s) => Math.max(max, s.lastChange ?? 0), 0);
@@ -42619,7 +42933,12 @@ ${cue.text}`).join("\n\n")}
   }
   function readCachedPool(channelId) {
     const cached = readPoolCache(channelId);
-    return cached ? unpackPool(cached.pool) : null;
+    return cached ? onThisDevice(unpackPool(cached.pool)) : null;
+  }
+  function onThisDevice(items2) {
+    if (!items2) return items2;
+    const kept = items2.filter((item) => libraryItemOnThisDevice(item.ref));
+    return kept.length === items2.length ? items2 : kept;
   }
   function readStalePool(channel) {
     const cached = readPoolCache(channel.id);
@@ -42630,7 +42949,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
       return null;
     }
-    return unpackPool(cached.pool);
+    return onThisDevice(unpackPool(cached.pool));
   }
   function useChannels() {
     const [channels, setChannels] = useState(readChannels);
@@ -42964,7 +43283,7 @@ ${cue.text}`).join("\n\n")}
   }
   function belowMenuPill(isTv, isMobile) {
     if (isTv) return "calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)";
-    if (isMobile) return "calc(var(--page-top-line, 1rem) + 66px)";
+    if (isMobile) return "calc(var(--page-top-line, 1rem) + 31px)";
     return "calc(var(--host-chrome-top, calc(var(--page-top-line, 1rem) + 38px)) + 20px)";
   }
   var FONT3 = {
@@ -43325,7 +43644,7 @@ ${cue.text}`).join("\n\n")}
     return `linear-gradient(to bottom, transparent 0, black ${fade})`;
   }
   function ChannelGuide({ channels, selectedId, window: win, now: now2, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId, onHover, onHold, fill: fill3 }) {
-    const labelW = isMobile ? 96 : compact ? 180 : 220;
+    const labelW = isMobile ? 68 : compact ? 180 : 220;
     const rowH = isTv ? tvu(compact ? TV_ROW_H_COMPACT : TV_ROW_H) : compact ? 44 : ROW_H;
     const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`;
     const nowPct = now2 >= win.from && now2 <= win.to ? nowLinePct(now2, win) : null;
@@ -43381,7 +43700,16 @@ ${cue.text}`).join("\n\n")}
     };
     const ring = fill3 && !isMobile ? dimS(10, isTv) : "0px";
     const header = /* @__PURE__ */ jsxs("div", { "data-guide-axis": "", style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, marginInline: ring }, children: [
-      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0, paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textSoft }, children: t("guideHeader") }),
+      /* @__PURE__ */ jsx("span", { style: {
+        // Rubriken rullar med tidsaxeln på telefonen (låg den fast hamnade
+        // tiderna under texten). Bara kanalnumren står kvar.
+        paddingLeft: isMobile ? 16 : isTv ? dim(8, isTv) : 0,
+        paddingBottom: dim(8, isTv),
+        fontSize: fontSize(10.5, isTv),
+        lineHeight: 1.2,
+        letterSpacing: "0.18em",
+        color: C.textSoft
+      }, children: t("guideHeader") }),
       /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
         "span",
         {
@@ -43428,16 +43756,21 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
+    const sectionRef = useRef(null);
+    const edge = useMobileEdgeBleed(sectionRef, isMobile && !compact);
     const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(Math.max(2, TV_CONTENT_LEFT - 8 - 10))}` : "0 40px";
     return /* @__PURE__ */ jsx(
       "section",
       {
+        ref: sectionRef,
         "data-channels-guide": "",
         style: {
           position: "relative",
           color: C.text,
           fontFamily: FONT3.ui,
           padding,
+          // Telefon: tablån går ut till skärmens kanter, ingen sidomarginal (Jerry 2026-10-19).
+          ...edge ? { marginLeft: -edge.left, marginRight: -edge.right } : {},
           ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {},
           ...!fill3 && !compact ? { paddingBottom: isMobile ? 24 : dim(32, isTv, 40) } : {}
         },
@@ -43446,7 +43779,8 @@ ${cue.text}`).join("\n\n")}
           {
             "data-row": isMobile ? "" : void 0,
             style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch", ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {} },
-            children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0, ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {} }, children: [
+            children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0, ...isMobile ? { position: "relative" } : {}, ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {} }, children: [
+              isMobile && fill3 ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, top: dim(34, isTv, 42), bottom: 0, width: labelW, background: C.solid, pointerEvents: "none" } }) : null,
               header,
               fill3 ? /* @__PURE__ */ jsx(
                 "div",
@@ -43469,15 +43803,20 @@ ${cue.text}`).join("\n\n")}
                     minHeight: 0,
                     overflowY: band ? "hidden" : "auto",
                     overflowX: "hidden",
-                    overscrollBehavior: "contain",
+                    // Ovanpå kanalkolumnens svarta botten (telefon), annars täckte den numren.
+                    ...isMobile ? { position: "relative" } : {},
+                    // Bara lodrätt: 'contain' i båda led stoppade telefonens sidosvep från
+                    // att nå behållaren som rullar tablån i sidled (2026-10-19).
+                    overscrollBehaviorY: "contain",
                     // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
                     // ovanför bandplatsen så raden där står helt synlig.
-                    paddingTop: fade,
+                    paddingTop: isMobile ? 3 : fade,
                     paddingBottom: band ? 0 : dim(24, isTv, 40),
                     paddingInline: ring,
                     // Skrivbord: programmen tonar även ut i högerkanten (tidsaxeln
                     // fortsätter förbi bilden, sidosvep flyttar den).
-                    ...!isTv && !isMobile ? { WebkitMaskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, maskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, WebkitMaskComposite: "source-in", maskComposite: "intersect" } : { WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv) },
+                    // Telefon: ingen uttoning i toppen, första kanalen 3 px under linjen (Jerry 2026-10-19).
+                    ...isMobile ? {} : !isTv ? { WebkitMaskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, maskImage: `${guideFadeMask(false)}, ${GUIDE_RIGHT_FADE}`, WebkitMaskComposite: "source-in", maskComposite: "intersect" } : { WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv) },
                     scrollbarWidth: "none"
                   },
                   children: band ? /* @__PURE__ */ jsx(
@@ -43495,6 +43834,31 @@ ${cue.text}`).join("\n\n")}
         )
       }
     );
+  }
+  function useMobileEdgeBleed(ref, active3) {
+    const [edge, setEdge] = useState(null);
+    useEffect(() => {
+      const el = ref.current;
+      if (!active3 || !el || typeof window === "undefined") {
+        setEdge(null);
+        return;
+      }
+      const measure = () => {
+        const r = el.getBoundingClientRect();
+        const own = getComputedStyle(el);
+        const left = Math.max(0, Math.round(r.left - (parseFloat(own.marginLeft) || 0)));
+        const right = Math.max(0, Math.round(window.innerWidth - r.right - (parseFloat(own.marginRight) || 0)));
+        setEdge((prev) => prev && prev.left === left && prev.right === right ? prev : left || right ? { left, right } : null);
+      };
+      measure();
+      window.addEventListener("resize", measure);
+      const timer3 = window.setTimeout(measure, 400);
+      return () => {
+        window.removeEventListener("resize", measure);
+        window.clearTimeout(timer3);
+      };
+    }, [ref, active3]);
+    return edge;
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
   var TV_TOP_MENU_SELECTOR = "[data-quick-menu] [data-qm-center], [data-tv-menu-chip]";
@@ -43576,7 +43940,7 @@ ${cue.text}`).join("\n\n")}
           boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 6 : dim(12, isTv), padding: isMobile ? "0 6px 0 16px" : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? selected ? C.solidSelected : C.solid : void 0 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 4 : dim(12, isTv), padding: isMobile ? "0 2px 0 16px" : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? selected ? C.solidSelected : C.solid : void 0 }, children: [
             !isMobile ? /* @__PURE__ */ jsx("span", { style: { width: dim(18, isTv, 24), textAlign: "right", fontFamily: FONT3.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textMute, flexShrink: 0 }, children: channel.number }) : null,
             /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 22, isTv, style: { width: dim(30, isTv), borderRadius: dim(5, isTv) } }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(isMobile ? 12 : 13.5, isTv), lineHeight: 1.25, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }, children: isMobile ? channel.number : channel.name })
@@ -44330,7 +44694,24 @@ ${cue.text}`).join("\n\n")}
     const b = bar.getBoundingClientRect();
     if (b.width <= 0 && b.height <= 0) return null;
     const k = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1;
-    return Math.max(0, Math.round((b.bottom - a.top) / k));
+    let bottom = b.bottom;
+    for (const child of Array.from(bar.querySelectorAll('button, a, h1, h2, h3, [role="button"]'))) {
+      const c = child.getBoundingClientRect();
+      if (c.width > 0 && c.height > 0) bottom = Math.max(bottom, c.bottom);
+    }
+    return Math.max(0, Math.round((bottom - a.top) / k));
+  }
+  function findMobileTopbar(anchor) {
+    const root = anchor.closest("[data-lumio-player-open]") ?? document.querySelector("[data-lumio-player-open]");
+    if (!root) return null;
+    const rootTop = root.getBoundingClientRect().top;
+    for (const child of Array.from(root.children)) {
+      if (child.contains(anchor) || child.querySelector("[data-channels-osd]")) continue;
+      const r = child.getBoundingClientRect();
+      if (r.height <= 0 || r.top - rootTop > 8 || r.height > 160) continue;
+      if (child.querySelector("button")) return child;
+    }
+    return null;
   }
   function useHostTopbarBottom(anchorRef, session2) {
     const [bottom, setBottom] = useState(null);
@@ -44356,6 +44737,7 @@ ${cue.text}`).join("\n\n")}
         resize = null;
         bar = null;
         for (let node = anchorRef.current?.parentElement ?? null; node && !bar; node = node.parentElement) bar = node.querySelector(HOST_TOPBAR_SELECTOR);
+        if (!bar && anchorRef.current) bar = findMobileTopbar(anchorRef.current);
         if (!bar) return;
         read10();
         if (typeof ResizeObserver !== "undefined") {
@@ -46906,7 +47288,7 @@ ${cue.text}`).join("\n\n")}
     const playerRef = useRef(player);
     playerRef.current = player;
     const viewRef = useRef(null);
-    const bleed = useColumnBleed(viewRef, !isMobile);
+    const bleed = useColumnBleed(viewRef, true);
     useNoSidewaysPageScroll(viewRef, !isMobile);
     const view = player && sorted.length > 0 ? "player" : studio ? `studio:${studio}` : selected ? "main" : "empty";
     useTvViewFocus(viewRef, isTv && view !== "player", view);
@@ -47008,7 +47390,9 @@ ${cue.text}`).join("\n\n")}
             flexDirection: "column",
             overflow: "hidden",
             // Skrivbord: ut över kolumnens sidomarginaler (bredare tablå, som TV-läget).
-            ...bleed.left || bleed.right ? { marginLeft: -bleed.left, marginRight: -bleed.right } : null
+            ...bleed.left || bleed.right ? { marginLeft: -bleed.left, marginRight: -bleed.right } : null,
+            // Telefon: heron och resten står kvar på kolumnens linje; bara tablån går kant i kant.
+            ...isMobile && (bleed.left || bleed.right) ? { paddingLeft: bleed.left, paddingRight: bleed.right } : null
           },
           children: [
             banner,

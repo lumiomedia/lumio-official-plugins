@@ -260,10 +260,30 @@ export function sourceSignatures(): Promise<Signatures> {
   return promise
 }
 
+/**
+ * Bibliotekskällorna på DEN HÄR enheten (null = okänt än). En sparad pool kan
+ * komma från en annan enhet (synk, en äldre app utan synkfiltret): telefonen
+ * utan bibliotek visade och försökte spela datorns WebDAV-filer — Ingen signal
+ * på kanal efter kanal (2026-10-19).
+ */
+let deviceLibrarySources: ReadonlySet<string> | null = null
+
+export function libraryItemOnThisDevice(ref: string): boolean {
+  if (!ref.startsWith('lib:') || !deviceLibrarySources) return true
+  for (const id of deviceLibrarySources) if (ref.startsWith(`lib:${id}:`)) return true
+  return false
+}
+
 async function computeSourceSignatures(): Promise<Signatures> {
   const movies = getMovieWatchlist() as Array<{ addedAt?: string }>
   const shows = getWatchlist() as Array<{ addedAt?: string }>
   const status = await fetchLibraryStatus().catch(() => null)
+  if (status) {
+    // Bara när varje källa har ett id (äldre värdar saknar det): annars okänt, inget filtreras.
+    const list = (status.sources ?? []) as Array<{ id?: unknown }>
+    const ids = list.map((x) => x.id).filter((id): id is string => typeof id === 'string')
+    deviceLibrarySources = ids.length === list.length ? new Set(ids) : null
+  }
   // lastDeltaSync stämplas var 15:e minut även när inget ändrats och får inte
   // styra; lastChange sätts av värden bara när en batch faktiskt ändrat titlar
   // (saknas på äldre värdar — då fångar total och den dagliga fulla synken det).

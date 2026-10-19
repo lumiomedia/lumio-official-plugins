@@ -1,3 +1,10 @@
+## 0.1.38
+
+- Telefon: tablån går kant i kant och rullas ut helt åt höger; kanalkolumnen ligger mot vänsterkanten, svart ända upp till linjen under GUIDE, och första kanalen 3 px under linjen utan uttoning.
+- Telefon: GUIDE-rubriken rullar med tiderna; heron och knapparna närmare menypillret.
+- Telefon: kanalchippet i spelaren hamnar under spelarens rad med Stäng.
+- Kanaler på en enhet utan bibliotek visar och spelar inte längre en annan enhets biblioteksfiler (som gav Ingen signal) — debrid och watchlist som vanligt.
+
 ## 0.1.37
 
 - Tablåns klocka ställs om direkt när fönstret syns eller får fokus igen: i bakgrunden pausas timers, och kanaler med korta program såg ut att inte sända.

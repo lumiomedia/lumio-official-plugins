@@ -81,7 +81,8 @@ export function belowMenuPill(isTv: boolean, isMobile: boolean): string {
   if (isTv) return 'calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)'
   // Skrivbord: behåller värden toppmenyn (keepsTvTopChrome) mäter den kromets
   // höjd som `--host-chrome-top`; utan den pillrets egen linje som förut.
-  if (isMobile) return 'calc(var(--page-top-line, 1rem) + 66px)'
+  // Telefon: 35 px närmare menypillret än förut (Jerry 2026-10-19: mycket luft).
+  if (isMobile) return 'calc(var(--page-top-line, 1rem) + 31px)'
   return 'calc(var(--host-chrome-top, calc(var(--page-top-line, 1rem) + 38px)) + 20px)'
 }
 
