@@ -580,9 +580,16 @@
   function isAndroidUserAgent() {
     return typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
   }
+  function isAndroidPhone() {
+    if (!isAndroidUserAgent()) return false;
+    return navigator.maxTouchPoints > 0 && /mobile/i.test(navigator.userAgent);
+  }
   function getAndroidSourceCache() {
     if (typeof window === "undefined") return false;
-    return getItem(KEY_ANDROID_SOURCE_CACHE) === "1";
+    const stored = getItem(KEY_ANDROID_SOURCE_CACHE);
+    if (stored === "1") return true;
+    if (stored === "0") return false;
+    return isAndroidPhone();
   }
   function androidStreamsDirect() {
     return isAndroidUserAgent() && !getAndroidSourceCache();
@@ -1735,7 +1742,7 @@
     const [selectedAudio, setSelectedAudio] = useState(-1);
     const [externalDisplay, setExternalDisplay] = useState(false);
     const [stats, setStats] = useState(null);
-    const prevRef = useRef({ fileLoaded: false, firstFrame: false, failToken: -1, timePos: 0 });
+    const prevRef = useRef({ fileLoaded: true, firstFrame: true, failToken: -1, timePos: 0 });
     const publishedTimeRef = useRef(0);
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
@@ -4374,6 +4381,7 @@
           settingsTabApiKeys: "API keys",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "Sources & addons",
+          settingsTabFolders: "Folders & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "New",
@@ -8501,6 +8509,7 @@
           settingsTabApiKeys: "API-nycklar",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "K\xE4llor & addons",
+          settingsTabFolders: "Mappar & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "Nyhet",
@@ -20771,6 +20780,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -40437,6 +40447,7 @@ ${cue.text}`).join("\n\n")}
     channelRememberStream: () => channelRememberStream,
     channelResolveLibraryPlayback: () => channelResolveLibraryPlayback,
     channelResolveTitleStream: () => channelResolveTitleStream,
+    channelSourceCacheSetting: () => channelSourceCacheSetting,
     channelUnrestrictDebridFile: () => channelUnrestrictDebridFile,
     checkEpisodeHasStream: () => checkEpisodeHasStream,
     checkMovieHasStream: () => checkMovieHasStream,
@@ -40711,6 +40722,11 @@ ${cue.text}`).join("\n\n")}
   }
   function channelRememberStream(token) {
     channelHost()?.rememberChannelStream?.(token);
+  }
+  function channelSourceCacheSetting() {
+    const cache7 = channelHost()?.sourceCache;
+    if (!cache7 || !cache7.isAndroid()) return null;
+    return { isPhone: cache7.isPhone(), get: cache7.get, set: cache7.set };
   }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
@@ -41218,6 +41234,12 @@ ${cue.text}`).join("\n\n")}
     studioDeleteConfirm: { en: "Confirm deletion", sv: "Bekr\xE4fta borttagning" },
     // Inställningssektionen
     settingsTitle: { en: "Your channels", sv: "Dina kanaler" },
+    settingsCacheTitle: { en: "Playback", sv: "Uppspelning" },
+    settingsCacheLabel: { en: "Faster channel switching (cache streams)", sv: "Snabbare kanalbyten (mellanlagra str\xF6mmar)" },
+    settingsCacheHint: {
+      en: 'Streams go through the app, which fetches the start and end of each file ahead of time. Channel switches then take a few seconds instead of 10\u201315. Costs some processing power: if the picture stutters on a weak TV box, turn it off. Same setting as "Cache streams" under Playback in the app.',
+      sv: 'Str\xF6mmarna g\xE5r genom appen, som h\xE4mtar b\xF6rjan och slutet av varje fil i f\xF6rv\xE4g. Kanalbyten tar d\xE5 n\xE5gra sekunder i st\xE4llet f\xF6r 10\u201315. Kostar lite processorkraft: hackar bilden p\xE5 en svag TV-box, st\xE4ng av den. Samma inst\xE4llning som "Mellanlagra str\xF6mmar" under Uppspelning i appen.'
+    },
     settingsHint: {
       en: "Manage your channels here: edit their rules in the channel studio, delete them or create new ones.",
       sv: "Hantera dina kanaler h\xE4r: \xE4ndra reglerna i kanalstudion, ta bort eller skapa nya."
@@ -41710,11 +41732,21 @@ ${cue.text}`).join("\n\n")}
       const identified = item.tmdbId != null && (item.kind === "movie" || item.season != null && item.episode != null);
       const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ""}:${item.episode ?? ""}` : `ref:${item.ref}`;
       const current2 = best.get(key);
-      if (!current2 || better(item, current2)) best.set(key, item);
+      if (!current2) best.set(key, item);
+      else best.set(key, better(item, current2) ? withVersions(item, current2) : withVersions(current2, item));
     }
     return [...best.values()];
   }
-  var POOL_LOGIC_VERSION = 3;
+  var versionOf = (play) => ({ provider: play.provider, fileRef: play.fileRef, ...play.size != null ? { size: play.size } : {}, ...play.name ? { name: play.name } : {} });
+  function withVersions(winner, loser) {
+    if (winner.play.type !== "debrid" || loser.play.type !== "debrid") return winner;
+    const known = new Set([winner.play, ...winner.play.alts ?? []].map((v) => `${v.provider}:${v.fileRef}`));
+    const extra = [versionOf(loser.play), ...loser.play.alts ?? []].filter((v) => !known.has(`${v.provider}:${v.fileRef}`));
+    if (extra.length === 0) return winner;
+    const alts = [...winner.play.alts ?? [], ...extra].sort((a, b) => `${a.provider}:${a.fileRef}` < `${b.provider}:${b.fileRef}` ? -1 : 1);
+    return { ...winner, play: { ...winner.play, alts } };
+  }
+  var POOL_LOGIC_VERSION = 4;
   function poolSignature(channel, sourceSigs) {
     const rules = poolRules(channel);
     return JSON.stringify({
@@ -42181,7 +42213,7 @@ ${cue.text}`).join("\n\n")}
           ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
           ...tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
           ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef }
+          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef, ...f.size ? { size: f.size } : {}, ...f.name ? { name: f.name } : {} }
         });
       }
     }
@@ -42565,20 +42597,59 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/debrid-versions.ts
+  function resolutionOf(name) {
+    const n = (name ?? "").toLowerCase();
+    if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
+    if (/\b1440p\b/.test(n)) return 1440;
+    if (/\b1080[pi]\b/.test(n)) return 1080;
+    if (/\b720p\b/.test(n)) return 720;
+    if (/\b576p\b/.test(n)) return 576;
+    if (/\b480p\b/.test(n)) return 480;
+    return null;
+  }
+  function withinCaps(v, caps) {
+    if (caps.maxBytes != null && v.size != null && v.size > caps.maxBytes) return false;
+    const res = resolutionOf(v.name);
+    if (caps.maxResolution != null && res != null && res > caps.maxResolution) return false;
+    return true;
+  }
+  function orderDebridVersions(versions, caps) {
+    const quality = (v) => (resolutionOf(v.name) ?? 0) * 1e13 + (v.size ?? 0);
+    const inside = versions.filter((v) => withinCaps(v, caps)).sort((a, b) => quality(b) - quality(a));
+    const outside = versions.filter((v) => !withinCaps(v, caps)).sort((a, b) => quality(a) - quality(b));
+    return [...inside, ...outside];
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
     const pending5 = /* @__PURE__ */ new Map();
-    function call(play, exclude, allowCatalog) {
+    const debridTried = /* @__PURE__ */ new Map();
+    async function callDebrid(ref, play, fresh) {
+      const tried = !fresh && debridTried.get(ref) || /* @__PURE__ */ new Set();
+      debridTried.set(ref, tried);
+      const caps = deps.debridCaps?.() ?? { maxBytes: null, maxResolution: null };
+      const { alts, type: _type, ...main } = play;
+      for (const version3 of orderDebridVersions([main, ...alts ?? []], caps)) {
+        const key = `${version3.provider}:${version3.fileRef}`;
+        if (tried.has(key)) continue;
+        tried.add(key);
+        const playable = await deps.debrid({ provider: version3.provider, fileRef: version3.fileRef }).catch(() => null);
+        if (playable) return playable;
+      }
+      return null;
+    }
+    function call(ref, play, exclude, allowCatalog) {
       if (play.type === "library") return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude);
       if (play.type === "stream") return deps.stream(play, exclude);
-      return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play);
+      return callDebrid(ref, play, !exclude || exclude.length === 0);
     }
     const keyOf = (ref, allowCatalog) => allowCatalog === false ? `${ref}|novod` : ref;
     async function resolveNext(item, exclude, allowCatalog) {
       cache7.delete(keyOf(item.ref, allowCatalog));
-      const value = await Promise.resolve().then(() => call(item.play, exclude, allowCatalog)).catch(() => null);
+      const value = await Promise.resolve().then(() => call(item.ref, item.play, exclude, allowCatalog)).catch(() => null);
       return value && !exclude.includes(value.url) ? value : null;
     }
     async function resolve(item, exclude = [], opts = {}) {
@@ -42589,7 +42660,7 @@ ${cue.text}`).join("\n\n")}
       if (hit && now2() - hit.at < TTL_MS2) return hit.value;
       const running2 = pending5.get(key);
       if (running2) return running2;
-      const job = Promise.resolve().then(() => call(item.play, void 0, allowCatalog)).catch(() => null).then((value) => {
+      const job = Promise.resolve().then(() => call(item.ref, item.play, void 0, allowCatalog)).catch(() => null).then((value) => {
         if (value) cache7.set(key, { at: now2(), value });
         return value;
       }).finally(() => {
@@ -42821,13 +42892,30 @@ ${cue.text}`).join("\n\n")}
     // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
     library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...exclude?.length ? { exclude } : {}, ...allowCatalog === false ? { allowCatalog: false } : {} }),
     stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-    debrid: (r) => channelUnrestrictDebridFile(r)
+    debrid: (r) => channelUnrestrictDebridFile(r),
+    debridCaps: () => autoplayCaps()
   });
+  function autoplayCaps() {
+    try {
+      const settings = typeof window === "undefined" ? null : window.__lumioPluginRuntime?.modules?.playbackSettings;
+      const gb = settings?.getAutoPlayMaxStreamSizeGb?.() ?? null;
+      return { maxBytes: gb ? gb * 1024 ** 3 : null, maxResolution: settings?.getAutoPlayMaxResolution?.() ?? null };
+    } catch {
+      return { maxBytes: null, maxResolution: null };
+    }
+  }
   function rememberPlayedStream(token) {
     if (token) channelRememberStream(token);
   }
   function hostReady() {
     return hasChannelHost();
+  }
+  function sourceCacheSetting() {
+    try {
+      return channelSourceCacheSetting();
+    } catch {
+      return null;
+    }
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
@@ -43566,10 +43654,24 @@ ${cue.text}`).join("\n\n")}
     const headers = playable.requestHeaders && Object.keys(playable.requestHeaders).length > 0 ? `&h=${encodeURIComponent(JSON.stringify(playable.requestHeaders))}` : "";
     return `/api/source-cache/warm?u=${encodeURIComponent(url)}${headers}`;
   }
+  function androidStreamsDirect2() {
+    if (typeof navigator === "undefined" || !/android/i.test(navigator.userAgent)) return false;
+    const setting = sourceCacheSetting();
+    if (setting) return !setting.get();
+    let stored = null;
+    try {
+      stored = localStorage.getItem("playback_android_source_cache");
+    } catch {
+    }
+    if (stored === "1") return false;
+    if (stored === "0") return true;
+    const phone = navigator.maxTouchPoints > 0 && /mobile/i.test(navigator.userAgent);
+    return !phone;
+  }
   var WARM_TTL_MS = 30 * 6e4;
   var warmed = /* @__PURE__ */ new Map();
   function warmPlayable(playable, type, now2 = Date.now()) {
-    const androidDirect = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    const androidDirect = androidStreamsDirect2();
     const target2 = warmUrlFor(playable, type, { androidDirect });
     if (!target2) return;
     const at = warmed.get(target2);
@@ -43977,6 +44079,9 @@ ${cue.text}`).join("\n\n")}
     const showTime = visibleMin >= 30;
     const isRest = slot.kind === "rest";
     const current2 = !isRest && slot.start <= now2 && now2 < slot.stop;
+    const cutLeft = slot.start < win.from;
+    const cutRight = slot.stop > win.to;
+    const radius = dim(8, isTv);
     const title = isRest ? t("guideRest", { time: formatClock2(slot.nextAir) }) : slot.item.kind === "episode" && slot.item.seriesTitle ? slot.item.seriesTitle : slot.item.title;
     return (
       // Ingen title-attribut: webbvyns tooltip hamnade förskjuten över kanalkolumnen.
@@ -43988,12 +44093,15 @@ ${cue.text}`).join("\n\n")}
             position: "absolute",
             top: dim(6, isTv),
             bottom: dim(6, isTv),
-            left: `calc(${box.leftPct}% + 2px)`,
-            width: `calc(${box.widthPct}% - 4px)`,
+            left: cutLeft ? `${box.leftPct}%` : `calc(${box.leftPct}% + 2px)`,
+            width: `calc(${box.widthPct}% - ${(cutLeft ? 0 : 2) + (cutRight ? 0 : 2)}px)`,
             boxSizing: "border-box",
             padding: `${dimS(5, isTv)} ${dimS(9, isTv, 12)}`,
-            borderRadius: dim(8, isTv),
             overflow: "hidden",
+            borderTopLeftRadius: cutLeft ? 0 : radius,
+            borderBottomLeftRadius: cutLeft ? 0 : radius,
+            borderTopRightRadius: cutRight ? 0 : radius,
+            borderBottomRightRadius: cutRight ? 0 : radius,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -45105,6 +45213,7 @@ ${cue.text}`).join("\n\n")}
   var PROGRESS_GRACE_MS = 3e4;
   var TUNING_LAYER_Z = 1e6;
   var OSD_HIDE_MS = 5e3;
+  var OSD_TAP_GUARD_MS = 400;
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function cachedRundown(c) {
     return readCachedRundown(c);
@@ -45201,6 +45310,10 @@ ${cue.text}`).join("\n\n")}
       lastGotoAt.current = t0;
       timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0, rapid, marks: {} };
     }, [request.seq]);
+    useEffect(() => {
+      setAndroidImmersive(true, "lumiotv-kanalbyte");
+    }, [request.seq]);
+    useEffect(() => () => setAndroidImmersive(false, "lumiotv-st\xE4ngd"), []);
     const mark = useCallback((seq, name) => {
       const tm = timing.current;
       if (tm && tm.seq === seq && tm.marks[name] == null) tm.marks[name] = Math.round(clockNow() - tm.t0);
@@ -45792,7 +45905,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function OsdButton({ children, onClick, isTv, label, accent, init, data }) {
+  function OsdButton({ children, onClick, isTv, label, accent, init, data, icon }) {
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -45807,16 +45920,17 @@ ${cue.text}`).join("\n\n")}
           alignItems: "center",
           justifyContent: "center",
           gap: "0.35rem",
-          minHeight: isTv ? "2.75rem" : "2.25rem",
-          padding: isTv ? "0 1.1rem" : "0 0.9rem",
+          minHeight: isTv ? "2.75rem" : icon ? "2.5rem" : "2.25rem",
+          padding: isTv ? "0 1.1rem" : icon ? 0 : "0 0.9rem",
+          ...icon ? { minWidth: "2.5rem", fontSize: "1rem", letterSpacing: 0 } : {},
           ...glass(isTv, { fill: accent ? C.accent : C.pillBg, blur: 20 }),
           borderRadius: RADIUS.pill,
           border: `1px solid ${accent ? C.accent : C.pillBorder}`,
           color: accent ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
-          fontSize: isTv ? tvType("body") : "0.8rem",
+          fontSize: isTv ? tvType("body") : icon ? "1rem" : "0.8rem",
           fontWeight: 600,
-          letterSpacing: "0.12em",
+          letterSpacing: icon ? 0 : "0.12em",
           cursor: "pointer",
           whiteSpace: "nowrap"
         },
@@ -45827,6 +45941,14 @@ ${cue.text}`).join("\n\n")}
   function ChannelOsd(props) {
     const { osdRef, visible, channel, meta, title, mode, notice, isTv, t } = props;
     const fade = { opacity: visible ? 1 : 0, transition: "opacity 240ms ease", pointerEvents: visible ? "auto" : "none" };
+    const shownAt = useRef(0);
+    if (!visible) shownAt.current = 0;
+    else if (shownAt.current === 0) shownAt.current = Date.now();
+    const touch = typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches;
+    const guard = (fn) => fn && touch ? () => {
+      if (Date.now() - shownAt.current >= OSD_TAP_GUARD_MS) fn();
+    } : fn;
+    const phone = !isTv && typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 639px)").matches;
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -45943,8 +46065,8 @@ ${cue.text}`).join("\n\n")}
                 right: "1.5rem",
                 display: "flex",
                 alignItems: "center",
-                gap: "0.6rem",
-                flexWrap: "wrap",
+                gap: phone ? "0.75rem" : "0.6rem",
+                flexWrap: phone ? "nowrap" : "wrap",
                 ...props.lift != null ? { bottom: props.lift + 10, padding: 0 } : {
                   bottom: "calc(var(--android-inset-bottom, 0px) + 6.5rem)",
                   padding: "0.75rem 1rem",
@@ -45953,14 +46075,21 @@ ${cue.text}`).join("\n\n")}
                 }
               },
               children: [
-                props.onFromStart ? /* @__PURE__ */ jsxs(OsdButton, { onClick: props.onFromStart, isTv, children: [
-                  "\u27F2 ",
-                  t("playerFromStart")
-                ] }) : null,
-                /* @__PURE__ */ jsx(OsdButton, { onClick: props.onChDown, isTv, label: t("playerChDown"), children: "CH \u25BC" }),
-                /* @__PURE__ */ jsx(OsdButton, { onClick: props.onChUp, isTv, label: t("playerChUp"), init: !props.closeIsInit, children: "CH \u25B2" }),
-                props.onGuide ? /* @__PURE__ */ jsx(OsdButton, { onClick: props.onGuide, isTv, data: "osd-guide", children: t("playerGuide") }) : null,
-                props.onZap ? /* @__PURE__ */ jsx(OsdButton, { onClick: props.onZap, isTv, children: t("playerZap") }) : null,
+                phone ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  props.onFromStart ? /* @__PURE__ */ jsx(OsdButton, { icon: true, onClick: guard(props.onFromStart), isTv, label: t("playerFromStart"), children: "\u27F2" }) : null,
+                  /* @__PURE__ */ jsx(OsdButton, { icon: true, onClick: guard(props.onChDown), isTv, label: t("playerChDown"), children: "\u25BC" }),
+                  /* @__PURE__ */ jsx(OsdButton, { icon: true, onClick: guard(props.onChUp), isTv, label: t("playerChUp"), init: !props.closeIsInit, children: "\u25B2" }),
+                  props.onGuide ? /* @__PURE__ */ jsx(OsdButton, { icon: true, onClick: guard(props.onGuide), isTv, label: t("playerGuide"), data: "osd-guide", children: "\u2630" }) : null
+                ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  props.onFromStart ? /* @__PURE__ */ jsxs(OsdButton, { onClick: guard(props.onFromStart), isTv, children: [
+                    "\u27F2 ",
+                    t("playerFromStart")
+                  ] }) : null,
+                  /* @__PURE__ */ jsx(OsdButton, { onClick: guard(props.onChDown), isTv, label: t("playerChDown"), children: "CH \u25BC" }),
+                  /* @__PURE__ */ jsx(OsdButton, { onClick: guard(props.onChUp), isTv, label: t("playerChUp"), init: !props.closeIsInit, children: "CH \u25B2" }),
+                  props.onGuide ? /* @__PURE__ */ jsx(OsdButton, { onClick: guard(props.onGuide), isTv, data: "osd-guide", children: t("playerGuide") }) : null,
+                  props.onZap ? /* @__PURE__ */ jsx(OsdButton, { onClick: guard(props.onZap), isTv, children: t("playerZap") }) : null
+                ] }),
                 /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
                 /* @__PURE__ */ jsx(
                   "span",
@@ -45980,7 +46109,7 @@ ${cue.text}`).join("\n\n")}
                     children: mode === "live" ? `\u25CF ${t("playerLive")}` : t("playerFromStartBadge")
                   }
                 ),
-                title ? /* @__PURE__ */ jsxs("span", { style: { fontFamily: FONT3.title, fontSize: isTv ? tvType("h3") : "0.9rem", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                title && !phone ? /* @__PURE__ */ jsxs("span", { style: { fontFamily: FONT3.title, fontSize: isTv ? tvType("h3") : "0.9rem", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                   channel.number,
                   " \xB7 ",
                   title
@@ -47474,6 +47603,11 @@ ${cue.text}`).join("\n\n")}
       });
     }
     rows.push({ t: "action", label: S.settingsNewRow, run: actions.create });
+    const cache7 = sourceCacheSetting();
+    if (cache7) {
+      rows.push({ t: "eyebrow", label: S.settingsCacheTitle });
+      rows.push({ t: "toggle", label: S.settingsCacheLabel, hint: S.settingsCacheHint, value: cache7.get(), set: (on) => cache7.set(on) });
+    }
     return rows;
   }
   var channelsSettingsSection = {
@@ -47504,7 +47638,29 @@ ${cue.text}`).join("\n\n")}
     };
     return { sorted, counts, confirmId, requestDelete: onDelete };
   }
+  function SourceCacheCard() {
+    const t = useText();
+    const cache7 = useMemo(() => sourceCacheSetting(), []);
+    const [on, setOn] = useState(() => cache7?.get() ?? false);
+    if (!cache7) return null;
+    return /* @__PURE__ */ jsx(Section, { title: t("settingsCacheTitle"), children: /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }, children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { style: { color: TOKENS.text, fontWeight: 600 }, children: t("settingsCacheLabel") }),
+        /* @__PURE__ */ jsx("div", { style: { color: TOKENS.textDim, marginTop: 4, lineHeight: 1.5, maxWidth: "62ch" }, children: t("settingsCacheHint") })
+      ] }),
+      /* @__PURE__ */ jsx(Switch, { checked: on, onChange: (value) => {
+        cache7.set(value);
+        setOn(value);
+      } })
+    ] }) });
+  }
   function ChannelsSettingsSection() {
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(ChannelListSection, {}),
+      /* @__PURE__ */ jsx(SourceCacheCard, {})
+    ] });
+  }
+  function ChannelListSection() {
     const t = useText();
     const { sorted, counts, confirmId, requestDelete: onDelete } = useChannelList();
     return /* @__PURE__ */ jsx(

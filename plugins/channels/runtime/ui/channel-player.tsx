@@ -13,7 +13,7 @@
  */
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentType, type CSSProperties, type MutableRefObject, type ReactNode } from 'react'
-import { useTvMode } from '@/lib/plugin-sdk'
+import { setAndroidImmersive, useTvMode } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import { programmeAt } from '../model/schedule'
@@ -57,6 +57,8 @@ const PROGRESS_GRACE_MS = 30_000
 /** Över appens svarta täckskärm vid spelarbyte (showMpvTransitionCover, z 999999). */
 const TUNING_LAYER_Z = 1_000_000
 const OSD_HIDE_MS = 5_000
+/** Så länge efter att kanalknapparna blivit synliga ignoreras tryck (trycket som tog fram dem). */
+const OSD_TAP_GUARD_MS = 400
 /** Bakåt: samma tangenter som värdens fokusmotor (Escape/Backspace) plus webbens namn. */
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 
@@ -181,6 +183,13 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     lastGotoAt.current = t0
     timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0, rapid, marks: {} }
   }, [request.seq]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Androids system-/navigeringsfält: värdens spelare slår av helskärmen när
+  // den avmonteras vid kanalbytet och på igen först när nästa monteras — fältet
+  // syntes över laddningskortet och gled bort halvvägs (Jerry 2026-10-19).
+  // Kanalspelaren håller helskärmen själv från bytet tills den stängs.
+  useEffect(() => { setAndroidImmersive(true, 'lumiotv-kanalbyte') }, [request.seq])
+  useEffect(() => () => setAndroidImmersive(false, 'lumiotv-stängd'), [])
   const mark = useCallback((seq: number, name: keyof SwitchTiming['marks']) => {
     const tm = timing.current
     if (tm && tm.seq === seq && tm.marks[name] == null) tm.marks[name] = Math.round(clockNow() - tm.t0)
@@ -923,7 +932,7 @@ function Screen({ backdropUrl, isTv, children, onMouseMove, onClose, t }: {
 }
 
 /** Fokusbar knapp i OSD:n. `data-f` gör den nåbar för värdens TV-fokusmotor. */
-function OsdButton({ children, onClick, isTv, label, accent, init, data }: {
+function OsdButton({ children, onClick, isTv, label, accent, init, data, icon }: {
   children: ReactNode
   onClick(): void
   isTv: boolean
@@ -932,6 +941,8 @@ function OsdButton({ children, onClick, isTv, label, accent, init, data }: {
   init?: boolean
   /** Eget data-attribut (t.ex. "osd-guide"), för att hitta knappen igen. */
   data?: string
+  /** Telefon: rund ikonknapp (etiketten i aria-label). */
+  icon?: boolean
 }) {
   return (
     <button
@@ -943,11 +954,12 @@ function OsdButton({ children, onClick, isTv, label, accent, init, data }: {
       onClick={onClick}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
-        minHeight: isTv ? '2.75rem' : '2.25rem', padding: isTv ? '0 1.1rem' : '0 0.9rem',
+        minHeight: isTv ? '2.75rem' : icon ? '2.5rem' : '2.25rem', padding: isTv ? '0 1.1rem' : icon ? 0 : '0 0.9rem',
+        ...(icon ? { minWidth: '2.5rem', fontSize: '1rem', letterSpacing: 0 } : {}),
         ...glass(isTv, { fill: accent ? C.accent : C.pillBg, blur: 20 }),
         borderRadius: RADIUS.pill, border: `1px solid ${accent ? C.accent : C.pillBorder}`,
         color: accent ? C.onAccent : C.text,
-        fontFamily: FONT.ui, fontSize: isTv ? tvType('body') : '0.8rem', fontWeight: 600, letterSpacing: '0.12em',
+        fontFamily: FONT.ui, fontSize: isTv ? tvType('body') : icon ? '1rem' : '0.8rem', fontWeight: 600, letterSpacing: icon ? 0 : '0.12em',
         cursor: 'pointer', whiteSpace: 'nowrap',
       }}
     >
@@ -991,6 +1003,17 @@ interface OsdProps {
 function ChannelOsd(props: OsdProps) {
   const { osdRef, visible, channel, meta, title, mode, notice, isTv, t } = props
   const fade: CSSProperties = { opacity: visible ? 1 : 0, transition: 'opacity 240ms ease', pointerEvents: visible ? 'auto' : 'none' }
+  // Trycket som tar fram kontrollerna landade som ett klick på knappen som
+  // just blev synlig: kanalen bytte när man bara ville se kontrollerna
+  // (telefonen, 2026-10-19). Knapparna svarar först en stund efter att de syns.
+  const shownAt = useRef(0)
+  if (!visible) shownAt.current = 0
+  else if (shownAt.current === 0) shownAt.current = Date.now()
+  // Bara på pekskärm: tycket som tog fram kontrollerna får inte samtidigt trycka på en knapp.
+  const touch = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
+  const guard = (fn?: () => void) => (fn && touch ? () => { if (Date.now() - shownAt.current >= OSD_TAP_GUARD_MS) fn() } : fn)
+  // Telefon: en kompakt rad med ikonknappar, utan zapp och utan titelrad.
+  const phone = !isTv && typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 639px)').matches
   return (
     <div
       ref={osdRef}
@@ -1074,7 +1097,7 @@ function ChannelOsd(props: OsdProps) {
         data-channels-osd-bar=""
         style={{
           ...fade, position: 'absolute', left: '1.5rem', right: '1.5rem',
-          display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap',
+          display: 'flex', alignItems: 'center', gap: phone ? '0.75rem' : '0.6rem', flexWrap: phone ? 'nowrap' : 'wrap',
           ...(props.lift != null
             // I värdens egen gradient, direkt ovanför seekraden: en kontrollyta, inte två paneler.
             ? { bottom: props.lift + 10, padding: 0 }
@@ -1086,11 +1109,22 @@ function ChannelOsd(props: OsdProps) {
               }),
         }}
       >
-        {props.onFromStart ? <OsdButton onClick={props.onFromStart} isTv={isTv}>⟲ {t('playerFromStart')}</OsdButton> : null}
-        <OsdButton onClick={props.onChDown} isTv={isTv} label={t('playerChDown')}>CH ▼</OsdButton>
-        <OsdButton onClick={props.onChUp} isTv={isTv} label={t('playerChUp')} init={!props.closeIsInit}>CH ▲</OsdButton>
-        {props.onGuide ? <OsdButton onClick={props.onGuide} isTv={isTv} data="osd-guide">{t('playerGuide')}</OsdButton> : null}
-        {props.onZap ? <OsdButton onClick={props.onZap} isTv={isTv}>{t('playerZap')}</OsdButton> : null}
+        {phone ? (
+          <>
+            {props.onFromStart ? <OsdButton icon onClick={guard(props.onFromStart)!} isTv={isTv} label={t('playerFromStart')}>⟲</OsdButton> : null}
+            <OsdButton icon onClick={guard(props.onChDown)!} isTv={isTv} label={t('playerChDown')}>▼</OsdButton>
+            <OsdButton icon onClick={guard(props.onChUp)!} isTv={isTv} label={t('playerChUp')} init={!props.closeIsInit}>▲</OsdButton>
+            {props.onGuide ? <OsdButton icon onClick={guard(props.onGuide)!} isTv={isTv} label={t('playerGuide')} data="osd-guide">☰</OsdButton> : null}
+          </>
+        ) : (
+          <>
+            {props.onFromStart ? <OsdButton onClick={guard(props.onFromStart)!} isTv={isTv}>⟲ {t('playerFromStart')}</OsdButton> : null}
+            <OsdButton onClick={guard(props.onChDown)!} isTv={isTv} label={t('playerChDown')}>CH ▼</OsdButton>
+            <OsdButton onClick={guard(props.onChUp)!} isTv={isTv} label={t('playerChUp')} init={!props.closeIsInit}>CH ▲</OsdButton>
+            {props.onGuide ? <OsdButton onClick={guard(props.onGuide)!} isTv={isTv} data="osd-guide">{t('playerGuide')}</OsdButton> : null}
+            {props.onZap ? <OsdButton onClick={guard(props.onZap)!} isTv={isTv}>{t('playerZap')}</OsdButton> : null}
+          </>
+        )}
         <div style={{ flex: 1 }} />
         <span
           style={{
@@ -1102,7 +1136,7 @@ function ChannelOsd(props: OsdProps) {
         >
           {mode === 'live' ? `● ${t('playerLive')}` : t('playerFromStartBadge')}
         </span>
-        {title ? (
+        {title && !phone ? (
           <span style={{ fontFamily: FONT.title, fontSize: isTv ? tvType('h3') : '0.9rem', maxWidth: '40%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {channel.number} · {title}
           </span>

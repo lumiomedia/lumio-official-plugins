@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
+  setAndroidImmersive: () => {},
   waitForStartIdle: () => Promise.resolve(),
   useTvMode: () => false,
   useLang: () => ({ lang: 'sv' }),

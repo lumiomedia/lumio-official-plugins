@@ -1,3 +1,11 @@
+## 0.1.39
+
+- Tablån: program som började före fönstret (eller fortsätter efter det) får en rak kant mot fönstrets kant, så det inte ser ut som om de startar vid halvtimmen.
+- Telefon: spelarens kontroller är kompaktare (rundade ikonknappar), och trycket som tar fram dem kan inte samtidigt byta kanal.
+- Android: system- och navigeringsfälten blinkar inte längre fram över laddningskortet vid kanalbyte.
+- Debrid: samma film i flera versioner i molnet (flera torrents eller konton) blir en post som minns alla filer. Versionerna provas i ordning efter "Max storlek per stream" och "Max upplösning", och nekas en upplåsning (t.ex. ett utgånget konto) provas nästa i stället för Ingen signal.
+- Inställningar: "Snabbare kanalbyten (mellanlagra strömmar)" på Android, samma val som appens "Mellanlagra strömmar". Förvärmningen följer valet (kräver app 0.1.630 från 2026-10-19).
+
 ## 0.1.38
 
 - Telefon: tablån går kant i kant och rullas ut helt åt höger; kanalkolumnen ligger mot vänsterkanten, svart ända upp till linjen under GUIDE, och första kanalen 3 px under linjen utan uttoning.

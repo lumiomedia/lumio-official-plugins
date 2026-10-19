@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelListDebridCloud, channelRememberStream, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
+  channelListDebridCloud, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -306,7 +306,19 @@ export const resolver = createResolver({
   library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...(exclude?.length ? { exclude } : {}), ...(allowCatalog === false ? { allowCatalog: false } : {}) }),
   stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
   debrid: (r) => channelUnrestrictDebridFile(r),
+  debridCaps: () => autoplayCaps(),
 })
+
+/** Autostartens tak ur värdens uppspelningsinställningar (Max storlek per stream, Max upplösning). */
+function autoplayCaps(): { maxBytes: number | null; maxResolution: number | null } {
+  try {
+    const settings = typeof window === 'undefined' ? null : window.__lumioPluginRuntime?.modules?.playbackSettings
+    const gb = settings?.getAutoPlayMaxStreamSizeGb?.() ?? null
+    return { maxBytes: gb ? gb * 1024 ** 3 : null, maxResolution: settings?.getAutoPlayMaxResolution?.() ?? null }
+  } catch {
+    return { maxBytes: null, maxResolution: null }
+  }
+}
 
 /**
  * Gör strömvalet bakom ett uppslag ihågkommet. Anropas när bilden syns —
@@ -318,4 +330,12 @@ export function rememberPlayedStream(token: string | undefined): void {
 
 export function hostReady(): boolean {
   return hasChannelHost()
+}
+
+/**
+ * Appens "Mellanlagra strömmar" (Android) via värden: samma inställning som i
+ * appens Uppspelning. null utanför Android och på äldre värdar.
+ */
+export function sourceCacheSetting(): ReturnType<typeof channelSourceCacheSetting> {
+  try { return channelSourceCacheSetting() } catch { return null }
 }

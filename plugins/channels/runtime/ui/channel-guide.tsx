@@ -463,6 +463,12 @@ function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: Gu
   const showTime = visibleMin >= 30
   const isRest = slot.kind === 'rest'
   const current = !isRest && slot.start <= now && now < slot.stop
+  // Började före fönstret / fortsätter efter: rak kant mot fönstrets kant, så
+  // det inte ser ut som om programmet startar där (Jerry 2026-10-19: "började
+  // alla 21:30?"). Ingen luft mot kanten heller.
+  const cutLeft = slot.start < win.from
+  const cutRight = slot.stop > win.to
+  const radius = dim(8, isTv)
   const title = isRest
     ? t('guideRest', { time: formatClock(slot.nextAir) })
     : slot.item.kind === 'episode' && slot.item.seriesTitle ? slot.item.seriesTitle : slot.item.title
@@ -471,8 +477,12 @@ function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: Gu
     <div
       data-guide-block={isRest ? 'rest' : current ? 'current' : 'idle'}
       style={{
-        position: 'absolute', top: dim(6, isTv), bottom: dim(6, isTv), left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
-        boxSizing: 'border-box', padding: `${dimS(5, isTv)} ${dimS(9, isTv, 12)}`, borderRadius: dim(8, isTv), overflow: 'hidden',
+        position: 'absolute', top: dim(6, isTv), bottom: dim(6, isTv),
+        left: cutLeft ? `${box.leftPct}%` : `calc(${box.leftPct}% + 2px)`,
+        width: `calc(${box.widthPct}% - ${(cutLeft ? 0 : 2) + (cutRight ? 0 : 2)}px)`,
+        boxSizing: 'border-box', padding: `${dimS(5, isTv)} ${dimS(9, isTv, 12)}`, overflow: 'hidden',
+        borderTopLeftRadius: cutLeft ? 0 : radius, borderBottomLeftRadius: cutLeft ? 0 : radius,
+        borderTopRightRadius: cutRight ? 0 : radius, borderBottomRightRadius: cutRight ? 0 : radius,
         display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dim(1, isTv, 2),
         // Eget radavstånd: TV-lägets <main> ärver 1,4, som sprängde blocket och klippte titeln.
         lineHeight: 1.2,

@@ -145,6 +145,12 @@ export const S = {
   studioDeleteConfirm: { en: 'Confirm deletion', sv: 'Bekräfta borttagning' },
   // Inställningssektionen
   settingsTitle: { en: 'Your channels', sv: 'Dina kanaler' },
+  settingsCacheTitle: { en: 'Playback', sv: 'Uppspelning' },
+  settingsCacheLabel: { en: 'Faster channel switching (cache streams)', sv: 'Snabbare kanalbyten (mellanlagra strömmar)' },
+  settingsCacheHint: {
+    en: 'Streams go through the app, which fetches the start and end of each file ahead of time. Channel switches then take a few seconds instead of 10–15. Costs some processing power: if the picture stutters on a weak TV box, turn it off. Same setting as "Cache streams" under Playback in the app.',
+    sv: 'Strömmarna går genom appen, som hämtar början och slutet av varje fil i förväg. Kanalbyten tar då några sekunder i stället för 10–15. Kostar lite processorkraft: hackar bilden på en svag TV-box, stäng av den. Samma inställning som "Mellanlagra strömmar" under Uppspelning i appen.',
+  },
   settingsHint: {
     en: 'Manage your channels here: edit their rules in the channel studio, delete them or create new ones.',
     sv: 'Hantera dina kanaler här: ändra reglerna i kanalstudion, ta bort eller skapa nya.',

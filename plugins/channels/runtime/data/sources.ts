@@ -47,7 +47,7 @@ export interface DebridTitleLike {
   year: number | null
   tmdbId?: number
   imdbId?: string
-  files: Array<{ provider: 'realdebrid' | 'torbox' | 'alldebrid'; fileRef: string; season?: number; episode?: number }>
+  files: Array<{ provider: 'realdebrid' | 'torbox' | 'alldebrid'; fileRef: string; size?: number; name?: string; season?: number; episode?: number }>
 }
 
 interface WatchlistEntry { tmdbId: number; imdbId?: string | null; title: string; posterUrl?: string | null }
@@ -328,7 +328,7 @@ function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem
         ...(meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {}),
         ...(tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...(f.season != null ? { season: f.season } : {}), ...(f.episode != null ? { episode: f.episode } : {}) } : {}),
         ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-        play: { type: 'debrid', provider: f.provider, fileRef: f.fileRef },
+        play: { type: 'debrid', provider: f.provider, fileRef: f.fileRef, ...(f.size ? { size: f.size } : {}), ...(f.name ? { name: f.name } : {}) },
       })
     }
   }

@@ -20,7 +20,7 @@ vi.mock('@/lib/plugin-sdk', () => ({
   resolvePluginText: (text: { sv: string }) => text.sv,
   requestOpenBrowsePage: (r: unknown) => { state.opened.push(r) },
 }))
-vi.mock('../host', () => ({ readChannels: () => state.channels, onChannelsChanged: () => () => {} }))
+vi.mock('../host', () => ({ readChannels: () => state.channels, onChannelsChanged: () => () => {}, sourceCacheSetting: () => null }))
 vi.mock('../state/store', () => ({
   useChannels: () => state.channels,
   deleteChannel: (id: string) => { state.deleted.push(id) },

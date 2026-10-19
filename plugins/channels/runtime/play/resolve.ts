@@ -3,7 +3,8 @@
  * egen SDK-kopia har tomma register); här bara dispatch, cache och skydd mot
  * att en gammal resolve vinner över en nyare vid snabb zapp.
  */
-import type { PlayRef, PoolItem } from '../data/pool'
+import type { DebridVersion, PlayRef, PoolItem } from '../data/pool'
+import { orderDebridVersions, type DebridCaps } from './debrid-versions'
 
 export interface Playable {
   url: string
@@ -18,7 +19,9 @@ export interface ResolveDeps {
   /** `allowCatalog: false` = aldrig titelns IPTV-VOD-versioner (kanalen har inte VOD som källa). */
   library(ref: Extract<PlayRef, { type: 'library' }>, exclude?: string[], allowCatalog?: boolean): Promise<Playable | null>
   stream(ref: Extract<PlayRef, { type: 'stream' }>, exclude?: string[]): Promise<Playable | null>
-  debrid(ref: Extract<PlayRef, { type: 'debrid' }>): Promise<Playable | null>
+  debrid(ref: DebridVersion): Promise<Playable | null>
+  /** Autostartens tak, läses vid varje uppspelning. Saknas = inget tak. */
+  debridCaps?(): DebridCaps
 }
 
 const TTL_MS = 10 * 60_000
@@ -27,11 +30,32 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
   const cache = new Map<string, { at: number; value: Playable }>()
   const pending = new Map<string, Promise<Playable | null>>()
 
-  function call(play: PlayRef, exclude?: string[], allowCatalog?: boolean): Promise<Playable | null> {
+  /**
+   * Provade debridfiler per post. Versionerna provas i takets ordning tills
+   * en låses upp; en nekad upplåsning (utgånget konto) ger ingen adress att
+   * utesluta, så resolvern minns själv vilka som provats. Ny start = nytt varv.
+   */
+  const debridTried = new Map<string, Set<string>>()
+
+  async function callDebrid(ref: string, play: Extract<PlayRef, { type: 'debrid' }>, fresh: boolean): Promise<Playable | null> {
+    const tried = (!fresh && debridTried.get(ref)) || new Set<string>()
+    debridTried.set(ref, tried)
+    const caps = deps.debridCaps?.() ?? { maxBytes: null, maxResolution: null }
+    const { alts, type: _type, ...main } = play
+    for (const version of orderDebridVersions([main, ...(alts ?? [])], caps)) {
+      const key = `${version.provider}:${version.fileRef}`
+      if (tried.has(key)) continue
+      tried.add(key)
+      const playable = await deps.debrid({ provider: version.provider, fileRef: version.fileRef }).catch(() => null)
+      if (playable) return playable
+    }
+    return null
+  }
+
+  function call(ref: string, play: PlayRef, exclude?: string[], allowCatalog?: boolean): Promise<Playable | null> {
     if (play.type === 'library') return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude)
     if (play.type === 'stream') return deps.stream(play, exclude)
-    // En debridpost är en fil: ingen annan version att be om.
-    return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play)
+    return callDebrid(ref, play, !exclude || exclude.length === 0)
   }
 
   /**
@@ -44,7 +68,7 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
 
   async function resolveNext(item: PoolItem, exclude: string[], allowCatalog?: boolean): Promise<Playable | null> {
     cache.delete(keyOf(item.ref, allowCatalog))
-    const value = await Promise.resolve().then(() => call(item.play, exclude, allowCatalog)).catch(() => null)
+    const value = await Promise.resolve().then(() => call(item.ref, item.play, exclude, allowCatalog)).catch(() => null)
     return value && !exclude.includes(value.url) ? value : null
   }
 
@@ -58,7 +82,7 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
     if (running) return running
     // Anropet kan kasta synkront; Promise.resolve().then fångar det också.
     const job: Promise<Playable | null> = Promise.resolve()
-      .then(() => call(item.play, undefined, allowCatalog))
+      .then(() => call(item.ref, item.play, undefined, allowCatalog))
       .catch(() => null)
       .then((value) => {
         if (value) cache.set(key, { at: now(), value })
