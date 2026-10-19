@@ -41079,14 +41079,14 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     ChannelsPlugin: () => ChannelsPlugin,
     default: () => runtime_default
   });
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/strings.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/strings.ts
   var S = {
     pluginName: { en: "LumioTV", sv: "LumioTV" },
     description: { en: "Personal linear TV channels", sv: "Personliga linj\xE4ra TV-kanaler" },
@@ -41280,14 +41280,14 @@ ${cue.text}`).join("\n\n")}
     Politics: { en: "Politics", sv: "Politik" }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/bootstrap.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/state/store.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/genres.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/genres.ts
   var ALIAS = {
     "sci-fi": "science fiction",
     "sci fi": "science fiction",
@@ -41317,7 +41317,7 @@ ${cue.text}`).join("\n\n")}
     return [...set];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/channel.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/channel.ts
   var ERA_RANGES = {
     "70s": [1970, 1979],
     "80s": [1980, 1989],
@@ -41439,7 +41439,7 @@ ${cue.text}`).join("\n\n")}
     return words.slice(0, 2).map((w) => w[0].toLocaleUpperCase()).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/lock.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/lock.ts
   var MIN = 6e4;
   var LOCK_SPAN_MS = 6 * 36e5;
   var LOCK_RENEW_MS = 3 * 36e5;
@@ -41514,7 +41514,7 @@ ${cue.text}`).join("\n\n")}
     return ok ? { sig, slots } : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/schedule.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
   var MIN2 = 6e4;
   var DAY_MIN = 24 * 60;
@@ -41699,7 +41699,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/pool.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/pool.ts
   var DEFAULT_RUNTIME = { movie: 100, episode: 45 };
   var LENGTH_TEST = {
     any: () => true,
@@ -41838,7 +41838,7 @@ ${cue.text}`).join("\n\n")}
     return items2.filter((item) => kept.has(item.seriesKey ?? item.ref));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/pool-pack.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/pool-pack.ts
   var POOL_PACK_VERSION = 2;
   function packPlay(play, source) {
     if (play.type === "library") {
@@ -41920,7 +41920,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/title-clean.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/title-clean.ts
   var JUNK_WORDS = /* @__PURE__ */ new Set(["com", "net", "org", "www", "mkv", "mp4", "avi", "rip", "dual", "multi", "latino", "castellano", "subs", "sub"]);
   var mixed = (w) => /[a-z]/i.test(w) && /\d/.test(w);
   function cleanTitle(raw) {
@@ -41940,7 +41940,7 @@ ${cue.text}`).join("\n\n")}
     return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/runtime-fix.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/runtime-fix.ts
   var MAX_FIXES = 600;
   function noteDuration(fixes, ref, seconds) {
     if (!Number.isFinite(seconds) || seconds < 60 || seconds > 12 * 3600) return null;
@@ -41978,7 +41978,7 @@ ${cue.text}`).join("\n\n")}
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/sources.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/sources.ts
   var isVodSourceId = (id) => id.startsWith("xtream-vod:");
   function librarySides(t) {
     const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : [];
@@ -42426,10 +42426,10 @@ ${cue.text}`).join("\n\n")}
     return timed;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/meta-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/meta-cache.ts
   var TTL_MS = 30 * 24 * 3600 * 1e3;
   var PARALLEL = 2;
   function metaKey(kind, tmdbId, season, episode) {
@@ -42597,7 +42597,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/debrid-versions.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/debrid-versions.ts
   function resolutionOf(name) {
     const n = (name ?? "").toLowerCase();
     if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
@@ -42621,7 +42621,7 @@ ${cue.text}`).join("\n\n")}
     return [...inside, ...outside];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
@@ -42686,7 +42686,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/host.ts
   var PLUGIN_ID = "com.lumio.channels";
   var object = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
   function readChannels() {
@@ -42918,7 +42918,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/state/store.ts
   function saveChannel(def) {
     const all = readChannels();
     const before = all.find((c) => c.id === def.id);
@@ -43141,7 +43141,7 @@ ${cue.text}`).join("\n\n")}
     return now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/bootstrap.tsx
   function seedForActiveProfile() {
     try {
       seedDefaultChannels(readStoredLang() === "sv" ? "sv" : "en");
@@ -43156,11 +43156,11 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row-logic.ts
   var HOME_DEFAULT_COUNT = 20;
   function homeChannels(channels, count = HOME_DEFAULT_COUNT) {
     return channels.filter((c) => c.showOnHome).sort((a, b) => a.number - b.number).slice(0, Math.max(0, count));
@@ -43192,7 +43192,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/guide-layout.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/guide-layout.ts
   var MIN3 = 6e4;
   var HALF_HOUR = 30 * MIN3;
   var GUIDE_SPAN_MIN = 210;
@@ -43232,7 +43232,7 @@ ${cue.text}`).join("\n\n")}
     return Math.max(0, Math.min(Math.max(0, maxScroll), index * rowH));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tv.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tv.ts
   init_react_shim();
   init_tv_focus_shim();
   var tvu = (n) => `calc(${n} * var(--tv-u, 1px))`;
@@ -43308,7 +43308,7 @@ ${cue.text}`).join("\n\n")}
   }
   var tvType = (role) => typeSize(0, true, role);
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tokens.ts
   var C = {
     /** Appens grund (--base-950, följer temat; svart som standard). */
     base: "rgb(var(--base-950, 5 5 7))",
@@ -43382,7 +43382,7 @@ ${cue.text}`).join("\n\n")}
   var RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 };
   var fontSize = (px, tv) => typeSize(px, tv);
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/use-text.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/use-text.ts
   init_react_shim();
   init_plugin_sdk();
   function useText() {
@@ -43397,7 +43397,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row.tsx
   init_jsx_runtime_shim();
   function ChannelsHomeRow({ onNavigate, layout = "slider", count, sliderCardWidth = "16rem" }) {
     const t = useText();
@@ -43570,11 +43570,11 @@ ${cue.text}`).join("\n\n")}
     }, [id, rundown, report]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channels-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/player-logic.ts
   function startSeconds(slot, mode) {
     if (mode === "start") return 0;
     return Math.max(0, slot.minsIn * 60);
@@ -43640,7 +43640,7 @@ ${cue.text}`).join("\n\n")}
     return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/warm.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/warm.ts
   var WEBDAV_STREAM = "/api/webdav-library/stream?";
   function warmUrlFor(playable, type, opts) {
     if (type === "stream") return null;
@@ -43684,7 +43684,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/start-channel.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/start-channel.ts
   function onAirNow(channel, rundown, now2) {
     if (rundown == null) return isOnAir(channel.airWindow, now2);
     return rundown.length > 0 && programmeAt(rundown, channel.airWindow, now2).kind === "programme";
@@ -43696,11 +43696,11 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
   function ChannelBadge({ channel, size = 44, isTv = false, style }) {
     return /* @__PURE__ */ jsx(
@@ -43732,7 +43732,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-guide.tsx
   init_jsx_runtime_shim();
   var ROW_H = 54;
   var TV_ROW_H = 72;
@@ -44125,7 +44125,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-hero.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
@@ -44453,12 +44453,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-player.tsx
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/zap-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/zap-logic.ts
   var NOISE_MS = 320;
   var OSD_IDLE_MS = 4e3;
   var MAX_DIGITS = 3;
@@ -44488,7 +44488,7 @@ ${cue.text}`).join("\n\n")}
     return channels.find((c) => c.number === n) ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/player-state.ts
   var POSITION_SLACK_S = 20;
   var TRUSTED_FIRST_PLAY_MS = 4800;
   var MAX_VERSIONS = 3;
@@ -44602,7 +44602,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/guide-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/guide-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var HALF_HOUR2 = 30 * 6e4;
@@ -44726,7 +44726,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/host-controls.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
@@ -44906,7 +44906,7 @@ ${cue.text}`).join("\n\n")}
     return spot;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tuning-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tuning-card.tsx
   init_jsx_runtime_shim();
   var FADE_MS = 220;
   var KEYFRAMES = `
@@ -44975,7 +44975,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/zap-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/zap-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var NOISE_SVG = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")`;
@@ -45205,7 +45205,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-player.tsx
   init_jsx_runtime_shim();
   var PRELOAD_LEAD_MS = 3e4;
   var RAPID_ZAP_MS = 700;
@@ -46122,11 +46122,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/studio-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio-logic.ts
   var WINDOW_LABEL = {
     always: "windowAlways",
     evenings: "windowEvenings",
@@ -46347,7 +46347,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/title-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/title-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -46572,7 +46572,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio.tsx
   init_jsx_runtime_shim();
   var LOADERS = {
     library: loadLibraryItems,
@@ -47107,7 +47107,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/empty-state.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/empty-state.tsx
   init_jsx_runtime_shim();
   function EmptyState({ isTv, isMobile, t, onRestore }) {
     const fs = (px) => fontSize(px, isTv);
@@ -47155,7 +47155,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channels-page.tsx
   init_jsx_runtime_shim();
   var HALF_HOUR3 = 30 * 6e4;
   var MAX_SHIFT2 = 46;
@@ -47570,7 +47570,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -47704,7 +47704,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/index.ts
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
