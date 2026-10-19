@@ -272,7 +272,23 @@ export function useChannelClock(rundowns: Array<{ rundown: PoolItem[]; channel: 
     }
     setNow(Date.now())
     schedule()
-    return () => { if (timer) clearTimeout(timer) }
+    // Ett fönster i bakgrunden (eller en dator som sovit) får sina timers
+    // pausade: klockan låg minuter efter, och kanaler med korta program
+    // visade inget pågående block — "offline" fast de sände (2026-10-19).
+    // Ställ klockan direkt när sidan syns eller får fokus igen.
+    const wake = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      if (timer) clearTimeout(timer)
+      setNow(Date.now())
+      schedule()
+    }
+    document.addEventListener('visibilitychange', wake)
+    window.addEventListener('focus', wake)
+    return () => {
+      if (timer) clearTimeout(timer)
+      document.removeEventListener('visibilitychange', wake)
+      window.removeEventListener('focus', wake)
+    }
   }, [active, key])
   return now
 }

@@ -135,8 +135,8 @@
   // lib/stremio/timing.ts
   function markStreamPhase(phase, detail) {
     const now2 = Date.now();
-    const orphan = phase === "url-selected" && !marks.some((m) => m.phase === "id-resolved");
-    if (phase === "id-resolved" || marks.length === 0 || orphan) {
+    const orphan = phase === "url-selected" && !marks.some((m) => m.phase === "id-resolved" || m.phase === "resume-start");
+    if (phase === "id-resolved" || phase === "resume-start" || marks.length === 0 || orphan) {
       start = now2;
       marks = [];
       if (phase !== "id-resolved") timelineKey = null;
@@ -158,8 +158,8 @@
   }
   function formatStreamTimeline() {
     return `[stream-timing] ${marks.map((m) => {
-      const via = m.detail && typeof m.detail.via === "string" ? `(${m.detail.via})` : "";
-      return `${m.phase}=${m.offsetMs}${via}`;
+      const tags = [m.detail?.via, m.detail?.fastStart === true ? "fast" : null, m.detail?.outcome].filter((x) => typeof x === "string" && x.length > 0);
+      return `${m.phase}=${m.offsetMs}${tags.length > 0 ? `(${tags.join(",")})` : ""}`;
     }).join(" ")}`;
   }
   function sendToDebugLog(line) {
@@ -1635,6 +1635,7 @@
     const wrapped = direct ? null : cacheable;
     const finalUrl = direct && cacheable ? knownFinalUrl(opts.url) : null;
     const teeDir = direct && cacheable ? await registerPlayerTee(opts.url) : null;
+    markStreamPhase("mpv-open", { via: wrapped ? "source-cache" : finalUrl ? "direct-final" : "direct", fastStart: (opts.start ?? 0) > 0 });
     await np({
       cmd: "open",
       url: wrapped ?? finalUrl ?? opts.url,
@@ -1901,6 +1902,7 @@
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
+      init_timing();
       init_react_shim();
       init_tauri_mpv();
       init_playback_settings();
@@ -2667,7 +2669,7 @@
     const cached = sourceCacheUrl(args.url, args.requestHeaders);
     if (cached) {
       if (args.shouldAbort?.()) return;
-      markStreamPhase("mpv-open", { via: "source-cache" });
+      markStreamPhase("mpv-open", { via: "source-cache", fastStart: args.fastStart === true });
       await (0, import_core2.invoke)("mpv_open", { args: { ...rest, url: cached } });
       markStreamPhase("mpv-open-done");
       return;
@@ -2686,7 +2688,7 @@
       }
     }
     if (args.shouldAbort?.()) return;
-    markStreamPhase("mpv-open", { via });
+    markStreamPhase("mpv-open", { via, fastStart: args.fastStart === true });
     await (0, import_core2.invoke)("mpv_open", { args: { ...rest, url } });
     markStreamPhase("mpv-open-done");
   }
@@ -22131,6 +22133,7 @@
   }
   var init_resume_playback = __esm({
     "lib/resume-playback.ts"() {
+      init_timing();
       init_plugin_registry();
       init_android_direct_stream();
       init_session_host();
@@ -30760,7 +30763,10 @@ ${cue.text}`).join("\n\n")}
             suppressedByMatchingAudio: Boolean(getDisableSubtitlesWhenAudioMatches() && getDefaultAudioLanguage())
           }) ?? void 0 : void 0,
           requestHeaders,
-          fastStart,
+          // Start mitt i filen (Fortsätt titta, kanalernas liveläge): närmaste
+          // nyckelbild i stället för exakt sekund. Den exakta sökningen avkodade
+          // 5–10 s video och läste 30–40 MB före första bilden (~6 s, 2026-10-18).
+          fastStart: fastStart ?? (initialTime ?? 0) > 0,
           shouldAbort: () => cancelled
         }).then(() => {
           if (silent && !cancelled && silentStartRef.current.held) void mpvCommand2(["set_property", "mute", "yes"]);
@@ -42711,8 +42717,18 @@ ${cue.text}`).join("\n\n")}
       };
       setNow(Date.now());
       schedule3();
+      const wake = () => {
+        if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+        if (timer3) clearTimeout(timer3);
+        setNow(Date.now());
+        schedule3();
+      };
+      document.addEventListener("visibilitychange", wake);
+      window.addEventListener("focus", wake);
       return () => {
         if (timer3) clearTimeout(timer3);
+        document.removeEventListener("visibilitychange", wake);
+        window.removeEventListener("focus", wake);
       };
     }, [active3, key]);
     return now2;

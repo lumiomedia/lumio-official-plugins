@@ -1,3 +1,7 @@
+## 0.1.37
+
+- Tablåns klocka ställs om direkt när fönstret syns eller får fokus igen: i bakgrunden pausas timers, och kanaler med korta program såg ut att inte sända.
+
 ## 0.1.36
 
 - Heter nu LumioTV (meny, inställningar, hemraden). Pluginets id är oförändrat, så kanaler och tablåer följer med.
