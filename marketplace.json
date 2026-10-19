@@ -233,7 +233,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/channels",
-      "minAppVersion": "0.1.625"
+      "minAppVersion": "0.1.630"
     }
   ]
 }
