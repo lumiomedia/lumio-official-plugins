@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelListDebridCloud, channelRememberStream, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
+  channelListDebridCloud, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -318,4 +318,12 @@ export function rememberPlayedStream(token: string | undefined): void {
 
 export function hostReady(): boolean {
   return hasChannelHost()
+}
+
+/**
+ * Appens "Mellanlagra strömmar" (Android) via värden: samma inställning som i
+ * appens Uppspelning. null utanför Android och på äldre värdar.
+ */
+export function sourceCacheSetting(): ReturnType<typeof channelSourceCacheSetting> {
+  try { return channelSourceCacheSetting() } catch { return null }
 }

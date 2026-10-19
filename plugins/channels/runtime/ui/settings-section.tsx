@@ -7,9 +7,9 @@
  * inställningarna). TV-skalet får samma sak som typade rader.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card, PillBtn, Section, TOKENS, requestOpenBrowsePage, type PluginSettingsRow, type SettingsSection } from '@/lib/plugin-sdk'
+import { Card, PillBtn, Section, Switch, TOKENS, requestOpenBrowsePage, type PluginSettingsRow, type SettingsSection } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
-import { onChannelsChanged, readChannels } from '../host'
+import { onChannelsChanged, readChannels, sourceCacheSetting } from '../host'
 import { deleteChannel, readCachedPool, useChannels } from '../state/store'
 import { S } from '../strings'
 import { CHANNELS_PAGE_ID } from './guide-layout'
@@ -55,6 +55,11 @@ export function buildChannelRows(channels: ChannelDef[], actions: ChannelRowActi
     })
   }
   rows.push({ t: 'action', label: S.settingsNewRow, run: actions.create })
+  const cache = sourceCacheSetting()
+  if (cache) {
+    rows.push({ t: 'eyebrow', label: S.settingsCacheTitle })
+    rows.push({ t: 'toggle', label: S.settingsCacheLabel, hint: S.settingsCacheHint, value: cache.get(), set: (on) => cache.set(on) })
+  }
   return rows
 }
 
@@ -98,7 +103,35 @@ export function useChannelList(): {
   return { sorted, counts, confirmId, requestDelete: onDelete }
 }
 
+/** "Mellanlagra strömmar" — bara på Android, där valet finns. */
+function SourceCacheCard() {
+  const t = useText()
+  const cache = useMemo(() => sourceCacheSetting(), [])
+  const [on, setOn] = useState(() => cache?.get() ?? false)
+  if (!cache) return null
+  return (
+    <Section title={t('settingsCacheTitle')}>
+      <Card style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+        <div>
+          <div style={{ color: TOKENS.text, fontWeight: 600 }}>{t('settingsCacheLabel')}</div>
+          <div style={{ color: TOKENS.textDim, marginTop: 4, lineHeight: 1.5, maxWidth: '62ch' }}>{t('settingsCacheHint')}</div>
+        </div>
+        <Switch checked={on} onChange={(value) => { cache.set(value); setOn(value) }} />
+      </Card>
+    </Section>
+  )
+}
+
 export function ChannelsSettingsSection() {
+  return (
+    <>
+      <ChannelListSection />
+      <SourceCacheCard />
+    </>
+  )
+}
+
+function ChannelListSection() {
   const t = useText()
   const { sorted, counts, confirmId, requestDelete: onDelete } = useChannelList()
 

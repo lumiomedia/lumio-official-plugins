@@ -13,6 +13,7 @@
  * värmning vore en nedladdning ingen läser (WebDAV-proxyn gäller ändå).
  */
 import type { Playable } from './resolve'
+import { sourceCacheSetting } from '../host'
 
 export type PlayType = 'library' | 'stream' | 'debrid'
 
@@ -35,12 +36,30 @@ export function warmUrlFor(playable: Playable, type: PlayType, opts: { androidDi
   return `/api/source-cache/warm?u=${encodeURIComponent(url)}${headers}`
 }
 
+/**
+ * Samma regel som appens android-source-cache: inställningen "Mellanlagra
+ * strömmar" (playback_android_source_cache) avgör; utan eget val har telefoner
+ * källcachen och TV-boxar hämtar direkt. Med källcachen gäller förvärmningen.
+ */
+function androidStreamsDirect(): boolean {
+  if (typeof navigator === 'undefined' || !/android/i.test(navigator.userAgent)) return false
+  const setting = sourceCacheSetting()
+  if (setting) return !setting.get()
+  // Äldre värd: samma regel läst direkt ur lagringen.
+  let stored: string | null = null
+  try { stored = localStorage.getItem('playback_android_source_cache') } catch { /* ingen lagring */ }
+  if (stored === '1') return false
+  if (stored === '0') return true
+  const phone = navigator.maxTouchPoints > 0 && /mobile/i.test(navigator.userAgent)
+  return !phone
+}
+
 /** Samma fil värms högst en gång per halvtimme. */
 const WARM_TTL_MS = 30 * 60_000
 const warmed = new Map<string, number>()
 
 export function warmPlayable(playable: Playable, type: PlayType, now: number = Date.now()): void {
-  const androidDirect = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)
+  const androidDirect = androidStreamsDirect()
   const target = warmUrlFor(playable, type, { androidDirect })
   if (!target) return
   const at = warmed.get(target)

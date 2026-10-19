@@ -2,7 +2,7 @@
   "id": "com.lumio.channels",
   "slug": "channels",
   "name": { "en": "LumioTV", "sv": "LumioTV" },
-  "version": "0.1.38",
+  "version": "0.1.39",
   "minAppVersion": "0.1.630",
   "description": {
     "en": "Personal linear TV channels built from your library, watchlist and debrid cloud — a real schedule that runs with the clock.",
