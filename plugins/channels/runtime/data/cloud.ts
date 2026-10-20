@@ -44,6 +44,12 @@ export interface CloudDeps {
   matchTitles(wanted: Array<{ title: string; year: number | null; kind: 'movie' | 'tv' }>): Promise<Array<{ tmdbId: number } | null>>
   /** Paus mellan RD:s torrentuppslag (testerna: 0). */
   pauseMs?: number
+  /**
+   * En upplåsning som inte gav någon adress: HTTP-status (0 = nätverksfel,
+   * avbrott eller ingen nyckel) och svarets kropp. Loggas och avgör om
+   * filen är död (data/dead-files).
+   */
+  onUnlockFailed?(provider: DebridProviderId, fileRef: string, status: number, body: unknown): void
 }
 
 export function createDebridCloud(deps: CloudDeps) {
@@ -86,9 +92,16 @@ export function createDebridCloud(deps: CloudDeps) {
   }
 
 
+  type Failure = { status: number; body: unknown }
+
   async function getJson(provider: DebridProviderId, path: string, init?: RequestInit): Promise<any | null> {
+    return (await request(provider, path, init)).data
+  }
+
+  /** Svaret, eller felet (status 0 = nätverksfel, avbrott eller ingen nyckel) för upplåsningens rapport. */
+  async function request(provider: DebridProviderId, path: string, init?: RequestInit): Promise<{ data: any | null; failure: Failure | null }> {
     const token = tokenFor(provider)
-    if (!token) return null
+    if (!token) return { data: null, failure: { status: 0, body: 'ingen nyckel' } }
     // Ett hängande leverantörsanrop får inte hålla kanalpoolen (eller uppspelningen) i evighet.
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
@@ -98,10 +111,10 @@ export function createDebridCloud(deps: CloudDeps) {
         headers: { ...(init?.headers ?? {}), [TOKEN_HEADERS[provider]]: token },
         signal: controller.signal,
       })
-      if (!response.ok) return null
-      return await response.json()
-    } catch {
-      return null
+      if (!response.ok) return { data: null, failure: { status: response.status, body: await response.json().catch(() => null) } }
+      return { data: await response.json(), failure: null }
+    } catch (e) {
+      return { data: null, failure: { status: 0, body: String(e) } }
     } finally {
       clearTimeout(timer)
     }
@@ -404,30 +417,40 @@ export function createDebridCloud(deps: CloudDeps) {
     return titles
   }
 
-  async function unrestrictDebridFile(input: { provider: DebridProviderId; fileRef: string }): Promise<{ url: string } | null> {
+  async function unlock(input: { provider: DebridProviderId; fileRef: string }): Promise<{ url: string } | { failure: Failure }> {
     const { provider, fileRef } = input
+    // Ett 200-svar utan adress (TorBox success:false) räknas som fel med sin kropp.
+    const pick = (r: { data: any | null; failure: Failure | null }, url: unknown) =>
+      typeof url === 'string' ? { url } : { failure: r.failure ?? { status: 200, body: r.data } }
     if (provider === 'realdebrid') {
       const link = fileRef.split('|').slice(1).join('|')
-      const body = await getJson('realdebrid', '/unrestrict/link', {
+      const r = await request('realdebrid', '/unrestrict/link', {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body: `link=${encodeURIComponent(link)}`,
       })
-      return typeof body?.download === 'string' ? { url: body.download } : null
+      return pick(r, r.data?.download)
     }
     if (provider === 'torbox') {
       const [torrentId, fileId] = fileRef.split('|')
       const token = tokenFor('torbox')
-      if (!token) return null
-      const body = await getJson('torbox', `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${encodeURIComponent(torrentId)}&file_id=${encodeURIComponent(fileId)}&redirect=false`)
-      return typeof body?.data === 'string' ? { url: body.data } : null
+      if (!token) return { failure: { status: 0, body: 'ingen nyckel' } }
+      const r = await request('torbox', `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${encodeURIComponent(torrentId)}&file_id=${encodeURIComponent(fileId)}&redirect=false`)
+      return pick(r, r.data?.data)
     }
-    const body = await getJson('alldebrid', '/v4/link/unlock', {
+    const r = await request('alldebrid', '/v4/link/unlock', {
       method: 'POST',
       headers: AD_FORM,
       body: new URLSearchParams({ link: fileRef }).toString(),
     })
-    return typeof body?.data?.link === 'string' ? { url: body.data.link } : null
+    return pick(r, r.data?.data?.link)
+  }
+
+  async function unrestrictDebridFile(input: { provider: DebridProviderId; fileRef: string }): Promise<{ url: string } | null> {
+    const result = await unlock(input)
+    if ('url' in result) return result
+    deps.onUnlockFailed?.(input.provider, input.fileRef, result.failure.status, result.failure.body)
+    return null
   }
 
   return { listDebridCloud, unrestrictDebridFile }

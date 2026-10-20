@@ -48,4 +48,20 @@ describe('debrid-versioner', () => {
     expect(await resolver.resolve(item, ['https://cdn/tb1'])).toBeNull()
     expect(asked).toEqual(['rd1', 'tb1'])
   })
+
+  it('en död fil provas aldrig: nästa version direkt, utan anrop', async () => {
+    const asked: string[] = []
+    const resolver = createResolver({
+      library: async () => null,
+      stream: async () => null,
+      debrid: async (r) => { asked.push(r.fileRef); return { url: `https://cdn/${r.fileRef}` } },
+      isDead: (f) => f.fileRef === 'rd1',
+    })
+    const item = {
+      ref: 'db:realdebrid:rd1', title: 'X', kind: 'movie', source: 'debrid', genres: [], year: null, runtimeMin: 90, runtimeKnown: true,
+      play: { type: 'debrid', provider: 'realdebrid', fileRef: 'rd1', alts: [{ provider: 'torbox', fileRef: 'tb1' }] },
+    } as unknown as PoolItem
+    expect((await resolver.resolve(item))?.url).toBe('https://cdn/tb1')
+    expect(asked).toEqual(['tb1'])
+  })
 })

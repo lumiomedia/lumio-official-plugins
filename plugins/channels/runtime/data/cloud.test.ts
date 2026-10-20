@@ -293,3 +293,25 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
     expect(summary(await listDebridCloud())).toEqual([['tv', 'Firefly', [['T9|https://rd/l9', 1, 14]]]])
   })
 })
+
+describe('fallerade upplåsningar rapporteras med status och svar', () => {
+  it('TorBox 200 utan adress och RD 404 når onUnlockFailed; en lyckad gör det inte', async () => {
+    const failed: Array<[string, string, number, unknown]> = []
+    cloud = createDebridCloud({ token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0, onUnlockFailed: (p, f, s, b) => { failed.push([p, f, s, b]) } })
+    tokens.torbox = 'tb'
+    tokens.realdebrid = 'rd'
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/torbox/torrents/requestdl') && url.includes('file_id=378')) return json({ success: false, error: 'DOWNLOAD_NOT_FOUND' })
+      if (url.includes('/torbox/torrents/requestdl')) return json({ success: true, data: 'https://cdn/ok.mkv' })
+      if (url.includes('/realdebrid/unrestrict/link')) return json({ error: 'unknown_ressource', error_code: 7 }, 404)
+      return json({}, 500)
+    })
+    expect(await unrestrictDebridFile({ provider: 'torbox', fileRef: '1|378' })).toBeNull()
+    expect(await unrestrictDebridFile({ provider: 'torbox', fileRef: '1|5' })).toEqual({ url: 'https://cdn/ok.mkv' })
+    expect(await unrestrictDebridFile({ provider: 'realdebrid', fileRef: 'T|https://rd/l' })).toBeNull()
+    expect(failed).toEqual([
+      ['torbox', '1|378', 200, { success: false, error: 'DOWNLOAD_NOT_FOUND' }],
+      ['realdebrid', 'T|https://rd/l', 404, { error: 'unknown_ressource', error_code: 7 }],
+    ])
+  })
+})

@@ -9,7 +9,8 @@ import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
 import { applyRuntimeFixes } from '../data/runtime-fix'
-import { libraryItemOnThisDevice, onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, readScheduleLock, removePoolCache, removeScheduleLock, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache, writeScheduleLock } from '../host'
+import { dropDeadFiles } from '../data/dead-files'
+import { libraryItemOnThisDevice, onChannelsChanged, onDeadFilesChanged, readDeadFiles, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, readScheduleLock, removePoolCache, removeScheduleLock, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache, writeScheduleLock } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
@@ -163,7 +164,7 @@ export function readCachedPool(channelId: string): PoolItem[] | null {
 /** Bara det som går att spela här: biblioteksfiler från en annan enhet tas bort (se host.ts). */
 function onThisDevice(items: PoolItem[] | null): PoolItem[] | null {
   if (!items) return items
-  const kept = items.filter((item) => libraryItemOnThisDevice(item.ref))
+  const kept = dropDeadFiles(items, readDeadFiles()).filter((item) => libraryItemOnThisDevice(item.ref))
   return kept.length === items.length ? items : kept
 }
 
@@ -235,7 +236,10 @@ export function useChannelPool(channel: ChannelDef | null): ChannelPoolState {
     return () => { alive = false; unsubscribe() }
   }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
   const view: PoolView | null = channel ? (state?.key === key ? state.view : stale ? { pool: stale, complete: false, stale: true } : null) : null
-  const pool = view?.pool ?? EMPTY
+  // Döda molnfiler (data/dead-files) faller ur direkt: tablån fyller platsen med nästa post.
+  const [deadVersion, setDeadVersion] = useState(0)
+  useEffect(() => onDeadFilesChanged(() => setDeadVersion((n) => n + 1)), [])
+  const pool = useMemo(() => dropDeadFiles(view?.pool ?? EMPTY, readDeadFiles()), [view?.pool, deadVersion])
   // Rullande förlängning av låset: räknas om när det behöver fyllas på.
   const [renew, setRenew] = useState(0)
   const lockSig = channel ? lockSignature(channel) : ''
