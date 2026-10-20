@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelListDebridCloud, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
+  channelClearSourceToken, channelMatchTitles, channelParseFileName, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelSourceToken,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -13,6 +13,7 @@ import { createMetaCache, createSeasonsCache, createTitleMatchCache, type MatchR
 import type { SourceDeps } from './data/sources'
 import { MAX_POOL_ITEMS } from './data/pool'
 import { createResolver } from './play/resolve'
+import { createDebridCloud, DEBRID_PROVIDERS, type DebridProviderId } from './data/cloud'
 
 export const PLUGIN_ID = 'com.lumio.channels'
 
@@ -220,13 +221,33 @@ async function fetchSeasonRange(tmdbId: number, pick: (season: number) => boolea
   return out
 }
 
+/** Debrid-molnet (data/cloud): pluginets egen protokollkod med värdens neutrala hjälpare. */
+const debridCloud = createDebridCloud({
+  token: (provider) => channelSourceToken(provider),
+  parseFileName: (name, parent) => channelParseFileName(name, parent),
+  matchTitles: (wanted) => channelMatchTitles(wanted),
+})
+
+/** Ny genomgång av molnet förbi 6 h-cachen (studions Uppdatera). */
+export function refreshDebridCloud() {
+  return debridCloud.listDebridCloud({ force: true })
+}
+
+/** Molnkonton med sparad nyckel, och borttagning (gamla konton syns annars inte någonstans). */
+export function debridAccounts(): DebridProviderId[] {
+  return DEBRID_PROVIDERS.filter((p) => !!channelSourceToken(p))
+}
+export function forgetDebridAccount(provider: DebridProviderId): void {
+  channelClearSourceToken(provider)
+}
+
 export const sourceDeps: SourceDeps = {
   queryLibrary: (q) => queryLibrary(q as never) as never,
   getMovieWatchlist: () => getMovieWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
   fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, 'seasonsRest'),
-  listDebridCloud: () => channelListDebridCloud() as never,
+  listDebridCloud: () => debridCloud.listDebridCloud(),
   meta: createMetaCache(metaStore, fetchMeta),
   waitForIdle: () => waitForStartIdle(),
   titleMatch: createTitleMatchCache(matchStore, searchTitle),
@@ -305,7 +326,7 @@ export const resolver = createResolver({
   // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
   library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...(exclude?.length ? { exclude } : {}), ...(allowCatalog === false ? { allowCatalog: false } : {}) }),
   stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-  debrid: (r) => channelUnrestrictDebridFile(r),
+  debrid: (r) => debridCloud.unrestrictDebridFile(r),
   debridCaps: () => autoplayCaps(),
 })
 

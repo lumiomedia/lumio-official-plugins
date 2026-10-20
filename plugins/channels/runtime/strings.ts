@@ -145,6 +145,18 @@ export const S = {
   studioDeleteConfirm: { en: 'Confirm deletion', sv: 'Bekräfta borttagning' },
   // Inställningssektionen
   settingsTitle: { en: 'Your channels', sv: 'Dina kanaler' },
+  settingsCloudTitle: { en: 'Cloud accounts', sv: 'Molnkonton' },
+  settingsCloudHint: {
+    en: 'Accounts whose files the channels can play. Remove one you no longer use: its files leave the channels the next time they are built.',
+    sv: 'Konton vars filer kanalerna kan spela. Ta bort ett du inte använder längre: dess filer försvinner ur kanalerna nästa gång de byggs.',
+  },
+  settingsCloudRemove: { en: 'Remove', sv: 'Ta bort' },
+  settingsCloudRemoveConfirm: { en: 'Press again to remove', sv: 'Tryck igen för att ta bort' },
+  settingsCloudRemoveTitle: { en: 'Remove {name}?', sv: 'Ta bort {name}?' },
+  settingsCloudRemoveBody: {
+    en: 'The saved key is removed from this device. Its files leave the channels.',
+    sv: 'Den sparade nyckeln tas bort från den här enheten. Kontots filer försvinner ur kanalerna.',
+  },
   settingsCacheTitle: { en: 'Playback', sv: 'Uppspelning' },
   settingsCacheLabel: { en: 'Faster channel switching (cache streams)', sv: 'Snabbare kanalbyten (mellanlagra strömmar)' },
   settingsCacheHint: {

@@ -30,10 +30,10 @@ vi.mock('@/lib/plugin-sdk', () => ({
   useLang: () => ({ lang: 'sv' }),
   resolvePluginText: (text: { sv: string }) => text.sv,
   getTvKeyboardPanel: () => null,
-  channelListDebridCloud: (o?: { force?: boolean }) => { if (o?.force) state.forced += 1; return Promise.resolve([]) },
 }))
 vi.mock('../host', () => ({
   sourceDeps: {},
+  refreshDebridCloud: () => { state.forced += 1; return Promise.resolve([]) },
   searchTmdbTitles: (q: string) => {
     state.searches.push(q)
     return Promise.resolve([{ kind: 'movie', tmdbId: 355460, title: 'Adventure Time', year: 2007 }])
