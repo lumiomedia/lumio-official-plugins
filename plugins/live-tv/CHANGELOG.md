@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.6
+
+- Big playlists stay responsive: the guide's now/next refreshes only the channels whose programme changed, instead of reloading the whole guide every minute. Works with any Lumio version; Lumio 0.1.631 makes it faster still.
+
 ## 0.16.5
 
 - Films and series from your playlist stream straight to the player on Android, which gives smoother playback on TV boxes. Subtitle sync, language detection and short skips back keep working. Requires Lumio 0.1.630.

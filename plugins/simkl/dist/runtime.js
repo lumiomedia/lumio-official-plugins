@@ -391,6 +391,96 @@
     }
   });
 
+  // lib/storage-cache-keys.ts
+  var init_storage_cache_keys = __esm({
+    "lib/storage-cache-keys.ts"() {
+    }
+  });
+
+  // lib/storage-quota.ts
+  var lastEmptyPassAt;
+  var init_storage_quota = __esm({
+    "lib/storage-quota.ts"() {
+      "use client";
+      init_app_storage();
+      init_storage_cache_keys();
+      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
+    }
+  });
+
+  // lib/app-storage.ts
+  function ensureStore() {
+    if (store) return store;
+    const seeded = /* @__PURE__ */ new Map();
+    if (typeof window !== "undefined") {
+      const snapshot = window.__lumioNativeStorageSnapshot;
+      if (snapshot) {
+        if (nativeState === "unknown") nativeState = "durable";
+        for (const [key, value] of Object.entries(snapshot)) {
+          seeded.set(key, String(value));
+        }
+      }
+      try {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (key === null) continue;
+          const value = localStorage.getItem(key);
+          if (value !== null) seeded.set(key, value);
+        }
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const snapshot = window.__lumioNativeStorageSnapshot;
+        const snapRaw = snapshot?.["app_profiles"];
+        const localRaw = seeded.get("app_profiles");
+        const revOf = (raw) => {
+          if (!raw) return -1;
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return 0;
+            const rev = Number(parsed?.rev);
+            return Number.isFinite(rev) ? rev : 0;
+          } catch {
+            return -1;
+          }
+        };
+        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
+          seeded.set("app_profiles", snapRaw);
+          try {
+            localStorage.setItem("app_profiles", snapRaw);
+          } catch {
+          }
+        }
+      } catch {
+      }
+    }
+    store = seeded;
+    return seeded;
+  }
+  function getItem(key) {
+    if (typeof window === "undefined") return null;
+    return ensureStore().get(key) ?? null;
+  }
+  var nativeState, store;
+  var init_app_storage = __esm({
+    "lib/app-storage.ts"() {
+      "use client";
+      init_storage_quota();
+      init_storage_cache_keys();
+      nativeState = "unknown";
+      store = null;
+    }
+  });
+
+  // lib/android-source-cache.ts
+  var init_android_source_cache = __esm({
+    "lib/android-source-cache.ts"() {
+      init_app_storage();
+    }
+  });
+
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
   var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
   var init_profile_storage_shim = __esm({
@@ -461,6 +551,7 @@
     getHomeRows: () => getHomeRows,
     getHomeSources: () => getHomeSources,
     getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryFrame: () => getLibraryFrame,
     getLibraryProviders: () => getLibraryProviders,
     getListSource: () => getListSource,
     getListSources: () => getListSources,
@@ -606,6 +697,11 @@
           pluginId
         });
       },
+      registerLibraryFrame(frame) {
+        if (libraryFrames.find((entry) => entry.id === frame.id)) return;
+        libraryFrames.push({ ...frame, pluginId });
+        scheduleRegistryNotify();
+      },
       registerBrowsePage(page) {
         if (browsePages.find((entry) => entry.id === page.id)) return;
         browsePages.push(page);
@@ -722,6 +818,9 @@
   function getHeroes() {
     return heroes;
   }
+  function getLibraryFrame(id) {
+    return libraryFrames.find((entry) => entry.id === id) ?? null;
+  }
   function getHomeOverrides() {
     return homeOverrides;
   }
@@ -763,7 +862,7 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, libraryFrames, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
@@ -789,6 +888,7 @@
       bootstraps = [];
       heroes = [];
       homeOverrides = [];
+      libraryFrames = [];
       browsePages = [];
       mainMenuItems = [];
       topbarItems = [];
@@ -826,95 +926,13 @@
       import_event = __toESM(require_event());
       init_react_shim();
       init_session_host();
+      init_android_source_cache();
       init_plugin_registry();
       isTauriEnv = detectTauriEnv();
       hasTauriIpc = typeof window !== "undefined" && Boolean(
         window.__TAURI_INTERNALS__ || window.__TAURI__
       );
       isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-    }
-  });
-
-  // lib/storage-cache-keys.ts
-  var init_storage_cache_keys = __esm({
-    "lib/storage-cache-keys.ts"() {
-    }
-  });
-
-  // lib/storage-quota.ts
-  var lastEmptyPassAt;
-  var init_storage_quota = __esm({
-    "lib/storage-quota.ts"() {
-      "use client";
-      init_app_storage();
-      init_storage_cache_keys();
-      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
-    }
-  });
-
-  // lib/app-storage.ts
-  function ensureStore() {
-    if (store) return store;
-    const seeded = /* @__PURE__ */ new Map();
-    if (typeof window !== "undefined") {
-      const snapshot = window.__lumioNativeStorageSnapshot;
-      if (snapshot) {
-        if (nativeState === "unknown") nativeState = "durable";
-        for (const [key, value] of Object.entries(snapshot)) {
-          seeded.set(key, String(value));
-        }
-      }
-      try {
-        for (let index = 0; index < localStorage.length; index += 1) {
-          const key = localStorage.key(index);
-          if (key === null) continue;
-          const value = localStorage.getItem(key);
-          if (value !== null) seeded.set(key, value);
-        }
-      } catch {
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const snapshot = window.__lumioNativeStorageSnapshot;
-        const snapRaw = snapshot?.["app_profiles"];
-        const localRaw = seeded.get("app_profiles");
-        const revOf = (raw) => {
-          if (!raw) return -1;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return 0;
-            const rev = Number(parsed?.rev);
-            return Number.isFinite(rev) ? rev : 0;
-          } catch {
-            return -1;
-          }
-        };
-        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
-          seeded.set("app_profiles", snapRaw);
-          try {
-            localStorage.setItem("app_profiles", snapRaw);
-          } catch {
-          }
-        }
-      } catch {
-      }
-    }
-    store = seeded;
-    return seeded;
-  }
-  function getItem(key) {
-    if (typeof window === "undefined") return null;
-    return ensureStore().get(key) ?? null;
-  }
-  var nativeState, store;
-  var init_app_storage = __esm({
-    "lib/app-storage.ts"() {
-      "use client";
-      init_storage_quota();
-      init_storage_cache_keys();
-      nativeState = "unknown";
-      store = null;
     }
   });
 
@@ -1193,6 +1211,8 @@
           showAllMovies: "Show all movies",
           showAllSeries: "Show all series",
           searchPlaceholder: "Search titles or cast names",
+          searchInLibrary: "Search in {name}",
+          searchInYourLibrary: "Search your library",
           searchTitlePlaceholder: "Search title",
           sampleData: "Sample data",
           tmdbLive: "TMDb live",
@@ -1267,7 +1287,7 @@
           listenedAt: "at",
           streamAvailable: "Cached",
           streamDeviceUnsupported: "unsupported",
-          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio or Dolby Vision) \u2014 expect no sound, or no playback.",
+          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio, Dolby Vision, 4K or HDR) \u2014 expect no sound, no picture, or no playback.",
           streamDownload: "Download",
           startingMovie: "Starting movie...",
           findingMovie: "Finding movie...",
@@ -1412,18 +1432,14 @@
           dtSeasonsN: "{n} seasons",
           settingsDetailsEyebrow: "Details page",
           sideMenuTitle: "Side menu",
-          sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
-          sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
-          sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
-          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the top bar on desktop and mobile.",
           menuPillPlaceTitle: "Menu pill position",
           menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
           menuPillTopLeft: "Top left",
           menuPillTopRight: "Top right",
           menuPillBottomLeft: "Bottom left",
           menuPillBottomRight: "Bottom right",
-          sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
           vlcToggleTitle: "Open streams directly in VLC",
@@ -1446,6 +1462,8 @@
           appUpdateNotesTitle: "What\u2019s new",
           appUpdatePromptInstall: "Update now",
           appUpdatePromptInstalling: "Updating\u2026",
+          appUpdateDownloading: "Downloading update",
+          appUpdateInstallingStep: "Installing\u2026",
           appUpdatePromptLater: "Not now",
           appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
           appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -1516,6 +1534,37 @@
           sortHighestTmdb: "Highest TMDb rating",
           sortNewest: "Newest to Oldest",
           sortOldest: "Oldest to Newest",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Browse",
+          browseSummary: "Showing {scope} on {services}, {sort}",
+          browseKindMovies: "movies",
+          browseKindSeries: "series",
+          browseKindTitles: "titles",
+          browseKindAnime: "anime",
+          browseScopeAll: "all {kind}",
+          browseScopeGenres: "{genres} {kind}",
+          browseScopeManyGenres: "{n} genres of {kind}",
+          browseGenresAnd: " and ",
+          browseYearFrom: "from {year}",
+          browseYearTo: "up to {year}",
+          browseYearRange: "from {min}\u2013{max}",
+          browseRatedAtLeast: "rated {n}+",
+          browseEveryService: "every service",
+          browseManyServices: "{n} services",
+          browseSortPopular: "most popular first",
+          browseSortRelevant: "most relevant first",
+          browseSortRating: "highest rated first",
+          browseSortNewest: "newest first",
+          browseSortOldest: "oldest first",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Showing {scope} in {services}, {sort}",
+          browseYourLibrary: "your library",
+          browseManySources: "{n} sources",
+          browseSortAdded: "recently added first",
+          browseSortTitle: "by title A\u2013Z",
+          sortRecentlyAdded: "Recently added",
+          sortTitleAZ: "Title A\u2013Z",
+          filterSource: "Source",
           // Results
           aboutResults: "About",
           results: "results",
@@ -1683,6 +1732,11 @@
           tvGreetingReleaseToday: "{title} is out now",
           tvGreetingReleaseTomorrow: "{title} arrives tomorrow",
           tvGreetingReleaseSoon: "{title} arrives in {days} days",
+          // Korta former när meddelandet inte ryms bredvid snabbmenyn (tv-clock.tsx).
+          tvGreetingResumeShort: "{minutes} min left \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Out now \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Tomorrow \xB7 {title}",
+          tvGreetingReleaseSoonShort: "In {days} days \xB7 {title}",
           tvGreetingNight: "Still up",
           settingsPageOverview: "Overview",
           settingsPageAccount: "Account & profiles",
@@ -1828,6 +1882,47 @@
           plChapterN: "Chapter {n}",
           plCreditsChapter: "Credits",
           shortcutsSaveMoment: "Keep this moment",
+          clipTitle: "Clip",
+          clipNew: "New clip",
+          clipZoomed: "Zoomed \xB7 4 min",
+          clipShare: "Share clip",
+          clipShareSection: "Share",
+          clipCopyLink: "Copy link",
+          clipCopyImage: "Copy image",
+          clipSaveFile: "Save file",
+          clipSaveMoment: "Save to moments",
+          clipFrom: "From {time}",
+          clipSendTo: "Send to {phone}",
+          clipPhoneGone: "The phone is no longer connected",
+          clipShowQr: "Show QR code for the link",
+          clipTvNote: "The TV only sends the in and out times. The phone renders and shares.",
+          clipTvCancel: "Cancel with Back",
+          clipTvStill: "Still \xB7 preview in the picture",
+          clipScanQr: "Scan with your phone",
+          clipTvBackCloses: "Back closes",
+          clipSentTo: "Sent to {phone} \xB7 {len} s",
+          clipFrame: "Frame {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 hold 5 s \xB7 OK next \xB7 Back cancels",
+          clipMomentSavedAt: "Moment saved \xB7 {time}",
+          clipSavePhotos: "Save to Photos",
+          clipCancel: "Cancel clip",
+          clipShareNow: "Share now",
+          clipTileLink: "Link",
+          clipTileSave: "Save",
+          clipTileMoment: "Moment",
+          clipSavedPhotos: "Saved to Photos",
+          clipSaveNeedsAndroid10: "Saving to Photos needs Android 10 \u2014 share it instead",
+          clipNewWithLength: "New clip \xB7 {len}",
+          clipRenderingIndeterminate: "Creating clip \u2026",
+          clipFormatStill: "Image",
+          clipRendering: "Creating clip \xB7 {pct} %",
+          clipFailed: "The clip couldn't be created",
+          clipLinkCopied: "Link copied",
+          clipImageCopied: "Image copied",
+          clipSaved: "Clip saved",
+          clipClose: "Close clip",
+          shortcutsClip: "Clip",
           plMoments: "Moments",
           plMomentKeep: "Keep this moment",
           plMomentJump: "Jump",
@@ -1963,6 +2058,10 @@
           rtInverseTmDesc: "Expands SDR material toward HDR on capable displays.",
           rtHwdec: "Hardware acceleration",
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
+          allowSoftwareDecoding: "Allow software decoding",
+          allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          androidSourceCache: "Cache streams",
+          androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
           atEyebrow: "Audio tuning",
           atTitle: "Shape the sound",
@@ -1977,6 +2076,10 @@
           atDownmixDesc: "Folds 5.1/7.1 down to two channels \u2014 laptop speakers and headphones.",
           atEngineNote: "Requires the built-in desktop engine (mpv). Night mode composes on top.",
           vtTitle: "Picture adjustments",
+          vtScopeLabel: "Applies to",
+          vtScopeFilm: "Just this film",
+          vtScopeAll: "All films",
+          vtActive: "On",
           vtHint: "Applies live to an open player and to every playback that follows.",
           vtBrightness: "Brightness",
           vtContrast: "Contrast",
@@ -1988,6 +2091,7 @@
           vtPresetVivid: "Vivid",
           vtPresetCinema: "Cinema dark",
           vtPresetSharp: "Sharp",
+          vtPresetLabel: "Preset",
           vtEngineNote: "Gamma and sharpen require the built-in desktop engine; the browser player applies the rest.",
           sfTabSafety: "Safety",
           sfDisplayEyebrow: "Display",
@@ -2176,6 +2280,13 @@
           homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
           cardShapePoster: "Poster",
           cardShapeLandscape: "Landscape",
+          homeExpandCards: "Expand card on focus",
+          homeCardVhs: "VHS cases",
+          homeCardVhsAuto: "Follow Theme & scale",
+          homeCardVhsOn: "Turn on focus",
+          homeCardVhsShelf: "Turned on the shelf",
+          homeCardVhsOff: "Off",
+          homeExpandCardsHint: "The card in focus widens into a backdrop with logo and facts. Portrait cards only.",
           qrAddonOpen: "Add via phone",
           qrAddonTitle: "Scan with your phone",
           qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
@@ -2212,6 +2323,13 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          cardSheen: "Shine on cards",
+          cardSheenDesc: "A soft light sweeps across a card when you point at it or select it.",
+          vhsCards: "VHS cases",
+          vhsCardsDesc: "Cards turn like a VHS case and show the title on the spine: when you point at or select them, or all the time like a shelf, straightening up when selected.",
+          vhsModeOff: "Off",
+          vhsModeFocus: "Turn on focus",
+          vhsModeShelf: "Turned on the shelf",
           performanceMode: "Performance mode",
           performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
           heroActionsExpanded: "Always show action labels",
@@ -2224,6 +2342,7 @@
           settingsTabApiKeys: "API keys",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "Sources & addons",
+          settingsTabFolders: "Folders & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "New",
@@ -2910,6 +3029,7 @@
           tvRowFailed: "Could not be loaded",
           tvRowNoRenderer: "Not available in TV mode yet",
           tvQuickPlay: "Play",
+          tvQuickSource: "Source: {source} \u203A",
           tvQuickMarkWatched: "Mark as watched",
           tvQuickUnmarkWatched: "Mark as unwatched",
           tvQuickMoreInfo: "More info",
@@ -2954,6 +3074,26 @@
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestige Drama",
           homeSourceMoment: "Right now (changes with the moment)",
+          homeSourceComingUp: "Calendar",
+          comingUpTitle: "Coming up",
+          comingUpSubtitle: "From series you follow \xB7 {n}",
+          comingUpAvailableOne: "1 episode available now",
+          comingUpAvailableMany: "{n} episodes available now",
+          comingUpNothingNew: "nothing new right now",
+          comingUpOpenCalendar: "Open calendar",
+          comingUpMissed: "Missed",
+          comingUpToday: "Today",
+          comingUpTomorrow: "Tomorrow",
+          comingUpEpisodesCount: "{n} episodes",
+          comingUpInDays: "in {n} days",
+          comingUpPillAvailable: "Available",
+          comingUpPillMissedAvailable: "Missed \xB7 Available",
+          comingUpPillTonight: "Tonight {time}",
+          comingUpPillWatched: "Watched",
+          comingUpTagPremiere: "Premiere",
+          comingUpTagFinale: "Finale",
+          comingUpShowMissedSetting: "Show missed episodes in Coming up",
+          comingUpShowMissedHint: "Episodes from yesterday you haven't watched yet.",
           homeSourceMomentMovies: "Right now \xB7 Movies",
           homeSourceMomentSeries: "Right now \xB7 Series",
           homeSourceAnimeMovies: "Anime Movies",
@@ -3125,6 +3265,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Remember aspect ratio",
           rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
+          matchFrameRate: "Match frame rate",
+          matchFrameRateDesc: "Switches the TV to the frame rate of what you watch, so motion stops juddering. The screen goes black for a moment when it switches.",
+          matchFrameRateOff: "Off",
+          matchFrameRateVod: "Films and series",
+          matchFrameRateAll: "Live TV too",
           autoSkipIntro: "Auto-skip intro",
           autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
           resumePromptEyebrow: "CONTINUE OR START OVER",
@@ -3265,6 +3410,50 @@
           matchWaitingFor: "Waiting for {name} to start",
           matchUndo: "Undo",
           matchLeft: "You left Film Match",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "PREDICT THE MATCH \xB7 {league}",
+          tipKickoff: "Kick-off {time}",
+          tipIn: "in {n} min",
+          tipScan: "Scan with the camera, or open Couch mode",
+          tipInSofa: "On the couch",
+          tipCount: "{n} of {m} have predicted",
+          tipHasTipped: "\u2713 Predicted",
+          tipTipping: "Predicting \u2026",
+          tipLobbyHint: "Predictions lock at kick-off. The score is not shown if spoiler protection is on.",
+          tipLockNow: "Lock now",
+          tipCancel: "Cancel",
+          tipPill: "Predict",
+          tipPillAgain: "Press down again",
+          tipManageOverline: "PREDICT THE MATCH",
+          tipShowLobby: "Show lobby",
+          tipRow: "PREDICTIONS",
+          tipFinal: "FULL TIME",
+          tipExact: "EXACT SCORE",
+          tipWinner: "RIGHT WINNER",
+          tipClosest: "CLOSEST OF THE REST",
+          tipDone: "Done",
+          tipSeason: "Season",
+          tipSeasonOverline: "COUCH SEASON \xB7 {n} MATCHES",
+          tipNewSeason: "New season",
+          tipNewSeasonConfirm: "Press again for a new season",
+          tipColName: "NAME",
+          tipColExact: "EXACT",
+          tipColWinner: "WINNER",
+          tipColTonight: "TONIGHT",
+          tipColPoints: "POINTS",
+          tipExactSub: "predicted {tip} \xB7 3 pts",
+          tipWon: "{team} won",
+          tipDraw: "Draw",
+          tipOneOff: "one goal off",
+          tipNOff: "{n} goals off",
+          tipPlusOne: "+1 pt",
+          tipNobody: "Nobody",
+          tipWhyExact: "Exact score",
+          tipWhyWinner: "Right winner",
+          tipWhyWinnerClosest: "Right winner \xB7 closest",
+          tipWhyClosest: "Closest",
+          tipWhyWrong: "Wrong winner",
+          tipCreateFailed: "Could not start Predict the match. Try again in a moment.",
           matchEnded: "Film Match ended on the TV",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
@@ -3408,6 +3597,21 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          dailyPosterTitle: "Poster of the day",
+          dailyPosterHint: "Your lock screen shows a poster from your watchlist, changed every morning at 6.",
+          dailyPosterToggleTitle: "Poster of the day on the lock screen",
+          dailyPosterToggleDesc: "A quiet morning notification opens the title. When you turn it off, the lock screen shows your home screen wallpaper \u2014 the previous lock screen image can\u2019t be restored. Some manufacturers (Xiaomi, Oppo) may override the lock screen.",
+          dailyPosterOn: "On",
+          dailyPosterOff: "Off",
+          dailyPosterRunNowTitle: "Change now",
+          dailyPosterRunNowDesc: "Pick the next poster right away.",
+          dailyPosterRunNow: "Change now",
+          dailyPosterQueued: "The lock screen changes in a moment.",
+          dailyPosterEmpty: "Your watchlist has no titles with a poster yet.",
+          dailyPosterError: "Could not change: {e}",
+          dailyPosterNotAllowed: "This phone doesn\u2019t let apps change the wallpaper (manufacturer or work policy).",
+          dailyPosterNotificationTitle: "Poster of the day",
+          dailyPosterChannelName: "Poster of the day",
           hapticsTitle: "Feel the bass",
           hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
           hapticsHostToggleTitle: "Allow Feel the bass from a phone",
@@ -3578,8 +3782,16 @@
           disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
           subtitleAutoSyncSetting: "Sync subtitles automatically",
           subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
+          subtitleAutoSyncGroup: "Auto-sync",
+          subtitleSyncFastReadAhead: "Faster sync (uses more data)",
+          subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
           subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
+          subtitleAutoSyncOtherEdit: "These subtitles seem to be from a different version of the film. Switch to the file\u2019s own {lang} subtitles?",
+          subtitleAutoSyncOtherEditSwitch: "Switch",
+          subtitleAutoSyncOtherEditKeep: "Keep",
+          subtitleLanguageDetected: "language detected",
           subtitleAutoSyncUndo: "Undo",
           subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
           subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
@@ -3952,6 +4164,13 @@
           coreStreamsHidden: "{count} streams hidden by quality filters",
           coreStreamsSelectEpisode: "Pick an episode to see its streams.",
           coreStreamsSource: "Source",
+          streamSourceAllSources: "All sources",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} ep",
+          streamSourceSeriesHint: "Applies to every episode in this series",
+          streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
+          streamSourceFallback: "E{episode} isn't in {source} \u2014 showing {fallback}",
           coreStreamsCached: "Cached",
           coreStreamsLoading: "Checking sources\u2026",
           streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
@@ -4011,6 +4230,8 @@
           continueLayoutGrid: "Grid",
           /* Settings → Display → Continue watching */
           cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+          cwFramesTitle: "Scene preview on hover",
+          cwFramesDesc: "Saves a frame when you pause or leave a title and shows it when you hover over the card (or focus it on TV).",
           cwModeRows: "Side-scrolling rows",
           cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
           cwModeGrid: "Grid",
@@ -4266,12 +4487,75 @@
           hpUpload: "Upload",
           hpHomeEyebrow: "Home page",
           hpSearchFieldTitle: "Search field",
+          startPageTitle: "Start page",
+          startPageHint: "The page the app opens on when it starts. Applies to this kind of device (TV, computer or phone). If the page is no longer available, the app opens on Home.",
+          startPageGroupBuiltIn: "Built-in",
+          startPageGroupPages: "Custom pages",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Top row",
-          hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+          hpTopSlotHint: "What sits at the top centre: a search field, the quick menu or nothing. Movies, Series and the other filter pages always show their filters in a Browse row under the hero.",
+          qmEyebrow: "Quick menu",
+          qmShow: "Show quick menu",
+          qmStyle: "Style",
+          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 7.",
+          qmScrollsTen: "Scrolls \xB7 up to 10 items",
+          qmUpToSix: "Up to 7 items",
+          qmItems: "Items",
+          qmItemsHint: "Pages in the quick menu, in order.",
+          qmItemsPanelHint: "OK on an item to move or remove it.",
+          qmAddPage: "Add page",
+          qmSlotsLeft: "{n} slots left",
+          qmFull: "{style} holds 7. Horizon and Sentence hold 10.",
+          qmHiddenWarn: "{n} items are hidden with {style}. Pick a scrolling style or remove items.",
+          qmHidden: "Hidden",
+          qmReset: "Reset to default",
+          qmOffTitle: "Off",
+          qmOffHint: "Turn it on by choosing Quick menu under Top row.",
+          qmUse: "Use quick menu",
+          qmStyleCurrent: "Style: {style}",
+          qmStyleWhere: "Change the style, or switch to search or filters, under Top row.",
+          hpTopSlotQuick: "Quick menu",
+          qmStyle_horizon: "Horizon",
+          qmStyle_initials: "Initials",
+          qmStyle_constellation: "Constellation",
+          qmStyle_dark: "Dusk",
+          "qmStyle_focus-depth": "Depth of field",
+          qmStyle_sentence: "Sentence",
+          qmStyle_viewfinder: "Viewfinder",
+          qmStyle_tracking: "Tracking",
+          qmStyle_numbers: "Number keys",
+          qmStyle_italic: "Italic",
+          qmSentenceLead: "Show me",
+          qmSentence_search: "to search",
+          qmSentence_movies: "movies",
+          qmSentence_series: "series",
+          qmSentence_continue: "where I left off",
+          qmSentence_live: "live TV",
+          qmSentence_home: "home",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "my watchlist",
+          qmSentence_calendar: "the calendar",
+          qmSentence_releases: "new releases",
+          qmSourceBuiltIn: "Built-in",
+          qmSourceCustomPage: "Custom page",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Position {i} of {n}",
+          qmHiddenWith: "hidden with {style}",
+          qmDone: "Done",
+          qmGroupFilters: "Filters",
+          qmGroupSearch: "Search",
+          qmGroupOther: "Other",
+          qmNew: "New",
+          qmUpTo10: "up to 10",
+          qmResetHint: "Restores the default items for this menu. The style stays.",
+          qmSectionHint: "Shortcuts centred at the top of the home screen.",
+          qmItemsCount: "{n} of {max}",
+          qmHiddenCount: "{n} hidden",
           hpTopSlotFilterPages: "Filters where they apply",
           hpTopSlotFilterAll: "Filters on every page",
           hpTopSlotSearch: "Search field",
-          hpTopSlotNone: "Nothing (filters sit above the grid)",
+          hpTopSlotNone: "Nothing",
           hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
           hpSearchStaysHint: "Search remains available in the top menu",
           hpSearchTopChosenHint: "The search field sits in the top row (see Top row above), so the large field is hidden.",
@@ -5063,6 +5347,8 @@
           showAllMovies: "Visa alla filmer",
           showAllSeries: "Visa alla serier",
           searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
+          searchInLibrary: "S\xF6k i {name}",
+          searchInYourLibrary: "S\xF6k i ditt bibliotek",
           searchTitlePlaceholder: "S\xF6k titel",
           sampleData: "Exempeldata",
           tmdbLive: "TMDb live",
@@ -5137,7 +5423,7 @@
           listenedAt: "vid",
           streamAvailable: "Cachad",
           streamDeviceUnsupported: "st\xF6ds ej",
-          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud eller Dolby Vision) \u2014 r\xE4kna med inget ljud, eller ingen uppspelning.",
+          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud, Dolby Vision, 4K eller HDR) \u2014 r\xE4kna med inget ljud, ingen bild eller ingen uppspelning.",
           streamDownload: "Ladda ned",
           startingMovie: "Startar film...",
           findingMovie: "Hittar film...",
@@ -5282,18 +5568,14 @@
           dtSeasonsN: "{n} s\xE4songer",
           settingsDetailsEyebrow: "Detaljsidan",
           sideMenuTitle: "Sidomeny",
-          sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
-          sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
-          sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
-          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter toppraden p\xE5 skrivbord och mobil.",
           menuPillPlaceTitle: "Menypillrets placering",
           menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
           menuPillTopLeft: "Uppe till v\xE4nster",
           menuPillTopRight: "Uppe till h\xF6ger",
           menuPillBottomLeft: "Nere till v\xE4nster",
           menuPillBottomRight: "Nere till h\xF6ger",
-          sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
           vlcToggleTitle: "\xD6ppna streams direkt i VLC",
@@ -5316,6 +5598,8 @@
           appUpdateNotesTitle: "Nyheter i den h\xE4r versionen",
           appUpdatePromptInstall: "Uppdatera nu",
           appUpdatePromptInstalling: "Uppdaterar\u2026",
+          appUpdateDownloading: "Laddar ner uppdateringen",
+          appUpdateInstallingStep: "Installerar\u2026",
           appUpdatePromptLater: "Inte nu",
           appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
           appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
@@ -5386,6 +5670,37 @@
           sortHighestTmdb: "H\xF6gst TMDb-betyg",
           sortNewest: "Nyast till \xE4ldst",
           sortOldest: "\xC4ldst till nyast",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Bl\xE4ddra",
+          browseSummary: "Visar {scope} p\xE5 {services}, {sort}",
+          browseKindMovies: "filmer",
+          browseKindSeries: "serier",
+          browseKindTitles: "titlar",
+          browseKindAnime: "animetitlar",
+          browseScopeAll: "alla {kind}",
+          browseScopeGenres: "{kind} inom {genres}",
+          browseScopeManyGenres: "{kind} inom {n} genrer",
+          browseGenresAnd: " och ",
+          browseYearFrom: "fr\xE5n {year}",
+          browseYearTo: "till och med {year}",
+          browseYearRange: "fr\xE5n {min}\u2013{max}",
+          browseRatedAtLeast: "med betyg {n}+",
+          browseEveryService: "alla tj\xE4nster",
+          browseManyServices: "{n} tj\xE4nster",
+          browseSortPopular: "mest popul\xE4ra f\xF6rst",
+          browseSortRelevant: "mest relevanta f\xF6rst",
+          browseSortRating: "h\xF6gst betyg f\xF6rst",
+          browseSortNewest: "nyast f\xF6rst",
+          browseSortOldest: "\xE4ldst f\xF6rst",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Visar {scope} i {services}, {sort}",
+          browseYourLibrary: "ditt bibliotek",
+          browseManySources: "{n} k\xE4llor",
+          browseSortAdded: "senast tillagda f\xF6rst",
+          browseSortTitle: "efter titel A\u2013\xD6",
+          sortRecentlyAdded: "Senast tillagda",
+          sortTitleAZ: "Titel A\u2013\xD6",
+          filterSource: "K\xE4lla",
           // Results
           aboutResults: "Ungef\xE4r",
           results: "resultat",
@@ -5552,6 +5867,10 @@
           tvGreetingReleaseToday: "{title} finns nu",
           tvGreetingReleaseTomorrow: "{title} sl\xE4pps imorgon",
           tvGreetingReleaseSoon: "{title} sl\xE4pps om {days} dagar",
+          tvGreetingResumeShort: "{minutes} min kvar \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Nu \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Imorgon \xB7 {title}",
+          tvGreetingReleaseSoonShort: "Om {days} dagar \xB7 {title}",
           tvGreetingNight: "Fortfarande vaken",
           settingsPageOverview: "\xD6versikt",
           settingsPageAccount: "Konto & profiler",
@@ -5697,6 +6016,47 @@
           plChapterN: "Kapitel {n}",
           plCreditsChapter: "Eftertexter",
           shortcutsSaveMoment: "Spara \xF6gonblick",
+          clipTitle: "Klipp",
+          clipNew: "Nytt klipp",
+          clipZoomed: "Inzoomat \xB7 4 min",
+          clipShare: "Dela klipp",
+          clipShareSection: "Dela",
+          clipCopyLink: "Kopiera l\xE4nk",
+          clipCopyImage: "Kopiera bild",
+          clipSaveFile: "Spara fil",
+          clipSaveMoment: "Spara bland \xF6gonblick",
+          clipFrom: "Fr\xE5n {time}",
+          clipSendTo: "Skicka till {phone}",
+          clipPhoneGone: "Telefonen \xE4r inte l\xE4ngre ansluten",
+          clipShowQr: "Visa QR-kod f\xF6r l\xE4nken",
+          clipTvNote: "TV:n skickar bara in- och ut-tid. Telefonen renderar och delar.",
+          clipTvCancel: "Avbryt med Bak\xE5t",
+          clipTvStill: "Stillbild \xB7 f\xF6rhandsvisning i bilden",
+          clipScanQr: "Skanna med telefonen",
+          clipTvBackCloses: "Bak\xE5t st\xE4nger",
+          clipSentTo: "Skickat till {phone} \xB7 {len} s",
+          clipFrame: "Bildruta {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 h\xE5ll 5 s \xB7 OK n\xE4sta \xB7 Bak\xE5t avbryter",
+          clipMomentSavedAt: "\xD6gonblick sparat \xB7 {time}",
+          clipSavePhotos: "Spara i Bilder",
+          clipCancel: "Avbryt klipp",
+          clipShareNow: "Dela nu",
+          clipTileLink: "L\xE4nk",
+          clipTileSave: "Spara",
+          clipTileMoment: "\xD6gonblick",
+          clipSavedPhotos: "Sparat i Bilder",
+          clipSaveNeedsAndroid10: "Spara i Bilder kr\xE4ver Android 10 \u2014 dela i st\xE4llet",
+          clipNewWithLength: "Nytt klipp \xB7 {len}",
+          clipRenderingIndeterminate: "Skapar klipp \u2026",
+          clipFormatStill: "Bild",
+          clipRendering: "Skapar klipp \xB7 {pct} %",
+          clipFailed: "Klippet kunde inte skapas",
+          clipLinkCopied: "L\xE4nk kopierad",
+          clipImageCopied: "Bild kopierad",
+          clipSaved: "Klippet sparat",
+          clipClose: "St\xE4ng klipp",
+          shortcutsClip: "Klipp",
           plMoments: "\xD6gonblick",
           plMomentKeep: "Spara detta \xF6gonblick",
           plMomentJump: "Hoppa",
@@ -5832,6 +6192,10 @@
           rtInverseTmDesc: "Expanderar SDR-material mot HDR p\xE5 kapabla sk\xE4rmar.",
           rtHwdec: "H\xE5rdvaruacceleration",
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
+          allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
+          allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          androidSourceCache: "Mellanlagra str\xF6mmar",
+          androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
           atEyebrow: "Ljudjustering",
           atTitle: "Forma ljudet",
@@ -5846,6 +6210,10 @@
           atDownmixDesc: "F\xE4ller ihop 5.1/7.1 till tv\xE5 kanaler \u2014 laptoph\xF6gtalare och h\xF6rlurar.",
           atEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv). Nattl\xE4get l\xE4ggs ovanp\xE5.",
           vtTitle: "Bildjusteringar",
+          vtScopeLabel: "G\xE4ller",
+          vtScopeFilm: "Bara den h\xE4r filmen",
+          vtScopeAll: "Alla filmer",
+          vtActive: "P\xE5",
           vtHint: "G\xE4ller live i en \xF6ppen spelare och f\xF6r all uppspelning fram\xE5t.",
           vtBrightness: "Ljusstyrka",
           vtContrast: "Kontrast",
@@ -5857,6 +6225,7 @@
           vtPresetVivid: "Levande",
           vtPresetCinema: "Bio-m\xF6rkt",
           vtPresetSharp: "Skarp",
+          vtPresetLabel: "F\xF6rval",
           vtEngineNote: "Gamma och sk\xE4rpa kr\xE4ver den inbyggda desktop-motorn; webbspelaren till\xE4mpar resten.",
           sfTabSafety: "S\xE4kerhet",
           sfDisplayEyebrow: "Visning",
@@ -6042,6 +6411,13 @@
           homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
           cardShapePoster: "St\xE5ende",
           cardShapeLandscape: "Liggande",
+          homeExpandCards: "F\xE4ll ut kort vid fokus",
+          homeCardVhs: "VHS-fodral",
+          homeCardVhsAuto: "F\xF6lj Tema & skala",
+          homeCardVhsOn: "Vrids vid fokus",
+          homeCardVhsShelf: "Vridna i hyllan",
+          homeCardVhsOff: "Av",
+          homeExpandCardsHint: "Kortet i fokus breddas till en bakgrundsbild med logga och fakta. Bara st\xE5ende kort.",
           qrAddonOpen: "L\xE4gg till via mobilen",
           qrAddonTitle: "Skanna med mobilen",
           qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
@@ -6078,6 +6454,13 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          cardSheen: "Bl\xE4nk p\xE5 korten",
+          cardSheenDesc: "Ett mjukt ljus sveper \xF6ver ett kort n\xE4r du pekar p\xE5 det eller v\xE4ljer det.",
+          vhsCards: "VHS-fodral",
+          vhsCardsDesc: "Korten vrids som ett VHS-fodral med titeln p\xE5 ryggen: n\xE4r du pekar p\xE5 eller v\xE4ljer dem, eller hela tiden som i en hylla och r\xE4tas upp n\xE4r de v\xE4ljs.",
+          vhsModeOff: "Av",
+          vhsModeFocus: "Vrids vid fokus",
+          vhsModeShelf: "Vridna i hyllan",
           performanceMode: "Prestandal\xE4ge",
           performanceModeDesc: "F\xF6r svagare tv-boxar: tar bort osk\xE4rpa och skuggor bakom menyer och kort, och l\xE5ter inte heron spela trailern av sig sj\xE4lv. Inget f\xF6rsvinner ur gr\xE4nssnittet.",
           heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
@@ -6090,6 +6473,7 @@
           settingsTabApiKeys: "API-nycklar",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "K\xE4llor & addons",
+          settingsTabFolders: "Mappar & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "Nyhet",
@@ -6771,6 +7155,7 @@
           tvRowFailed: "Kunde inte h\xE4mtas",
           tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
           tvQuickPlay: "Spela",
+          tvQuickSource: "K\xE4lla: {source} \u203A",
           tvQuickMarkWatched: "Markera som sedd",
           tvQuickUnmarkWatched: "Markera som osedd",
           tvQuickMoreInfo: "Mer info",
@@ -6815,6 +7200,26 @@
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestigedrama",
           homeSourceMoment: "Just nu (byter efter stund)",
+          homeSourceComingUp: "Kalender",
+          comingUpTitle: "Kommer snart",
+          comingUpSubtitle: "Fr\xE5n serier du f\xF6ljer \xB7 {n}",
+          comingUpAvailableOne: "1 avsnitt tillg\xE4ngligt nu",
+          comingUpAvailableMany: "{n} avsnitt tillg\xE4ngliga nu",
+          comingUpNothingNew: "inget nytt just nu",
+          comingUpOpenCalendar: "\xD6ppna kalender",
+          comingUpMissed: "Missade",
+          comingUpToday: "Idag",
+          comingUpTomorrow: "Imorgon",
+          comingUpEpisodesCount: "{n} avsnitt",
+          comingUpInDays: "om {n} dagar",
+          comingUpPillAvailable: "Tillg\xE4nglig",
+          comingUpPillMissedAvailable: "Missad \xB7 Tillg\xE4nglig",
+          comingUpPillTonight: "Ikv\xE4ll {time}",
+          comingUpPillWatched: "Sedd",
+          comingUpTagPremiere: "Premi\xE4r",
+          comingUpTagFinale: "Final",
+          comingUpShowMissedSetting: "Visa missade avsnitt i Kommer snart",
+          comingUpShowMissedHint: "Avsnitt fr\xE5n ig\xE5r som du inte har sett \xE4n.",
           homeSourceMomentMovies: "Just nu \xB7 Filmer",
           homeSourceMomentSeries: "Just nu \xB7 Serier",
           homeSourceAnimeMovies: "Animefilmer",
@@ -6982,6 +7387,11 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Kom ih\xE5g bildformat",
           rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
+          matchFrameRate: "Matcha bildfrekvens",
+          matchFrameRateDesc: "Byter TV:n till bildfrekvensen i det du tittar p\xE5, s\xE5 att r\xF6relser inte hackar. Sk\xE4rmen blir svart en kort stund n\xE4r den byter.",
+          matchFrameRateOff: "Av",
+          matchFrameRateVod: "Filmer och serier",
+          matchFrameRateAll: "\xC4ven live-TV",
           autoSkipIntro: "Auto-skippa intro",
           autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
           resumePromptEyebrow: "FORTS\xC4TT ELLER B\xD6RJA OM",
@@ -7122,6 +7532,50 @@
           matchWaitingFor: "V\xE4ntar p\xE5 att {name} k\xF6r ig\xE5ng",
           matchUndo: "\xC5ngra",
           matchLeft: "Du l\xE4mnade Filmmatch",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "TIPPA MATCHEN \xB7 {league}",
+          tipKickoff: "Avspark {time}",
+          tipIn: "om {n} min",
+          tipScan: "Skanna med kameran, eller \xF6ppna Soffl\xE4ge",
+          tipInSofa: "I soffan",
+          tipCount: "{n} av {m} har tippat",
+          tipHasTipped: "\u2713 Har tippat",
+          tipTipping: "Tippar \u2026",
+          tipLobbyHint: "Tipsen l\xE5ses vid avspark. St\xE4llningen visas inte om spoilerskyddet \xE4r p\xE5.",
+          tipLockNow: "L\xE5s nu",
+          tipCancel: "Avbryt",
+          tipPill: "Tippa",
+          tipPillAgain: "Tryck ned igen",
+          tipManageOverline: "TIPPA MATCHEN",
+          tipShowLobby: "Visa lobbyn",
+          tipRow: "TIPS",
+          tipFinal: "SLUT",
+          tipExact: "R\xC4TT RESULTAT",
+          tipWinner: "R\xC4TT VINNARE",
+          tipClosest: "N\xC4RMAST AV \xD6VRIGA",
+          tipDone: "Klar",
+          tipSeason: "S\xE4songen",
+          tipSeasonOverline: "S\xC4SONG I SOFFAN \xB7 {n} MATCHER",
+          tipNewSeason: "Ny s\xE4song",
+          tipNewSeasonConfirm: "Tryck igen f\xF6r ny s\xE4song",
+          tipColName: "NAMN",
+          tipColExact: "R\xC4TT RES.",
+          tipColWinner: "R\xC4TT VINN.",
+          tipColTonight: "IKV\xC4LL",
+          tipColPoints: "PO\xC4NG",
+          tipExactSub: "tippade {tip} \xB7 3 p",
+          tipWon: "{team} vann",
+          tipDraw: "Oavgjort",
+          tipOneOff: "ett m\xE5l ifr\xE5n",
+          tipNOff: "{n} m\xE5l ifr\xE5n",
+          tipPlusOne: "+1 p",
+          tipNobody: "Ingen",
+          tipWhyExact: "R\xE4tt resultat",
+          tipWhyWinner: "R\xE4tt vinnare",
+          tipWhyWinnerClosest: "R\xE4tt vinnare \xB7 n\xE4rmast",
+          tipWhyClosest: "N\xE4rmast",
+          tipWhyWrong: "Fel vinnare",
+          tipCreateFailed: "Kunde inte starta Tippa matchen. F\xF6rs\xF6k igen om en stund.",
           matchEnded: "Filmmatch avslutades p\xE5 TV:n",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
@@ -7262,6 +7716,21 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          dailyPosterTitle: "Dagens affisch",
+          dailyPosterHint: "L\xE5ssk\xE4rmen visar en affisch ur din watchlist och byts varje morgon kl. 6.",
+          dailyPosterToggleTitle: "Dagens affisch p\xE5 l\xE5ssk\xE4rmen",
+          dailyPosterToggleDesc: "En tyst morgonavisering \xF6ppnar titeln. N\xE4r du st\xE4nger av visar l\xE5ssk\xE4rmen hemsk\xE4rmens bakgrund \u2014 den tidigare l\xE5ssk\xE4rmsbilden g\xE5r inte att f\xE5 tillbaka. Vissa tillverkare (Xiaomi, Oppo) kan skriva \xF6ver l\xE5ssk\xE4rmen.",
+          dailyPosterOn: "P\xE5",
+          dailyPosterOff: "Av",
+          dailyPosterRunNowTitle: "Byt nu",
+          dailyPosterRunNowDesc: "V\xE4lj n\xE4sta affisch direkt.",
+          dailyPosterRunNow: "Byt nu",
+          dailyPosterQueued: "L\xE5ssk\xE4rmen byts om en liten stund.",
+          dailyPosterEmpty: "Watchlisten har inga titlar med affisch \xE4n.",
+          dailyPosterError: "Det gick inte: {e}",
+          dailyPosterNotAllowed: "Telefonen l\xE5ter inte appar byta bakgrund (tillverkaren eller en jobbpolicy).",
+          dailyPosterNotificationTitle: "Dagens affisch",
+          dailyPosterChannelName: "Dagens affisch",
           hapticsTitle: "K\xE4nn basen",
           hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
           hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
@@ -7428,8 +7897,16 @@
           disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
           subtitleAutoSyncSetting: "Synka undertexter automatiskt",
           subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
+          subtitleAutoSyncGroup: "Autosynk",
+          subtitleSyncFastReadAhead: "Snabbare synk (anv\xE4nder mer data)",
+          subtitleSyncFastReadAheadHint: "L\xE4ser upp till 6 minuter ljud i f\xF6rv\xE4g i st\xE4llet f\xF6r 3, s\xE5 att undertexterna synkas tidigare i sv\xE5ra partier som s\xE5ng och musik. Anv\xE4nder mer mobildata. P\xE5verkar aldrig uppspelningen.",
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
           subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
+          subtitleAutoSyncOtherEdit: "Undertexten verkar vara fr\xE5n en annan version av filmen. Byt till filens egen {lang} undertext?",
+          subtitleAutoSyncOtherEditSwitch: "Byt",
+          subtitleAutoSyncOtherEditKeep: "Beh\xE5ll",
+          subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
           subtitleAutoSyncUndo: "\xC5ngra",
           subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
           subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
@@ -7800,6 +8277,13 @@
           coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
           coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
           coreStreamsSource: "K\xE4lla",
+          streamSourceAllSources: "Alla k\xE4llor",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} avs",
+          streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
+          streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
+          streamSourceFallback: "E{episode} finns inte i {source} \u2014 visar {fallback}",
           coreStreamsCached: "Cachad",
           coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
           streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
@@ -7858,6 +8342,8 @@
           continueLayoutRows: "Rader",
           continueLayoutGrid: "Rutn\xE4t",
           cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+          cwFramesTitle: "Scenbild vid hovring",
+          cwFramesDesc: "Sparar en bildruta n\xE4r du pausar eller l\xE4mnar en titel och visar den n\xE4r du h\xE5ller muspekaren \xF6ver kortet (eller fokuserar det p\xE5 TV).",
           cwModeRows: "Rullande rader",
           cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
           cwModeGrid: "Rutn\xE4t",
@@ -8113,12 +8599,75 @@
           hpUpload: "Ladda upp",
           hpHomeEyebrow: "Startsida",
           hpSearchFieldTitle: "S\xF6kf\xE4lt",
+          startPageTitle: "Startsida",
+          startPageHint: "Sidan appen \xF6ppnar p\xE5 n\xE4r den startar. G\xE4ller den h\xE4r sortens enhet (TV, dator eller telefon). Finns sidan inte l\xE4ngre \xF6ppnas Hem.",
+          startPageGroupBuiltIn: "Inbyggda",
+          startPageGroupPages: "Egna sidor",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Toppraden",
-          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: ett s\xF6kf\xE4lt, snabbmenyn eller ingenting. Filmer, Serier och de andra filtersidorna visar alltid filtren i en Bl\xE4ddra-rad under heron.",
+          qmEyebrow: "Snabbmeny",
+          qmShow: "Visa snabbmeny",
+          qmStyle: "Stil",
+          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 7.",
+          qmScrollsTen: "Scrollar \xB7 upp till 10 poster",
+          qmUpToSix: "Upp till 7 poster",
+          qmItems: "Poster",
+          qmItemsHint: "Sidor i snabbmenyn, i ordning.",
+          qmItemsPanelHint: "OK p\xE5 en post f\xF6r att flytta eller ta bort den.",
+          qmAddPage: "L\xE4gg till sida",
+          qmSlotsLeft: "{n} platser kvar",
+          qmFull: "{style} rymmer 7. Horisont och Mening rymmer 10.",
+          qmHiddenWarn: "{n} poster d\xF6ljs med {style}. V\xE4lj en stil som scrollar eller ta bort poster.",
+          qmHidden: "Dold",
+          qmReset: "\xC5terst\xE4ll standard",
+          qmOffTitle: "Av",
+          qmOffHint: "Sl\xE5 p\xE5 genom att v\xE4lja Snabbmeny under Toppraden.",
+          qmUse: "Anv\xE4nd snabbmeny",
+          qmStyleCurrent: "Stil: {style}",
+          qmStyleWhere: "Byt stil, eller v\xE4xla till s\xF6k eller filter, under Toppraden.",
+          hpTopSlotQuick: "Snabbmeny",
+          qmStyle_horizon: "Horisont",
+          qmStyle_initials: "Initialer",
+          qmStyle_constellation: "Stj\xE4rnbild",
+          qmStyle_dark: "M\xF6rkret",
+          "qmStyle_focus-depth": "Sk\xE4rpedjup",
+          qmStyle_sentence: "Mening",
+          qmStyle_viewfinder: "S\xF6karen",
+          qmStyle_tracking: "Sp\xE4rrning",
+          qmStyle_numbers: "Sifferknappar",
+          qmStyle_italic: "Kursiv",
+          qmSentenceLead: "Visa mig",
+          qmSentence_search: "s\xF6ka",
+          qmSentence_movies: "filmer",
+          qmSentence_series: "serier",
+          qmSentence_continue: "d\xE4r jag slutade",
+          qmSentence_live: "live-tv",
+          qmSentence_home: "hem",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "min bevakningslista",
+          qmSentence_calendar: "kalendern",
+          qmSentence_releases: "nya sl\xE4pp",
+          qmSourceBuiltIn: "Inbyggd",
+          qmSourceCustomPage: "Egen sida",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Plats {i} av {n}",
+          qmHiddenWith: "dold med {style}",
+          qmDone: "Klar",
+          qmGroupFilters: "Filter",
+          qmGroupSearch: "S\xF6k",
+          qmGroupOther: "\xD6vrigt",
+          qmNew: "Ny",
+          qmUpTo10: "upp till 10",
+          qmResetHint: "\xC5terst\xE4ller standardposterna f\xF6r den h\xE4r menyn. Stilen ligger kvar.",
+          qmSectionHint: "Genv\xE4gar centrerade h\xF6gst upp p\xE5 startsidan.",
+          qmItemsCount: "{n} av {max}",
+          qmHiddenCount: "{n} dolda",
           hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
           hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
           hpTopSlotSearch: "S\xF6kf\xE4lt",
-          hpTopSlotNone: "Ingenting (filtren ligger vid rutn\xE4tet)",
+          hpTopSlotNone: "Ingenting",
           hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
           hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
           hpSearchTopChosenHint: "S\xF6kf\xE4ltet ligger i toppraden (se Toppraden ovan), s\xE5 det stora f\xE4ltet \xE4r dolt.",
@@ -8721,13 +9270,48 @@
     }
   });
 
+  // lib/subtitle-legibility.ts
+  var HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
+  // lib/playback-settings.ts
+  var init_playback_settings = __esm({
+    "lib/playback-settings.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+      init_subtitle_legibility();
+    }
+  });
+
+  // lib/android-direct-stream.ts
+  var FINAL_URL_TTL_MS;
+  var init_android_direct_stream = __esm({
+    "lib/android-direct-stream.ts"() {
+      FINAL_URL_TTL_MS = 30 * 60 * 1e3;
+    }
+  });
+
   // lib/tauri-native-player.ts
   var isAndroidTauriEnv;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
+      init_timing();
       init_react_shim();
       init_tauri_mpv();
+      init_playback_settings();
+      init_android_source_cache();
+      init_android_direct_stream();
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
     }
   });
@@ -8918,10 +9502,18 @@
     }
   });
 
+  // lib/key-hold.ts
+  var init_key_hold = __esm({
+    "lib/key-hold.ts"() {
+      "use strict";
+    }
+  });
+
   // lib/tv-hold.ts
   var init_tv_hold = __esm({
     "lib/tv-hold.ts"() {
       "use strict";
+      init_key_hold();
     }
   });
 
@@ -8958,6 +9550,15 @@
     "lib/plugin-assets.ts"() {
       "use strict";
       "use client";
+    }
+  });
+
+  // lib/home-background-settings.ts
+  var init_home_background_settings = __esm({
+    "lib/home-background-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
     }
   });
 
@@ -9059,21 +9660,23 @@
   function getMovieWatchlist() {
     return read();
   }
-  function addToMovieWatchlist(entry, options) {
-    const normalizedEntry = {
-      ...entry,
-      tmdbId: normalizeTmdbId(entry.tmdbId)
-    };
-    const list = read().filter(
-      (e) => e.tmdbId !== normalizedEntry.tmdbId && !(normalizedEntry.imdbId && e.imdbId && e.imdbId === normalizedEntry.imdbId)
-    );
-    const nextEntry = { ...normalizedEntry, addedAt: (/* @__PURE__ */ new Date()).toISOString() };
-    write([...list, nextEntry]);
-    emitMutation({
-      action: "add",
-      entry: nextEntry,
-      source: options?.source ?? "local"
-    });
+  function addMovieWatchlistEntries(entries, options) {
+    if (entries.length === 0) return;
+    let list = read();
+    const added = [];
+    for (const entry of entries) {
+      const normalizedEntry = { ...entry, tmdbId: normalizeTmdbId(entry.tmdbId) };
+      list = list.filter(
+        (e) => e.tmdbId !== normalizedEntry.tmdbId && !(normalizedEntry.imdbId && e.imdbId && e.imdbId === normalizedEntry.imdbId)
+      );
+      const nextEntry = { ...normalizedEntry, addedAt: (/* @__PURE__ */ new Date()).toISOString() };
+      list.push(nextEntry);
+      added.push(nextEntry);
+    }
+    write(list);
+    for (const entry of added) {
+      emitMutation({ action: "add", entry, source: options?.source ?? "local" });
+    }
   }
   function removeFromMovieWatchlist(tmdbId, options) {
     const normalizedTmdbId = normalizeTmdbId(tmdbId);
@@ -9149,17 +9752,21 @@
   function getWatchlist() {
     return read2();
   }
-  function addToWatchlist(entry, options) {
-    const list = read2().filter(
-      (e) => e.tmdbId !== entry.tmdbId && !(entry.imdbId && e.imdbId && e.imdbId === entry.imdbId)
-    );
-    const nextEntry = { ...entry, addedAt: (/* @__PURE__ */ new Date()).toISOString() };
-    write2([...list, nextEntry]);
-    emitMutation2({
-      action: "add",
-      entry: nextEntry,
-      source: options?.source ?? "local"
-    });
+  function addWatchlistEntries(entries, options) {
+    if (entries.length === 0) return;
+    let list = read2();
+    const added = [];
+    for (const entry of entries) {
+      const sameAs = (e) => e.tmdbId === entry.tmdbId || Boolean(entry.imdbId && e.imdbId && e.imdbId === entry.imdbId);
+      list = list.filter((e) => !sameAs(e));
+      const nextEntry = { ...entry, addedAt: (/* @__PURE__ */ new Date()).toISOString() };
+      list.push(nextEntry);
+      added.push(nextEntry);
+    }
+    write2(list);
+    for (const entry of added) {
+      emitMutation2({ action: "add", entry, source: options?.source ?? "local" });
+    }
   }
   function removeFromWatchlist(tmdbId, options) {
     const existing = read2().find((entry) => entry.tmdbId === tmdbId) ?? null;
@@ -9198,10 +9805,9 @@
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
   }
-  function read3() {
-    if (typeof window === "undefined") return {};
+  function parseStored(raw) {
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY3) ?? "{}");
+      const parsed = JSON.parse(raw);
       const out = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "string" && value.trim().length > 0) out[key] = value;
@@ -9212,8 +9818,21 @@
       return {};
     }
   }
+  function readShared() {
+    if (typeof window === "undefined") return {};
+    const raw = getScopedStorageItem(KEY3) ?? "{}";
+    if (parsedCache && parsedCache.raw === raw) return parsedCache.data;
+    const data = parseStored(raw);
+    parsedCache = { raw, data };
+    return data;
+  }
+  function read3() {
+    return { ...readShared() };
+  }
   function write3(data) {
-    setScopedStorageItem(KEY3, JSON.stringify(data));
+    const raw = JSON.stringify(data);
+    setScopedStorageItem(KEY3, raw);
+    parsedCache = { raw, data };
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(EVENT3));
     }
@@ -9221,44 +9840,47 @@
   function timestampOf(value) {
     return typeof value === "string" ? value : void 0;
   }
-  function setWatched(tmdbId, season, episode, watched, options) {
-    const data = read3();
-    const key = epKey(tmdbId, season, episode);
-    const previous = data[key];
-    const source = options?.source ?? "local";
-    let next;
-    if (watched) {
-      next = options?.watchedAt ?? (source !== "local" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
-    }
-    if (previous === next || !watched && previous === void 0) return;
-    if (next === void 0) delete data[key];
-    else data[key] = next;
-    write3(data);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(DETAIL_EVENT3, {
-        detail: {
-          tmdbId,
-          imdbId: options?.imdbId ?? null,
-          season,
-          episode,
-          watched,
-          source,
-          watchedAt: timestampOf(next)
-        }
-      }));
-    }
-  }
   function parseEpKey(key) {
     const match = key.match(/^(.+)-S(\d+)E(\d+)$/);
     if (!match) return null;
     return { tmdbId: match[1], season: Number(match[2]), episode: Number(match[3]) };
   }
   function getWatchedEpisodes() {
-    return Object.entries(read3()).map(([key, value]) => {
+    return Object.entries(readShared()).map(([key, value]) => {
       const parsed = parseEpKey(key);
       if (!parsed) return null;
       return { ...parsed, watchedAt: timestampOf(value) };
     }).filter((entry) => Boolean(entry));
+  }
+  function addWatchedEpisodes(episodes, options) {
+    const data = read3();
+    const source = options?.source ?? "local";
+    const added = [];
+    for (const episode of episodes) {
+      const key = epKey(episode.tmdbId, episode.season, episode.episode);
+      if (data[key]) continue;
+      const value = episode.watchedAt ?? (source !== "local" ? true : (/* @__PURE__ */ new Date()).toISOString());
+      data[key] = value;
+      added.push({ episode, value });
+    }
+    if (added.length === 0) return 0;
+    write3(data);
+    if (typeof window !== "undefined") {
+      for (const { episode, value } of added) {
+        window.dispatchEvent(new CustomEvent(DETAIL_EVENT3, {
+          detail: {
+            tmdbId: episode.tmdbId,
+            imdbId: episode.imdbId ?? null,
+            season: episode.season,
+            episode: episode.episode,
+            watched: true,
+            source,
+            watchedAt: timestampOf(value)
+          }
+        }));
+      }
+    }
+    return added.length;
   }
   function onWatchedEpisodeMutation(listener) {
     if (typeof window === "undefined") return () => {
@@ -9270,7 +9892,7 @@
     window.addEventListener(DETAIL_EVENT3, handler);
     return () => window.removeEventListener(DETAIL_EVENT3, handler);
   }
-  var KEY3, EVENT3, DETAIL_EVENT3;
+  var KEY3, EVENT3, DETAIL_EVENT3, parsedCache;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
@@ -9278,6 +9900,7 @@
       KEY3 = "watched_episodes";
       EVENT3 = "lumio-watched-episodes-changed";
       DETAIL_EVENT3 = "lumio-watched-episode-mutated";
+      parsedCache = null;
     }
   });
 
@@ -9326,15 +9949,6 @@
       }
     }));
   }
-  function emitMutation3(mutation) {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(DETAIL_EVENT_WATCHED_MOVIE_MUTATED, {
-      detail: {
-        ...mutation,
-        entries: readEntries()
-      }
-    }));
-  }
   function sameMovie(entry, target) {
     const entryTmdbId = normalizeId(entry.tmdbId);
     const entryImdbId = normalizeId(entry.imdbId);
@@ -9353,31 +9967,38 @@
   function getWatchedMovies() {
     return readEntries();
   }
-  function setMovieWatched(entry, watched, options) {
-    const tmdbId = normalizeId(entry.tmdbId);
-    const imdbId = normalizeId(entry.imdbId);
-    const title = entry.title ?? null;
-    const year = normalizeYear(entry.year);
-    if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
+  function addWatchedMovies(movies, options) {
+    if (typeof window === "undefined") return 0;
     const current2 = readEntries();
-    const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
-    const nextEntry = {
-      tmdbId,
-      imdbId,
-      title,
-      year,
-      posterUrl: entry.posterUrl ?? null,
-      watchedAt: options?.watchedAt ?? entry.watchedAt ?? (/* @__PURE__ */ new Date()).toISOString()
-    };
-    if (watched) {
-      next.unshift(nextEntry);
+    const added = [];
+    for (const movie of movies) {
+      const tmdbId = normalizeId(movie.tmdbId);
+      const imdbId = normalizeId(movie.imdbId);
+      const title = movie.title ?? null;
+      const year = normalizeYear(movie.year);
+      if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) continue;
+      const target = { tmdbId, imdbId, title, year };
+      if (current2.some((entry) => sameMovie(entry, target))) continue;
+      if (added.some((entry) => sameMovie(entry, target))) continue;
+      added.push({
+        tmdbId,
+        imdbId,
+        title,
+        year,
+        posterUrl: movie.posterUrl ?? null,
+        watchedAt: movie.watchedAt ?? (/* @__PURE__ */ new Date()).toISOString()
+      });
     }
+    if (added.length === 0) return 0;
+    const next = [...added.slice().reverse(), ...current2];
     writeEntries(next);
-    emitMutation3({
-      action: watched ? "add" : "remove",
-      entry: nextEntry,
-      source: options?.source ?? "local"
-    });
+    const source = options?.source ?? "local";
+    for (const entry of added) {
+      window.dispatchEvent(new CustomEvent(DETAIL_EVENT_WATCHED_MOVIE_MUTATED, {
+        detail: { action: "add", entry, source, entries: next }
+      }));
+    }
+    return added.length;
   }
   function onWatchedMovieMutation(listener) {
     if (typeof window === "undefined") return () => {
@@ -10698,29 +11319,6 @@
     }
   });
 
-  // lib/subtitle-legibility.ts
-  var HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
-  var init_subtitle_legibility = __esm({
-    "lib/subtitle-legibility.ts"() {
-      HELVETICA_WIN_EM = 1.175;
-      ASS_SIZE_FACTOR = {
-        default: 1,
-        atkinson: 1.24 / HELVETICA_WIN_EM,
-        opendyslexic: 2.136 / HELVETICA_WIN_EM
-      };
-    }
-  });
-
-  // lib/playback-settings.ts
-  var init_playback_settings = __esm({
-    "lib/playback-settings.ts"() {
-      "use strict";
-      init_app_storage();
-      init_profile_storage_shim();
-      init_subtitle_legibility();
-    }
-  });
-
   // lib/async-utils.ts
   var init_async_utils = __esm({
     "lib/async-utils.ts"() {
@@ -10817,6 +11415,7 @@
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -10839,6 +11438,7 @@
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -13322,6 +13922,24 @@
     }
   });
 
+  // lib/sync/webdav-credentials.ts
+  var init_webdav_credentials = __esm({
+    "lib/sync/webdav-credentials.ts"() {
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/continue-frames.ts
+  var init_continue_frames = __esm({
+    "lib/continue-frames.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_player_frame_id();
+      init_webdav_credentials();
+    }
+  });
+
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
@@ -13330,11 +13948,90 @@
   });
 
   // lib/video-progress.ts
-  var EVENT4, HISTORY_EVENT;
+  function sanitizeEntry(entry) {
+    return {
+      ...entry,
+      tmdbId: typeof entry.tmdbId === "string" && entry.tmdbId.trim().length > 0 ? entry.tmdbId.trim() : entry.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null,
+      imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
+    };
+  }
+  function read4() {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(getScopedStorageItem(KEY4) ?? "[]");
+    } catch {
+      return [];
+    }
+  }
+  function watchedAtMs(entry) {
+    const ts = Date.parse(entry.watchedAt ?? "");
+    return Number.isFinite(ts) ? ts : 0;
+  }
+  function sortByWatchedAtDesc(entries) {
+    return [...entries].sort((a, b) => watchedAtMs(b) - watchedAtMs(a));
+  }
+  function readHistory() {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = getScopedStorageItem(HISTORY_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (parsed.length > 0) return parsed;
+      const seed = read4();
+      if (seed.length > 0) {
+        const seenKeys = /* @__PURE__ */ new Set();
+        const dedupedSeed = [];
+        for (const entry of seed) {
+          const key = entry.type === "tv" ? entry.id : `${entry.id}::${entry.season ?? ""}:${entry.episode ?? ""}`;
+          if (seenKeys.has(key)) continue;
+          seenKeys.add(key);
+          dedupedSeed.push(sanitizeEntry(entry));
+        }
+        const seededEntries = dedupedSeed.slice(0, HISTORY_MAX);
+        setScopedStorageItem(HISTORY_KEY, JSON.stringify(seededEntries));
+        return seededEntries;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+  function writeHistory(entries) {
+    setScopedStorageItem(HISTORY_KEY, JSON.stringify(entries));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
+  }
+  function historyDedupeKey(entry) {
+    return entry.type === "tv" ? entry.id : `${entry.id}::${entry.season ?? ""}:${entry.episode ?? ""}`;
+  }
+  function appendHistoryEntry(entry) {
+    const sanitized = sanitizeEntry(entry);
+    const incomingKey = historyDedupeKey(sanitized);
+    const current2 = readHistory();
+    const previous = current2.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
+      ...previous,
+      posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
+      backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
+    } : sanitized;
+    const filtered = current2.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
+    writeHistory(next);
+  }
+  function flushHistoryMirror() {
+    const mirror = historyMirror;
+    if (!mirror?.pending) return;
+    if (mirror.timer) clearTimeout(mirror.timer);
+    const entry = mirror.pending;
+    mirror.pending = null;
+    mirror.timer = null;
+    mirror.at = Date.now();
+    appendHistoryEntry(entry);
+  }
+  var EVENT4, KEY4, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
+      init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
       EVENT4 = "lumio-stream-progress-changed";
@@ -13347,7 +14044,17 @@
         }).catch(() => {
         });
       }
+      KEY4 = "stream_progress_list";
+      HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
+      HISTORY_MAX = 200;
+      historyMirror = null;
+      if (typeof window !== "undefined") {
+        window.addEventListener("pagehide", flushHistoryMirror);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") flushHistoryMirror();
+        });
+      }
     }
   });
 
@@ -13562,6 +14269,7 @@
   var open;
   var init_player_open = __esm({
     "lib/watch-journal/player-open.ts"() {
+      init_react_shim();
       open = false;
     }
   });
@@ -13753,7 +14461,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY4);
+      const stored = getScopedStorageItem(KEY5);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -13784,14 +14492,14 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY4, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY5, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY4 = "barcode_settings_v1";
+      KEY5 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
-        enabled: true,
+        enabled: false,
         showStripInPlayer: true,
         columns: 160,
         scope: "movies",
@@ -14136,9 +14844,9 @@
         useEffect(() => {
           if (!state.id) return;
           const id = state.id;
-          const read4 = () => setBarcode(getBarcode(id));
-          read4();
-          return onBarcodesChanged(read4);
+          const read5 = () => setBarcode(getBarcode(id));
+          read5();
+          return onBarcodesChanged(read5);
         }, [state.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
@@ -14203,14 +14911,84 @@
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
+      init_key_hold();
+    }
+  });
+
+  // lib/core-streams/stream-utils.ts
+  var SIZE_UNITS;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var FRESH_SOURCE_MS;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      FRESH_SOURCE_MS = 10 * 6e4;
+    }
+  });
+
+  // lib/core-streams/prepare.ts
+  var init_prepare = __esm({
+    "lib/core-streams/prepare.ts"() {
+      "use strict";
+      init_filters();
+      init_stream_utils();
+    }
+  });
+
+  // lib/core-streams/playback.ts
+  var SLATE_MIN_BYTES, DIRECT_START_MAX_AGE_MS;
+  var init_playback = __esm({
+    "lib/core-streams/playback.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_session_host();
+      init_lookup();
+      init_prepare();
+      init_stream_utils();
+      SLATE_MIN_BYTES = 256 * 1024;
+      DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
     }
   });
 
   // lib/resume-playback.ts
   var init_resume_playback = __esm({
     "lib/resume-playback.ts"() {
+      init_timing();
       init_plugin_registry();
+      init_android_direct_stream();
       init_session_host();
+      init_playback_settings();
+      init_stream_utils();
+      init_playback();
+    }
+  });
+
+  // lib/subtitle-autopick.ts
+  var init_subtitle_autopick = __esm({
+    "lib/subtitle-autopick.ts"() {
     }
   });
 
@@ -14257,6 +15035,7 @@
       init_tv_focus_shim();
       init_video_tuning();
       init_audio_tuning();
+      init_tauri_native_player();
       init_jsx_runtime_shim();
     }
   });
@@ -14273,6 +15052,12 @@
       "use client";
       init_react_shim();
       init_app_storage();
+    }
+  });
+
+  // lib/player-menu-anchor.ts
+  var init_player_menu_anchor = __esm({
+    "lib/player-menu-anchor.ts"() {
     }
   });
 
@@ -14382,6 +15167,7 @@
     "components/player/player-soundtrack-panel.tsx"() {
       "use client";
       init_react_shim();
+      init_tv_scene();
       init_i18n();
       init_tv_focus_shim();
       init_fetch_client();
@@ -14398,25 +15184,6 @@
       init_i18n();
       init_tv_focus_shim();
       init_jsx_runtime_shim();
-    }
-  });
-
-  // lib/core-streams/stream-utils.ts
-  var SIZE_UNITS;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
     }
   });
 
@@ -14441,10 +15208,18 @@
     }
   });
 
+  // lib/couch/sport-protocol.ts
+  var init_sport_protocol = __esm({
+    "lib/couch/sport-protocol.ts"() {
+      "use strict";
+    }
+  });
+
   // lib/couch/host-bridge.ts
   var init_host_bridge = __esm({
     "lib/couch/host-bridge.ts"() {
       init_host_trakt();
+      init_sport_protocol();
     }
   });
 
@@ -14460,6 +15235,27 @@
   var init_homekit_client = __esm({
     "lib/homekit-client.ts"() {
       "use client";
+    }
+  });
+
+  // lib/continue-frame-capture.ts
+  var init_continue_frame_capture = __esm({
+    "lib/continue-frame-capture.ts"() {
+      "use client";
+      init_continue_frames();
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/use-continue-frame-capture.ts
+  var init_use_continue_frame_capture = __esm({
+    "lib/use-continue-frame-capture.ts"() {
+      "use client";
+      init_react_shim();
+      init_continue_frames();
+      init_continue_frame_capture();
+      init_tauri_native_player();
     }
   });
 
@@ -14482,6 +15278,7 @@
         { id: "mute", category: "player", defaultKey: "m", labelKey: "shortcutsMute" },
         { id: "fullscreen", category: "player", defaultKey: "f", labelKey: "shortcutsToggleFullscreen" },
         { id: "saveMoment", category: "player", defaultKey: "b", labelKey: "shortcutsSaveMoment" },
+        { id: "clip", category: "player", defaultKey: "c", labelKey: "shortcutsClip" },
         { id: "subtitleCycle", category: "tracks", defaultKey: "s", labelKey: "shortcutsSubtitleCycle" },
         { id: "secondarySubtitleCycle", category: "tracks", defaultKey: "d", labelKey: "shortcutsSecondarySubtitleCycle" },
         { id: "subtitleDelayBack", category: "tracks", defaultKey: "z", labelKey: "shortcutsSubtitleDelayBack" },
@@ -14500,6 +15297,22 @@
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+    }
+  });
+
+  // lib/player-silent-start.ts
+  var init_player_silent_start = __esm({
+    "lib/player-silent-start.ts"() {
+      init_start_watchdog();
     }
   });
 
@@ -14556,9 +15369,9 @@
     }
   });
 
-  // lib/subtitle-sync/loop.ts
-  var init_loop = __esm({
-    "lib/subtitle-sync/loop.ts"() {
+  // lib/subtitle-sync/health.ts
+  var init_health = __esm({
+    "lib/subtitle-sync/health.ts"() {
     }
   });
 
@@ -14567,6 +15380,13 @@
     "lib/subtitle-sync/plan.ts"() {
       "use strict";
       init_playback_settings();
+    }
+  });
+
+  // lib/subtitle-sync/loop.ts
+  var init_loop = __esm({
+    "lib/subtitle-sync/loop.ts"() {
+      init_plan();
     }
   });
 
@@ -14597,14 +15417,58 @@
     "components/player/use-subtitle-auto-sync.ts"() {
       "use strict";
       init_react_shim();
+      init_android_source_cache();
       init_subtitle_delay_store();
       init_playback_settings();
       init_client2();
+      init_health();
       init_loop();
       init_plan();
       init_opt_out();
       init_user_delay();
       init_diag();
+    }
+  });
+
+  // lib/subtitle-sync/other-edit.ts
+  function createOwnTrackOffers() {
+    const offered = /* @__PURE__ */ new Set();
+    const choices = /* @__PURE__ */ new Map();
+    const key = (file, subId) => `${file}|${subId}`;
+    return {
+      shouldOffer: (file, subId) => !offered.has(key(file, subId)),
+      markOffered: (file, subId) => {
+        offered.add(key(file, subId));
+      },
+      decide: (file, subId, choice) => {
+        offered.add(key(file, subId));
+        choices.set(key(file, subId), choice);
+      },
+      choice: (file, subId) => choices.get(key(file, subId)) ?? null
+    };
+  }
+  var ownTrackOffers;
+  var init_other_edit = __esm({
+    "lib/subtitle-sync/other-edit.ts"() {
+      init_plan();
+      ownTrackOffers = createOwnTrackOffers();
+    }
+  });
+
+  // components/player/use-embedded-track-languages.ts
+  var init_use_embedded_track_languages = __esm({
+    "components/player/use-embedded-track-languages.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_client2();
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/mpv-swap.ts
+  var init_mpv_swap = __esm({
+    "lib/subtitle-sync/mpv-swap.ts"() {
     }
   });
 
@@ -14673,7 +15537,10 @@
         // Stjärna — bevakningslistan HETER stjärnlistan, så formen är dess egen och
         // inte en tillfällighet. Den ligger här i stället för att falla igenom till
         // reservformen nedan, som numera aldrig ger en stjärna.
-        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z"
+        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z",
+        // Boll — Sport som eget menyval (Live TV-pluginets sida `live-tv-sport`):
+        // ring, femhörning i mitten och fem sömmar ut mot kanten.
+        "live-tv-sport": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 8l3.8 2.76-1.45 4.47h-4.7L8.2 10.76zM12 8V3M15.8 10.76l4.75-1.54M14.35 15.23l2.94 4.04M9.65 15.23l-2.94 4.04M8.2 10.76 3.45 9.22"
       };
     }
   });
@@ -14731,6 +15598,103 @@
     }
   });
 
+  // components/player/clip/clip-share-button.tsx
+  var init_clip_share_button = __esm({
+    "components/player/clip/clip-share-button.tsx"() {
+      "use client";
+      init_react_shim();
+      init_player_control_icons();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-state.ts
+  var init_clip_state = __esm({
+    "lib/clip/clip-state.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-panel.tsx
+  var init_clip_panel = __esm({
+    "components/player/clip/clip-panel.tsx"() {
+      "use client";
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // components/player/clip/clip-trimmer.tsx
+  var init_clip_trimmer = __esm({
+    "components/player/clip/clip-trimmer.tsx"() {
+      "use client";
+      init_react_shim();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-loop.ts
+  var init_clip_loop = __esm({
+    "lib/clip/clip-loop.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-phone-panels.tsx
+  var init_clip_phone_panels = __esm({
+    "components/player/clip/clip-phone-panels.tsx"() {
+      "use client";
+      init_clip_panel();
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // components/player/clip/clip-tv-panel.tsx
+  var init_clip_tv_panel = __esm({
+    "components/player/clip/clip-tv-panel.tsx"() {
+      "use client";
+      init_esm();
+      init_clip_panel();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-offer.ts
+  var init_clip_offer = __esm({
+    "lib/clip/clip-offer.ts"() {
+      init_tauri_mpv();
+    }
+  });
+
+  // lib/couch/host-api.ts
+  var init_host_api = __esm({
+    "lib/couch/host-api.ts"() {
+    }
+  });
+
+  // lib/device-transfer.ts
+  var init_device_transfer = __esm({
+    "lib/device-transfer.ts"() {
+      "use client";
+      init_app_storage();
+    }
+  });
+
+  // lib/clip/clip-export.ts
+  var init_clip_export = __esm({
+    "lib/clip/clip-export.ts"() {
+      "use client";
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
   // lib/player-chapters.ts
   var init_player_chapters = __esm({
     "lib/player-chapters.ts"() {
@@ -14776,6 +15740,7 @@
       init_playback_settings();
       init_android_media_keys();
       init_resume_playback();
+      init_subtitle_autopick();
       init_watched_episodes();
       init_watched_movies();
       init_scrobble_fanout();
@@ -14789,6 +15754,8 @@
       init_scroll_lock();
       init_i18n();
       init_tv_focus_shim();
+      init_tv_scene();
+      init_player_menu_anchor();
       init_download_target();
       init_session_host();
       init_pip();
@@ -14805,12 +15772,14 @@
       init_player_snapshot();
       init_homekit_client();
       init_plugin_sdk();
+      init_use_continue_frame_capture();
       init_playback_session_client();
       init_playback_settings();
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
       init_player_reveal_hold();
+      init_player_silent_start();
       init_credits_recommendations();
       init_ids();
       init_title_logo_cache();
@@ -14820,9 +15789,12 @@
       init_playback_settings();
       init_lan_streaming_settings();
       init_use_subtitle_auto_sync();
+      init_other_edit();
+      init_use_embedded_track_languages();
       init_subtitle_delay_store();
       init_user_delay();
       init_diag();
+      init_mpv_swap();
       init_tauri_mpv();
       init_tauri_native_player();
       init_tauri_avplayer();
@@ -14831,6 +15803,18 @@
       init_series_lock_runtime();
       init_player_status_line();
       init_moment_link();
+      init_clip_panel();
+      init_clip_trimmer();
+      init_clip_state();
+      init_key_hold();
+      init_clip_loop();
+      init_clip_phone_panels();
+      init_clip_tv_panel();
+      init_clip_offer();
+      init_host_api();
+      init_device_transfer();
+      init_tauri_native_player();
+      init_clip_export();
       init_player_chapters();
       init_player_moments();
       init_jsx_runtime_shim();
@@ -15451,6 +16435,7 @@
       init_appearance_settings();
       init_plugin_storage();
       init_plugin_assets();
+      init_home_background_settings();
       init_home_override_settings();
       init_trakt_storage();
       init_trakt_sync();
@@ -15495,7 +16480,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/index.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     SimklPlugin: () => SimklPlugin
@@ -15503,10 +16488,10 @@
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/host.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/api.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/api.ts
   var API = "https://api.simkl.com";
   var CDN = "https://data.simkl.in";
   var APP_NAME = "lumio";
@@ -15530,7 +16515,7 @@
       else nextGet = slot + GET_INTERVAL_MS;
       if (slot > now) await sleep(slot - now);
     }
-    async function read4(response) {
+    async function read5(response) {
       const text = await response.text().catch(() => "");
       if (!text.trim()) return null;
       try {
@@ -15574,7 +16559,7 @@
           remaining = left;
           remainingAt = deps.now();
         }
-        const data = await read4(response);
+        const data = await read5(response);
         if (response.ok) return { ok: true, data };
         const error = data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : `HTTP ${response.status}`;
         if (response.status === 429) {
@@ -15601,7 +16586,7 @@
       try {
         const response = await deps.fetchImpl(CDN + path);
         if (!response.ok) return { ok: false, status: response.status, retryAfter: null, error: `HTTP ${response.status}` };
-        return { ok: true, data: await read4(response) };
+        return { ok: true, data: await read5(response) };
       } catch (err) {
         return { ok: false, status: 0, retryAfter: null, error: err instanceof Error ? err.message : String(err) };
       }
@@ -15615,7 +16600,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/payloads.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/payloads.ts
   function toIds(tmdbId, imdbId) {
     const ids = {};
     if (tmdbId != null && /^\d+$/.test(tmdbId)) ids.tmdb = Number(tmdbId);
@@ -15671,7 +16656,7 @@
     return kind === "show" ? { shows: list } : { movies: list };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/bridge.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/bridge.ts
   var FLUSH_MS = 3e3;
   var RETRY_MS2 = 6e4;
   var MAX_ATTEMPTS = 5;
@@ -15687,7 +16672,7 @@
     function arm(ms) {
       if (timer2 != null) deps.cancel(timer2);
       timer2 = deps.schedule(() => {
-        void flush();
+        void flush2();
       }, ms);
     }
     function enqueue(key, pending3) {
@@ -15747,7 +16732,7 @@
       if (unwatched.length) sends.push({ path: "/sync/history/remove", body: buildHistoryPayload(pushes(unwatched)), entries: unwatched, what: "sedda \u2212", critical: true });
       return sends;
     }
-    async function flush() {
+    async function flush2() {
       timer2 = null;
       if (flushing) {
         arm(FLUSH_MS);
@@ -15814,7 +16799,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/device-auth.ts
+  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/device-auth.ts
   var DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   var REFRESH_MARGIN_MS = 24 * 60 * 6e4;
   var REFRESH_BACKOFF_MS = 5 * 6e4;
@@ -16011,7 +16996,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/parse.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/parse.ts
   var isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
   var str2 = (v) => typeof v === "string" && v.trim() ? v : null;
   var idStr = (v) => typeof v === "number" && Number.isFinite(v) ? String(v) : typeof v === "string" && /^\d+$/.test(v) ? v : null;
@@ -16082,7 +17067,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/strings.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/strings.ts
   var S = {
     pluginName: { en: "SIMKL", sv: "SIMKL" },
     listSourceLabel: { en: "SIMKL list", sv: "SIMKL-lista" },
@@ -16225,7 +17210,7 @@
     return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/sync-engine.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/sync-engine.ts
   var SNAPSHOT_KEY = "simkl_sync_snapshot";
   var FAILURE_KEY = "simkl_sync_failure";
   var SNAPSHOT_VERSION = 2;
@@ -16450,9 +17435,9 @@
         for (const e of plainRemoved) delete pushed[remoteKey("movie", e.tmdbId)];
         remote = pushed;
         guard();
-        for (const entry of showPlan.localAdds) host.addShow(entry);
+        if (showPlan.localAdds.length) host.addShows(showPlan.localAdds);
         for (const id of showPlan.localRemoveIds) host.removeShow(id);
-        for (const entry of moviePlan.localAdds) host.addMovie(entry);
+        if (moviePlan.localAdds.length) host.addMovies(moviePlan.localAdds);
         for (const id of moviePlan.localRemoveIds) host.removeMovie(id);
         for (const [kind, plan] of [["serier", showPlan], ["filmer", moviePlan]]) {
           changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length;
@@ -16479,17 +17464,11 @@
           ...localMovieList.flatMap((m) => movieKeys(m))
         ]);
         guard();
-        let pulled = 0;
-        for (const ep of remoteEpisodes) {
-          if (localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))) continue;
-          host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt);
-          pulled += 1;
-        }
-        for (const movie of remoteMovies) {
-          if (movieKeys(movie).some((k) => localKeys.has(k))) continue;
-          host.markMovieWatched({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt });
-          pulled += 1;
-        }
+        const newEpisodes = remoteEpisodes.filter((ep) => !localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))).map((ep) => ({ tmdbId: ep.tmdbId, season: ep.season, episode: ep.episode, watchedAt: ep.watchedAt }));
+        const newMovies = remoteMovies.filter((movie) => !movieKeys(movie).some((k) => localKeys.has(k))).map((movie) => ({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt }));
+        if (newEpisodes.length) host.markEpisodesWatched(newEpisodes);
+        if (newMovies.length) host.markMoviesWatched(newMovies);
+        const pulled = newEpisodes.length + newMovies.length;
         changes += pulled;
         if (skippedAnime) host.log(`sedda: ${skippedAnime} anime-titlar hoppades \xF6ver (AniDB-numrering)`);
         if (episodesComplete) {
@@ -16566,7 +17545,7 @@
     }
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/list-source.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/list-source.ts
   var HOUR = 60 * 6e4;
   var itemsKey = (id) => `simkl_list_items_${id}`;
   var LIBRARY_KEY = itemsKey("library");
@@ -16693,7 +17672,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/prefs.ts
+  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/prefs.ts
   function prefKeys(prefix) {
     return {
       scrobble: `${prefix}_scrobble_enabled`,
@@ -16712,7 +17691,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/scheduler.ts
+  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/scheduler.ts
   var INITIAL_DELAY_MS = 5e4;
   var FIRST_SYNC_DELAY_MS = 5e3;
   var INTERVAL_MS = 15 * 6e4;
@@ -16744,7 +17723,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/status.ts
+  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/status.ts
   function createStatus(initial) {
     let state = {
       connection: "none",
@@ -16773,7 +17752,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/tracker.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/tracker.ts
   var LOCK_MS = 2e4;
   var WATCHED_AT = 80;
   function createScrobbler(deps) {
@@ -16823,9 +17802,9 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/host.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/host.ts
   var SIMKL_CLIENT_ID = "b28530cfc06b97379bfc3c00ac4560354052567e6713ccc3db70fca8a8573e40";
-  var PLUGIN_VERSION = "0.1.0";
+  var PLUGIN_VERSION = "0.1.1";
   var API2 = "https://api.simkl.com";
   var PREFS_EVENT = "lumio-simkl-prefs-changed";
   var AUTH_EVENT = "lumio-simkl-auth-changed";
@@ -16930,14 +17909,18 @@
   var syncHost = {
     getShows: () => getWatchlist(),
     getMovies: () => getMovieWatchlist(),
-    addShow: (e) => addToWatchlist(e, { source: "tracker" }),
+    addShows: (entries) => addWatchlistEntries(entries, { source: "tracker" }),
     removeShow: (id) => removeFromWatchlist(id, { source: "tracker" }),
-    addMovie: (e) => addToMovieWatchlist({ ...e, monitorForStreams: false }, { source: "tracker" }),
+    addMovies: (entries) => addMovieWatchlistEntries(entries.map((e) => ({ ...e, monitorForStreams: false })), { source: "tracker" }),
     removeMovie: (id) => removeFromMovieWatchlist(id, { source: "tracker" }),
     getWatchedEpisodes: () => getWatchedEpisodes(),
     getWatchedMovies: () => getWatchedMovies(),
-    markEpisodeWatched: (tmdbId, season, episode, watchedAt) => setWatched(tmdbId, season, episode, true, { source: "tracker", watchedAt: watchedAt ?? void 0 }),
-    markMovieWatched: (m) => setMovieWatched({ tmdbId: m.tmdbId ?? void 0, imdbId: m.imdbId ?? void 0 }, true, { source: "tracker", watchedAt: m.watchedAt ?? void 0 }),
+    markEpisodesWatched: (episodes) => {
+      addWatchedEpisodes(episodes, { source: "tracker" });
+    },
+    markMoviesWatched: (movies) => {
+      addWatchedMovies(movies, { source: "tracker" });
+    },
     planWatchlistSync: (local, remote, snap, rule, opts) => planWatchlistSync(local, remote, snap, rule, opts),
     readJson,
     writeJson,
@@ -17054,7 +18037,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/rows.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/rows.ts
   var clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   function countdown(msLeft) {
     const s = Math.max(0, Math.ceil(msLeft / 1e3));
@@ -17151,11 +18134,11 @@
     return rows;
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/onboarding-card.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/settings-section.tsx
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -17322,7 +18305,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/onboarding-card.tsx
   init_jsx_runtime_shim();
   function SimklOnboardingCard({ init }) {
     const { lang } = useLang();
@@ -17385,7 +18368,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/simkl/runtime/index.ts
+  // ../../../lumio-official-plugins-largelists/plugins/simkl/runtime/index.ts
   function getStatus() {
     const state = status.get();
     const base = { canConnect: true, requiresUserGesture: true, supportsSilentReconnect: false };

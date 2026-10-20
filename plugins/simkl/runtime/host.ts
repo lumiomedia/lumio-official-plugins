@@ -23,7 +23,7 @@ import { createScrobbler } from './tracker'
 
 /** Lumio som AUTH V2-app ("TV, devices & command line") på simkl.com. Publikt id, ingen hemlighet. */
 export const SIMKL_CLIENT_ID = 'b28530cfc06b97379bfc3c00ac4560354052567e6713ccc3db70fca8a8573e40'
-const PLUGIN_VERSION = '0.1.0'
+const PLUGIN_VERSION = '0.1.1'
 const API = 'https://api.simkl.com'
 
 const PREFS_EVENT = 'lumio-simkl-prefs-changed'

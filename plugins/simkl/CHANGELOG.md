@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Connecting an account with a large watch history no longer freezes Lumio: the first sync now saves your history in one go instead of title by title. Most noticeable on TV boxes.
+
 ## 0.1.0
 
 - Connect with a device code (QR on TV).
