@@ -1,3 +1,8 @@
+## 0.1.40
+
+- Molnet: listning och upplåsning av filer i molnkonton ligger nu i LumioTV i stället för i appen. Appen ger bara neutrala hjälpare (filnamnstolk, titelmatchning, sparad nyckel). Kräver app 0.1.631.
+- Inställningar: "Molnkonton" visar konton med sparad nyckel och låter dig ta bort ett du inte använder längre (två tryck på skrivbordet, bekräftelse på TV). Kontots filer försvinner ur kanalerna.
+
 ## 0.1.39
 
 - Tablån: program som började före fönstret (eller fortsätter efter det) får en rak kant mot fönstrets kant, så det inte ser ut som om de startar vid halvtimmen.
