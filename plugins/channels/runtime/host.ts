@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelClearSourceToken, channelMatchTitles, channelParseFileName, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelSourceToken,
+  channelClearSourceToken, channelMatchTitles, channelParseFileName, channelPrefetch, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelSourceToken,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -227,6 +227,11 @@ const debridCloud = createDebridCloud({
   parseFileName: (name, parent) => channelParseFileName(name, parent),
   matchTitles: (wanted) => channelMatchTitles(wanted),
 })
+
+/** Direktströmning: spelaren förhämtar en upplöst fil (huvud + index). No-op på äldre värdar. */
+export function prefetchInPlayer(url: string, headers?: Record<string, string>): void {
+  try { channelPrefetch(url, headers) } catch { /* äldre värd */ }
+}
 
 /** Ny genomgång av molnet förbi 6 h-cachen (studions Uppdatera). */
 export function refreshDebridCloud() {

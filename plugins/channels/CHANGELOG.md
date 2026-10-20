@@ -1,6 +1,7 @@
 ## 0.1.40
 
 - Molnet: listning och upplåsning av filer i molnkonton ligger nu i LumioTV i stället för i appen. Appen ger bara neutrala hjälpare (filnamnstolk, titelmatchning, sparad nyckel). Kräver app 0.1.631.
+- Android TV-boxar (direktströmning): grannkanaler och nästa program förhämtas i spelaren (filens början och index i minnet), så kanalbyten slipper rundresorna till källan. Strömuppslag förhämtas aldrig.
 - Inställningar: "Molnkonton" visar konton med sparad nyckel och låter dig ta bort ett du inte använder längre (två tryck på skrivbordet, bekräftelse på TV). Kontots filer försvinner ur kanalerna.
 
 ## 0.1.39
