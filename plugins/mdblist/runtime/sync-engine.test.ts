@@ -28,14 +28,14 @@ function makeHost(over: Partial<SyncHost> = {}) {
   const host: SyncHost = {
     getShows: () => [],
     getMovies: () => [],
-    addShow: vi.fn(),
+    addShows: vi.fn(),
     removeShow: vi.fn(),
-    addMovie: vi.fn(),
+    addMovies: vi.fn(),
     removeMovie: vi.fn(),
     getWatchedEpisodes: () => [],
     getWatchedMovies: () => [],
-    markEpisodeWatched: vi.fn(),
-    markMovieWatched: vi.fn(),
+    markEpisodesWatched: vi.fn(),
+    markMoviesWatched: vi.fn(),
     planWatchlistSync: planner,
     readJson: <T>(key: string) => (store[key] as T) ?? null,
     writeJson: (key: string, value: unknown) => { store[key] = value },
@@ -113,7 +113,7 @@ describe('synkmotorn', () => {
     })
     const out = await runMdblistSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'test' })
     expect(out.status).toBe('done')
-    expect(host.addMovie).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '13' }))
+    expect(host.addMovies).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '13' })]))
     expect(call).toHaveBeenCalledWith('POST', '/watchlist/items/add', { body: { movies: [{ tmdb: 603 }] } })
     expect((store[SNAPSHOT_KEY] as { movies: string[] }).movies.sort()).toEqual(['13', '603'])
   })
@@ -141,7 +141,7 @@ describe('synkmotorn', () => {
       return ok({})
     })
     await runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: false, reason: 'start' })
-    expect(host.markMovieWatched).toHaveBeenCalledWith({ tmdbId: '603', imdbId: null, watchedAt: 'R1' })
+    expect(host.markMoviesWatched).toHaveBeenCalledWith([expect.objectContaining({ tmdbId: '603', imdbId: null, watchedAt: 'R1' })])
     expect(call).not.toHaveBeenCalledWith('POST', '/sync/watched', expect.anything())
 
     call.mockClear()
@@ -213,7 +213,7 @@ describe('synkmotorn efter granskningen', () => {
     })
     const out = await runMdblistSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'test' })
     expect(out).toEqual({ status: 'skipped', reason: 'profilbyte' })
-    expect(host.addMovie).not.toHaveBeenCalled()
+    expect(host.addMovies).not.toHaveBeenCalled()
     expect(store[SNAPSHOT_KEY]).toBeUndefined()
   })
 
@@ -226,7 +226,7 @@ describe('synkmotorn efter granskningen', () => {
       return ok({ movies: [], episodes: [] })
     })
     await runMdblistSync({ host, api, prefs: prefsOn(true, true) }, { pushWatched: false, reason: 'reglage' })
-    expect(host.addMovie).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '13' }))
+    expect(host.addMovies).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '13' })]))
   })
 
   it('I5: hämtningen markerar bara det som saknas, och skriver aldrig över en tid', async () => {
@@ -240,8 +240,8 @@ describe('synkmotorn efter granskningen', () => {
       return ok({})
     })
     await runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: false, reason: 'test' })
-    expect(host.markEpisodeWatched).toHaveBeenCalledTimes(1)
-    expect(host.markEpisodeWatched).toHaveBeenCalledWith('1399', 1, 2, 'R2')
+    expect(host.markEpisodesWatched).toHaveBeenCalledTimes(1)
+    expect(host.markEpisodesWatched).toHaveBeenCalledWith([{ tmdbId: '1399', season: 1, episode: 2, watchedAt: 'R2' }])
   })
 
   it('I8: utan lokal tid skickas inget, och obekräftade ger upp efter två försök', async () => {

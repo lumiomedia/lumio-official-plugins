@@ -1,12 +1,13 @@
 // runtime/host.ts — den ENDA modulen (utöver UI och index) som rör SDK:n.
 // Allt annat i pluginet tar sina beroenden som parametrar och testas utan värd.
 import {
-  addToMovieWatchlist, addToWatchlist, getActiveProfileId, getMovieWatchlist,
+  addMovieWatchlistEntries, addWatchedEpisodes, addWatchedMovies, addWatchlistEntries,
+  getActiveProfileId, getMovieWatchlist,
   getScopedStorageItem, getTraktAuth, getWatchedEpisodes, getWatchedMovies, getWatchlist,
   isUserMutation, onMovieWatchlistMutation, onProfileChanged, readStoredLang,
   onWatchedEpisodeMutation, onWatchedMovieMutation, onWatchlistMutation, planWatchlistSync,
-  removeFromMovieWatchlist, removeFromWatchlist, removeScopedStorageItem, setMovieWatched,
-  setScopedStorageItem, setWatched, waitForStartIdle,
+  removeFromMovieWatchlist, removeFromWatchlist, removeScopedStorageItem,
+  setScopedStorageItem, waitForStartIdle,
 } from '@/lib/plugin-sdk'
 import { createSimklApi } from './api'
 import { startBridge } from './bridge'
@@ -145,16 +146,14 @@ export const isTraktConnected = () => Boolean(getTraktAuth())
 const syncHost: SyncHost = {
   getShows: () => getWatchlist(),
   getMovies: () => getMovieWatchlist(),
-  addShow: (e) => addToWatchlist(e, { source: 'tracker' }),
+  addShows: (entries) => addWatchlistEntries(entries, { source: 'tracker' }),
   removeShow: (id) => removeFromWatchlist(id, { source: 'tracker' }),
-  addMovie: (e) => addToMovieWatchlist({ ...e, monitorForStreams: false }, { source: 'tracker' }),
+  addMovies: (entries) => addMovieWatchlistEntries(entries.map((e) => ({ ...e, monitorForStreams: false })), { source: 'tracker' }),
   removeMovie: (id) => removeFromMovieWatchlist(id, { source: 'tracker' }),
   getWatchedEpisodes: () => getWatchedEpisodes(),
   getWatchedMovies: () => getWatchedMovies(),
-  markEpisodeWatched: (tmdbId, season, episode, watchedAt) =>
-    setWatched(tmdbId, season, episode, true, { source: 'tracker', watchedAt: watchedAt ?? undefined }),
-  markMovieWatched: (m) =>
-    setMovieWatched({ tmdbId: m.tmdbId ?? undefined, imdbId: m.imdbId ?? undefined }, true, { source: 'tracker', watchedAt: m.watchedAt ?? undefined }),
+  markEpisodesWatched: (episodes) => { addWatchedEpisodes(episodes, { source: 'tracker' }) },
+  markMoviesWatched: (movies) => { addWatchedMovies(movies, { source: 'tracker' }) },
   planWatchlistSync: (local, remote, snap, rule, opts) => planWatchlistSync(local, remote, snap, rule, opts),
   readJson,
   writeJson,

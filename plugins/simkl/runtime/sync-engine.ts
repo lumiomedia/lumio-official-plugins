@@ -61,14 +61,17 @@ export interface WatchlistPlanLike {
 export interface SyncHost {
   getShows(): LocalEntry[]
   getMovies(): LocalEntry[]
-  addShow(entry: RemoteEntry): void
+  /** Alla nya poster i ett anrop: en skrivning och en ändringshändelse. */
+  addShows(entries: RemoteEntry[]): void
   removeShow(tmdbId: string): void
-  addMovie(entry: RemoteEntry): void
+  addMovies(entries: RemoteEntry[]): void
   removeMovie(tmdbId: string): void
   getWatchedEpisodes(): Array<{ tmdbId: string; season: number; episode: number; watchedAt?: string }>
   getWatchedMovies(): Array<{ tmdbId?: string | null; imdbId?: string | null; watchedAt: string }>
-  markEpisodeWatched(tmdbId: string, season: number, episode: number, watchedAt: string | null): void
-  markMovieWatched(movie: { tmdbId: string | null; imdbId: string | null; watchedAt: string | null }): void
+  /** Alla hämtade avsnitt i ETT anrop: värden skriver en gång, inte en gång per avsnitt. */
+  markEpisodesWatched(episodes: Array<{ tmdbId: string; season: number; episode: number; watchedAt: string | null }>): void
+  /** Alla hämtade filmer i ett anrop, se ovan. */
+  markMoviesWatched(movies: Array<{ tmdbId: string | null; imdbId: string | null; watchedAt: string | null }>): void
   planWatchlistSync(
     local: LocalEntry[],
     remote: RemoteEntry[],
@@ -367,9 +370,9 @@ export async function runSimklSync(
       remote = pushed
 
       guard()
-      for (const entry of showPlan.localAdds) host.addShow(entry)
+      if (showPlan.localAdds.length) host.addShows(showPlan.localAdds)
       for (const id of showPlan.localRemoveIds) host.removeShow(id)
-      for (const entry of moviePlan.localAdds) host.addMovie(entry)
+      if (moviePlan.localAdds.length) host.addMovies(moviePlan.localAdds)
       for (const id of moviePlan.localRemoveIds) host.removeMovie(id)
       for (const [kind, plan] of [['serier', showPlan], ['filmer', moviePlan]] as const) {
         changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length
@@ -402,17 +405,18 @@ export async function runSimklSync(
         ...localMovieList.flatMap((m) => movieKeys(m)),
       ])
       guard()
-      let pulled = 0
-      for (const ep of remoteEpisodes) {
-        if (localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))) continue
-        host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt)
-        pulled += 1
-      }
-      for (const movie of remoteMovies) {
-        if (movieKeys(movie).some((k) => localKeys.has(k))) continue
-        host.markMovieWatched({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt })
-        pulled += 1
-      }
+      // Allt som saknas lokalt skrivs i ETT anrop per sort. En skrivning per
+      // avsnitt (hela kartan om och om igen, plus appens lyssnare varje gång)
+      // frös en Shield i minuter på en stor historik (2026-10-20).
+      const newEpisodes = remoteEpisodes
+        .filter((ep) => !localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode)))
+        .map((ep) => ({ tmdbId: ep.tmdbId, season: ep.season, episode: ep.episode, watchedAt: ep.watchedAt }))
+      const newMovies = remoteMovies
+        .filter((movie) => !movieKeys(movie).some((k) => localKeys.has(k)))
+        .map((movie) => ({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt }))
+      if (newEpisodes.length) host.markEpisodesWatched(newEpisodes)
+      if (newMovies.length) host.markMoviesWatched(newMovies)
+      const pulled = newEpisodes.length + newMovies.length
       changes += pulled
       if (skippedAnime) host.log(`sedda: ${skippedAnime} anime-titlar hoppades över (AniDB-numrering)`)
 

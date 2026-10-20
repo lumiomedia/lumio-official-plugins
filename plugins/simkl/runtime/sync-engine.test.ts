@@ -28,14 +28,14 @@ function makeHost(over: Partial<SyncHost> = {}) {
   const host: SyncHost = {
     getShows: () => [],
     getMovies: () => [],
-    addShow: vi.fn(),
+    addShows: vi.fn(),
     removeShow: vi.fn(),
-    addMovie: vi.fn(),
+    addMovies: vi.fn(),
     removeMovie: vi.fn(),
     getWatchedEpisodes: () => [],
     getWatchedMovies: () => [],
-    markEpisodeWatched: vi.fn(),
-    markMovieWatched: vi.fn(),
+    markEpisodesWatched: vi.fn(),
+    markMoviesWatched: vi.fn(),
     planWatchlistSync: planner,
     readJson: <T>(key: string) => (store[key] as T) ?? null,
     writeJson: (key: string, value: unknown) => { store[key] = value },
@@ -106,8 +106,8 @@ describe('SIMKL-synkmotorn', () => {
       return ok({})
     })
     await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'start' })
-    expect(host.addShow).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '1399' }))
-    expect(host.addMovie).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '603' }))
+    expect(host.addShows).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '1399' })]))
+    expect(host.addMovies).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '603' })]))
     expect(call.mock.calls.filter(([m]) => m === 'GET')).toHaveLength(2)
     expect((store[SNAPSHOT_KEY] as { all: string }).all).toBe('A1')
   })
@@ -168,9 +168,9 @@ describe('SIMKL-synkmotorn', () => {
       return ok({})
     })
     await runSimklSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: false, reason: 't' })
-    expect(host.markEpisodeWatched).toHaveBeenCalledTimes(1)
-    expect(host.markEpisodeWatched).toHaveBeenCalledWith('1399', 1, 2, 'W')
-    expect(host.markMovieWatched).toHaveBeenCalledWith({ tmdbId: '603', imdbId: null, watchedAt: 'RW' })
+    expect(host.markEpisodesWatched).toHaveBeenCalledTimes(1)
+    expect(host.markEpisodesWatched).toHaveBeenCalledWith([{ tmdbId: '1399', season: 1, episode: 2, watchedAt: 'W' }])
+    expect(host.markMoviesWatched).toHaveBeenCalledWith([{ tmdbId: '603', imdbId: null, watchedAt: 'RW' }])
   })
 
   it('löpande körning hämtar med date_from och skickar inte sedda', async () => {
@@ -230,7 +230,7 @@ describe('SIMKL-synkmotorn', () => {
     })
     const out = await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 't' })
     expect(out).toEqual({ status: 'skipped', reason: 'profilbyte' })
-    expect(host.addMovie).not.toHaveBeenCalled()
+    expect(host.addMovies).not.toHaveBeenCalled()
     expect(store[SNAPSHOT_KEY]).toBeUndefined()
   })
 
@@ -259,7 +259,7 @@ describe('SIMKL-synkmotorn', () => {
     await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })
     expect(gets(call)).toEqual(['/sync/activities', '/sync/all-items'])
     expect(queries[0]).toEqual(expect.objectContaining({ date_from: 'A0' }))
-    expect(host.addShow).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '2' }))
+    expect(host.addShows).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '2' })]))
     expect((store[SNAPSHOT_KEY] as { remote: Record<string, unknown> }).remote).toHaveProperty('s:2')
   })
 
@@ -296,7 +296,7 @@ describe('SIMKL-synkmotorn', () => {
     })
     const out = await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'start' })
     expect(out.status).toBe('done')
-    expect(host.addShow).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '1399' }))
+    expect(host.addShows).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ tmdbId: '1399' })]))
     expect(call).not.toHaveBeenCalledWith('POST', '/sync/history', expect.anything())
     expect(gets(call).length).toBeLessThanOrEqual(4)
   })
