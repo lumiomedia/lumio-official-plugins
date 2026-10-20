@@ -5827,6 +5827,9 @@
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
           subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
           subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
+          subtitleAutoSyncOtherEdit: "These subtitles seem to be from a different version of the film. Switch to the file\u2019s own {lang} subtitles?",
+          subtitleAutoSyncOtherEditSwitch: "Switch",
+          subtitleAutoSyncOtherEditKeep: "Keep",
           subtitleLanguageDetected: "language detected",
           subtitleAutoSyncUndo: "Undo",
           subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
@@ -9939,6 +9942,9 @@
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
           subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
           subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
+          subtitleAutoSyncOtherEdit: "Undertexten verkar vara fr\xE5n en annan version av filmen. Byt till filens egen {lang} undertext?",
+          subtitleAutoSyncOtherEditSwitch: "Byt",
+          subtitleAutoSyncOtherEditKeep: "Beh\xE5ll",
           subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
           subtitleAutoSyncUndo: "\xC5ngra",
           subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
@@ -26254,6 +26260,7 @@ ${effectiveName(url, id)}`;
         }
         return true;
       };
+      let otherEditSeen = false;
       let attempt = 0;
       const stopWatch = a.getPlaybackHealth ? watchPlaybackHealth({
         getHealth: () => live2().getPlaybackHealth?.(),
@@ -26287,6 +26294,11 @@ ${effectiveName(url, id)}`;
               logSubsyncClient(describeResult(r, attempt));
               if (!current2()) return;
               markIfFinal(r);
+              if (r.otherEdit && !otherEditSeen && sel.source !== "embedded") {
+                otherEditSeen = true;
+                logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel.id)} fil=${file}`);
+                live2().onOtherEdit?.(sel);
+              }
               if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
                 logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel.id)} fil=${file}`);
               } else if (final && r.status === "reference_pending") {
@@ -26373,6 +26385,45 @@ ${effectiveName(url, id)}`;
       AUDIO_WAIT_PLAYED_SECONDS = 20;
       toCandidate = (s) => ({ id: s.id, url: s.url, lang3: s.lang3, hashMatch: s.hashMatch, release: s.release });
       ANDROID_PREFETCH_DELAY_MS = 2e4;
+    }
+  });
+
+  // lib/subtitle-sync/other-edit.ts
+  function pickOwnTrack(options, lang) {
+    const wanted = subtitleLangGroup(lang);
+    if (wanted === "und") return void 0;
+    return options.find((o) => o.source === "embedded" && !o.forced && subtitleLangGroup(o.language) === wanted);
+  }
+  function createOwnTrackOffers() {
+    const offered = /* @__PURE__ */ new Set();
+    const choices = /* @__PURE__ */ new Map();
+    const key = (file, subId) => `${file}|${subId}`;
+    return {
+      shouldOffer: (file, subId) => !offered.has(key(file, subId)),
+      markOffered: (file, subId) => {
+        offered.add(key(file, subId));
+      },
+      decide: (file, subId, choice) => {
+        offered.add(key(file, subId));
+        choices.set(key(file, subId), choice);
+      },
+      choice: (file, subId) => choices.get(key(file, subId)) ?? null
+    };
+  }
+  function languageName(code, uiLang) {
+    const group = subtitleLangGroup(code);
+    try {
+      const name = new Intl.DisplayNames([uiLang], { type: "language" }).of(group);
+      if (name && name !== group) return uiLang === "sv" ? name.toLowerCase() : name;
+    } catch {
+    }
+    return group;
+  }
+  var ownTrackOffers;
+  var init_other_edit = __esm({
+    "lib/subtitle-sync/other-edit.ts"() {
+      init_plan();
+      ownTrackOffers = createOwnTrackOffers();
     }
   });
 
@@ -29700,6 +29751,8 @@ ${cue.text}`).join("\n\n")}
     const subDriftRef = useRef(null);
     const [syncNotice, setSyncNotice] = useState(null);
     const [syncNoFit, setSyncNoFit] = useState(null);
+    const [ownTrackPrompt, setOwnTrackPrompt] = useState(null);
+    const ownTrackPromptTimerRef = useRef(null);
     const syncNoticeTimerRef = useRef(null);
     const showSyncNotice = useCallback((n) => {
       setSyncNotice(n);
@@ -33027,7 +33080,8 @@ ${cue.text}`).join("\n\n")}
             id: `embedded:${track.sid}`,
             source: "embedded",
             label: detected ? [track.title, t("subtitleLanguageDetected")].filter(Boolean).join(" \xB7 ") : track.title ?? void 0,
-            ...detected ? { detectedLanguage: true } : {}
+            ...detected ? { detectedLanguage: true } : {},
+            ...track.forced ? { forced: true } : {}
           };
         });
       }
@@ -33124,6 +33178,9 @@ ${cue.text}`).join("\n\n")}
       onNoFit: (sub) => {
         if (sub.source !== "embedded") setSyncNoFit({ subId: sub.id, lang: sub.lang3 });
       },
+      onOtherEdit: (sub) => {
+        if (sub.source !== "embedded") setSyncNoFit({ subId: sub.id, lang: sub.lang3 });
+      },
       setStatus: (st) => setSubtitleAutoSyncState(
         st.type === "idle" ? { type: "idle" } : st.type === "analyzing" ? { type: "analyzing", message: st.message } : { type: st.type, message: st.message ?? "" }
       ),
@@ -33144,6 +33201,7 @@ ${cue.text}`).join("\n\n")}
     }, [isDroidEngine, url]);
     useEffect(() => {
       setSyncNoFit(null);
+      setOwnTrackPrompt(null);
     }, [url]);
     useEffect(() => {
       if (!syncNoFit) return;
@@ -33151,15 +33209,35 @@ ${cue.text}`).join("\n\n")}
         setSyncNoFit(null);
         return;
       }
-      const wanted = toSubtitleLangGroup(syncNoFit.lang);
-      const own = wanted === "und" ? void 0 : embeddedSubtitleOptions.find((option) => toSubtitleLangGroup(option.language) === wanted);
+      const own = pickOwnTrack(embeddedSubtitleOptions, syncNoFit.lang);
       if (!own) return;
       setSyncNoFit(null);
-      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] no_fit \u2192 filens eget sp\xE5r ${own.id} (${own.lang3}${own.detectedLanguage ? ", uppt\xE4ckt" : ""})`)}`).catch(() => {
+      if (!ownTrackOffers.shouldOffer(url, syncNoFit.subId)) return;
+      ownTrackOffers.markOffered(url, syncNoFit.subId);
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] annan version \u2192 erbjuder filens eget sp\xE5r ${own.id} (${own.lang3}${own.detectedLanguage ? ", uppt\xE4ckt" : ""})`)}`).catch(() => {
       });
-      void selectSubtitle(own, { noAutoSync: true });
+      const message = t("subtitleAutoSyncOtherEdit").replace("{lang}", languageName(syncNoFit.lang, lang));
+      setOwnTrackPrompt({ subId: syncNoFit.subId, own, message });
+      if (ownTrackPromptTimerRef.current) window.clearTimeout(ownTrackPromptTimerRef.current);
+      ownTrackPromptTimerRef.current = window.setTimeout(() => setOwnTrackPrompt(null), 2e4);
+    }, [syncNoFit, activeSubId, embeddedSubtitleOptions, url, lang, t]);
+    useEffect(() => () => {
+      if (ownTrackPromptTimerRef.current) window.clearTimeout(ownTrackPromptTimerRef.current);
+    }, []);
+    useEffect(() => {
+      if (ownTrackPrompt && activeSubId !== ownTrackPrompt.subId) setOwnTrackPrompt(null);
+    }, [activeSubId, ownTrackPrompt]);
+    const answerOwnTrackPrompt = useCallback((choice) => {
+      const prompt = ownTrackPrompt;
+      setOwnTrackPrompt(null);
+      if (!prompt) return;
+      ownTrackOffers.decide(url, prompt.subId, choice);
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] annan version: ${choice === "switch" ? "byter till" : "beh\xE5ller, inte"} filens eget sp\xE5r ${prompt.own.id}`)}`).catch(() => {
+      });
+      if (choice !== "switch") return;
+      void selectSubtitle(prompt.own, { noAutoSync: true });
       showSyncNotice({ message: t("subtitleAutoSyncSwappedEmbedded") });
-    }, [syncNoFit, activeSubId, embeddedSubtitleOptions, selectSubtitle, showSyncNotice, t]);
+    }, [ownTrackPrompt, url, selectSubtitle, showSyncNotice, t]);
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
       setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
@@ -36257,13 +36335,38 @@ ${cue.text}`).join("\n\n")}
                     children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
                   }
                 ),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice) && /* @__PURE__ */ jsxs(
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice || ownTrackPrompt) && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
                     style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
                     children: [
                       secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
+                      ownTrackPrompt && /* @__PURE__ */ jsxs("div", { className: "pointer-events-auto mb-1 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white/90", role: "status", children: [
+                        /* @__PURE__ */ jsx("span", { children: ownTrackPrompt.message }),
+                        /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+                          /* @__PURE__ */ jsx(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => answerOwnTrackPrompt("switch"),
+                              className: "font-medium text-aurora-300 hover:text-aurora-200",
+                              children: t("subtitleAutoSyncOtherEditSwitch")
+                            }
+                          ),
+                          /* @__PURE__ */ jsx(
+                            "button",
+                            {
+                              type: "button",
+                              "data-f": isTv ? "1" : void 0,
+                              onClick: () => answerOwnTrackPrompt("keep"),
+                              className: "font-medium text-white/70 hover:text-white",
+                              children: t("subtitleAutoSyncOtherEditKeep")
+                            }
+                          )
+                        ] })
+                      ] }),
                       syncNotice && /* @__PURE__ */ jsxs("div", { className: "pointer-events-auto mb-1 flex items-center gap-2 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: [
                         /* @__PURE__ */ jsx("span", { children: syncNotice.message }),
                         syncNotice.actionLabel && syncNotice.onAction && /* @__PURE__ */ jsx(
@@ -37838,6 +37941,7 @@ ${cue.text}`).join("\n\n")}
       init_playback_settings();
       init_lan_streaming_settings();
       init_use_subtitle_auto_sync();
+      init_other_edit();
       init_use_embedded_track_languages();
       init_subtitle_delay_store();
       init_user_delay();
@@ -40443,12 +40547,14 @@ ${cue.text}`).join("\n\n")}
     cancelDesktopPlaybackSessions: () => cancelDesktopPlaybackSessions,
     cancelLibraryScan: () => cancelLibraryScan2,
     capturePlayerFrame: () => capturePlayerFrame,
-    channelListDebridCloud: () => channelListDebridCloud,
+    channelClearSourceToken: () => channelClearSourceToken,
+    channelMatchTitles: () => channelMatchTitles,
+    channelParseFileName: () => channelParseFileName,
     channelRememberStream: () => channelRememberStream,
     channelResolveLibraryPlayback: () => channelResolveLibraryPlayback,
     channelResolveTitleStream: () => channelResolveTitleStream,
     channelSourceCacheSetting: () => channelSourceCacheSetting,
-    channelUnrestrictDebridFile: () => channelUnrestrictDebridFile,
+    channelSourceToken: () => channelSourceToken,
     checkEpisodeHasStream: () => checkEpisodeHasStream,
     checkMovieHasStream: () => checkMovieHasStream,
     checkPluginPathExists: () => checkPluginPathExists,
@@ -40714,11 +40820,17 @@ ${cue.text}`).join("\n\n")}
   function channelResolveTitleStream(input) {
     return channelHost()?.resolveTitleStream(input) ?? Promise.resolve(null);
   }
-  function channelListDebridCloud(options) {
-    return channelHost()?.listDebridCloud(options) ?? Promise.resolve([]);
+  function channelSourceToken(sourceId) {
+    return channelHost()?.sourceToken?.(sourceId) ?? null;
   }
-  function channelUnrestrictDebridFile(input) {
-    return channelHost()?.unrestrictDebridFile(input) ?? Promise.resolve(null);
+  function channelClearSourceToken(sourceId) {
+    channelHost()?.clearSourceToken?.(sourceId);
+  }
+  function channelParseFileName(fileName, parentFolder) {
+    return channelHost()?.parseFileName?.(fileName, parentFolder) ?? null;
+  }
+  function channelMatchTitles(wanted) {
+    return channelHost()?.matchTitles?.(wanted) ?? Promise.resolve(wanted.map(() => null));
   }
   function channelRememberStream(token) {
     channelHost()?.rememberChannelStream?.(token);
@@ -41079,14 +41191,14 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     ChannelsPlugin: () => ChannelsPlugin,
     default: () => runtime_default
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/strings.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/strings.ts
   var S = {
     pluginName: { en: "LumioTV", sv: "LumioTV" },
     description: { en: "Personal linear TV channels", sv: "Personliga linj\xE4ra TV-kanaler" },
@@ -41234,6 +41346,18 @@ ${cue.text}`).join("\n\n")}
     studioDeleteConfirm: { en: "Confirm deletion", sv: "Bekr\xE4fta borttagning" },
     // Inställningssektionen
     settingsTitle: { en: "Your channels", sv: "Dina kanaler" },
+    settingsCloudTitle: { en: "Cloud accounts", sv: "Molnkonton" },
+    settingsCloudHint: {
+      en: "Accounts whose files the channels can play. Remove one you no longer use: its files leave the channels the next time they are built.",
+      sv: "Konton vars filer kanalerna kan spela. Ta bort ett du inte anv\xE4nder l\xE4ngre: dess filer f\xF6rsvinner ur kanalerna n\xE4sta g\xE5ng de byggs."
+    },
+    settingsCloudRemove: { en: "Remove", sv: "Ta bort" },
+    settingsCloudRemoveConfirm: { en: "Press again to remove", sv: "Tryck igen f\xF6r att ta bort" },
+    settingsCloudRemoveTitle: { en: "Remove {name}?", sv: "Ta bort {name}?" },
+    settingsCloudRemoveBody: {
+      en: "The saved key is removed from this device. Its files leave the channels.",
+      sv: "Den sparade nyckeln tas bort fr\xE5n den h\xE4r enheten. Kontots filer f\xF6rsvinner ur kanalerna."
+    },
     settingsCacheTitle: { en: "Playback", sv: "Uppspelning" },
     settingsCacheLabel: { en: "Faster channel switching (cache streams)", sv: "Snabbare kanalbyten (mellanlagra str\xF6mmar)" },
     settingsCacheHint: {
@@ -41280,14 +41404,14 @@ ${cue.text}`).join("\n\n")}
     Politics: { en: "Politics", sv: "Politik" }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/bootstrap.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/state/store.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/genres.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/genres.ts
   var ALIAS = {
     "sci-fi": "science fiction",
     "sci fi": "science fiction",
@@ -41317,7 +41441,7 @@ ${cue.text}`).join("\n\n")}
     return [...set];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/channel.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/model/channel.ts
   var ERA_RANGES = {
     "70s": [1970, 1979],
     "80s": [1980, 1989],
@@ -41439,7 +41563,7 @@ ${cue.text}`).join("\n\n")}
     return words.slice(0, 2).map((w) => w[0].toLocaleUpperCase()).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/lock.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/model/lock.ts
   var MIN = 6e4;
   var LOCK_SPAN_MS = 6 * 36e5;
   var LOCK_RENEW_MS = 3 * 36e5;
@@ -41514,7 +41638,7 @@ ${cue.text}`).join("\n\n")}
     return ok ? { sig, slots } : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/model/schedule.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
   var MIN2 = 6e4;
   var DAY_MIN = 24 * 60;
@@ -41699,7 +41823,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/pool.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/pool.ts
   var DEFAULT_RUNTIME = { movie: 100, episode: 45 };
   var LENGTH_TEST = {
     any: () => true,
@@ -41838,7 +41962,7 @@ ${cue.text}`).join("\n\n")}
     return items2.filter((item) => kept.has(item.seriesKey ?? item.ref));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/pool-pack.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/pool-pack.ts
   var POOL_PACK_VERSION = 2;
   function packPlay(play, source) {
     if (play.type === "library") {
@@ -41920,7 +42044,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/title-clean.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/title-clean.ts
   var JUNK_WORDS = /* @__PURE__ */ new Set(["com", "net", "org", "www", "mkv", "mp4", "avi", "rip", "dual", "multi", "latino", "castellano", "subs", "sub"]);
   var mixed = (w) => /[a-z]/i.test(w) && /\d/.test(w);
   function cleanTitle(raw) {
@@ -41940,7 +42064,7 @@ ${cue.text}`).join("\n\n")}
     return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/runtime-fix.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/runtime-fix.ts
   var MAX_FIXES = 600;
   function noteDuration(fixes, ref, seconds) {
     if (!Number.isFinite(seconds) || seconds < 60 || seconds > 12 * 3600) return null;
@@ -41978,7 +42102,7 @@ ${cue.text}`).join("\n\n")}
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/sources.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/sources.ts
   var isVodSourceId = (id) => id.startsWith("xtream-vod:");
   function librarySides(t) {
     const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : [];
@@ -42426,10 +42550,10 @@ ${cue.text}`).join("\n\n")}
     return timed;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/data/meta-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/meta-cache.ts
   var TTL_MS = 30 * 24 * 3600 * 1e3;
   var PARALLEL = 2;
   function metaKey(kind, tmdbId, season, episode) {
@@ -42597,7 +42721,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/debrid-versions.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/debrid-versions.ts
   function resolutionOf(name) {
     const n = (name ?? "").toLowerCase();
     if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
@@ -42621,7 +42745,7 @@ ${cue.text}`).join("\n\n")}
     return [...inside, ...outside];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
@@ -42686,7 +42810,301 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/data/cloud.ts
+  var DEBRID_PROVIDERS = ["realdebrid", "torbox", "alldebrid"];
+  function createDebridCloud(deps) {
+    const pauseMs = deps.pauseMs ?? 1e3;
+    let cache7 = null;
+    let inflight8 = null;
+    function tokenFor(provider) {
+      const value = deps.token(provider);
+      return value && value.trim() ? value.trim() : null;
+    }
+    function parseLocalName2(fileName, parentFolder) {
+      return deps.parseFileName(fileName, parentFolder) ?? { title: fileName.replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[._]+/g, " ").trim(), year: null, season: null, episode: null };
+    }
+    const VIDEO = /\.(mkv|mp4|m4v|avi|mov|ts|m2ts|webm)$/i;
+    const CACHE_TTL_MS = 6 * 60 * 60 * 1e3;
+    const PARTIAL_TTL_MS = 15 * 60 * 1e3;
+    const FETCH_TIMEOUT_MS2 = 15e3;
+    const BASE = "/api/stream-providers";
+    const TOKEN_HEADERS = {
+      realdebrid: "x-stream-provider-token",
+      torbox: "x-tb-token",
+      alldebrid: "x-ad-token"
+    };
+    function tokenSetKey(providers) {
+      let hash2 = 2166136261;
+      const text = providers.map((p) => `${p}=${tokenFor(p) ?? ""}`).join("&");
+      for (let i = 0; i < text.length; i += 1) {
+        hash2 ^= text.charCodeAt(i);
+        hash2 = Math.imul(hash2, 16777619) >>> 0;
+      }
+      return `${providers.join(",")}:${hash2.toString(36)}`;
+    }
+    async function getJson2(provider, path, init) {
+      const token = tokenFor(provider);
+      if (!token) return null;
+      const controller = new AbortController();
+      const timer3 = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS2);
+      try {
+        const response = await fetch(`${BASE}/${provider}${path}`, {
+          ...init,
+          headers: { ...init?.headers ?? {}, [TOKEN_HEADERS[provider]]: token },
+          signal: controller.signal
+        });
+        if (!response.ok) return null;
+        return await response.json();
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timer3);
+      }
+    }
+    const pause = (ms2) => new Promise((resolve) => setTimeout(resolve, ms2));
+    function foldersOf(path, torrentName) {
+      const parts = path.split(/[\\/]/).filter(Boolean);
+      parts.pop();
+      if (parts.length > 0 && (parts[0] === torrentName || !torrentName)) parts.shift();
+      return parts;
+    }
+    async function listRealDebrid() {
+      const torrents = await getJson2("realdebrid", "/torrents?limit=100");
+      if (!Array.isArray(torrents)) return { files: [], failed: true };
+      const files = [];
+      let partial = false;
+      for (const torrent of torrents) {
+        if (torrent?.status !== "downloaded") continue;
+        await pause(pauseMs);
+        const info = await getJson2("realdebrid", `/torrents/info/${encodeURIComponent(torrent.id)}`);
+        if (!info) {
+          partial = true;
+          continue;
+        }
+        const selected = (info.files ?? []).filter((file) => file.selected === 1);
+        const links = info.links ?? [];
+        const torrentName = String(torrent.filename ?? info.filename ?? info.original_filename ?? "");
+        selected.forEach((file, index) => {
+          const path = String(file.path ?? "");
+          const name = path.split("/").pop() ?? "";
+          const link = links[index];
+          if (!link || !VIDEO.test(name)) return;
+          files.push({
+            file: { provider: "realdebrid", fileRef: `${torrent.id}|${link}`, name, size: Number(file.bytes) || 0 },
+            torrentKey: `realdebrid:${torrent.id}`,
+            torrentName,
+            folders: foldersOf(path, torrentName)
+          });
+        });
+      }
+      return { files, failed: false, partial };
+    }
+    async function listTorBox() {
+      const body = await getJson2("torbox", "/torrents/mylist?bypass_cache=true");
+      if (!body) return { files: [], failed: true };
+      const torrents = Array.isArray(body.data) ? body.data : [];
+      const files = [];
+      for (const torrent of torrents) {
+        const torrentName = String(torrent?.name ?? "");
+        for (const file of torrent?.files ?? []) {
+          const name = String(file.short_name ?? file.name ?? "").split("/").pop() ?? "";
+          if (!VIDEO.test(name)) continue;
+          files.push({
+            file: { provider: "torbox", fileRef: `${torrent.id}|${file.id}`, name, size: Number(file.size) || 0 },
+            torrentKey: `torbox:${torrent.id}`,
+            torrentName,
+            folders: foldersOf(String(file.name ?? name), torrentName)
+          });
+        }
+      }
+      return { files, failed: false };
+    }
+    function asList(value) {
+      if (Array.isArray(value)) return value;
+      return value && typeof value === "object" ? Object.values(value) : [];
+    }
+    function flattenAdFiles(nodes, parent = "") {
+      const out = [];
+      for (const node of nodes) {
+        const path = parent ? `${parent}/${node.n}` : node.n;
+        if (node.e?.length) out.push(...flattenAdFiles(node.e, path));
+        else if (node.l) out.push({ path, bytes: node.s ?? 0, link: node.l });
+      }
+      return out;
+    }
+    const AD_FORM = { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" };
+    async function listAllDebrid() {
+      const status = await getJson2("alldebrid", "/v4.1/magnet/status", { method: "POST", headers: AD_FORM, body: "" });
+      if (status?.status !== "success") return { files: [], failed: true };
+      const ready = asList(status.data?.magnets).filter((m) => Number(m?.statusCode) === 4 && m?.id != null);
+      if (ready.length === 0) return { files: [], failed: false };
+      const form = new URLSearchParams();
+      for (const magnet of ready) form.append("id[]", String(magnet.id));
+      const filesBody = await getJson2("alldebrid", "/v4.1/magnet/files", { method: "POST", headers: AD_FORM, body: form.toString() });
+      if (filesBody?.status !== "success") return { files: [], failed: true };
+      const files = [];
+      const namesById = new Map(ready.map((m) => [String(m.id), String(m.filename ?? "")]));
+      for (const magnet of asList(filesBody.data?.magnets)) {
+        if (magnet?.error) continue;
+        const torrentName = namesById.get(String(magnet?.id)) ?? "";
+        for (const file of flattenAdFiles(magnet?.files ?? [])) {
+          const name = file.path.split("/").pop() ?? "";
+          if (!VIDEO.test(name)) continue;
+          files.push({
+            file: { provider: "alldebrid", fileRef: file.link, name, size: file.bytes },
+            torrentKey: `alldebrid:${magnet?.id}`,
+            torrentName,
+            folders: foldersOf(file.path, torrentName)
+          });
+        }
+      }
+      return { files, failed: false };
+    }
+    const JUNK_WORDS2 = /(?:^|[\s._\-[(])(sample|trailers?|featurettes?|extras|bonus|behind[\s._-]the[\s._-]scenes|deleted[\s._-]scenes|interviews?|making[\s._-]of)(?=[\s._\-\])]|$)/gi;
+    const TINY_SHARE = 0.15;
+    const TINY_BYTES = 200 * 1024 * 1024;
+    function junkWords(text) {
+      return new Set(Array.from(text.matchAll(JUNK_WORDS2), (m) => m[1].toLowerCase().replace(/[\s._-]+/g, " ").replace(/s$/, "")));
+    }
+    function isJunk(entry, largest) {
+      const { size } = entry.file;
+      if (size > 0 && size < largest * TINY_SHARE && size < TINY_BYTES) return true;
+      const allowed = junkWords(entry.torrentName);
+      const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, "");
+      for (const word of [...junkWords(stem), ...entry.folders.flatMap((folder) => [...junkWords(folder)])]) {
+        if (!allowed.has(word)) return true;
+      }
+      return false;
+    }
+    const SEASON_MARKER = /\b(?:s(\d{1,2})(?:\s*e\d{1,3})?|season\s*(\d{1,2})|s[äa]song\s*(\d{1,2}))\b/gi;
+    const SERIES_MARKER = /\b(?:complete[\s-]+series|the\s+complete|s\d{1,2}\s*-\s*s?\d{1,2})\b/i;
+    function parseSeriesContainer(name) {
+      const work = name.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+      if (!work) return null;
+      const seasons = /* @__PURE__ */ new Set();
+      let firstAt = -1;
+      for (const m of work.matchAll(SEASON_MARKER)) {
+        const n = Number(m[1] ?? m[2] ?? m[3]);
+        if (Number.isFinite(n)) seasons.add(n);
+        if (firstAt < 0) firstAt = m.index ?? 0;
+      }
+      const seriesAt = work.search(SERIES_MARKER);
+      if (seasons.size === 0 && seriesAt < 0) return null;
+      const cut = [firstAt, seriesAt].filter((i) => i >= 0);
+      const head = work.slice(0, Math.min(...cut)).trim();
+      if (!head) return null;
+      const parsed = parseLocalName2(`${head}.mkv`);
+      const title = parsed.title.replace(/[\s\-–(\[]+$/g, "").trim();
+      if (!title) return null;
+      return { title, year: parsed.year, season: seasons.size === 1 && seriesAt < 0 ? [...seasons][0] : null };
+    }
+    function seasonFromFolders(folders) {
+      for (const folder of [...folders].reverse()) {
+        const m = folder.match(/^(?:season|s[äa]song|s)\s*(\d{1,2})\b/i) ?? folder.match(/\bs(\d{1,2})(?!\s*e\d)\b/i);
+        if (m) return Number(m[1]);
+      }
+      return null;
+    }
+    function episodeFromName(stem) {
+      const work = stem.replace(/[._]+/g, " ").trim();
+      const m = work.match(/^(\d{1,3})(?:\s*[-–]\s*|\s+)(?!\d)/) ?? work.match(/\b(?:e|ep|episode|avsnitt)\s*(\d{1,3})\b/i);
+      if (!m) return null;
+      const n = Number(m[1]);
+      return n >= 1 ? n : null;
+    }
+    function placeFile(entry) {
+      const parsed = parseLocalName2(entry.file.name, entry.folders[entry.folders.length - 1] ?? (entry.torrentName || void 0));
+      const series = parseSeriesContainer(entry.torrentName);
+      if (series) {
+        const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, "");
+        const season = parsed.season ?? seasonFromFolders(entry.folders) ?? series.season;
+        const episode = parsed.episode ?? episodeFromName(stem);
+        if (season == null || episode == null) return null;
+        return { kind: "tv", title: series.title, year: series.year, season, episode };
+      }
+      if (parsed.season != null && parsed.episode != null) {
+        return { kind: "tv", title: parsed.title, year: parsed.year ?? null, season: parsed.season, episode: parsed.episode };
+      }
+      return { kind: "movie", title: parsed.title, year: parsed.year ?? null };
+    }
+    function groupFiles(entries) {
+      const largest = /* @__PURE__ */ new Map();
+      for (const entry of entries) largest.set(entry.torrentKey, Math.max(largest.get(entry.torrentKey) ?? 0, entry.file.size));
+      const groups = /* @__PURE__ */ new Map();
+      for (const entry of entries) {
+        if (isJunk(entry, largest.get(entry.torrentKey) ?? 0)) continue;
+        const placed = placeFile(entry);
+        if (!placed) continue;
+        const norm = placed.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        if (!norm) continue;
+        const key = placed.kind === "tv" ? `tv:${norm}` : `movie:${norm}:${placed.year ?? ""}`;
+        const group = groups.get(key) ?? { kind: placed.kind, title: placed.title, year: placed.year, files: [] };
+        group.files.push(placed.kind === "tv" ? { ...entry.file, season: placed.season, episode: placed.episode } : entry.file);
+        groups.set(key, group);
+      }
+      return [...groups.values()];
+    }
+    function listDebridCloud(options = {}) {
+      const providers = DEBRID_PROVIDERS.filter((p) => tokenFor(p));
+      if (providers.length === 0) return Promise.resolve([]);
+      const key = tokenSetKey(providers);
+      if (!options.force && cache7 && cache7.key === key && Date.now() - cache7.at < cache7.ttl) return Promise.resolve(cache7.titles);
+      if (inflight8 && inflight8.key === key) return inflight8.promise;
+      const entry = { key, promise: sweep(providers, key) };
+      inflight8 = entry;
+      void entry.promise.finally(() => {
+        if (inflight8 === entry) inflight8 = null;
+      }).catch(() => {
+      });
+      return entry.promise;
+    }
+    async function sweep(providers, key) {
+      const listings = await Promise.all(providers.map((provider) => {
+        if (provider === "realdebrid") return listRealDebrid();
+        if (provider === "torbox") return listTorBox();
+        return listAllDebrid();
+      }));
+      const titles = groupFiles(listings.flatMap((l) => l.files));
+      const hits = await deps.matchTitles(titles.map((t) => ({ title: t.title, year: t.year, kind: t.kind })));
+      hits.forEach((hit, index) => {
+        if (!hit) return;
+        titles[index].tmdbId = hit.tmdbId;
+      });
+      if (!listings.some((l) => l.failed)) {
+        const ttl = listings.some((l) => l.partial) ? PARTIAL_TTL_MS : CACHE_TTL_MS;
+        cache7 = { key, at: Date.now(), ttl, titles };
+      }
+      return titles;
+    }
+    async function unrestrictDebridFile(input) {
+      const { provider, fileRef } = input;
+      if (provider === "realdebrid") {
+        const link = fileRef.split("|").slice(1).join("|");
+        const body2 = await getJson2("realdebrid", "/unrestrict/link", {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: `link=${encodeURIComponent(link)}`
+        });
+        return typeof body2?.download === "string" ? { url: body2.download } : null;
+      }
+      if (provider === "torbox") {
+        const [torrentId, fileId] = fileRef.split("|");
+        const token = tokenFor("torbox");
+        if (!token) return null;
+        const body2 = await getJson2("torbox", `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${encodeURIComponent(torrentId)}&file_id=${encodeURIComponent(fileId)}&redirect=false`);
+        return typeof body2?.data === "string" ? { url: body2.data } : null;
+      }
+      const body = await getJson2("alldebrid", "/v4/link/unlock", {
+        method: "POST",
+        headers: AD_FORM,
+        body: new URLSearchParams({ link: fileRef }).toString()
+      });
+      return typeof body?.data?.link === "string" ? { url: body.data.link } : null;
+    }
+    return { listDebridCloud, unrestrictDebridFile };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/host.ts
   var PLUGIN_ID = "com.lumio.channels";
   var object = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
   function readChannels() {
@@ -42835,13 +43253,27 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
+  var debridCloud = createDebridCloud({
+    token: (provider) => channelSourceToken(provider),
+    parseFileName: (name, parent) => channelParseFileName(name, parent),
+    matchTitles: (wanted) => channelMatchTitles(wanted)
+  });
+  function refreshDebridCloud() {
+    return debridCloud.listDebridCloud({ force: true });
+  }
+  function debridAccounts() {
+    return DEBRID_PROVIDERS.filter((p) => !!channelSourceToken(p));
+  }
+  function forgetDebridAccount(provider) {
+    channelClearSourceToken(provider);
+  }
   var sourceDeps = {
     queryLibrary: (q) => queryLibrary(q),
     getMovieWatchlist: () => getMovieWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
     fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, "seasonsRest"),
-    listDebridCloud: () => channelListDebridCloud(),
+    listDebridCloud: () => debridCloud.listDebridCloud(),
     meta: createMetaCache(metaStore, fetchMeta),
     waitForIdle: () => waitForStartIdle2(),
     titleMatch: createTitleMatchCache(matchStore, searchTitle)
@@ -42892,7 +43324,7 @@ ${cue.text}`).join("\n\n")}
     // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
     library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...exclude?.length ? { exclude } : {}, ...allowCatalog === false ? { allowCatalog: false } : {} }),
     stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-    debrid: (r) => channelUnrestrictDebridFile(r),
+    debrid: (r) => debridCloud.unrestrictDebridFile(r),
     debridCaps: () => autoplayCaps()
   });
   function autoplayCaps() {
@@ -42918,7 +43350,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/state/store.ts
   function saveChannel(def) {
     const all = readChannels();
     const before = all.find((c) => c.id === def.id);
@@ -43141,7 +43573,7 @@ ${cue.text}`).join("\n\n")}
     return now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/bootstrap.tsx
   function seedForActiveProfile() {
     try {
       seedDefaultChannels(readStoredLang() === "sv" ? "sv" : "en");
@@ -43156,11 +43588,11 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/home-row.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/home-row-logic.ts
   var HOME_DEFAULT_COUNT = 20;
   function homeChannels(channels, count = HOME_DEFAULT_COUNT) {
     return channels.filter((c) => c.showOnHome).sort((a, b) => a.number - b.number).slice(0, Math.max(0, count));
@@ -43192,7 +43624,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/guide-layout.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/guide-layout.ts
   var MIN3 = 6e4;
   var HALF_HOUR = 30 * MIN3;
   var GUIDE_SPAN_MIN = 210;
@@ -43232,7 +43664,7 @@ ${cue.text}`).join("\n\n")}
     return Math.max(0, Math.min(Math.max(0, maxScroll), index * rowH));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tv.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/tv.ts
   init_react_shim();
   init_tv_focus_shim();
   var tvu = (n) => `calc(${n} * var(--tv-u, 1px))`;
@@ -43308,7 +43740,7 @@ ${cue.text}`).join("\n\n")}
   }
   var tvType = (role) => typeSize(0, true, role);
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/tokens.ts
   var C = {
     /** Appens grund (--base-950, följer temat; svart som standard). */
     base: "rgb(var(--base-950, 5 5 7))",
@@ -43382,7 +43814,7 @@ ${cue.text}`).join("\n\n")}
   var RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 };
   var fontSize = (px, tv) => typeSize(px, tv);
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/use-text.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/use-text.ts
   init_react_shim();
   init_plugin_sdk();
   function useText() {
@@ -43397,7 +43829,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/home-row.tsx
   init_jsx_runtime_shim();
   function ChannelsHomeRow({ onNavigate, layout = "slider", count, sliderCardWidth = "16rem" }) {
     const t = useText();
@@ -43570,11 +44002,11 @@ ${cue.text}`).join("\n\n")}
     }, [id, rundown, report]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channels-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/player-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/player-logic.ts
   function startSeconds(slot, mode) {
     if (mode === "start") return 0;
     return Math.max(0, slot.minsIn * 60);
@@ -43640,7 +44072,7 @@ ${cue.text}`).join("\n\n")}
     return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/warm.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/warm.ts
   var WEBDAV_STREAM = "/api/webdav-library/stream?";
   function warmUrlFor(playable, type, opts) {
     if (type === "stream") return null;
@@ -43684,7 +44116,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/start-channel.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/start-channel.ts
   function onAirNow(channel, rundown, now2) {
     if (rundown == null) return isOnAir(channel.airWindow, now2);
     return rundown.length > 0 && programmeAt(rundown, channel.airWindow, now2).kind === "programme";
@@ -43696,11 +44128,11 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
   function ChannelBadge({ channel, size = 44, isTv = false, style }) {
     return /* @__PURE__ */ jsx(
@@ -43732,7 +44164,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channel-guide.tsx
   init_jsx_runtime_shim();
   var ROW_H = 54;
   var TV_ROW_H = 72;
@@ -44125,7 +44557,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channel-hero.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
@@ -44453,12 +44885,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channel-player.tsx
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/zap-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/zap-logic.ts
   var NOISE_MS = 320;
   var OSD_IDLE_MS = 4e3;
   var MAX_DIGITS = 3;
@@ -44488,7 +44920,7 @@ ${cue.text}`).join("\n\n")}
     return channels.find((c) => c.number === n) ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/play/player-state.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/play/player-state.ts
   var POSITION_SLACK_S = 20;
   var TRUSTED_FIRST_PLAY_MS = 4800;
   var MAX_VERSIONS = 3;
@@ -44602,7 +45034,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/guide-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/guide-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var HALF_HOUR2 = 30 * 6e4;
@@ -44726,7 +45158,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/host-controls.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
@@ -44906,7 +45338,7 @@ ${cue.text}`).join("\n\n")}
     return spot;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/tuning-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/tuning-card.tsx
   init_jsx_runtime_shim();
   var FADE_MS = 220;
   var KEYFRAMES = `
@@ -44975,7 +45407,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/zap-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/zap-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var NOISE_SVG = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")`;
@@ -45205,7 +45637,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channel-player.tsx
   init_jsx_runtime_shim();
   var PRELOAD_LEAD_MS = 3e4;
   var RAPID_ZAP_MS = 700;
@@ -46122,11 +46554,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/studio.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/studio-logic.ts
   var WINDOW_LABEL = {
     always: "windowAlways",
     evenings: "windowEvenings",
@@ -46347,7 +46779,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/title-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/title-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -46572,7 +47004,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/studio.tsx
   init_jsx_runtime_shim();
   var LOADERS = {
     library: loadLibraryItems,
@@ -46688,7 +47120,7 @@ ${cue.text}`).join("\n\n")}
       setRefreshing(true);
       try {
         await load("debrid", async () => {
-          await channelListDebridCloud({ force: true }).catch(() => []);
+          await refreshDebridCloud().catch(() => []);
           return loadDebridItems(sourceDeps, { strict: true });
         });
       } finally {
@@ -47107,7 +47539,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/empty-state.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/empty-state.tsx
   init_jsx_runtime_shim();
   function EmptyState({ isTv, isMobile, t, onRestore }) {
     const fs = (px) => fontSize(px, isTv);
@@ -47155,7 +47587,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/channels-page.tsx
   init_jsx_runtime_shim();
   var HALF_HOUR3 = 30 * 6e4;
   var MAX_SHIFT2 = 46;
@@ -47570,7 +48002,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/ui/settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/ui/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -47603,6 +48035,19 @@ ${cue.text}`).join("\n\n")}
       });
     }
     rows.push({ t: "action", label: S.settingsNewRow, run: actions.create });
+    const accounts = debridAccounts();
+    if (accounts.length > 0) {
+      rows.push({ t: "eyebrow", label: S.settingsCloudTitle });
+      for (const id of accounts) {
+        rows.push({
+          t: "action",
+          label: { en: CLOUD_NAMES[id], sv: CLOUD_NAMES[id] },
+          danger: true,
+          confirm: { title: fill2(S.settingsCloudRemoveTitle, { name: CLOUD_NAMES[id] }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
+          run: () => removeCloudAccount(id)
+        });
+      }
+    }
     const cache7 = sourceCacheSetting();
     if (cache7) {
       rows.push({ t: "eyebrow", label: S.settingsCacheTitle });
@@ -47638,6 +48083,36 @@ ${cue.text}`).join("\n\n")}
     };
     return { sorted, counts, confirmId, requestDelete: onDelete };
   }
+  var CLOUD_NAMES = { realdebrid: "Real-Debrid", torbox: "TorBox", alldebrid: "AllDebrid" };
+  function removeCloudAccount(id) {
+    forgetDebridAccount(id);
+    void refreshDebridCloud().catch(() => []);
+  }
+  function CloudAccountsCard() {
+    const t = useText();
+    const [accounts, setAccounts] = useState(() => debridAccounts());
+    const [confirm, setConfirm] = useState(null);
+    const timer3 = useRef(null);
+    useEffect(() => () => {
+      if (timer3.current) clearTimeout(timer3.current);
+    }, []);
+    if (accounts.length === 0) return null;
+    const onRemove = (id) => {
+      if (timer3.current) clearTimeout(timer3.current);
+      if (confirm !== id) {
+        setConfirm(id);
+        timer3.current = setTimeout(() => setConfirm(null), CONFIRM_MS2);
+        return;
+      }
+      setConfirm(null);
+      removeCloudAccount(id);
+      setAccounts(debridAccounts());
+    };
+    return /* @__PURE__ */ jsx(Section, { title: t("settingsCloudTitle"), hint: t("settingsCloudHint"), children: accounts.map((id) => /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }, children: [
+      /* @__PURE__ */ jsx("div", { "data-cloud-account": id, style: { color: TOKENS.text, fontWeight: 600 }, children: CLOUD_NAMES[id] }),
+      /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => onRemove(id), children: t(confirm === id ? "settingsCloudRemoveConfirm" : "settingsCloudRemove") })
+    ] }, id)) });
+  }
   function SourceCacheCard() {
     const t = useText();
     const cache7 = useMemo(() => sourceCacheSetting(), []);
@@ -47657,6 +48132,7 @@ ${cue.text}`).join("\n\n")}
   function ChannelsSettingsSection() {
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(ChannelListSection, {}),
+      /* @__PURE__ */ jsx(CloudAccountsCard, {}),
       /* @__PURE__ */ jsx(SourceCacheCard, {})
     ] });
   }
@@ -47704,7 +48180,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-0139/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/molnet/plugins/channels/runtime/index.ts
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,

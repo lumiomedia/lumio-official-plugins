@@ -35,6 +35,14 @@ import { guideWindow } from './guide-layout'
 import { C, FONT, fontSize } from './tokens'
 import { tvu, useTvViewFocus } from './tv'
 import { useText } from './use-text'
+import { guideWarmTargets } from '../play/guide-warm'
+
+/** Guidens förvärmning: väntan innan första och mellan kanalerna (en i taget, ingen anslutningsstorm). */
+const GUIDE_WARM_SETTLE_MS = 2_000
+const GUIDE_WARM_GAP_MS = 1_500
+/** Programplatser som redan förvärmts i den här sessionen. */
+const guideWarmed = new Set<string>()
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 interface PlayerState { channelId: string; mode: PlayMode; zap: boolean }
 type Params = Record<string, string>
@@ -314,6 +322,28 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     }, WARM_SETTLE_MS)
     return () => window.clearTimeout(id)
   }, [warmId, warmRundown]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Guidens förvärmning (skrivbordet, play/guide-warm): programmet just nu på
+  // alla kanaler, en i taget, medan guiden syns och ingen spelare är öppen.
+  const guideWarmOn = !isTv && !isMobile && canPlay && player == null
+    && !(typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent))
+  const guideTargets = guideWarmOn ? guideWarmTargets(sorted, rundowns, now, guideWarmed) : []
+  const guideKey = guideTargets.map((t) => t.key).join('|')
+  useEffect(() => {
+    if (!guideKey) return
+    let alive = true
+    void (async () => {
+      await sleep(GUIDE_WARM_SETTLE_MS)
+      for (const target of guideTargets) {
+        if (!alive) return
+        if (typeof document !== 'undefined' && document.hidden) return
+        guideWarmed.add(target.key)
+        const p = await resolver.resolve(target.item, [], { allowCatalog: allowsCatalog(target.channel) }).catch(() => null)
+        if (p) warmPlayable(p, target.item.play.type)
+        await sleep(GUIDE_WARM_GAP_MS)
+      }
+    })()
+    return () => { alive = false }
+  }, [guideKey]) // eslint-disable-line react-hooks/exhaustive-deps
   const onSelect = useCallback((id: string) => { autoPick.current = false; setSelectedId(id) }, [])
   const play = useCallback((id: string, mode: PlayMode, zap = false) => {
     if (!canPlay) return

@@ -11,6 +11,11 @@ const sdk = {
   lang: 'sv',
   profileListeners: [] as Array<() => void>,
 }
+// Molnet är pluginets egen modul (data/cloud): listningen styrs av testet.
+vi.mock('../data/cloud', () => ({
+  DEBRID_PROVIDERS: ['realdebrid', 'torbox', 'alldebrid'],
+  createDebridCloud: () => ({ listDebridCloud: () => sdk.listDebrid(), unrestrictDebridFile: async () => null }),
+}))
 vi.mock('@/lib/plugin-sdk', () => ({
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
   removePluginStorageItem: (_id: string, key: string) => { storage.delete(key) },
@@ -20,13 +25,15 @@ vi.mock('@/lib/plugin-sdk', () => ({
   getMovieWatchlist: () => [],
   getWatchlist: () => [],
   fetchLibraryStatus: async () => libraryStatus,
-  channelListDebridCloud: () => sdk.listDebrid(),
+  channelSourceToken: () => null,
+  channelClearSourceToken: () => {},
+  channelParseFileName: () => null,
+  channelMatchTitles: async () => [],
   waitForStartIdle: () => sdk.idle(),
   readStoredLang: () => sdk.lang,
   onProfileChanged: (fn: () => void) => { sdk.profileListeners.push(fn); return () => {} },
   channelResolveLibraryPlayback: async () => null,
   channelResolveTitleStream: async () => null,
-  channelUnrestrictDebridFile: async () => null,
   hasChannelHost: () => true,
 }))
 

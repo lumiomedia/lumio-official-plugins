@@ -13,11 +13,11 @@
  * skrivs med värdens skärmtangentbord. Bakåt avbryter studion.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Card, Switch, TOKENS, channelListDebridCloud, getTvKeyboardPanel, inputStyle, useLang } from '@/lib/plugin-sdk'
+import { Card, Switch, TOKENS, getTvKeyboardPanel, inputStyle, useLang } from '@/lib/plugin-sdk'
 import { channelTitleKey, emptyDraft, hasTitles, nextChannelNumber, createChannel, validateDraft, type ChannelDef, type ChannelDraft, type ChannelTitle, type SourceId } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import { loadDebridItems, loadLibraryItems, loadTitleFallback, loadVodItems, loadWatchlistItems } from '../data/sources'
-import { sourceDeps } from '../host'
+import { refreshDebridCloud, sourceDeps } from '../host'
 import { deleteChannel, saveChannel } from '../state/store'
 import { effectiveName, genreLabel, genreName, genreOptions, missingTitles, orderForTitles, previewFor, sourceCounts, type SourcePools } from './studio-logic'
 import { TitlePicker } from './title-picker'
@@ -139,7 +139,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     setRefreshing(true)
     try {
       await load('debrid', async () => {
-        await channelListDebridCloud({ force: true }).catch(() => [])
+        await refreshDebridCloud().catch(() => [])
         return loadDebridItems(sourceDeps, { strict: true })
       })
     } finally {

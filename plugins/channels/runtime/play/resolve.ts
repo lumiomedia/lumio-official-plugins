@@ -22,6 +22,8 @@ export interface ResolveDeps {
   debrid(ref: DebridVersion): Promise<Playable | null>
   /** Autostartens tak, läses vid varje uppspelning. Saknas = inget tak. */
   debridCaps?(): DebridCaps
+  /** En fil tjänsten sagt inte finns (data/dead-files): provas inte, inget anrop. */
+  isDead?(file: { provider: string; fileRef: string }): boolean
 }
 
 const TTL_MS = 10 * 60_000
@@ -46,6 +48,7 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
       const key = `${version.provider}:${version.fileRef}`
       if (tried.has(key)) continue
       tried.add(key)
+      if (deps.isDead?.(version)) continue
       const playable = await deps.debrid({ provider: version.provider, fileRef: version.fileRef }).catch(() => null)
       if (playable) return playable
     }

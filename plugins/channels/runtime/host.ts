@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelListDebridCloud, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
+  channelClearSourceToken, channelMatchTitles, channelParseFileName, channelPrefetch, channelRememberStream, channelSourceCacheSetting, channelResolveLibraryPlayback, channelResolveTitleStream, channelSourceToken,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -13,6 +13,9 @@ import { createMetaCache, createSeasonsCache, createTitleMatchCache, type MatchR
 import type { SourceDeps } from './data/sources'
 import { MAX_POOL_ITEMS } from './data/pool'
 import { createResolver } from './play/resolve'
+import { createDebridCloud, DEBRID_PROVIDERS, type DebridProviderId } from './data/cloud'
+import { deadKey, isDeadUnlock, pruneDead } from './data/dead-files'
+import { trace } from './trace'
 
 export const PLUGIN_ID = 'com.lumio.channels'
 
@@ -220,13 +223,65 @@ async function fetchSeasonRange(tmdbId: number, pick: (season: number) => boolea
   return out
 }
 
+/** Debrid-molnet (data/cloud): pluginets egen protokollkod med värdens neutrala hjälpare. */
+const debridCloud = createDebridCloud({
+  token: (provider) => channelSourceToken(provider),
+  onUnlockFailed: (provider, fileRef, status, body) => {
+    const dead = isDeadUnlock(status, body)
+    const why = typeof body === 'string' ? body : JSON.stringify(body ?? null).slice(0, 160)
+    trace(`upplåsning föll: ${provider} ${fileRef.split('|')[0]} status=${status} ${dead ? 'DÖD (ur tablån ett dygn)' : 'tillfälligt'} svar=${why}`)
+    if (dead) markDeadFile({ provider, fileRef })
+  },
+  parseFileName: (name, parent) => channelParseFileName(name, parent),
+  matchTitles: (wanted) => channelMatchTitles(wanted),
+})
+
+/** Direktströmning: spelaren förhämtar en upplöst fil (huvud + index). No-op på äldre värdar. */
+export function prefetchInPlayer(url: string, headers?: Record<string, string>): void {
+  try { channelPrefetch(url, headers) } catch { /* äldre värd */ }
+}
+
+/** Döda molnfiler (data/dead-files): nyckel → när de sågs döda. */
+export function readDeadFiles(): Record<string, number> {
+  const raw = readPluginJson<unknown>(PLUGIN_ID, 'deadFiles', {})
+  const out: Record<string, number> = {}
+  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number') out[k] = v
+  return pruneDead(out, Date.now())
+}
+
+const deadListeners = new Set<() => void>()
+/** Poolerna filtreras om när en fil dör (tablån fyller platsen med nästa post). */
+export function onDeadFilesChanged(fn: () => void): () => void {
+  deadListeners.add(fn)
+  return () => { deadListeners.delete(fn) }
+}
+
+export function markDeadFile(file: { provider: string; fileRef: string }): void {
+  const next = { ...readDeadFiles(), [deadKey(file)]: Date.now() }
+  try { writePluginJson(PLUGIN_ID, 'deadFiles', pruneDead(next, Date.now()), { emitChange: false }) } catch { /* lagring full: gäller ändå inte */ }
+  for (const fn of [...deadListeners]) fn()
+}
+
+/** Ny genomgång av molnet förbi 6 h-cachen (studions Uppdatera). */
+export function refreshDebridCloud() {
+  return debridCloud.listDebridCloud({ force: true })
+}
+
+/** Molnkonton med sparad nyckel, och borttagning (gamla konton syns annars inte någonstans). */
+export function debridAccounts(): DebridProviderId[] {
+  return DEBRID_PROVIDERS.filter((p) => !!channelSourceToken(p))
+}
+export function forgetDebridAccount(provider: DebridProviderId): void {
+  channelClearSourceToken(provider)
+}
+
 export const sourceDeps: SourceDeps = {
   queryLibrary: (q) => queryLibrary(q as never) as never,
   getMovieWatchlist: () => getMovieWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
   fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, 'seasonsRest'),
-  listDebridCloud: () => channelListDebridCloud() as never,
+  listDebridCloud: () => debridCloud.listDebridCloud(),
   meta: createMetaCache(metaStore, fetchMeta),
   waitForIdle: () => waitForStartIdle(),
   titleMatch: createTitleMatchCache(matchStore, searchTitle),
@@ -305,8 +360,9 @@ export const resolver = createResolver({
   // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
   library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...(exclude?.length ? { exclude } : {}), ...(allowCatalog === false ? { allowCatalog: false } : {}) }),
   stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-  debrid: (r) => channelUnrestrictDebridFile(r),
+  debrid: (r) => debridCloud.unrestrictDebridFile(r),
   debridCaps: () => autoplayCaps(),
+  isDead: (file) => deadKey(file) in readDeadFiles(),
 })
 
 /** Autostartens tak ur värdens uppspelningsinställningar (Max storlek per stream, Max upplösning). */

@@ -32,6 +32,7 @@ import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
 import { warmPlayable } from '../play/warm'
 import { useText } from './use-text'
+import { trace } from '../trace'
 import { ZapOverlay } from './zap-overlay'
 
 export interface ChannelPlayerProps {
@@ -81,16 +82,6 @@ interface SwitchTiming {
 }
 
 const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
-/**
- * Kanalens beslut (byte, slut, omförsök) till appens debuglogg: konsolen når
- * inte loggen, och "Programmet är slut" mitt i en frisk ström gick inte att
- * spåra (Solar Opposites 2026-10-17). Ett GET-anrop, inget svar väntas.
- */
-function trace(msg: string): void {
-  console.info(`[channels] ${msg}`)
-  try { void fetch(`/api/debug-log?msg=${encodeURIComponent(`[channels] ${msg}`)}`).catch(() => {}) } catch { /* utan värd */ }
-}
-
 export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }: ChannelPlayerProps) {
   const t = useText()
   const isTv = useTvMode()
@@ -268,7 +259,16 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     }
     // Samma begäran men ny rundown (fler källor svarade, sparad pool byttes):
     // det som spelas rörs inte, nya tablån gäller från nästa gräns.
-    if (replanOnNewRundown(s)) dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
+    if (replanOnNewRundown(s)) { dispatch({ type: 'goto', channelId: channel.id, mode: 'live' }); return }
+    // Ingen signal för en fil som visade sig död: poolen tappade den och platsen
+    // har nu en annan post — den spelas direkt i stället för att vänta ut platsen.
+    if (s.status === 'nosignal' && s.noSignal) {
+      const now = programmeAt(rundown, channel.airWindow, Date.now())
+      if (now.kind === 'programme' && now.item.ref !== s.noSignal.slot.item.ref) {
+        trace(`platsen fick en annan post (${now.item.title}): spelas i stället för Ingen signal`)
+        dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
+      }
+    }
   }, [request.seq, channel?.id, channel?.airWindow, loading, rundown, plan]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goToChannel = useCallback((id: string) => {
