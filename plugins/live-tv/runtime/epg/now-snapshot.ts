@@ -14,7 +14,7 @@
  * hämta om (> 6 h), inte för att avgöra om snapshotet är läsbart.
  */
 
-import { epgNow } from '../index-client'
+import { epgNow, epgNowForKeys } from '../index-client'
 import { epgStoreId } from './store-id'
 import type { NowNextLater } from './types'
 
@@ -75,6 +75,58 @@ export function nowSnapshotNeedsRefetch(snapshot: NowSnapshot, nowMs: number): b
   return false
 }
 
+/**
+ * Nycklarna vars post passerat en gräns: `now` har slutat eller `next` har
+ * börjat. Det är exakt de poster ett nytt `/epg/now` skulle svara annorlunda
+ * för (övriga kanaler har samma nu/nästa/senare tills nästa gräns).
+ */
+export function staleNowKeys(snapshot: NowSnapshot, nowMs: number): string[] {
+  const out: string[] = []
+  const items = snapshot.items
+  for (const key in items) {
+    const entry = items[key]
+    if (!entry) continue
+    if ((entry.now && entry.now.stop <= nowMs) || (entry.next && entry.next.start <= nowMs)) out.push(key)
+  }
+  return out
+}
+
+/**
+ * Över så här många inaktuella kanaler hämtas hela snapshotet i stället (och
+ * appen tar högst 5 000 nycklar per anrop). Normalt är det några hundra till
+ * tusen per minut även på de största listorna.
+ */
+const MAX_INCREMENTAL_KEYS = 4_000
+
+/** Appen saknar `POST /epg/now` (äldre version) — fråga inte igen i den här sessionen. */
+let incrementalUnsupported = false
+
+/**
+ * Lägger in färska poster för just `keys` i ett befintligt snapshot. Ett nytt
+ * objekt (vyerna jämför referenser), men bara de ändrade posterna har tolkats:
+ * på en lista med 50 000 kanaler var hela snapshotet flera MB JSON att tolka i
+ * webbvyns huvudtråd varje minut, och en Shield frös (2026-10-20).
+ */
+async function refreshStaleKeys(
+  listId: string,
+  cached: NowSnapshot,
+  keys: string[],
+): Promise<NowSnapshot> {
+  const data = await epgNowForKeys({ listId: epgStoreId(listId), keys })
+  const items: Record<string, NowNextLater> = { ...cached.items }
+  let count = cached.count
+  for (const key of keys) {
+    const fresh = data.items[key]
+    if (fresh) {
+      items[key] = fresh
+    } else if (key in items) {
+      delete items[key]
+      count -= 1
+    }
+  }
+  return { at: data.at, fetchedAt: data.fetchedAt, items, count, loadedAt: cached.loadedAt }
+}
+
 export function getCachedNowSnapshot(listId: string, source: string | null): NowSnapshot | null {
   return snapshots.get(snapshotKey(listId, source)) ?? null
 }
@@ -91,15 +143,39 @@ export async function fetchNowSnapshot(
   const existing = inflight.get(key)
   if (existing) return existing
 
-  const request = epgNow({ listId: epgStoreId(listId), source: source ?? undefined })
-    .then((data) => {
-      const snapshot: NowSnapshot = {
-        at: data.at,
-        fetchedAt: data.fetchedAt,
-        items: data.items,
-        count: Object.keys(data.items).length,
-        loadedAt: Date.now(),
-      }
+  const full = () => epgNow({ listId: epgStoreId(listId), source: source ?? undefined })
+    .then((data): NowSnapshot => ({
+      at: data.at,
+      fetchedAt: data.fetchedAt,
+      items: data.items,
+      count: Object.keys(data.items).length,
+      loadedAt: Date.now(),
+    }))
+
+  /*
+   * Stegvis när det går: ett snapshot yngre än 10 minuter är sant för alla
+   * kanaler vars program inte passerat en gräns, så bara de inaktuella hämtas.
+   * `loadedAt` behålls — 10-minutersgränsen (ny EPG-hämtning, ändrade källor)
+   * räknas från senaste HELA hämtningen. Inga inaktuella alls: snapshotet
+   * gäller som det är.
+   */
+  const nowMs = Date.now()
+  const incremental = !opts?.force && !incrementalUnsupported && cached
+    && nowMs - cached.loadedAt < NOW_SNAPSHOT_MAX_AGE_MS
+  const stale = incremental ? staleNowKeys(cached, nowMs) : null
+  const load: Promise<NowSnapshot> = cached && stale && stale.length <= MAX_INCREMENTAL_KEYS
+    ? (stale.length === 0
+        ? Promise.resolve(cached)
+        : refreshStaleKeys(listId, cached, stale).catch(() => {
+            // Äldre app utan vägen (405/404) eller ett tillfälligt fel: hela
+            // snapshotet som förut. Gäller resten av sessionen.
+            incrementalUnsupported = true
+            return full()
+          }))
+    : full()
+
+  const request = load
+    .then((snapshot) => {
       snapshots.set(key, snapshot)
       publish({ snapshot, failed: false })
       return snapshot
@@ -151,6 +227,7 @@ export function subscribeNowSnapshot(listener: () => void): () => void {
 }
 
 export function __resetNowSnapshotForTests(): void {
+  incrementalUnsupported = false
   snapshots.clear()
   inflight.clear()
   active = { snapshot: null, failed: false }

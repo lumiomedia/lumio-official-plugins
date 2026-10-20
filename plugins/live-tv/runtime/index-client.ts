@@ -361,6 +361,28 @@ export async function epgNow(opts: {
 }
 
 /**
+ * Nu/Härnäst/Senare för BARA de givna nycklarna (`POST /epg/now`) — samma
+ * poster som `epgNow` ger för dem. En nyckel utan program saknas i svaret.
+ * Appar före vägen svarar 405/404; anroparen faller då tillbaka på `epgNow`.
+ */
+export async function epgNowForKeys(opts: {
+  listId: string
+  keys: string[]
+  at?: number
+}): Promise<{ at: number; fetchedAt: number | null; items: Record<string, NowNextLater> }> {
+  const data = await postJson<{
+    at: number
+    fetchedAt?: number | null
+    items?: Record<string, Partial<NowNextLater>>
+  }>('/api/live-tv/epg/now', { listId: opts.listId, keys: opts.keys, at: opts.at })
+  const items: Record<string, NowNextLater> = {}
+  for (const [key, value] of Object.entries(data.items ?? {})) {
+    items[key] = { now: value.now ?? null, next: value.next ?? null, later: value.later ?? null }
+  }
+  return { at: data.at, fetchedAt: data.fetchedAt ?? null, items }
+}
+
+/**
  * Tablåer per kanalnyckel. POST med JSON-kropp, inte querysträng: nyckeln är
  * `namn::url` och BÅDA delarna kan innehålla komma — en kommaseparerad
  * `keys`-parameter hade delat mitt i ett kanalnamn och tyst tappat tablån för
