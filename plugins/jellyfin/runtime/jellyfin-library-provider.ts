@@ -252,6 +252,14 @@ export const jellyfinLibraryProvider: LibraryProvider = {
   id: JELLYFIN_LIBRARY_PROVIDER_ID,
   label: { en: 'Jellyfin', sv: 'Jellyfin' },
   pluginId: 'com.lumio.jellyfin',
+  // Kopplat (samma villkor som inställningarna): värden bygger första
+  // indexet själv i appar som stöder det; äldre appar läser inte metoden.
+  configuredSources: () => {
+    const settings = getJellyfinSettings()
+    if (!isJellyfinConnected(settings) || settings.libraries.length === 0) return []
+    const source = jellyfinLibrarySourceRef(settings)
+    return source ? [source] : []
+  },
   scanAll: (source, emit, progress, signal) => scan(source, null, emit, progress, signal),
   scanDelta: (source, cursor, emit, progress, signal) => scan(source, cursor, emit, progress, signal),
   async resolvePlayback(_source, media) {

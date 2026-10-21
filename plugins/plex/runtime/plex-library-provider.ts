@@ -159,6 +159,14 @@ export const plexLibraryProvider: LibraryProvider = {
   id: PLEX_LIBRARY_PROVIDER_ID,
   label: { en: 'Plex', sv: 'Plex' },
   pluginId: 'com.lumio.plex',
+  // Kopplat (samma villkor som indexpanelen): värden bygger första indexet
+  // själv i appar som stöder det; äldre appar läser inte metoden.
+  configuredSources: () => {
+    const settings = ensureCanonicalPlexSettings()
+    if (!getPlexAuth() || !settings.serverUri || settings.libraries.length === 0) return []
+    const source = plexLibrarySourceRef(settings)
+    return source ? [source] : []
+  },
   scanAll: (source, emit, progress, signal) => scan(source, null, emit, progress, signal),
   scanDelta: (source, cursor, emit, progress, signal) => {
     const since = cursor ? Number.parseInt(cursor, 10) : NaN
