@@ -188,6 +188,15 @@ orientation when your page closes.
 - Desktop host: `isPluginDesktopHost`, `pickPluginFolder`, `pickPluginFiles`,
   `scanPluginDirectory`, `checkPluginPathExists`, `executePluginDesktopCommand`,
   `spawnPluginDesktopCommand`, `launchPluginProgram`, `fetchDesktopApiJson`.
+- Operating system: `hostOs()` returns `'windows'`, `'macos'` or `null`
+  (Android, browser, LAN client). Use it for anything OS-specific — library
+  extensions (`.dll` / `.dylib`), paths, key labels — instead of reading the
+  user agent. Added with the Windows app: guard the call
+  (`sdk.hostOs?.()`) and raise `minAppVersion`.
+- Unsupported platforms: a marketplace entry's `unsupportedPlatforms` accepts
+  `'android'`, `'tv'`, `'windows'` and `'macos'`. The OS values apply in TV
+  mode on that computer too. The OS values need the Windows app or newer;
+  older apps ignore them.
 - Streams: `lookupPluginStreams`, `lookupPluginStreamsBatch`,
   `lookupPluginStreamsBatchRanked`, `checkMovieHasStream`,
   `checkEpisodeHasStream`. A stream sidebar receives `runtimeMinutes` in its
