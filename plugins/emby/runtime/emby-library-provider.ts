@@ -408,6 +408,14 @@ export const embyLibraryProvider: LibraryProvider = {
   id: EMBY_LIBRARY_PROVIDER_ID,
   label: { en: 'Emby', sv: 'Emby' },
   pluginId: 'com.lumio.emby',
+  // Kopplat (samma villkor som inställningarna): värden bygger första
+  // indexet själv i appar som stöder det; äldre appar läser inte metoden.
+  configuredSources: () => {
+    const settings = getEmbySettings()
+    if (!isEmbyConnected(settings) || settings.libraries.length === 0) return []
+    const source = embyLibrarySourceRef(settings)
+    return source ? [source] : []
+  },
   scanAll: (source, emit, progress, signal) => scan(source, null, emit, progress, signal),
   scanDelta: (source, cursor, emit, progress, signal) => scan(source, cursor, emit, progress, signal),
   async resolvePlayback(_source, media) {
