@@ -82,7 +82,7 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.16.6",
+      "version": "0.16.7",
       "minAppVersion": "0.1.630",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",

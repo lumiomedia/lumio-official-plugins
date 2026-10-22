@@ -275,7 +275,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke6(`plugin:${this.plugin}|remove_listener`, {
+          return invoke7(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -284,23 +284,23 @@
       async function addPluginListener(plugin2, event2, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke6(`plugin:${plugin2}|register_listener`, {
+          await invoke7(`plugin:${plugin2}|register_listener`, {
             event: event2,
             handler
           });
           return new PluginListener(plugin2, event2, handler.id);
         } catch {
-          await invoke6(`plugin:${plugin2}|registerListener`, { event: event2, handler });
+          await invoke7(`plugin:${plugin2}|registerListener`, { event: event2, handler });
           return new PluginListener(plugin2, event2, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|check_permissions`);
+        return invoke7(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|request_permissions`);
+        return invoke7(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke6(cmd, args = {}, options) {
+      async function invoke7(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -319,7 +319,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke6("plugin:resources|close", {
+          return invoke7("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -335,7 +335,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke6;
+      exports.invoke = invoke7;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -476,9 +476,9 @@
     const internals = tauriInternals();
     if (!internals) return false;
     try {
-      const result = internals.invoke(command, payload);
-      if (result && typeof result.then === "function") {
-        const tracked = result.then(
+      const result2 = internals.invoke(command, payload);
+      if (result2 && typeof result2.then === "function") {
+        const tracked = result2.then(
           () => markNative("durable"),
           markRejected
         );
@@ -1187,6 +1187,11 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
   }
+  function getDv7AsHdr10() {
+    if (typeof window === "undefined") return DEFAULT_DV7_AS_HDR10;
+    const raw = getScopedStorageItem(KEY_DV7_AS_HDR10);
+    return raw === "on" || raw === "off" ? raw : DEFAULT_DV7_AS_HDR10;
+  }
   function getAutoSkipIntro() {
     if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
     return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
@@ -1387,7 +1392,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1411,6 +1416,7 @@
       KEY_SUBTITLE_SYNC_FAST_READ_AHEAD = "playback_subtitleSyncFastReadAhead";
       KEY_MATCH_FRAME_RATE = "playback_matchFrameRateMode";
       KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
+      KEY_DV7_AS_HDR10 = "playback_dv7AsHdr10";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
       KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
       KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
@@ -1527,6 +1533,7 @@
       DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
       DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
       DEFAULT_NIGHT_MODE = "off";
+      DEFAULT_DV7_AS_HDR10 = "auto";
       KEY_UPGRADE_SUBTITLE_WHEN_BETTER = "playback_upgradeSubtitleWhenBetter";
       KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
       KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
@@ -1660,6 +1667,8 @@
       // gälla nästa film utan omstart. Saknas fältet (plugins egen kopia av
       // den här funktionen) gäller standarden, bara hårdvara.
       allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
+      // Dolby Vision profil 7 som HDR10-bas: auto/on/off, spelaren avgör auto.
+      dv7AsHdr10: getDv7AsHdr10(),
       // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
       ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
@@ -1983,14 +1992,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners18 = /* @__PURE__ */ new Set();
+        const listeners19 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit8 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners18]) l(state2);
+          for (const l of [...listeners19]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -2063,15 +2072,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners18.add(l);
-            return () => listeners18.delete(l);
+            listeners19.add(l);
+            return () => listeners19.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit8({ loadFailed: true });
-            listeners18.clear();
+            listeners19.clear();
           }
         };
       }
@@ -2125,17 +2134,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners18 = /* @__PURE__ */ new Set();
+    const listeners19 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit8 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners18]) listener(state2);
+      for (const listener of [...listeners19]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners18]) listener(next);
+      for (const listener of [...listeners19]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -2211,15 +2220,15 @@
         }
       },
       onState(listener) {
-        listeners18.add(listener);
+        listeners19.add(listener);
         return () => {
-          listeners18.delete(listener);
+          listeners19.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit8({ loadFailed: true });
-        listeners18.clear();
+        listeners19.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -2282,11 +2291,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners18 = /* @__PURE__ */ new Set();
+    const listeners19 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit8 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners18]) listener(state2);
+      for (const listener of [...listeners19]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -2326,7 +2335,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners18]) listener(next);
+          for (const listener of [...listeners19]) listener(next);
         });
       }, 250);
     }
@@ -2335,9 +2344,9 @@
       for (; ; ) {
         if (destroyed) return null;
         const value = await np({ cmd: "surfaceCreate" }).catch(() => null);
-        const result = value;
-        if (result && typeof result.id === "number") return result.id;
-        if (result?.error !== "capacity" || Date.now() >= deadline) return null;
+        const result2 = value;
+        if (result2 && typeof result2.id === "number") return result2.id;
+        if (result2?.error !== "capacity" || Date.now() >= deadline) return null;
         if (destroyed) return null;
         await new Promise((resolve) => setTimeout(resolve, CREATE_RETRY_STEP_MS2));
       }
@@ -2402,9 +2411,9 @@
         return false;
       },
       onState(listener) {
-        listeners18.add(listener);
+        listeners19.add(listener);
         return () => {
-          listeners18.delete(listener);
+          listeners19.delete(listener);
         };
       },
       async destroy(reason) {
@@ -2412,7 +2421,7 @@
         generation2++;
         stopPolling();
         if (reason) emit8({ loadFailed: true });
-        listeners18.clear();
+        listeners19.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -2634,8 +2643,8 @@
     if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) {
       return true;
     }
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
+    const userAgent2 = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent2.includes("Tauri")) return true;
     const host2 = window.location.hostname;
     const port = window.location.port;
     return isLocalAppHost(host2) && port === "3011";
@@ -3502,7 +3511,7 @@
           appUpdatePromptInstall: "Update now",
           appUpdatePromptInstalling: "Updating\u2026",
           appUpdateDownloading: "Downloading update",
-          appUpdateInstallingStep: "Installing\u2026",
+          appUpdateInstallingStep: "Installing the update \u2013 Lumio will restart",
           appUpdatePromptLater: "Not now",
           appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
           appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -3679,6 +3688,7 @@
           audio: "Audio",
           audioLanguage: "Audio language",
           currentAudioOutput: "Current audio output",
+          audioTrackCommentary: "Commentary",
           info: "Info",
           actor: "Actor",
           readMore: "Read more",
@@ -4067,7 +4077,7 @@
           langAppLanguageDesc: "The interface language of Lumio itself.",
           langMetadataLanguage: "Metadata language",
           langRegion: "Region",
-          langRegionDesc: "Country code for availability \u2014 which streaming services and release dates apply.",
+          langRegionDesc: "The country that sets availability \u2014 which streaming services and release dates apply.",
           langMetadataLanguageDesc: "Titles, overviews and taglines from TMDb display in this language when a translation exists.",
           langBehaviorGroup: "AUTO-SELECTION",
           subtitlesOffByDefault: "Start with subtitles off",
@@ -4099,6 +4109,11 @@
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
           allowSoftwareDecoding: "Allow software decoding",
           allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
+          dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "On",
+          dv7AsHdr10Off: "Off",
           androidSourceCache: "Cache streams",
           androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
@@ -5825,7 +5840,7 @@
           subtitleSyncFastReadAhead: "Faster sync (uses more data)",
           subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
-          subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
           subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
           subtitleAutoSyncOtherEdit: "These subtitles seem to be from a different version of the film. Switch to the file\u2019s own {lang} subtitles?",
           subtitleAutoSyncOtherEditSwitch: "Switch",
@@ -6205,7 +6220,7 @@
           coreStreamsSource: "Source",
           streamSourceAllSources: "All sources",
           streamSourceVod: "VOD",
-          streamSourceDebrid: "Debrid",
+          streamSourceCloud: "Cloud",
           streamSourceEpisodeCount: "{n}/{total} ep",
           streamSourceSeriesHint: "Applies to every episode in this series",
           streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
@@ -6293,6 +6308,11 @@
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Scanning your library: {name}",
+          libraryScanIndicatorProgress: "{done} of {total} titles",
+          libraryScanIndicatorSoFar: "{done} titles so far",
+          libraryScanIndicatorHint: "Sorting, filters and library rows appear when it is done.",
+          libraryScanUnreachable: "{name} is not responding \u2013 will try again later",
           plexIndexTitle: "Library index",
           plexIndexDesc: "Lumio indexes your Plex libraries locally so the home page, recommendations and Zapp can run entirely on what you own.",
           plexIndexEmpty: "No index yet.",
@@ -6621,6 +6641,7 @@
           sssMoreSeasons: "More seasons",
           sssSeasonN: "Season {num}",
           sssEpisodesWord: "episodes",
+          sssEpisodesShort: "ep",
           sssMarkSeasonUnwatchedTitle: "Mark whole season unwatched",
           sssMarkSeasonWatchedTitle: "Mark whole season watched",
           sssSeasonWatched: "Season watched",
@@ -7638,7 +7659,7 @@
           appUpdatePromptInstall: "Uppdatera nu",
           appUpdatePromptInstalling: "Uppdaterar\u2026",
           appUpdateDownloading: "Laddar ner uppdateringen",
-          appUpdateInstallingStep: "Installerar\u2026",
+          appUpdateInstallingStep: "Installerar uppdateringen \u2013 Lumio startar om",
           appUpdatePromptLater: "Inte nu",
           appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
           appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
@@ -7815,6 +7836,7 @@
           audio: "Ljud",
           audioLanguage: "Ljudspr\xE5k",
           currentAudioOutput: "Aktuellt ljudl\xE4ge",
+          audioTrackCommentary: "Kommentar",
           info: "Info",
           actor: "Sk\xE5dis",
           readMore: "L\xE4s mer",
@@ -8201,7 +8223,7 @@
           langAppLanguageDesc: "Spr\xE5ket i sj\xE4lva Lumio-gr\xE4nssnittet.",
           langMetadataLanguage: "Metadataspr\xE5k",
           langRegion: "Region",
-          langRegionDesc: "Landskod f\xF6r tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
+          langRegionDesc: "Landet som styr tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
           langMetadataLanguageDesc: "Titlar, beskrivningar och taglines fr\xE5n TMDb visas p\xE5 detta spr\xE5k n\xE4r \xF6vers\xE4ttning finns.",
           langBehaviorGroup: "AUTOVAL",
           subtitlesOffByDefault: "Starta med undertexter av",
@@ -8233,6 +8255,11 @@
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
           allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
           allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          dv7AsHdr10: "Dolby Vision profil 7: spela som HDR10",
+          dv7AsHdr10Desc: "Spelar HDR10-basen i Dolby Vision profil 7 (UHD Blu-ray-remuxar) i st\xE4llet f\xF6r Dolby Vision. Undviker fel f\xE4rger (gr\xF6nt eller lila stick, \xF6versaturerad hud) p\xE5 enheter som avkodar profil 7 d\xE5ligt. Auto sl\xE5r p\xE5 det f\xF6r Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "P\xE5",
+          dv7AsHdr10Off: "Av",
           androidSourceCache: "Mellanlagra str\xF6mmar",
           androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
@@ -9940,7 +9967,7 @@
           subtitleSyncFastReadAhead: "Snabbare synk (anv\xE4nder mer data)",
           subtitleSyncFastReadAheadHint: "L\xE4ser upp till 6 minuter ljud i f\xF6rv\xE4g i st\xE4llet f\xF6r 3, s\xE5 att undertexterna synkas tidigare i sv\xE5ra partier som s\xE5ng och musik. Anv\xE4nder mer mobildata. P\xE5verkar aldrig uppspelningen.",
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
-          subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncSwapped: "Bytte till en b\xE4ttre synkad version av samma undertext",
           subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
           subtitleAutoSyncOtherEdit: "Undertexten verkar vara fr\xE5n en annan version av filmen. Byt till filens egen {lang} undertext?",
           subtitleAutoSyncOtherEditSwitch: "Byt",
@@ -10318,7 +10345,7 @@
           coreStreamsSource: "K\xE4lla",
           streamSourceAllSources: "Alla k\xE4llor",
           streamSourceVod: "VOD",
-          streamSourceDebrid: "Debrid",
+          streamSourceCloud: "Molnet",
           streamSourceEpisodeCount: "{n}/{total} avs",
           streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
           streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
@@ -10405,6 +10432,11 @@
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Biblioteket skannas: {name}",
+          libraryScanIndicatorProgress: "{done} av {total} titlar",
+          libraryScanIndicatorSoFar: "{done} titlar hittills",
+          libraryScanIndicatorHint: "Sortering, filter och bibliotekets rader kommer n\xE4r den \xE4r klar.",
+          libraryScanUnreachable: "{name} svarar inte \u2013 f\xF6rs\xF6ker igen senare",
           plexIndexTitle: "Biblioteksindex",
           plexIndexDesc: "Lumio indexerar dina Plex-bibliotek lokalt s\xE5 att startsidan, rekommendationerna och Zapp kan bygga helt p\xE5 det du \xE4ger.",
           plexIndexEmpty: "Inget index \xE4nnu.",
@@ -10733,6 +10765,7 @@
           sssMoreSeasons: "Fler s\xE4songer",
           sssSeasonN: "S\xE4song {num}",
           sssEpisodesWord: "avsnitt",
+          sssEpisodesShort: "avs.",
           sssMarkSeasonUnwatchedTitle: "Markera hela s\xE4songen som osedd",
           sssMarkSeasonWatchedTitle: "Markera hela s\xE4songen som sedd",
           sssSeasonWatched: "S\xE4songen sedd",
@@ -12084,9 +12117,9 @@
       return {};
     }
   }
-  function writeMatchCache(cache10) {
+  function writeMatchCache(cache11) {
     try {
-      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache10));
+      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache11));
     } catch {
     }
   }
@@ -12105,17 +12138,17 @@
     }
     return results[0] ?? null;
   }
-  async function matchCached(title, year, kind, cache10) {
+  async function matchCached(title, year, kind, cache11) {
     const key = `${kind}:${normalizeKey(title)}:${year ?? ""}`;
-    const cached = cache10[key];
+    const cached = cache11[key];
     if (cached && (cached.hit || Date.now() - cached.at < MISS_TTL_MS)) return cached.hit;
     const hit = await searchTmdb(title, year, kind).catch(() => void 0);
     if (hit === void 0) return null;
-    cache10[key] = { hit, at: Date.now() };
+    cache11[key] = { hit, at: Date.now() };
     return hit;
   }
   async function matchTitlesByName(wanted, signal) {
-    const cache10 = readMatchCache();
+    const cache11 = readMatchCache();
     const out = new Array(wanted.length).fill(null);
     for (let index = 0; index < wanted.length; index += 2) {
       if (signal?.aborted) break;
@@ -12123,10 +12156,10 @@
         const parsed = parseLocalName(`${entry.title}.mkv`);
         const looksLikeEpisode = parsed.season != null && parsed.episode != null;
         if (looksLikeEpisode && entry.kind === "movie") return;
-        out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache10);
+        out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache11);
       }));
     }
-    writeMatchCache(cache10);
+    writeMatchCache(cache11);
     return out;
   }
   var QUALITY_TOKENS, MATCH_CACHE_KEY, LEGACY_MATCH_CACHE_KEY, MISS_TTL_MS;
@@ -12210,17 +12243,27 @@
     const forward = () => controller2.abort();
     if (outer?.aborted) controller2.abort();
     else outer?.addEventListener("abort", forward, { once: true });
-    setActive2({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    const who = { sourceId: source.id, name: source.name, provider: provider.label, mode: options.mode };
+    setActive2({ ...who, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
-      return await runLibraryScanInner(provider, source, {
+      const summary = await runLibraryScanInner(provider, source, {
         ...options,
         signal: controller2.signal,
         onProgress: (progress2) => {
-          setActive2({ sourceId: source.id, progress: progress2 });
+          setActive2({ ...who, progress: progress2 });
           onProgress?.(progress2);
         }
       });
+      if (!controller2.signal.aborted) {
+        for (const listener of finishedListeners) {
+          try {
+            listener(source.id);
+          } catch {
+          }
+        }
+      }
+      return summary;
     } finally {
       outer?.removeEventListener("abort", forward);
       activeController = null;
@@ -12250,7 +12293,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit8, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit8, report, options.signal ?? new AbortController().signal);
+    const result2 = options.mode === "full" ? await provider.scanAll(source, emit8, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit8, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -12264,16 +12307,16 @@
     await io.postBatch(
       {
         ...sourceRecord,
-        cursor: result.cursor ?? source.cursor ?? null,
+        cursor: result2.cursor ?? source.cursor ?? null,
         ...options.mode === "full" ? { lastFullSync: now2 } : { lastDeltaSync: now2 }
       },
       {}
     );
     notifyLibraryIndexChanged();
     report({ phase: "done", done: titles, total: titles });
-    return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
+    return { titles, removed, unmatched, cursor: result2.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running, active2, scanListeners, activeController;
+  var running, active2, scanListeners, finishedListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
@@ -12283,6 +12326,7 @@
       running = false;
       active2 = null;
       scanListeners = /* @__PURE__ */ new Set();
+      finishedListeners = /* @__PURE__ */ new Set();
       activeController = null;
     }
   });
@@ -13901,19 +13945,25 @@
       return {};
     }
   }
-  function write4(cache10) {
-    setScopedStorageItem(KEY7, JSON.stringify(cache10));
+  function write4(cache11) {
+    setScopedStorageItem(KEY7, JSON.stringify(cache11));
+  }
+  function getCachedWatchlistItems(entries2) {
+    const cache11 = read4();
+    return Object.fromEntries(
+      entries2.map(({ tmdbId, type }) => [tmdbId, cache11[buildKey(tmdbId, type)] ?? null])
+    );
   }
   function cacheWatchlistItems(items2) {
     if (typeof window === "undefined" || items2.length === 0) return;
-    const cache10 = read4();
+    const cache11 = read4();
     let changed = false;
     for (const { tmdbId, item } of items2) {
       if (!tmdbId || !item) continue;
-      cache10[buildKey(tmdbId, item.type)] = item;
+      cache11[buildKey(tmdbId, item.type)] = item;
       changed = true;
     }
-    if (changed) write4(cache10);
+    if (changed) write4(cache11);
   }
   var KEY7;
   var init_watchlist_item_cache = __esm({
@@ -14440,6 +14490,10 @@
   });
 
   // lib/rating-sources.ts
+  function getMdblistEnabled() {
+    if (typeof window === "undefined") return false;
+    return (getScopedStorageItem(KEY_MDBLIST_ENABLED) ?? "0") === "1";
+  }
   function getMdblistApiKey() {
     if (typeof window === "undefined") return "";
     return getScopedStorageItem(KEY_MDBLIST) ?? "";
@@ -14448,6 +14502,19 @@
     if (value) setScopedStorageItem(KEY_MDBLIST, value);
     else removeScopedStorageItem(KEY_MDBLIST);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
+  }
+  function getMdblistAccessToken() {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = getScopedStorageItem(KEY_MDBLIST_OAUTH);
+      if (!raw) return null;
+      const token = JSON.parse(raw);
+      if (typeof token.accessToken !== "string" || !token.accessToken) return null;
+      if (typeof token.expiresAt === "number" && token.expiresAt <= Date.now()) return null;
+      return token.accessToken;
+    } catch {
+      return null;
+    }
   }
   function onRatingSourcesChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -14459,15 +14526,74 @@
       window.removeEventListener(MDBLIST_AUTH_EVENT, listener);
     };
   }
-  var KEY_MDBLIST, EVENT10, MDBLIST_AUTH_EVENT;
+  function rememberMdblist(key, value) {
+    mdblistCache.set(key, value);
+    while (mdblistCache.size > 300) {
+      const oldest = mdblistCache.keys().next().value;
+      if (oldest === void 0) break;
+      mdblistCache.delete(oldest);
+    }
+  }
+  function getCachedMdblistRatings(imdbId) {
+    if (!getMdblistEnabled() || !imdbId) return void 0;
+    return mdblistCache.get(imdbId);
+  }
+  function toRatings(data) {
+    const findRating = (source) => {
+      const entry = (data.ratings ?? []).find((r) => r.source === source);
+      return typeof entry?.value === "number" ? entry.value : null;
+    };
+    return {
+      score: typeof data.score === "number" ? data.score : null,
+      traktRating: findRating("trakt"),
+      letterboxdRating: findRating("letterboxd"),
+      imdbRating: findRating("imdb")
+    };
+  }
+  async function fetchMdblistRatings(imdbId, mediaType) {
+    if (!getMdblistEnabled() || !imdbId) return null;
+    const token = getMdblistAccessToken();
+    const key = getMdblistApiKey().trim();
+    if (!token && !key) return null;
+    const cached = mdblistCache.get(imdbId);
+    if (cached !== void 0) return cached;
+    try {
+      if (token) {
+        const kind = mediaType === "tv" ? "show" : mediaType === "movie" ? "movie" : "any";
+        const response2 = await fetch("/api/plugins/mdblist/call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: token, method: "GET", path: `/imdb/${kind}/${imdbId}` })
+        });
+        if (response2.ok) {
+          const json = await response2.json();
+          const result3 = toRatings(json.data ?? {});
+          rememberMdblist(imdbId, result3);
+          return result3;
+        }
+        if (!key) return null;
+      }
+      const response = await fetch(`/api/mdblist?imdb_id=${encodeURIComponent(imdbId)}&apikey=${encodeURIComponent(key)}`);
+      if (!response.ok) return null;
+      const result2 = toRatings(await response.json());
+      rememberMdblist(imdbId, result2);
+      return result2;
+    } catch {
+      return null;
+    }
+  }
+  var KEY_MDBLIST, KEY_MDBLIST_ENABLED, EVENT10, KEY_MDBLIST_OAUTH, MDBLIST_AUTH_EVENT, mdblistCache;
   var init_rating_sources = __esm({
     "lib/rating-sources.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
       KEY_MDBLIST = "mdblist_api_key";
+      KEY_MDBLIST_ENABLED = "mdblist_enabled";
       EVENT10 = "lumio-rating-sources-changed";
+      KEY_MDBLIST_OAUTH = "mdblist_oauth";
       MDBLIST_AUTH_EVENT = "lumio-mdblist-auth-changed";
+      mdblistCache = /* @__PURE__ */ new Map();
     }
   });
 
@@ -14495,8 +14621,8 @@
     }
     if (isTauriEnv) {
       try {
-        const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-        await invoke6("open_external_url", { url });
+        const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+        await invoke7("open_external_url", { url });
         return;
       } catch {
       }
@@ -14908,15 +15034,15 @@
                 dat.push(0);
               blocks.push(dat.concat(ecc));
             }
-            let result = [];
+            let result2 = [];
             for (let i = 0; i < blocks[0].length; i++) {
               blocks.forEach((block, j) => {
                 if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
-                  result.push(block[i]);
+                  result2.push(block[i]);
               });
             }
-            assert(result.length == rawCodewords);
-            return result;
+            assert(result2.length == rawCodewords);
+            return result2;
           }
           // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
           // data area of this QR Code. Function modules need to be marked off before this is called.
@@ -14988,7 +15114,7 @@
           // Calculates and returns the penalty score based on state of this QR Code's current modules.
           // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
           getPenaltyScore() {
-            let result = 0;
+            let result2 = 0;
             for (let y = 0; y < this.size; y++) {
               let runColor = false;
               let runX = 0;
@@ -14997,18 +15123,18 @@
                 if (this.modules[y][x] == runColor) {
                   runX++;
                   if (runX == 5)
-                    result += _QrCode2.PENALTY_N1;
+                    result2 += _QrCode2.PENALTY_N1;
                   else if (runX > 5)
-                    result++;
+                    result2++;
                 } else {
                   this.finderPenaltyAddHistory(runX, runHistory);
                   if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                    result2 += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
                   runColor = this.modules[y][x];
                   runX = 1;
                 }
               }
-              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
+              result2 += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
             }
             for (let x = 0; x < this.size; x++) {
               let runColor = false;
@@ -15018,24 +15144,24 @@
                 if (this.modules[y][x] == runColor) {
                   runY++;
                   if (runY == 5)
-                    result += _QrCode2.PENALTY_N1;
+                    result2 += _QrCode2.PENALTY_N1;
                   else if (runY > 5)
-                    result++;
+                    result2++;
                 } else {
                   this.finderPenaltyAddHistory(runY, runHistory);
                   if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                    result2 += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
                   runColor = this.modules[y][x];
                   runY = 1;
                 }
               }
-              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
+              result2 += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
             }
             for (let y = 0; y < this.size - 1; y++) {
               for (let x = 0; x < this.size - 1; x++) {
                 const color = this.modules[y][x];
                 if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
-                  result += _QrCode2.PENALTY_N2;
+                  result2 += _QrCode2.PENALTY_N2;
               }
             }
             let dark = 0;
@@ -15044,9 +15170,9 @@
             const total = this.size * this.size;
             const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
             assert(0 <= k && k <= 9);
-            result += k * _QrCode2.PENALTY_N4;
-            assert(0 <= result && result <= 2568888);
-            return result;
+            result2 += k * _QrCode2.PENALTY_N4;
+            assert(0 <= result2 && result2 <= 2568888);
+            return result2;
           }
           /*-- Private helper functions --*/
           // Returns an ascending list of positions of alignment patterns for this version number.
@@ -15058,10 +15184,10 @@
             else {
               const numAlign = Math.floor(this.version / 7) + 2;
               const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
-              let result = [6];
-              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
-                result.splice(1, 0, pos);
-              return result;
+              let result2 = [6];
+              for (let pos = this.size - 7; result2.length < numAlign; pos -= step)
+                result2.splice(1, 0, pos);
+              return result2;
             }
           }
           // Returns the number of data bits that can be stored in a QR Code of the given version number, after
@@ -15070,15 +15196,15 @@
           static getNumRawDataModules(ver) {
             if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
               throw new RangeError("Version number out of range");
-            let result = (16 * ver + 128) * ver + 64;
+            let result2 = (16 * ver + 128) * ver + 64;
             if (ver >= 2) {
               const numAlign = Math.floor(ver / 7) + 2;
-              result -= (25 * numAlign - 10) * numAlign - 55;
+              result2 -= (25 * numAlign - 10) * numAlign - 55;
               if (ver >= 7)
-                result -= 36;
+                result2 -= 36;
             }
-            assert(208 <= result && result <= 29648);
-            return result;
+            assert(208 <= result2 && result2 <= 29648);
+            return result2;
           }
           // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
           // QR Code of the given version number and error correction level, with remainder bits discarded.
@@ -15091,30 +15217,30 @@
           static reedSolomonComputeDivisor(degree) {
             if (degree < 1 || degree > 255)
               throw new RangeError("Degree out of range");
-            let result = [];
+            let result2 = [];
             for (let i = 0; i < degree - 1; i++)
-              result.push(0);
-            result.push(1);
+              result2.push(0);
+            result2.push(1);
             let root = 1;
             for (let i = 0; i < degree; i++) {
-              for (let j = 0; j < result.length; j++) {
-                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
-                if (j + 1 < result.length)
-                  result[j] ^= result[j + 1];
+              for (let j = 0; j < result2.length; j++) {
+                result2[j] = _QrCode2.reedSolomonMultiply(result2[j], root);
+                if (j + 1 < result2.length)
+                  result2[j] ^= result2[j + 1];
               }
               root = _QrCode2.reedSolomonMultiply(root, 2);
             }
-            return result;
+            return result2;
           }
           // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
           static reedSolomonComputeRemainder(data, divisor) {
-            let result = divisor.map((_) => 0);
+            let result2 = divisor.map((_) => 0);
             for (const b of data) {
-              const factor = b ^ result.shift();
-              result.push(0);
-              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
+              const factor = b ^ result2.shift();
+              result2.push(0);
+              divisor.forEach((coef, i) => result2[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
             }
-            return result;
+            return result2;
           }
           // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
           // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
@@ -15301,28 +15427,28 @@
           // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
           // the given version. The result is infinity if a segment has too many characters to fit its length field.
           static getTotalBits(segs, version3) {
-            let result = 0;
+            let result2 = 0;
             for (const seg of segs) {
               const ccbits = seg.mode.numCharCountBits(version3);
               if (seg.numChars >= 1 << ccbits)
                 return Infinity;
-              result += 4 + ccbits + seg.bitData.length;
+              result2 += 4 + ccbits + seg.bitData.length;
             }
-            return result;
+            return result2;
           }
           // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str5) {
-            str5 = encodeURI(str5);
-            let result = [];
-            for (let i = 0; i < str5.length; i++) {
-              if (str5.charAt(i) != "%")
-                result.push(str5.charCodeAt(i));
+          static toUtf8ByteArray(str6) {
+            str6 = encodeURI(str6);
+            let result2 = [];
+            for (let i = 0; i < str6.length; i++) {
+              if (str6.charAt(i) != "%")
+                result2.push(str6.charCodeAt(i));
               else {
-                result.push(parseInt(str5.substring(i + 1, i + 3), 16));
+                result2.push(parseInt(str6.substring(i + 1, i + 3), 16));
                 i += 2;
               }
             }
-            return result;
+            return result2;
           }
         };
         _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
@@ -16270,9 +16396,9 @@
       return {};
     }
   }
-  function writeStreamCache(cache10) {
+  function writeStreamCache(cache11) {
     if (typeof window === "undefined") return;
-    setScopedStorageItem(STREAM_CACHE_KEY, JSON.stringify(cache10));
+    setScopedStorageItem(STREAM_CACHE_KEY, JSON.stringify(cache11));
   }
   function getCacheKey(imdbId, season, episode) {
     const filters = getStreamFilters();
@@ -16381,8 +16507,8 @@
     });
     for (const provider of providers) {
       try {
-        const result = await provider.hasEpisodeStream(imdbId, season, episode);
-        if (typeof result === "boolean") return result;
+        const result2 = await provider.hasEpisodeStream(imdbId, season, episode);
+        if (typeof result2 === "boolean") return result2;
       } catch {
       }
     }
@@ -16398,8 +16524,8 @@
   async function checkEpisodeHasStream(imdbId, season, episode) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey3 = getCacheKey(imdbId, season, episode);
-    const cache10 = readStreamCache();
-    const cached = cache10[cacheKey3];
+    const cache11 = readStreamCache();
+    const cached = cache11[cacheKey3];
     if (cached && Date.now() - cached.checkedAt < streamCacheTtl(cached.hasStream)) {
       return cached.hasStream;
     }
@@ -16414,8 +16540,8 @@
         try {
           const providerResult = await resolveEpisodeStreamAvailabilityFromProviders(imdbId, season, episode);
           if (providerResult === true) {
-            cache10[cacheKey3] = { checkedAt: Date.now(), hasStream: true };
-            writeStreamCache(cache10);
+            cache11[cacheKey3] = { checkedAt: Date.now(), hasStream: true };
+            writeStreamCache(cache11);
             return true;
           }
         } finally {
@@ -16425,8 +16551,8 @@
       const streams = await fetchEpisodeStreamResults(imdbId, season, episode);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache10[cacheKey3] = { checkedAt: Date.now(), hasStream };
-      writeStreamCache(cache10);
+      cache11[cacheKey3] = { checkedAt: Date.now(), hasStream };
+      writeStreamCache(cache11);
       return hasStream;
     })().catch(() => {
       rememberFailedCheck(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS);
@@ -16475,9 +16601,9 @@
       return {};
     }
   }
-  function writeStreamCache2(cache10) {
+  function writeStreamCache2(cache11) {
     if (typeof window === "undefined") return;
-    setScopedStorageItem(STREAM_CACHE_KEY2, JSON.stringify(cache10));
+    setScopedStorageItem(STREAM_CACHE_KEY2, JSON.stringify(cache11));
   }
   function getCacheKey2(imdbId) {
     const filters = getStreamFilters();
@@ -16579,8 +16705,8 @@
     });
     for (const provider of providers) {
       try {
-        const result = await provider.hasMovieStream(imdbId);
-        if (typeof result === "boolean") return result;
+        const result2 = await provider.hasMovieStream(imdbId);
+        if (typeof result2 === "boolean") return result2;
       } catch {
       }
     }
@@ -16596,8 +16722,8 @@
   async function checkMovieHasStream(imdbId) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey3 = getCacheKey2(imdbId);
-    const cache10 = readStreamCache2();
-    const cached = cache10[cacheKey3];
+    const cache11 = readStreamCache2();
+    const cached = cache11[cacheKey3];
     if (cached && Date.now() - cached.checkedAt < streamCacheTtl2(cached.hasStream)) {
       return cached.hasStream;
     }
@@ -16612,8 +16738,8 @@
         try {
           const providerResult = await resolveMovieStreamAvailabilityFromProviders(imdbId);
           if (providerResult !== null) {
-            cache10[cacheKey3] = { checkedAt: Date.now(), hasStream: providerResult };
-            writeStreamCache2(cache10);
+            cache11[cacheKey3] = { checkedAt: Date.now(), hasStream: providerResult };
+            writeStreamCache2(cache11);
             return providerResult;
           }
         } finally {
@@ -16623,8 +16749,8 @@
       const streams = await fetchStreamResults(imdbId);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache10[cacheKey3] = { checkedAt: Date.now(), hasStream };
-      writeStreamCache2(cache10);
+      cache11[cacheKey3] = { checkedAt: Date.now(), hasStream };
+      writeStreamCache2(cache11);
       return hasStream;
     })().catch(() => {
       rememberFailedCheck2(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS2);
@@ -17561,8 +17687,8 @@
     const clean = (text2) => {
       const trimmed = text2?.trim() ?? "";
       if (!trimmed) return null;
-      const result = stripSdh ? strip(trimmed).trim() : trimmed;
-      return result || null;
+      const result2 = stripSdh ? strip(trimmed).trim() : trimmed;
+      return result2 || null;
     };
     return { primary: clean(primary), secondary: clean(secondary) };
   }
@@ -18135,7 +18261,7 @@
         ProgressBarStatus["Paused"] = "paused";
         ProgressBarStatus["Error"] = "error";
       })(exports.ProgressBarStatus || (exports.ProgressBarStatus = {}));
-      function getCurrentWindow2() {
+      function getCurrentWindow3() {
         return new Window(window.__TAURI_INTERNALS__.metadata.currentWindow.label, {
           // @ts-expect-error `skip` is not defined in the public API but it is handled by the constructor
           skip: true
@@ -18199,7 +18325,7 @@
          * Get an instance of `Window` for the current window.
          */
         static getCurrent() {
-          return getCurrentWindow2();
+          return getCurrentWindow3();
         }
         /**
          * Gets a list of instances of `Window` for all available windows.
@@ -18247,8 +18373,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners18 = this.listeners[event$1];
-              listeners18.splice(listeners18.indexOf(handler), 1);
+              const listeners19 = this.listeners[event$1];
+              listeners19.splice(listeners19.indexOf(handler), 1);
             };
           }
           return event2.listen(event$1, handler, {
@@ -18277,8 +18403,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners18 = this.listeners[event$1];
-              listeners18.splice(listeners18.indexOf(handler), 1);
+              const listeners19 = this.listeners[event$1];
+              listeners19.splice(listeners19.indexOf(handler), 1);
             };
           }
           return event2.once(event$1, handler, {
@@ -19857,9 +19983,64 @@
       exports.currentMonitor = currentMonitor;
       exports.cursorPosition = cursorPosition;
       exports.getAllWindows = getAllWindows;
-      exports.getCurrentWindow = getCurrentWindow2;
+      exports.getCurrentWindow = getCurrentWindow3;
       exports.monitorFromPoint = monitorFromPoint;
       exports.primaryMonitor = primaryMonitor;
+    }
+  });
+
+  // lib/platform-os.ts
+  function hasTauriIpc2() {
+    if (typeof window === "undefined") return false;
+    const w = window;
+    return Boolean(w.__TAURI_INTERNALS__ || w.__TAURI__);
+  }
+  function userAgent() {
+    return typeof navigator !== "undefined" ? navigator.userAgent : "";
+  }
+  function isDesktopTauri() {
+    return hasTauriIpc2() && !/android/i.test(userAgent());
+  }
+  function isWindowsDesktop() {
+    return isDesktopTauri() && /Windows/.test(userAgent());
+  }
+  var init_platform_os = __esm({
+    "lib/platform-os.ts"() {
+    }
+  });
+
+  // components/window-controls.tsx
+  function markWindowFullscreenKeyHandled(event2) {
+    event2[HANDLED] = true;
+  }
+  var import_react_dom, import_core3, import_window, INTERACTIVE_SELECTOR, HANDLED;
+  var init_window_controls = __esm({
+    "components/window-controls.tsx"() {
+      init_react_shim();
+      import_react_dom = __toESM(require_react_dom());
+      import_core3 = __toESM(require_core());
+      import_window = __toESM(require_window());
+      init_platform_os();
+      init_jsx_runtime_shim();
+      INTERACTIVE_SELECTOR = [
+        "button",
+        "a[href]",
+        "input",
+        "select",
+        "textarea",
+        "label",
+        "summary",
+        '[role="button"]',
+        '[role="link"]',
+        '[role="tab"]',
+        '[role="menuitem"]',
+        '[role="slider"]',
+        '[contenteditable=""]',
+        '[contenteditable="true"]',
+        "[data-no-window-drag]",
+        ".lumio-window-controls"
+      ].join(",");
+      HANDLED = "__lumioFullscreenKeyHandled";
     }
   });
 
@@ -20885,7 +21066,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -21735,8 +21915,8 @@
   });
 
   // lib/barcode/barcode-library-model.ts
-  function formatClock(seconds, withHours = seconds >= 3600) {
-    const s = Math.max(0, Math.floor(seconds));
+  function formatClock(seconds2, withHours = seconds2 >= 3600) {
+    const s = Math.max(0, Math.floor(seconds2));
     const h = Math.floor(s / 3600);
     const m = Math.floor(s % 3600 / 60);
     const sec = s % 60;
@@ -21881,28 +22061,72 @@
     }
   });
 
-  // lib/android-media-keys.ts
-  function onMediaKey(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    const handler = (event2) => {
-      const detail = event2.detail;
-      if (detail?.action) listener(detail.action);
-    };
-    listeners5 += 1;
-    window.addEventListener(EVENT12, handler);
-    return () => {
-      listeners5 -= 1;
-      window.removeEventListener(EVENT12, handler);
-    };
+  // components/results/details-meta-row.tsx
+  function RatingBadge({ source, value, variant = "details" }) {
+    const compact = variant === "compact";
+    if (source === "imdb") {
+      return /* @__PURE__ */ jsxs("span", { className: `flex items-center ${compact ? "flex-none gap-[0.35em]" : "gap-1.5"}`, children: [
+        /* @__PURE__ */ jsx(
+          "span",
+          {
+            className: compact ? "rounded-[0.25em] bg-[#f5c518] px-[0.4em] py-[0.1em] text-[0.68em] font-bold leading-tight tracking-wide text-black" : "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black",
+            children: "IMDb"
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { className: "font-medium", children: value })
+      ] });
+    }
+    if (source === "tmdb") {
+      return /* @__PURE__ */ jsxs("span", { className: `flex items-center gap-1 ${compact ? "flex-none" : ""}`, children: [
+        /* @__PURE__ */ jsx("svg", { className: compact ? "h-[1em] w-[1em] flex-none text-yellow-400" : "h-3.5 w-3.5 text-yellow-400", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" }) }),
+        value
+      ] });
+    }
+    if (source === "trakt") {
+      return /* @__PURE__ */ jsxs("span", { className: `flex items-center ${compact ? "flex-none gap-[0.35em]" : "gap-1.5"}`, title: "Trakt", children: [
+        /* @__PURE__ */ jsxs("svg", { className: compact ? "h-[1.1em] w-[1.1em] shrink-0" : "h-4 w-4 shrink-0", viewBox: "0 0 24 24", "aria-hidden": true, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "11", fill: "#ed1c24" }),
+          /* @__PURE__ */ jsx(
+            "path",
+            {
+              d: "M7 16.6 15.4 8.2M9.4 6.6 6.6 9.4l8 8",
+              stroke: "#fff",
+              strokeWidth: "1.7",
+              strokeLinecap: "round",
+              fill: "none"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx("span", { className: "font-medium", children: value })
+      ] });
+    }
+    if (source === "letterboxd") {
+      const dot2 = compact ? "h-[0.6em] w-[0.6em] rounded-full" : "h-2.5 w-2.5 rounded-full";
+      return /* @__PURE__ */ jsxs("span", { className: `flex items-center ${compact ? "flex-none gap-[0.35em]" : "gap-1.5"}`, title: "Letterboxd", children: [
+        /* @__PURE__ */ jsxs("span", { "aria-hidden": true, className: `flex shrink-0 items-center ${compact ? "gap-[0.12em]" : "gap-[2px]"}`, children: [
+          /* @__PURE__ */ jsx("span", { className: `${dot2} bg-[#ff8000]` }),
+          /* @__PURE__ */ jsx("span", { className: `${dot2} bg-[#00e054]` }),
+          /* @__PURE__ */ jsx("span", { className: `${dot2} bg-[#40bcf4]` })
+        ] }),
+        /* @__PURE__ */ jsx("span", { className: "font-medium", children: value })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("span", { className: `flex items-center ${compact ? "flex-none gap-[0.35em]" : "gap-1.5"}`, title: "MDBList", children: [
+      /* @__PURE__ */ jsx(
+        "span",
+        {
+          className: compact ? "rounded-[0.25em] border border-white/25 px-[0.25em] py-px text-[0.6em] font-bold leading-none tracking-wide text-slate-200" : "rounded border border-white/25 px-1 py-px text-[9px] font-bold leading-none tracking-wide text-slate-200",
+          children: "MDB"
+        }
+      ),
+      /* @__PURE__ */ jsx("span", { className: "font-medium", children: value })
+    ] });
   }
-  var EVENT12, listeners5;
-  var init_android_media_keys = __esm({
-    "lib/android-media-keys.ts"() {
+  var init_details_meta_row = __esm({
+    "components/results/details-meta-row.tsx"() {
       "use client";
-      init_key_hold();
-      EVENT12 = "lumio-media-key";
-      listeners5 = 0;
+      init_i18n();
+      init_jsx_runtime_shim();
     }
   });
 
@@ -22019,6 +22243,633 @@
       };
       INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
       INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/player-title-block.ts
+  function resolutionLabelFromSize(width, height) {
+    const w = typeof width === "number" && Number.isFinite(width) && width > 0 ? width : 0;
+    const h = typeof height === "number" && Number.isFinite(height) && height > 0 ? height : 0;
+    if (!w && !h) return null;
+    return resolutionLabelFromHeight(Math.max(h, w * 9 / 16));
+  }
+  function resolutionLabelFromHeight(effective) {
+    if (!effective || effective <= 0) return null;
+    if (effective >= 1800) return "4K";
+    if (effective >= 1300) return "1440p";
+    if (effective >= 900) return "1080p";
+    if (effective >= 650) return "720p";
+    return "SD";
+  }
+  function hdrFormatLabel(releaseText, engine) {
+    const releaseDv = DOLBY_VISION.test(releaseText);
+    const releaseHdr10Plus = HDR10_PLUS.test(releaseText);
+    const baseProfile = engine?.dvBaseProfile;
+    if (typeof baseProfile === "number" && baseProfile > 0) {
+      return `${releaseHdr10Plus ? "HDR10+" : "HDR10"} (DV${baseProfile})`;
+    }
+    const gamma = engine?.gamma?.toLowerCase() ?? null;
+    if (engine?.colormatrix?.toLowerCase() === "dolbyvision") return "Dolby Vision";
+    if (gamma === "pq") return releaseDv ? "Dolby Vision" : releaseHdr10Plus ? "HDR10+" : "HDR10";
+    if (gamma === "hlg") return "HLG";
+    if (releaseDv) return "Dolby Vision";
+    if (gamma) return null;
+    if (releaseHdr10Plus) return "HDR10+";
+    if (HLG.test(releaseText)) return "HLG";
+    if (HDR10.test(releaseText)) return "HDR10";
+    return null;
+  }
+  function engineAudioFamily(codec) {
+    const c = (codec ?? "").toLowerCase().replace(/^audio\//, "").trim();
+    if (!c || c === "audio") return null;
+    if (c.includes("truehd") || c.includes("true-hd") || c === "mlp") return { family: "truehd", atmos: false, dtsHd: false };
+    if (c.includes("eac3") || c.includes("e-ac3") || c.includes("e-ac-3")) return { family: "ddp", atmos: c.includes("joc"), dtsHd: false };
+    if (c === "ac3" || c === "ac-3") return { family: "dd", atmos: false, dtsHd: false };
+    if (c.includes("dts")) return { family: "dts", atmos: false, dtsHd: c.includes("hd") };
+    if (c.includes("aac") || c.includes("mp4a")) return { family: "aac", atmos: false, dtsHd: false };
+    if (c.includes("flac")) return { family: "flac", atmos: false, dtsHd: false };
+    if (c.includes("opus")) return { family: "opus", atmos: false, dtsHd: false };
+    if (c === "mp3" || c === "mpeg" || c === "mp2") return { family: "mp3", atmos: false, dtsHd: false };
+    if (c.startsWith("pcm") || c === "raw" || c === "lpcm") return { family: "pcm", atmos: false, dtsHd: false };
+    if (c.includes("vorbis")) return { family: "vorbis", atmos: false, dtsHd: false };
+    return null;
+  }
+  function releaseAudioFamily(text2) {
+    if (TRUEHD.test(text2)) return "truehd";
+    if (DTS_X.test(text2) || DTS_HD.test(text2) || DTS.test(text2)) return "dts";
+    if (DDP.test(text2)) return "ddp";
+    if (DD.test(text2)) return "dd";
+    if (AAC.test(text2)) return "aac";
+    if (FLAC.test(text2)) return "flac";
+    if (OPUS.test(text2)) return "opus";
+    return null;
+  }
+  function releaseChannels(text2) {
+    const match = CHANNELS.exec(text2.replace(/h\.?26[45]|x26[45]/gi, " "));
+    if (!match) return null;
+    return Number(match[1]) + Number(match[2]);
+  }
+  function isDolbyAudio(family) {
+    return family === "truehd" || family === "ddp" || family === "dd";
+  }
+  function audioFormatParts(releaseText, track) {
+    const engine = engineAudioFamily(track?.codec);
+    const releaseFamily = releaseAudioFamily(releaseText);
+    const family = engine?.family ?? releaseFamily;
+    const releaseApplies = !engine || releaseFamily === engine.family;
+    let codec = null;
+    switch (family) {
+      case "truehd":
+        codec = "TrueHD";
+        break;
+      case "ddp":
+        codec = "DD+";
+        break;
+      case "dd":
+        codec = "DD";
+        break;
+      case "dts":
+        codec = releaseApplies && DTS_X.test(releaseText) ? "DTS:X" : releaseApplies && DTS_HD_MA.test(releaseText) ? "DTS-HD MA" : releaseApplies && DTS_HD.test(releaseText) || engine?.dtsHd ? "DTS-HD" : "DTS";
+        break;
+      case "aac":
+        codec = "AAC";
+        break;
+      case "flac":
+        codec = "FLAC";
+        break;
+      case "opus":
+        codec = "Opus";
+        break;
+      case "mp3":
+        codec = "MP3";
+        break;
+      case "pcm":
+        codec = "PCM";
+        break;
+      case "vorbis":
+        codec = "Vorbis";
+        break;
+      default:
+        codec = null;
+    }
+    const atmos = (family === "truehd" || family === "ddp") && (Boolean(engine?.atmos) || releaseApplies && ATMOS.test(releaseText));
+    const engineChannels = typeof track?.channels === "number" && track.channels > 0 ? track.channels : null;
+    const channels = engineChannels ?? (releaseApplies ? releaseChannels(releaseText) : null);
+    return { family, codec, channels, atmos };
+  }
+  function releaseSourceLabel(text2) {
+    if (/\bremux\b/i.test(text2)) return "REMUX";
+    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text2)) return "BluRay";
+    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text2)) return "WEB-DL";
+    if (/\bweb[.\s_-]?rip\b/i.test(text2)) return "WEBRip";
+    if (/\bhdtv\b/i.test(text2)) return "HDTV";
+    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text2)) return "DVD";
+    return null;
+  }
+  function titleChipText(chip) {
+    return chip.parts.map((part) => part.text).join(" \xB7 ");
+  }
+  function playerTitleChips(input) {
+    const text2 = input.releaseText ?? "";
+    const chips = [];
+    const push = (kind, parts2) => {
+      if (parts2.length > 0) chips.push({ kind, parts: parts2, priority: CHIP_PRIORITY[kind] });
+    };
+    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text2));
+    if (resolution) push("resolution", [{ text: resolution }]);
+    const hdr = hdrFormatLabel(text2, input.engineVideo);
+    if (hdr) push("hdr", [hdr === "Dolby Vision" ? { text: hdr, icon: "dolby" } : { text: hdr }]);
+    const audio = audioFormatParts(text2, input.audioTrack);
+    const track = input.audioTrack;
+    const languageName2 = track ? track.title && COMMENTARY.test(track.title) ? input.commentaryLabel : audioLanguageLabel(track.language, input.uiLang) : null;
+    const layout = channelLayoutLabel(audio.channels);
+    if (audio.codec || audio.atmos) {
+      const codecText = [audio.codec, languageName2 ? null : layout].filter(Boolean).join(" ");
+      const parts2 = [];
+      if (codecText) {
+        parts2.push(isDolbyAudio(audio.family) && !audio.atmos ? { text: codecText, icon: "dolby" } : { text: codecText });
+      }
+      if (audio.atmos) parts2.push({ text: "Atmos", icon: "dolby" });
+      push("audio", parts2);
+    }
+    if (input.includeSource !== false) {
+      const source = releaseSourceLabel(text2);
+      if (source) push("source", [{ text: source }]);
+    }
+    const languageText = languageName2 ? [languageName2, layout].filter(Boolean).join(" ") : !(audio.codec || audio.atmos) ? layout : null;
+    if (languageText) push("language", [{ text: languageText, icon: "speaker" }]);
+    return chips;
+  }
+  function dropLowestPriorityChips(chips, drop) {
+    if (drop <= 0) return [...chips];
+    const keep = Math.max(1, chips.length - drop);
+    const kept = new Set(
+      [...chips].map((chip, index) => ({ chip, index })).sort((a, b) => a.chip.priority - b.chip.priority || a.index - b.index).slice(0, keep).map(({ chip }) => chip)
+    );
+    return chips.filter((chip) => kept.has(chip));
+  }
+  function channelLayoutLabel(channels) {
+    if (!channels || !Number.isFinite(channels) || channels <= 0) return null;
+    switch (Math.round(channels)) {
+      case 1:
+        return "Mono";
+      case 2:
+        return "2.0";
+      case 6:
+        return "5.1";
+      case 7:
+        return "6.1";
+      case 8:
+        return "7.1";
+      default:
+        return `${Math.round(channels)}ch`;
+    }
+  }
+  function audioLanguageLabel(code, uiLang) {
+    const normalized = normalizeLanguageCode(code);
+    if (!normalized) return null;
+    const base = normalizeLanguageCode(normalized.split(/[-_]/)[0]) ?? normalized;
+    if (UNKNOWN_LANGUAGES.has(base)) return null;
+    try {
+      const name = new Intl.DisplayNames([uiLang], { type: "language" }).of(base);
+      if (!name || name.toLowerCase() === base) return null;
+      return name.charAt(0).toLocaleUpperCase(uiLang) + name.slice(1);
+    } catch {
+      return null;
+    }
+  }
+  function playerTitleRatings(input) {
+    const out = [];
+    const imdb = finitePositive(input.mdblist?.imdbRating) ? input.mdblist.imdbRating : finitePositive(input.imdb) ? input.imdb : null;
+    if (imdb != null) out.push({ source: "imdb", value: imdb.toFixed(1) });
+    else if (finitePositive(input.tmdb)) out.push({ source: "tmdb", value: input.tmdb.toFixed(1) });
+    const m = input.mdblist;
+    if (m) {
+      if (finitePositive(m.traktRating)) out.push({ source: "trakt", value: `${Math.round(m.traktRating)}%` });
+      if (finitePositive(m.letterboxdRating)) out.push({ source: "letterboxd", value: m.letterboxdRating.toFixed(1) });
+      if (finitePositive(m.score)) out.push({ source: "mdb", value: String(Math.round(m.score)) });
+    }
+    return typeof input.max === "number" ? out.slice(0, Math.max(0, input.max)) : out;
+  }
+  function playerTitleMeta(input) {
+    const genres = (input.genres ?? []).map((genre) => genre.trim()).filter(Boolean).slice(0, input.maxGenres ?? 3);
+    return {
+      year: input.year ? String(input.year) : null,
+      runtimeMinutes: finitePositive(input.runtimeMinutes) ? Math.round(input.runtimeMinutes) : null,
+      ratings: [...input.ratings ?? []],
+      genres
+    };
+  }
+  var DOLBY_VISION, HDR10_PLUS, HDR10, HLG, ATMOS, TRUEHD, DTS_X, DTS_HD_MA, DTS_HD, DTS, DDP, DD, AAC, FLAC, OPUS, CHANNELS, CHIP_PRIORITY, UNKNOWN_LANGUAGES, COMMENTARY, finitePositive;
+  var init_player_title_block = __esm({
+    "lib/player-title-block.ts"() {
+      init_stream_utils();
+      init_playback_settings();
+      DOLBY_VISION = /(?:^|[.\s_\-[(])(dv|dovi)(?:$|[.\s_\-\])])|dolby[.\s_-]?vision/i;
+      HDR10_PLUS = /hdr10(?:\+|[.\s_-]?plus)/i;
+      HDR10 = /(?:^|[.\s_\-[(])hdr(?:10)?(?:$|[.\s_\-\])])/i;
+      HLG = /(?:^|[.\s_\-[(])hlg(?:$|[.\s_\-\])])/i;
+      ATMOS = /\batmos\b/i;
+      TRUEHD = /true[.\s_-]?hd/i;
+      DTS_X = /dts[.\s_:-]?x(?:$|[.\s_\-\])])/i;
+      DTS_HD_MA = /dts[.\s_-]?hd[.\s_-]?ma|\bdtsma\b/i;
+      DTS_HD = /dts[.\s_-]?hd/i;
+      DTS = /(?:^|[.\s_\-[(])dts(?:$|[.\s_\-\])\d])/i;
+      DDP = /(?:^|[.\s_\-[(])(?:ddp|dd\+|e-?ac-?3)|dolby[.\s_-]?digital[.\s_-]?plus/i;
+      DD = /(?:^|[.\s_\-[(])(?:dd|ac-?3)(?:$|[.\s_\-\])\d])|dolby[.\s_-]?digital/i;
+      AAC = /(?:^|[.\s_\-[(])aac/i;
+      FLAC = /(?:^|[.\s_\-[(])flac/i;
+      OPUS = /(?:^|[.\s_\-[(])opus(?:$|[.\s_\-\])\d])/i;
+      CHANNELS = /(?<!\d|\d\.)([1-7])[.\s]([01])(?!\d|\.\d)/;
+      CHIP_PRIORITY = {
+        resolution: 1,
+        language: 2,
+        hdr: 3,
+        audio: 4,
+        source: 5
+      };
+      UNKNOWN_LANGUAGES = /* @__PURE__ */ new Set(["und", "unk", "unknown", "mul", "zxx", "mis", "qaa", "none"]);
+      COMMENTARY = /comment|kommentar/i;
+      finitePositive = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+    }
+  });
+
+  // lib/tv-shell/hero-text.ts
+  function tvHeroRatingFromImdb(raw) {
+    if (!raw) return null;
+    const value = Number.parseFloat(String(raw).replace(",", "."));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+  var init_hero_text = __esm({
+    "lib/tv-shell/hero-text.ts"() {
+    }
+  });
+
+  // lib/player-title-meta.ts
+  function keyOf(kind, tmdbId) {
+    return `${kind}:${tmdbId}`;
+  }
+  function fromItem(item) {
+    return {
+      genres: Array.isArray(item.genres) ? item.genres.filter((g) => typeof g === "string" && g.trim()) : [],
+      runtimeMinutes: typeof item.runtimeMinutes === "number" && item.runtimeMinutes > 0 ? item.runtimeMinutes : null,
+      imdbRating: tvHeroRatingFromImdb(item.ratings?.imdb),
+      tmdbRating: item.discoveryScore != null && item.discoveryScore > 0 ? item.discoveryScore : null,
+      imdbId: item.imdbId ?? null
+    };
+  }
+  function rememberPlayerTitleMeta(kind, tmdbId, item) {
+    if (kind !== "movie" && kind !== "tv" || tmdbId == null || tmdbId === "" || !item) return;
+    const key = keyOf(kind, String(tmdbId));
+    const next = fromItem(item);
+    const prev = registry.get(key);
+    registry.delete(key);
+    registry.set(key, {
+      genres: next.genres.length > 0 ? next.genres : prev?.genres ?? [],
+      runtimeMinutes: next.runtimeMinutes ?? prev?.runtimeMinutes ?? null,
+      imdbRating: next.imdbRating ?? prev?.imdbRating ?? null,
+      tmdbRating: next.tmdbRating ?? prev?.tmdbRating ?? null,
+      imdbId: next.imdbId ?? prev?.imdbId ?? null
+    });
+    while (registry.size > MAX_ENTRIES2) {
+      const oldest = registry.keys().next().value;
+      if (oldest === void 0) break;
+      registry.delete(oldest);
+    }
+  }
+  function mappedTmdbId(kind, imdbId) {
+    if (kind !== "movie" && kind !== "tv" || !imdbId) return null;
+    return imdbToTmdb.get(`${kind}:${imdbId}`) ?? null;
+  }
+  function getRemembered(kind, tmdbId) {
+    if (kind !== "movie" && kind !== "tv" || !tmdbId) return null;
+    return registry.get(keyOf(kind, tmdbId)) ?? null;
+  }
+  function resolveCachedPlayerTitleMeta(input) {
+    const { kind } = input;
+    const tmdbId = input.tmdbId || mappedTmdbId(kind, input.imdbId);
+    let meta = getRemembered(kind, tmdbId);
+    if (!meta && input.includeStored && (kind === "movie" || kind === "tv") && tmdbId) {
+      try {
+        const stored = getCachedWatchlistItems([{ tmdbId, type: kind }])[tmdbId];
+        if (stored) meta = fromItem(stored);
+      } catch {
+      }
+    }
+    const imdbId = input.imdbId || meta?.imdbId || null;
+    const mdblist = imdbId ? getCachedMdblistRatings(imdbId) ?? null : null;
+    if (!meta && !mdblist) return null;
+    return {
+      genres: meta?.genres ?? [],
+      runtimeMinutes: meta?.runtimeMinutes ?? null,
+      imdbRating: mdblist?.imdbRating ?? meta?.imdbRating ?? null,
+      tmdbRating: meta?.tmdbRating ?? null,
+      imdbId,
+      mdblist
+    };
+  }
+  function onPlayerTitleMetaUpdated(listener) {
+    listeners5.add(listener);
+    return () => {
+      listeners5.delete(listener);
+    };
+  }
+  function needsItem(entry) {
+    return !entry || entry.genres.length === 0 || entry.imdbRating == null && entry.tmdbRating == null || entry.runtimeMinutes == null;
+  }
+  function schedulePlayerTitleMetaFetch(input, onUpdate, overrides = {}) {
+    const deps2 = { ...defaultDeps, ...overrides };
+    const { kind, playbackStarted } = input;
+    if (!playbackStarted || kind !== "movie" && kind !== "tv") return () => {
+    };
+    const givenTmdbId = input.tmdbId ? String(input.tmdbId) : null;
+    const titleKey = givenTmdbId ? keyOf(kind, givenTmdbId) : input.imdbId ? `${kind}:imdb:${input.imdbId}` : null;
+    if (!titleKey || attempted.has(titleKey)) return () => {
+    };
+    const knownTmdbId = givenTmdbId || mappedTmdbId(kind, input.imdbId);
+    const needsFind = !knownTmdbId && Boolean(input.imdbId);
+    const wantsItem = needsFind || Boolean(knownTmdbId) && needsItem(registry.get(keyOf(kind, knownTmdbId)) ?? null);
+    const knownImdb = input.imdbId || (knownTmdbId ? registry.get(keyOf(kind, knownTmdbId))?.imdbId : null) || null;
+    const wantsRatings = deps2.mdblistEnabled() && (!knownImdb || deps2.cachedRatings(knownImdb) === void 0);
+    if (!wantsItem && !(wantsRatings && (knownImdb || knownTmdbId))) return () => {
+    };
+    let cancelled = false;
+    let timer4 = null;
+    let cancelIdle = null;
+    const run2 = async (isRetry) => {
+      if (cancelled) return;
+      let networkError = false;
+      let changed = false;
+      let imdbId = knownImdb;
+      let tmdbId = knownTmdbId || mappedTmdbId(kind, input.imdbId);
+      if (wantsItem && !tmdbId && input.imdbId) {
+        try {
+          const found = await deps2.findTmdbId(input.imdbId, kind);
+          if (found) {
+            imdbToTmdb.set(`${kind}:${input.imdbId}`, found);
+            tmdbId = found;
+          }
+        } catch {
+          networkError = true;
+        }
+      }
+      if (cancelled) return;
+      if (wantsItem && tmdbId) {
+        try {
+          const item = await deps2.fetchItem(kind, tmdbId);
+          if (item) {
+            rememberPlayerTitleMeta(kind, tmdbId, item);
+            imdbId = imdbId || item.imdbId || null;
+            changed = true;
+          }
+        } catch {
+          networkError = true;
+        }
+      }
+      if (deps2.mdblistEnabled() && imdbId && deps2.cachedRatings(imdbId) === void 0) {
+        const ratings = await deps2.fetchRatings(imdbId, kind).catch(() => null);
+        if (ratings) changed = true;
+        else if (deps2.cachedRatings(imdbId) === void 0) networkError = true;
+      }
+      if (cancelled) return;
+      if (changed) {
+        onUpdate();
+        for (const listener of [...listeners5]) listener();
+      }
+      if (networkError && !isRetry) {
+        timer4 = deps2.setTimeout(() => schedule3(true), PLAYER_META_RETRY_DELAY_MS);
+      }
+    };
+    const schedule3 = (isRetry) => {
+      if (cancelled) return;
+      cancelIdle = deps2.idle(() => {
+        void run2(isRetry);
+      });
+    };
+    timer4 = deps2.setTimeout(() => {
+      if (cancelled) return;
+      attempted.add(titleKey);
+      schedule3(false);
+    }, PLAYER_META_FETCH_DELAY_MS);
+    return () => {
+      cancelled = true;
+      if (timer4 !== null) deps2.clearTimeout(timer4);
+      cancelIdle?.();
+    };
+  }
+  var registry, MAX_ENTRIES2, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners5;
+  var init_player_title_meta = __esm({
+    "lib/player-title-meta.ts"() {
+      init_api_json_cache();
+      init_rating_sources();
+      init_hero_text();
+      init_watchlist_item_cache();
+      registry = /* @__PURE__ */ new Map();
+      MAX_ENTRIES2 = 200;
+      imdbToTmdb = /* @__PURE__ */ new Map();
+      PLAYER_META_FETCH_DELAY_MS = 5e3;
+      PLAYER_META_RETRY_DELAY_MS = 6e4;
+      defaultDeps = {
+        fetchItem: async (kind, tmdbId) => {
+          const data = await fetchApiJsonCached(
+            `/api/item?tmdbId=${encodeURIComponent(tmdbId)}&type=${kind}`,
+            // Låg prioritet: allt annat i kön (rader, strömmar) går först.
+            { timeoutMs: 8e3, retries: 0, ttlMs: 30 * 6e4, priority: "low" }
+          );
+          return data?.item ?? null;
+        },
+        findTmdbId: async (imdbId, kind) => {
+          try {
+            const data = await fetchApiJsonCached(
+              `/api/tmdb/find?imdb=${encodeURIComponent(imdbId)}&type=${kind}`,
+              { timeoutMs: 8e3, retries: 0, ttlMs: 30 * 6e4, priority: "low", cacheErrors: false }
+            );
+            if (data?.tmdbId == null || data.tmdbId === "" || data.type && data.type !== kind) return null;
+            return String(data.tmdbId);
+          } catch (error) {
+            if (error instanceof Error && /^HTTP_4\d\d$/.test(error.message)) return null;
+            throw error;
+          }
+        },
+        fetchRatings: (imdbId, kind) => fetchMdblistRatings(imdbId, kind),
+        mdblistEnabled: () => getMdblistEnabled(),
+        cachedRatings: (imdbId) => getCachedMdblistRatings(imdbId),
+        setTimeout: (fn, ms2) => globalThis.setTimeout(fn, ms2),
+        clearTimeout: (handle) => globalThis.clearTimeout(handle),
+        idle: (fn) => {
+          const w = typeof window !== "undefined" ? window : null;
+          if (w && typeof w.requestIdleCallback === "function") {
+            const handle2 = w.requestIdleCallback(fn, { timeout: 5e3 });
+            return () => {
+              if (typeof w.cancelIdleCallback === "function") w.cancelIdleCallback(handle2);
+            };
+          }
+          const handle = globalThis.setTimeout(fn, 0);
+          return () => globalThis.clearTimeout(handle);
+        }
+      };
+      attempted = /* @__PURE__ */ new Set();
+      listeners5 = /* @__PURE__ */ new Set();
+    }
+  });
+
+  // components/player/player-title-block.tsx
+  function usePlayerTitleMeta(source, playbackStarted) {
+    const { kind, tmdbId, imdbId } = source;
+    const [meta, setMeta] = useState(() => resolveCachedPlayerTitleMeta({ kind, tmdbId, imdbId }));
+    const refresh2 = useCallback(() => {
+      setMeta(resolveCachedPlayerTitleMeta({ kind, tmdbId, imdbId, includeStored: true }));
+    }, [kind, tmdbId, imdbId]);
+    useEffect(() => {
+      refresh2();
+    }, [refresh2]);
+    useEffect(() => onPlayerTitleMetaUpdated(refresh2), [refresh2]);
+    useEffect(
+      () => schedulePlayerTitleMetaFetch({ kind, tmdbId, imdbId, playbackStarted }, refresh2),
+      [kind, tmdbId, imdbId, playbackStarted, refresh2]
+    );
+    return meta;
+  }
+  function DolbyGlyph() {
+    return /* @__PURE__ */ jsxs("svg", { "aria-hidden": true, className: "h-[0.8em] w-[1.2em] flex-none", viewBox: "0 0 24 16", fill: "currentColor", children: [
+      /* @__PURE__ */ jsx("path", { d: "M1 2h5a6 6 0 0 1 0 12H1z" }),
+      /* @__PURE__ */ jsx("path", { d: "M23 2h-5a6 6 0 0 0 0 12h5z" })
+    ] });
+  }
+  function SpeakerGlyph() {
+    return /* @__PURE__ */ jsxs("svg", { "aria-hidden": true, className: "h-[1.05em] w-[1.05em] flex-none", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+      /* @__PURE__ */ jsx("path", { d: "M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z", fill: "currentColor" }),
+      /* @__PURE__ */ jsx("path", { d: "M15.5 9a4 4 0 0 1 0 6" }),
+      /* @__PURE__ */ jsx("path", { d: "M18.5 6.5a7.5 7.5 0 0 1 0 11" })
+    ] });
+  }
+  function ChipIcon({ icon }) {
+    return icon === "dolby" ? /* @__PURE__ */ jsx(DolbyGlyph, {}) : /* @__PURE__ */ jsx(SpeakerGlyph, {});
+  }
+  function ChipContent({ chip }) {
+    return /* @__PURE__ */ jsx(Fragment2, { children: chip.parts.map((part, index) => /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-[0.35em]", children: [
+      index > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "opacity-60", children: "\xB7" }) : null,
+      part.icon ? /* @__PURE__ */ jsx(ChipIcon, { icon: part.icon }) : null,
+      part.text
+    ] }, `${index}-${part.text}`)) });
+  }
+  function TitleChipRow({ chips, maxLines, className }) {
+    const rowRef = useRef(null);
+    const [width, setWidth] = useState(0);
+    const signature = `${chips.map(titleChipText).join("|")}@${maxLines}@${width}`;
+    const [dropState, setDropState] = useState({ signature, drop: 0 });
+    const drop = dropState.signature === signature ? dropState.drop : 0;
+    const visible = dropLowestPriorityChips(chips, drop);
+    useEffect(() => {
+      const row = rowRef.current;
+      if (!row || typeof ResizeObserver === "undefined") return void 0;
+      const observer = new ResizeObserver(() => setWidth(Math.round(row.clientWidth)));
+      observer.observe(row);
+      return () => observer.disconnect();
+    }, []);
+    useIsomorphicLayoutEffect(() => {
+      const row = rowRef.current;
+      if (!row || visible.length <= 1) return;
+      const tops = /* @__PURE__ */ new Set();
+      row.querySelectorAll("[data-chip]").forEach((el) => tops.add(Math.round(el.offsetTop)));
+      if (tops.size > maxLines) setDropState({ signature, drop: drop + 1 });
+    });
+    const format = visible.filter((chip) => chip.kind !== "language");
+    const language = visible.find((chip) => chip.kind === "language") ?? null;
+    return /* @__PURE__ */ jsxs("div", { ref: rowRef, className: `vp-title-block-badges ${className} flex flex-wrap items-center gap-1.5`, children: [
+      format.map((chip) => /* @__PURE__ */ jsx("span", { "data-chip": chip.kind, className: FORMAT_CHIP_CLASS, children: /* @__PURE__ */ jsx(ChipContent, { chip }) }, chip.kind)),
+      language ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        format.length > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "vp-title-block-divider mx-0.5 h-[1.1em] w-px flex-none self-center bg-white/25" }) : null,
+        /* @__PURE__ */ jsx("span", { "data-chip": "language", className: LANGUAGE_CHIP_CLASS, children: /* @__PURE__ */ jsx(ChipContent, { chip: language }) })
+      ] }) : null
+    ] });
+  }
+  function PlayerTitleBlock({ title, chips, year, metaSource, playbackStarted, size, className = "", blockRef }) {
+    const { t } = useLang();
+    const data = usePlayerTitleMeta(metaSource, playbackStarted);
+    const ratings = playerTitleRatings({
+      mdblist: data?.mdblist,
+      imdb: data?.imdbRating,
+      tmdb: data?.tmdbRating,
+      max: size === "portrait" ? 2 : size === "landscape" ? 3 : void 0
+    });
+    const maxGenres = size === "portrait" ? ratings.length <= 1 ? 2 : 0 : size === "landscape" ? 2 : 3;
+    const meta = playerTitleMeta({ year, runtimeMinutes: data?.runtimeMinutes, ratings, genres: data?.genres, maxGenres });
+    const segments = [];
+    if (meta.year) segments.push(/* @__PURE__ */ jsx("span", { className: "flex-none font-medium text-white", children: meta.year }, "year"));
+    if (meta.runtimeMinutes) {
+      segments.push(
+        /* @__PURE__ */ jsx("span", { className: "flex-none text-slate-300", children: t("dtMinutesShort").replace("{n}", String(meta.runtimeMinutes)) }, "runtime")
+      );
+    }
+    for (const rating of meta.ratings) {
+      segments.push(/* @__PURE__ */ jsx("span", { className: "flex flex-none items-center text-white", children: /* @__PURE__ */ jsx(RatingBadge, { source: rating.source, value: rating.value, variant: "compact" }) }, rating.source));
+    }
+    if (meta.genres.length > 0) {
+      segments.push(/* @__PURE__ */ jsx("span", { className: "min-w-0 truncate text-slate-300", children: meta.genres.join(" \xB7 ") }, "genres"));
+    }
+    const titleClass = size === "desktop" ? "text-2xl line-clamp-2" : size === "landscape" ? "text-lg line-clamp-1" : "text-xl line-clamp-2 [@media(max-height:640px)]:line-clamp-1";
+    const gapClass = size === "landscape" ? "mt-1" : "mt-2";
+    return /* @__PURE__ */ jsxs("div", { ref: blockRef, className: `vp-title-block vp-title-block-${size} min-w-0 ${className}`, children: [
+      /* @__PURE__ */ jsx(
+        "h2",
+        {
+          className: `vp-title-block-title break-words font-bold leading-tight text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.65)] ${titleClass}`,
+          children: title
+        }
+      ),
+      chips.length > 0 ? (
+        // Liggande telefon: en rad brickor; annars högst två.
+        /* @__PURE__ */ jsx(TitleChipRow, { chips, maxLines: size === "landscape" ? 1 : 2, className: gapClass })
+      ) : null,
+      segments.length > 0 ? /* @__PURE__ */ jsx(
+        "p",
+        {
+          className: `vp-title-block-meta ${size === "landscape" ? "mt-0.5" : "mt-1.5"} flex min-w-0 items-center gap-x-2 overflow-hidden whitespace-nowrap text-sm [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]`,
+          children: segments.flatMap((segment, index) => index === 0 ? [segment] : [/* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "flex-none text-white/30", children: "\xB7" }, `sep-${index}`), segment])
+        }
+      ) : null
+    ] });
+  }
+  var useIsomorphicLayoutEffect, CHIP_CLASS, FORMAT_CHIP_CLASS, LANGUAGE_CHIP_CLASS;
+  var init_player_title_block2 = __esm({
+    "components/player/player-title-block.tsx"() {
+      "use client";
+      init_react_shim();
+      init_details_meta_row();
+      init_i18n();
+      init_player_title_block();
+      init_player_title_meta();
+      init_jsx_runtime_shim();
+      useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+      CHIP_CLASS = "vp-chip inline-flex items-center gap-[0.35em] whitespace-nowrap rounded-md border px-2 py-0.5 text-xs leading-snug";
+      FORMAT_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.2] bg-black/35 font-semibold text-slate-100`;
+      LANGUAGE_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.14] bg-black/25 font-medium text-slate-300`;
+    }
+  });
+
+  // lib/android-media-keys.ts
+  function onMediaKey(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = (event2) => {
+      const detail = event2.detail;
+      if (detail?.action) listener(detail.action);
+    };
+    listeners6 += 1;
+    window.addEventListener(EVENT12, handler);
+    return () => {
+      listeners6 -= 1;
+      window.removeEventListener(EVENT12, handler);
+    };
+  }
+  var EVENT12, listeners6;
+  var init_android_media_keys = __esm({
+    "lib/android-media-keys.ts"() {
+      "use client";
+      init_key_hold();
+      EVENT12 = "lumio-media-key";
+      listeners6 = 0;
     }
   });
 
@@ -22154,28 +23005,28 @@
   async function lookupCoreStreams(target2, options = {}) {
     if (framedLibraryScopeActive()) return { streams: [], reports: [] };
     const key = memoKey(target2);
-    const replay = (result) => {
+    const replay = (result2) => {
       if (options.onSource) {
         const bySource = /* @__PURE__ */ new Map();
-        for (const stream of result.streams) {
+        for (const stream of result2.streams) {
           const name = stream.source ?? "";
           bySource.set(name, [...bySource.get(name) ?? [], stream]);
         }
-        for (const report of result.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
+        for (const report of result2.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
       }
-      return result;
+      return result2;
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
     const pending5 = inflight5.get(key);
     if (pending5) return pending5.then(replay);
-    const run2 = lookupCoreStreamsUncached(target2, options).then((result) => {
-      const answered2 = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
-      const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
+    const run2 = lookupCoreStreamsUncached(target2, options).then((result2) => {
+      const answered2 = result2.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
+      const framedSkip = result2.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
       if (answered2 && !framedSkip) {
-        memo2.set(key, { at: Date.now(), result });
+        memo2.set(key, { at: Date.now(), result: result2 });
       }
-      return result;
+      return result2;
     }).finally(() => inflight5.delete(key));
     inflight5.set(key, run2);
     return run2;
@@ -23068,24 +23919,24 @@
       again = true;
       return;
     }
-    if (listeners6.size === 0) return;
+    if (listeners7.size === 0) return;
     inFlight = true;
     latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
     inFlight = false;
-    listeners6.forEach((l) => l(latest));
+    listeners7.forEach((l) => l(latest));
     if (again) {
       again = false;
       void tick();
       return;
     }
-    if (listeners6.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
+    if (listeners7.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
-    listeners6.add(listener);
+    listeners7.add(listener);
     listener(latest);
     if (!timer2 && !inFlight) void tick();
     return () => {
-      listeners6.delete(listener);
+      listeners7.delete(listener);
     };
   }
   function useHapticsHostStatus() {
@@ -23093,7 +23944,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners6, timer2, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners7, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -23103,7 +23954,7 @@
       POLL_MS = 1e3;
       unsupportedReason = null;
       lastSent = "";
-      listeners6 = /* @__PURE__ */ new Set();
+      listeners7 = /* @__PURE__ */ new Set();
       timer2 = null;
       latest = null;
       inFlight = false;
@@ -23133,20 +23984,20 @@
     const preset = getDownloadDir();
     if (preset) return preset;
     if (isAndroidTauriEnv) {
-      return await (0, import_core3.invoke)("default_download_dir");
+      return await (0, import_core4.invoke)("default_download_dir");
     }
     if (isTauriEnv) {
-      const picked = await (0, import_core3.invoke)("pick_folder");
-      return picked ?? await (0, import_core3.invoke)("default_download_dir");
+      const picked = await (0, import_core4.invoke)("pick_folder");
+      return picked ?? await (0, import_core4.invoke)("default_download_dir");
     }
     const response = await fetch("/api/pick-folder", { method: "POST" });
     if (!response.ok) throw new Error("Folder picker failed");
     return (await response.json()).path;
   }
-  var import_core3;
+  var import_core4;
   var init_download_target = __esm({
     "lib/download-target.ts"() {
-      import_core3 = __toESM(require_core());
+      import_core4 = __toESM(require_core());
       init_tauri_mpv();
       init_tauri_native_player();
       init_playback_settings();
@@ -24299,7 +25150,7 @@
     const isTv = useTvMode();
     const closeRef = useRef(null);
     const [state2, setState] = useState("loading");
-    const [result, setResult] = useState(null);
+    const [result2, setResult] = useState(null);
     const [errorKind, setErrorKind] = useState(null);
     useEffect(() => {
       setState("loading");
@@ -24401,13 +25252,13 @@
               t("soundtrackLoadError"),
               errorKind === "timeout" ? " (timeout)" : ""
             ] }),
-            state2 === "fallback" && result && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
+            state2 === "fallback" && result2 && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
               /* @__PURE__ */ jsx("svg", { className: "h-10 w-10 text-green-400", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" }) }),
               /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("noSoundtrackFound") }),
               /* @__PURE__ */ jsxs(
                 "a",
                 {
-                  href: result.fallbackUrl,
+                  href: result2.fallbackUrl,
                   target: "_blank",
                   rel: "noopener noreferrer",
                   ...isTv ? { "data-f": "" } : {},
@@ -24419,7 +25270,7 @@
                 }
               )
             ] }),
-            state2 === "embed" && result?.embedUrl && /**
+            state2 === "embed" && result2?.embedUrl && /**
              * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
              *
              * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
@@ -24434,15 +25285,15 @@
              */
             /* @__PURE__ */ jsxs("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr]", children: [
               /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center gap-3 border-b border-white/[0.06] px-4 py-3", children: [
-                result.coverUrl && /* @__PURE__ */ jsx("img", { src: result.coverUrl, alt: result.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
+                result2.coverUrl && /* @__PURE__ */ jsx("img", { src: result2.coverUrl, alt: result2.albumName ?? "", className: "h-10 w-10 rounded object-cover" }),
                 /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
-                  /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-medium text-white", children: result.albumName }),
-                  /* @__PURE__ */ jsx("p", { className: "truncate text-[11px] text-slate-500", children: result.artist })
+                  /* @__PURE__ */ jsx("p", { className: "truncate text-sm font-medium text-white", children: result2.albumName }),
+                  /* @__PURE__ */ jsx("p", { className: "truncate text-[11px] text-slate-500", children: result2.artist })
                 ] }),
-                result.spotifyUrl && /* @__PURE__ */ jsx(
+                result2.spotifyUrl && /* @__PURE__ */ jsx(
                   "a",
                   {
-                    href: result.spotifyUrl,
+                    href: result2.spotifyUrl,
                     target: "_blank",
                     rel: "noopener noreferrer",
                     ...isTv ? { "data-f": "" } : {},
@@ -24455,22 +25306,22 @@
               isTv ? /* @__PURE__ */ jsx("div", { ref: embedBoxRef, className: "relative min-h-0 min-w-0 overflow-hidden", children: /* @__PURE__ */ jsx(
                 "iframe",
                 {
-                  src: result.embedUrl,
+                  src: result2.embedUrl,
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
                   className: "h-full w-full min-h-0",
                   style: { border: "none", display: "block", ...embedZoomStyle },
-                  title: result.albumName ?? t("soundtrack")
+                  title: result2.albumName ?? t("soundtrack")
                 }
               ) }) : /* @__PURE__ */ jsx(
                 "iframe",
                 {
-                  src: result.embedUrl,
+                  src: result2.embedUrl,
                   allow: "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture",
                   loading: "lazy",
                   className: "h-full w-full min-h-0",
                   style: { border: "none", display: "block", ...embedZoomStyle },
-                  title: result.albumName ?? t("soundtrack")
+                  title: result2.albumName ?? t("soundtrack")
                 }
               )
             ] })
@@ -25015,32 +25866,32 @@
   async function invokeDesktop(command, payload) {
     if (!isPluginDesktopHost()) return null;
     tauriCore ?? (tauriCore = Promise.resolve().then(() => __toESM(require_core())));
-    const { invoke: invoke6 } = await tauriCore;
+    const { invoke: invoke7 } = await tauriCore;
     try {
-      if (payload) return await invoke6(command, payload);
-      return await invoke6(command);
+      if (payload) return await invoke7(command, payload);
+      return await invoke7(command);
     } catch {
       return null;
     }
   }
   async function beginPlaybackSession(payload) {
-    const result = await invokeDesktop("playback_session_begin", { payload });
-    const sessionId = result?.sessionId;
+    const result2 = await invokeDesktop("playback_session_begin", { payload });
+    const sessionId = result2?.sessionId;
     return typeof sessionId === "number" && Number.isFinite(sessionId) ? sessionId : null;
   }
   async function markPlaybackSessionPlaying(sessionId) {
     if (!Number.isFinite(sessionId)) return false;
-    const result = await invokeDesktop("playback_session_mark_playing", {
+    const result2 = await invokeDesktop("playback_session_mark_playing", {
       payload: { sessionId }
     });
-    return Boolean(result);
+    return Boolean(result2);
   }
   async function tryClosePlaybackSession(sessionId, reason) {
     if (!Number.isFinite(sessionId)) return false;
-    const result = await invokeDesktop("playback_session_try_close", {
+    const result2 = await invokeDesktop("playback_session_try_close", {
       payload: { sessionId, reason }
     });
-    return Boolean(result?.closed);
+    return Boolean(result2?.closed);
   }
   var tauriCore;
   var init_playback_session_client = __esm({
@@ -25211,9 +26062,9 @@
   });
 
   // components/player/credits-recommendations.tsx
-  function formatRemaining(seconds) {
-    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-    const total = Math.round(seconds);
+  function formatRemaining(seconds2) {
+    if (!Number.isFinite(seconds2) || seconds2 <= 0) return "0:00";
+    const total = Math.round(seconds2);
     const minutes = Math.floor(total / 60);
     const rest = total % 60;
     return `${minutes}:${String(rest).padStart(2, "0")}`;
@@ -25652,8 +26503,8 @@
     if (typeof window === "undefined") return;
     try {
       const keys2 = Object.keys(store2);
-      if (keys2.length > MAX_ENTRIES2) {
-        keys2.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES2).forEach((key) => {
+      if (keys2.length > MAX_ENTRIES3) {
+        keys2.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES3).forEach((key) => {
           delete store2[key];
         });
       }
@@ -25697,12 +26548,12 @@
     }
     writeStore(store2);
   }
-  var STORAGE_KEY3, MAX_ENTRIES2;
+  var STORAGE_KEY3, MAX_ENTRIES3;
   var init_subtitle_delay_store = __esm({
     "lib/subtitle-delay-store.ts"() {
       init_profile_storage_shim();
       STORAGE_KEY3 = "lumio_subtitle_delays_v1";
-      MAX_ENTRIES2 = 400;
+      MAX_ENTRIES3 = 400;
     }
   });
 
@@ -25831,10 +26682,19 @@
     return TRANSIENT_REASONS.has(r.reason) || r.reason.startsWith("http_");
   }
   function isFinalOutcome(r) {
-    if (r.status === "reference_pending") return false;
+    if (r.status === "reference_pending" || r.status === "ambiguous") return false;
     if (isTransientNoFit(r)) return false;
     if ((r.status === "synced" || r.status === "already_synced") && r.provisional) return false;
     return true;
+  }
+  function isAboutSelected(r, selectedId) {
+    return !r.subtitleId || r.subtitleId === selectedId;
+  }
+  function ledgerMarks(r, selectedId, appliedVtt, switchedTo) {
+    if (!isFinalOutcome(r)) return [];
+    if (!isAboutSelected(r, selectedId)) return switchedTo !== null && switchedTo === r.subtitleId ? [selectedId, switchedTo] : [];
+    if (r.status === "synced") return r.vttUrl !== void 0 && appliedVtt === r.vttUrl ? [selectedId] : [];
+    return [selectedId];
   }
   function withdrawsProvisional(r, applied) {
     return applied && r.status === "no_fit" && WITHDRAW_REASONS.has(r.reason ?? "");
@@ -26054,15 +26914,15 @@ ${effectiveName(url, id)}`;
     const next = Math.max(0, ...Object.values(store2)) + 1;
     store2[key] = next;
     const keys2 = Object.keys(store2).sort((a, b) => store2[a] - store2[b]);
-    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES3))) delete store2[k];
+    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES4))) delete store2[k];
     setScopedStorageItem(STORAGE_KEY4, JSON.stringify(store2));
   }
-  var STORAGE_KEY4, MAX_ENTRIES3;
+  var STORAGE_KEY4, MAX_ENTRIES4;
   var init_opt_out = __esm({
     "lib/subtitle-sync/opt-out.ts"() {
       init_profile_storage_shim();
       STORAGE_KEY4 = "lumio_subtitle_autosync_optout_v1";
-      MAX_ENTRIES3 = 200;
+      MAX_ENTRIES4 = 200;
     }
   });
 
@@ -26128,6 +26988,34 @@ ${effectiveName(url, id)}`;
     if (path) parts2.push(`v\xE4g=${path}`);
     return parts2.join(" ");
   }
+  function clock(ms2) {
+    const s = Math.max(0, Math.round(ms2 / 1e3));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+  function seconds(ms2) {
+    return `${ms2 >= 0 ? "+" : "\u2212"}${(Math.abs(ms2) / 1e3).toFixed(2).replace(".", ",")} s`;
+  }
+  function describeApplied(r) {
+    const segs = r.transformSegments ?? [];
+    if (segs.length <= 1 && !segs.some((x) => x.offsetMs === 0 && x.scale === 1)) return `offset=${r.correctionMs ?? 0}ms`;
+    const film = (sub, x) => sub * x.scale + x.offsetMs;
+    const spans = [];
+    let original = false;
+    segs.forEach((x, i) => {
+      if (x.offsetMs === 0 && x.scale === 1) {
+        original = true;
+        return;
+      }
+      const next = segs[i + 1];
+      const from = x.fromMs === void 0 ? null : clock(film(x.fromMs, x));
+      const to = next?.fromMs === void 0 ? null : clock(film(next.fromMs, next));
+      const span = from === null && to === null ? "allt" : `${from ?? "b\xF6rjan"}\u2013${to ?? "slutet"}`;
+      const scale = x.scale !== 1 ? ` \xD7${x.scale.toFixed(5)}` : "";
+      spans.push(`${span} ${seconds(x.offsetMs)}${scale}`);
+    });
+    if (spans.length === 0) return "originaltid \xF6verallt";
+    return `${spans.join(", ")}${original ? ", resten originaltid" : ""}`;
+  }
   function logSubsyncClient(line2) {
     if (typeof fetch !== "function") return;
     try {
@@ -26156,6 +27044,7 @@ ${effectiveName(url, id)}`;
     const ledgerRef = useRef(createAttemptLedger());
     const inFlightRef = useRef(false);
     const loggedSkipRef = useRef(null);
+    const switchedRef = useRef(null);
     useEffect(() => {
       let on = getSubtitleAutoSync();
       return onPlaybackSettingsChanged(() => {
@@ -26206,7 +27095,8 @@ ${effectiveName(url, id)}`;
       };
     }, [args.selected?.id, args.mediaUrl]);
     useEffect(() => {
-      if (args.selectionToken === handledTokenRef.current) return;
+      const cont = switchedRef.current !== null && args.selected?.id === switchedRef.current.id ? switchedRef.current : null;
+      if (args.selectionToken === handledTokenRef.current && !cont) return;
       const a = latest2.current;
       const live2 = () => latest2.current;
       const sel2 = a.selected;
@@ -26249,13 +27139,14 @@ ${effectiveName(url, id)}`;
       }
       if (!sel2) return;
       handledTokenRef.current = args.selectionToken;
+      switchedRef.current = null;
       abortRef.current?.abort();
       const controller2 = new AbortController();
       abortRef.current = controller2;
       const token = guardRef.current.begin();
       const current4 = () => guardRef.current.isCurrent(token) && !controller2.signal.aborted;
       const valid = () => isRunValid({ current: current4(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel2.id) });
-      inFlightRef.current = true;
+      inFlightRef.current = !cont;
       let dropLogged = false;
       const drop = () => {
         if (!dropLogged) {
@@ -26268,27 +27159,33 @@ ${effectiveName(url, id)}`;
           live2().setStatus({ type: "idle" });
         }
       };
-      let applied = null;
+      let applied = cont?.vtt ?? null;
       let restored = false;
-      const markIfFinal = (r) => {
-        if (!isFinalOutcome(r)) return;
-        ledgerRef.current.mark(a.mediaUrl, sel2.id);
-        if (r.subtitleId && r.subtitleId !== sel2.id) ledgerRef.current.mark(a.mediaUrl, r.subtitleId);
+      let switched = null;
+      const markFinal = (r) => {
+        for (const id of ledgerMarks(r, sel2.id, applied, switched)) ledgerRef.current.mark(a.mediaUrl, id);
+      };
+      const waitReady = async () => await waitForPlayerReady(() => live2().isPlayerReady?.() ?? true, controller2.signal) && valid();
+      const undoAction = (other) => () => {
+        if (other) setAutoSyncOptOut(key, other.id);
+        setAutoSyncOptOut(key, sel2.id);
+        logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel2.id)} fil=${file}`);
+        controller2.abort();
+        void live2().restoreOriginal(sel2, { undo: true });
       };
       const applyResult = async (r, refined) => {
-        if (r.status !== "synced" || !r.vttUrl) return false;
+        if (r.status !== "synced" || !r.vttUrl || !isAboutSelected(r, sel2.id)) return false;
         if (!valid()) {
           drop();
           return true;
         }
         const l = live2();
-        const sub = l.options.find((o) => o.id === r.subtitleId) ?? sel2;
         inFlightRef.current = false;
         const vttUrl = r.vttUrl;
         const done = await applyWithRetry(
-          () => live2().applySynced(sub, vttUrl),
-          async () => await waitForPlayerReady(() => live2().isPlayerReady?.() ?? true, controller2.signal) && valid(),
-          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sub.id)} fil=${file}`)
+          () => live2().applySynced(sel2, vttUrl),
+          waitReady,
+          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sel2.id)} fil=${file}`)
         );
         if (!done) {
           inFlightRef.current = true;
@@ -26298,24 +27195,57 @@ ${effectiveName(url, id)}`;
         applied = r.vttUrl;
         const path = pathLabel(r.path);
         const late = playedSoFar > 0 ? ` efter ${Math.round(playedSoFar)}s spelat` : "";
-        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad offset=${r.correctionMs ?? 0}ms undertext=${subLabel(sub.id)}${sub.id !== sel2.id ? ` (utbytt fr\xE5n ${subLabel(sel2.id)})` : ""}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel2.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
         const offset = formatCorrection(r.correctionMs ?? 0);
         if (refined) {
           l.setStatus({ type: "done", message: l.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
           return true;
         }
-        const message = sub.id !== sel2.id ? l.t("subtitleAutoSyncSwapped") : l.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
-        l.showNotice({
-          message,
-          actionLabel: l.t("subtitleAutoSyncUndo"),
-          onAction: () => {
-            setAutoSyncOptOut(key, sub.id);
-            setAutoSyncOptOut(key, sel2.id);
-            logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel2.id)} fil=${file}`);
-            controller2.abort();
-            void live2().restoreOriginal(sel2, { undo: true });
+        const message = l.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
+        l.showNotice({ message, actionLabel: l.t("subtitleAutoSyncUndo"), onAction: undoAction(null) });
+        l.setStatus({ type: "done", message });
+        return true;
+      };
+      const switchTo = async (r) => {
+        const l = live2();
+        const other = l.options.find((o) => o.id === r.subtitleId) ?? null;
+        const usable = r.status === "already_synced" || r.status === "synced" && !!r.vttUrl;
+        if (!other || !usable) {
+          logSubsyncClient(`${CLIENT_PREFIX} svar om en annan undertext (${subLabel(r.subtitleId ?? "-")}, ${r.status}) utan byte: g\xE4ller inte den valda undertext=${subLabel(sel2.id)} fil=${file}`);
+          return false;
+        }
+        if (!valid()) {
+          drop();
+          return true;
+        }
+        inFlightRef.current = false;
+        const final = isFinalOutcome(r);
+        switched = other.id;
+        if (r.status === "synced" && r.vttUrl) {
+          const vttUrl = r.vttUrl;
+          if (!final) switchedRef.current = { id: other.id, vtt: vttUrl };
+          const done = await applyWithRetry(
+            () => live2().applySynced(other, vttUrl),
+            waitReady,
+            () => logSubsyncClient(`${CLIENT_PREFIX} byte misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(other.id)} fil=${file}`)
+          );
+          if (!done) {
+            switched = null;
+            switchedRef.current = null;
+            inFlightRef.current = true;
+            drop();
+            return true;
           }
-        });
+          applied = vttUrl;
+          markFinal(r);
+        } else {
+          applied = null;
+          markFinal(r);
+          await live2().restoreOriginal(other);
+        }
+        logSubsyncClient(`${CLIENT_PREFIX} bytte till ${subLabel(other.id)} (${r.status}${r.provisional ? " provisoriskt" : ""}${pathLabel(r.path) ? ` v\xE4g=${pathLabel(r.path)}` : ""}) fr\xE5n ${subLabel(sel2.id)}: den valda gick inte att synka fil=${file}`);
+        const message = l.t("subtitleAutoSyncSwapped");
+        l.showNotice({ message, actionLabel: l.t("subtitleAutoSyncUndo"), onAction: undoAction(other) });
         l.setStatus({ type: "done", message });
         return true;
       };
@@ -26327,11 +27257,11 @@ ${effectiveName(url, id)}`;
         if (sel2 && r.status === "no_fit" && !isTransientNoFit(r)) l.onNoFit?.(sel2);
       };
       let playedSoFar = 0;
-      const waitPlayed = async (seconds) => {
+      const waitPlayed = async (seconds2) => {
         let played = 0;
         let last2 = live2().getPlayTime();
         let seek = { lastPos: last2, settle: null };
-        while (played < seconds) {
+        while (played < seconds2) {
           await new Promise((resolve) => {
             const id = setTimeout(done, 1e3);
             function done() {
@@ -26370,9 +27300,56 @@ ${effectiveName(url, id)}`;
       }) : () => {
       };
       controller2.signal.addEventListener("abort", stopWatch);
+      const handleSelected = async (r, final, wait) => {
+        if (r.otherEdit && !otherEditSeen && sel2.source !== "embedded") {
+          otherEditSeen = true;
+          logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel2.id)} fil=${file}`);
+          live2().onOtherEdit?.(sel2);
+        }
+        if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
+          logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel2.id)} fil=${file}`);
+        } else if (final && r.status === "reference_pending") {
+          logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel2.id)} fil=${file}`);
+        }
+        if (r.status === "reference_pending") {
+          if (applied === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
+          return;
+        }
+        if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
+          await applyResult(r, applied !== null);
+          return;
+        }
+        if (withdrawsProvisional(r, applied !== null)) {
+          if (!valid()) {
+            drop();
+            return;
+          }
+          applied = null;
+          restored = true;
+          inFlightRef.current = false;
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel2.id)} fil=${file}`);
+          await live2().restoreOriginal(sel2);
+          live2().clearNotice?.();
+          finish(r);
+          return;
+        }
+        if (r.status === "already_synced" && applied !== null) {
+          if (!valid()) {
+            drop();
+            return;
+          }
+          applied = null;
+          restored = true;
+          inFlightRef.current = false;
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel2.id)} fil=${file}`);
+          await live2().restoreOriginal(sel2);
+          live2().clearNotice?.();
+          live2().setStatus({ type: "done", message: live2().t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
+        }
+      };
       void (async () => {
         try {
-          a.setStatus({ type: "analyzing", message: a.t("subtitleAutoSyncChecking") });
+          if (!cont) a.setStatus({ type: "analyzing", message: a.t("subtitleAutoSyncChecking") });
           const last2 = await driveSync({
             request: () => {
               attempt += 1;
@@ -26392,52 +27369,12 @@ ${effectiveName(url, id)}`;
             onResult: async (r, final, wait) => {
               logSubsyncClient(describeResult(r, attempt));
               if (!current4()) return;
-              markIfFinal(r);
-              if (r.otherEdit && !otherEditSeen && sel2.source !== "embedded") {
-                otherEditSeen = true;
-                logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel2.id)} fil=${file}`);
-                live2().onOtherEdit?.(sel2);
-              }
-              if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
-                logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel2.id)} fil=${file}`);
-              } else if (final && r.status === "reference_pending") {
-                logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel2.id)} fil=${file}`);
-              }
-              if (r.status === "reference_pending") {
-                if (applied === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
+              if (!isAboutSelected(r, sel2.id)) {
+                if (switched === null) await switchTo(r);
                 return;
               }
-              if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
-                await applyResult(r, applied !== null);
-                return;
-              }
-              if (withdrawsProvisional(r, applied !== null)) {
-                if (!valid()) {
-                  drop();
-                  return;
-                }
-                applied = null;
-                restored = true;
-                inFlightRef.current = false;
-                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel2.id)} fil=${file}`);
-                await live2().restoreOriginal(sel2);
-                live2().clearNotice?.();
-                finish(r);
-                return;
-              }
-              if (r.status === "already_synced" && applied !== null) {
-                if (!valid()) {
-                  drop();
-                  return;
-                }
-                applied = null;
-                restored = true;
-                inFlightRef.current = false;
-                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel2.id)} fil=${file}`);
-                await live2().restoreOriginal(sel2);
-                live2().clearNotice?.();
-                live2().setStatus({ type: "done", message: live2().t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
-              }
+              await handleSelected(r, final, wait);
+              markFinal(r);
             }
           });
           if (!last2 || !current4()) return;
@@ -26447,8 +27384,14 @@ ${effectiveName(url, id)}`;
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller2.signal);
             logSubsyncClient(describeResult(v, "ljud"));
             if (!current4()) return;
-            markIfFinal(v);
-            if (await applyResult(v, false)) return;
+            if (!isAboutSelected(v, sel2.id)) {
+              if (await switchTo(v)) return;
+            } else if (await applyResult(v, false)) {
+              markFinal(v);
+              return;
+            } else {
+              markFinal(v);
+            }
             if (!valid()) {
               drop();
               return;
@@ -26456,7 +27399,7 @@ ${effectiveName(url, id)}`;
             finish(v);
             return;
           }
-          if (applied === null && !restored) finish(last2);
+          if (applied === null && !restored && switched === null) finish(last2);
         } catch (err) {
           if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel2.id)}`);
           drop();
@@ -26642,7 +27585,7 @@ ${effectiveName(url, id)}`;
   // lib/tauri-avplayer.ts
   async function avplayerPrepare(url, start3, sub) {
     if (!isTauriEnv) return { streamUrl: url, offset: 0 };
-    return (0, import_core4.invoke)("avplayer_prepare", {
+    return (0, import_core5.invoke)("avplayer_prepare", {
       url,
       start: start3 ?? null,
       subContent: sub?.subContent ?? null,
@@ -26653,18 +27596,18 @@ ${effectiveName(url, id)}`;
   }
   async function avplayerTeardown() {
     if (!isTauriEnv) return;
-    await (0, import_core4.invoke)("avplayer_teardown");
+    await (0, import_core5.invoke)("avplayer_teardown");
   }
   function airplayLog(msg) {
     if (!isTauriEnv) return;
-    void (0, import_core4.invoke)("lumio_debug_log", { msg: `airplay: ${msg}` }).catch(() => {
+    void (0, import_core5.invoke)("lumio_debug_log", { msg: `airplay: ${msg}` }).catch(() => {
     });
   }
-  var import_core4;
+  var import_core5;
   var init_tauri_avplayer = __esm({
     "lib/tauri-avplayer.ts"() {
       "use client";
-      import_core4 = __toESM(require_core());
+      import_core5 = __toESM(require_core());
       init_tauri_mpv();
     }
   });
@@ -26674,17 +27617,17 @@ ${effectiveName(url, id)}`;
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners7.add(listener);
+    listeners8.add(listener);
     return () => {
-      listeners7.delete(listener);
+      listeners8.delete(listener);
     };
   }
-  var session, listeners7;
+  var session, listeners8;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners7 = /* @__PURE__ */ new Set();
+      listeners8 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -27032,9 +27975,9 @@ ${effectiveName(url, id)}`;
       return null;
     }
     if (pending4.key !== key) return null;
-    const { seconds, endSeconds } = pending4;
+    const { seconds: seconds2, endSeconds } = pending4;
     pending4 = null;
-    return endSeconds != null ? { seconds, endSeconds } : { seconds };
+    return endSeconds != null ? { seconds: seconds2, endSeconds } : { seconds: seconds2 };
   }
   var pending4;
   var init_moment_link = __esm({
@@ -28393,8 +29336,8 @@ ${effectiveName(url, id)}`;
   async function saveCanvasPng(canvas2, name) {
     const blob = await canvasToBlob(canvas2);
     if (isTauriEnv) {
-      const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-      const path = await invoke6("save_png_file", { suggestedName: name, dataBase64: await blobToBase64(blob) });
+      const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+      const path = await invoke7("save_png_file", { suggestedName: name, dataBase64: await blobToBase64(blob) });
       return path ? "saved" : "cancelled";
     }
     const url = URL.createObjectURL(blob);
@@ -28419,8 +29362,8 @@ ${effectiveName(url, id)}`;
   async function shareCanvasPng(canvas2, name, title) {
     const blob = await canvasToBlob(canvas2);
     if (isAndroidTauriEnv) {
-      const result = await np({ cmd: "shareImage", data: await blobToBase64(blob), name, title });
-      if (!result?.ok) throw new Error(result?.error ?? "delning misslyckades");
+      const result2 = await np({ cmd: "shareImage", data: await blobToBase64(blob), name, title });
+      if (!result2?.ok) throw new Error(result2?.error ?? "delning misslyckades");
       return "shared";
     }
     const file = new File([blob], name, { type: "image/png" });
@@ -28475,8 +29418,8 @@ ${effectiveName(url, id)}`;
     return `${safe || "Klipp"}.${ext}`;
   }
   async function tauriInvoke(cmd, args) {
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    return invoke6(cmd, args);
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke7(cmd, args);
   }
   function downloadUrl(url, name) {
     const a = document.createElement("a");
@@ -28739,8 +29682,8 @@ ${effectiveName(url, id)}`;
     }
     return index;
   }
-  function formatChapterDuration(seconds, lang) {
-    const s = Math.max(0, Math.round(seconds));
+  function formatChapterDuration(seconds2, lang) {
+    const s = Math.max(0, Math.round(seconds2));
     const min = Math.floor(s / 60);
     const sek = s % 60;
     const enhetMin = "min";
@@ -28791,8 +29734,8 @@ ${effectiveName(url, id)}`;
     if (!titleKey) return [];
     return [...read9()[titleKey]?.t ?? []];
   }
-  function addMoment(titleKey, seconds, nowMs = Date.now()) {
-    const sekund = Math.max(0, Math.floor(seconds));
+  function addMoment(titleKey, seconds2, nowMs = Date.now()) {
+    const sekund = Math.max(0, Math.floor(seconds2));
     const store2 = read9();
     const lista = store2[titleKey]?.t ?? [];
     const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
@@ -28802,11 +29745,11 @@ ${effectiveName(url, id)}`;
     write5(store2);
     return { kind: "added", seconds: sekund };
   }
-  function removeMoment(titleKey, seconds) {
+  function removeMoment(titleKey, seconds2) {
     const store2 = read9();
     const lista = store2[titleKey]?.t;
     if (!lista) return;
-    const kvar = lista.filter((t) => t !== seconds);
+    const kvar = lista.filter((t) => t !== seconds2);
     if (kvar.length === 0) delete store2[titleKey];
     else store2[titleKey] = { at: Date.now(), t: kvar };
     write5(store2);
@@ -29323,6 +30266,8 @@ ${cue.text}`).join("\n\n")}
     const introDbCacheRef = useRef(INTRODB_CACHE);
     const containerRef = useRef(null);
     const controlsRef = useRef(null);
+    const titleBlockRef = useRef(null);
+    const [titleClearance, setTitleClearance] = useState(0);
     const boundsSyncFrameRef = useRef(null);
     const boundsResyncTimersRef = useRef([]);
     const didSeekRef = useRef(false);
@@ -29412,6 +30357,12 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       controlsVisibleRef.current = controlsVisible;
     }, [controlsVisible]);
+    useEffect(() => {
+      const root = document.documentElement;
+      if (controlsVisible) root.removeAttribute("data-player-chrome-hidden");
+      else root.setAttribute("data-player-chrome-hidden", "");
+    }, [controlsVisible]);
+    useEffect(() => () => document.documentElement.removeAttribute("data-player-chrome-hidden"), []);
     const [cssFullscreen, setCssFullscreen] = useState(false);
     const [desktopFullscreen, setDesktopFullscreen] = useState(false);
     const hideTimerRef = useRef(null);
@@ -29467,8 +30418,8 @@ ${cue.text}`).join("\n\n")}
     const anchorCacheRef = useRef({ surface: null, w: 0, h: 0, styles: /* @__PURE__ */ new Map() });
     const anchoredMenuStyle = (trigger, menuWidth = 0) => {
       if (!trigger || typeof window === "undefined") return getAnchoredMenuStyle(trigger, menuWidth);
-      const cache10 = anchorCacheRef.current;
-      if (cache10.surface !== openSurface || cache10.w !== window.innerWidth || cache10.h !== window.innerHeight) {
+      const cache11 = anchorCacheRef.current;
+      if (cache11.surface !== openSurface || cache11.w !== window.innerWidth || cache11.h !== window.innerHeight) {
         anchorCacheRef.current = { surface: openSurface, w: window.innerWidth, h: window.innerHeight, styles: /* @__PURE__ */ new Map() };
       }
       const byTrigger = anchorCacheRef.current.styles;
@@ -29658,6 +30609,35 @@ ${cue.text}`).join("\n\n")}
       if (v && v.videoHeight > 0) setStreamQualityLabel(`${v.videoWidth}\xD7${v.videoHeight}`);
       return void 0;
     }, [hasStarted, useMpv, videoSrc]);
+    const [engineVideoProbe, setEngineVideoProbe] = useState(null);
+    useEffect(() => {
+      setEngineVideoProbe(null);
+      if (!hasStarted || isDroidEngine) return void 0;
+      if (isMpvEngine) {
+        let cancelled = false;
+        const read11 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
+        const timer4 = window.setTimeout(() => {
+          void Promise.all([read11("video-params/w"), read11("video-params/h"), read11("video-params/gamma"), read11("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
+            if (cancelled) return;
+            const width = Number(w);
+            const height = Number(h);
+            setEngineVideoProbe({
+              width: Number.isFinite(width) && width > 0 ? width : null,
+              height: Number.isFinite(height) && height > 0 ? height : null,
+              gamma: typeof gamma === "string" ? gamma : null,
+              colormatrix: typeof colormatrix === "string" ? colormatrix : null
+            });
+          });
+        }, 1200);
+        return () => {
+          cancelled = true;
+          window.clearTimeout(timer4);
+        };
+      }
+      const v = videoRef.current;
+      if (v && v.videoHeight > 0) setEngineVideoProbe({ width: v.videoWidth, height: v.videoHeight });
+      return void 0;
+    }, [hasStarted, isMpvEngine, isDroidEngine, videoSrc, url]);
     const [audioTuning, setAudioTuningState] = useState(() => getAudioTuning());
     useEffect(() => onAudioTuningChanged(() => setAudioTuningState(getAudioTuning())), []);
     useEffect(() => {
@@ -29673,7 +30653,8 @@ ${cue.text}`).join("\n\n")}
       if (isMpvEngine) {
         if (renderTuning.anime4k) {
           void fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => {
-            if (paths && paths.length > 0) void mpvCommand2(["set_property", "glsl-shaders", paths.join(":")]);
+            const separator = isWindowsDesktop() ? ";" : ":";
+            if (paths && paths.length > 0) void mpvCommand2(["set_property", "glsl-shaders", paths.join(separator)]);
           }).catch(() => {
           });
         } else {
@@ -30774,8 +31755,8 @@ ${cue.text}`).join("\n\n")}
         }
         const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
         if (cancelled) return;
-        const [codec, hwdec, w, h, bitrate, fps, drops, cache10, acodec, arate, spd] = values;
-        const num6 = (v) => {
+        const [codec, hwdec, w, h, bitrate, fps, drops, cache11, acodec, arate, spd] = values;
+        const num7 = (v) => {
           if (typeof v === "number") return Number.isFinite(v) ? v : null;
           if (typeof v === "string") {
             const parsed = Number.parseFloat(v.trim());
@@ -30785,12 +31766,12 @@ ${cue.text}`).join("\n\n")}
         };
         const heap = performance.memory?.usedJSHeapSize;
         const lines = [
-          `Video  ${String(codec ?? "\u2013")}  ${num6(w) ?? "?"}\xD7${num6(h) ?? "?"}  ${num6(fps) != null ? `${num6(fps).toFixed(1)} fps` : ""}`,
+          `Video  ${String(codec ?? "\u2013")}  ${num7(w) ?? "?"}\xD7${num7(h) ?? "?"}  ${num7(fps) != null ? `${num7(fps).toFixed(1)} fps` : ""}`,
           `Hwdec  ${String(hwdec ?? "no")}`,
-          `Bitrate  ${num6(bitrate) != null ? `${(num6(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
-          `Drops  ${num6(drops) ?? 0}   Cache  ${num6(cache10) != null ? `${num6(cache10).toFixed(0)} s` : "\u2013"}`,
-          `Audio  ${String(acodec ?? "\u2013")}  ${num6(arate) != null ? `${num6(arate)} Hz` : ""}`,
-          `Speed  ${num6(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+          `Bitrate  ${num7(bitrate) != null ? `${(num7(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${num7(drops) ?? 0}   Cache  ${num7(cache11) != null ? `${num7(cache11).toFixed(0)} s` : "\u2013"}`,
+          `Audio  ${String(acodec ?? "\u2013")}  ${num7(arate) != null ? `${num7(arate)} Hz` : ""}`,
+          `Speed  ${num7(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ];
         setStatsLines(lines);
       };
@@ -31552,12 +32533,12 @@ ${cue.text}`).join("\n\n")}
       if (pipEligible) notifyPipPlaying(isPlaying);
     }, [pipEligible, isPlaying]);
     useEffect(() => {
-      const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
+      const seconds2 = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
-        setStillWatchingCountdown(seconds);
+        setStillWatchingCountdown(seconds2);
         return;
       }
-      setStillWatchingCountdown(seconds);
+      setStillWatchingCountdown(seconds2);
       const interval = window.setInterval(() => {
         setStillWatchingCountdown((current4) => {
           if (current4 <= 1) {
@@ -31590,7 +32571,7 @@ ${cue.text}`).join("\n\n")}
           }
           setPlaying(false);
           setControlsPaused(true);
-          await (0, import_core5.invoke)("open_in_vlc", { url, app: getExternalPlayerApp() });
+          await (0, import_core6.invoke)("open_in_vlc", { url, app: getExternalPlayerApp() });
         } else {
           if (useMpv) {
             void setMpvPause2(true);
@@ -31709,7 +32690,7 @@ ${cue.text}`).join("\n\n")}
       const container = containerRef.current;
       if (!container) return;
       scheduleBoundsResync();
-      const appWindow = isMpvEngine ? (0, import_window.getCurrentWindow)() : null;
+      const appWindow = isMpvEngine ? (0, import_window2.getCurrentWindow)() : null;
       let unlistenWindowResize = null;
       let unlistenWindowMove = null;
       if (appWindow) {
@@ -31766,6 +32747,12 @@ ${cue.text}`).join("\n\n")}
     playerKeyRef.current = function onKey(e) {
       const keyTarget = e.target;
       const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
+      if (e.key === "F11" && isWindowsDesktop()) {
+        e.preventDefault();
+        markWindowFullscreenKeyHandled(e);
+        if (!e.repeat) toggleFullscreen();
+        return;
+      }
       if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
         e.preventDefault();
         e.stopPropagation();
@@ -32050,7 +33037,7 @@ ${cue.text}`).join("\n\n")}
         if (isMpvEngine) {
           try {
             const subtitlePath = await withTimeout(
-              (0, import_core5.invoke)("download_subtitle_to_temp", { url: sub.url }),
+              (0, import_core6.invoke)("download_subtitle_to_temp", { url: sub.url }),
               5e3,
               "subtitle_temp_download_timeout"
             );
@@ -32164,7 +33151,7 @@ ${cue.text}`).join("\n\n")}
           if (isEmbedded) {
             await mpvCommand2(["set_property", "secondary-sid", sub.id.slice("embedded:".length)]);
           } else {
-            const path = sub.source === "external" ? sub.url : await (0, import_core5.invoke)("download_subtitle_to_temp", { url: sub.url });
+            const path = sub.source === "external" ? sub.url : await (0, import_core6.invoke)("download_subtitle_to_temp", { url: sub.url });
             if (stale()) return;
             await mpvCommand2(["sub-add", path, "auto"]);
             const tracks = await getMpvSubtitleTracks2();
@@ -33218,7 +34205,7 @@ ${cue.text}`).join("\n\n")}
         logSubsyncClient(`${CLIENT_PREFIX} \xE4rvd f\xF6rdr\xF6jning ${inherited}s nollad inf\xF6r synken`);
       }
       if (isMpvEngine) {
-        const path = await (0, import_core5.invoke)("download_subtitle_to_temp", { url: `${window.location.origin}${vttUrl}` });
+        const path = await (0, import_core6.invoke)("download_subtitle_to_temp", { url: `${window.location.origin}${vttUrl}` });
         await swapSyncedTrack({ command: (args) => Promise.resolve(mpvCommand2(args)), tracks: getMpvSubtitleTracks2 }, mpvSyncedTracksRef.current, url, path);
         await refreshMpvSubtitleTracks();
       }
@@ -33888,8 +34875,8 @@ ${cue.text}`).join("\n\n")}
       }
     }, [mediaTitle, t, title, url, useMpv]);
     useEffect(() => {
-      castSeekRef.current = castTarget ? (seconds) => {
-        void sendToCast(castTarget, "seek", Math.max(0, seconds));
+      castSeekRef.current = castTarget ? (seconds2) => {
+        void sendToCast(castTarget, "seek", Math.max(0, seconds2));
       } : null;
     }, [castTarget, sendToCast]);
     const prepareAirplaySession = useCallback(async () => {
@@ -34092,8 +35079,8 @@ ${cue.text}`).join("\n\n")}
         showMomentNotice(t("plMomentUnavailable"));
         return;
       }
-      const result = addMoment(momentKey, realTime);
-      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+      const result2 = addMoment(momentKey, realTime);
+      showMomentNotice((result2.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result2.seconds)));
     };
     const showClip = openSurface === "clip";
     const [clip2, setClip] = useState(null);
@@ -34168,6 +35155,23 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv) scheduleBoundsResync();
     }, [clipDocked, useMpv, scheduleBoundsResync]);
+    useEffect(() => {
+      const controls = controlsRef.current;
+      const block = titleBlockRef.current;
+      if (!controls || !block || typeof ResizeObserver === "undefined") {
+        setTitleClearance(0);
+        return void 0;
+      }
+      const measure2 = () => {
+        const clearance = Math.round(controls.getBoundingClientRect().bottom - block.getBoundingClientRect().top);
+        setTitleClearance(clearance > 0 ? clearance : 0);
+      };
+      measure2();
+      const observer = new ResizeObserver(measure2);
+      observer.observe(controls);
+      observer.observe(block);
+      return () => observer.disconnect();
+    }, [chromeKind, showClip, Boolean(clip2), creditsMode]);
     const [clipPhones, setClipPhones] = useState([]);
     const [clipQrOpen, setClipQrOpen] = useState(false);
     const [clipTvFocus, setClipTvFocus] = useState(null);
@@ -34464,8 +35468,8 @@ ${cue.text}`).join("\n\n")}
           const ready = clipWebFileRef.current;
           if (clipShareState.kind === "ready" && ready) {
             const name2 = ready.name;
-            const result = await shareWebFile(ready);
-            if (result === "unsupported") {
+            const result2 = await shareWebFile(ready);
+            if (result2 === "unsupported") {
               const rendered2 = clipRenderInput() ? clipRendererRef.current?.peek(clipRenderInput()) : null;
               if (rendered2) downloadClipFile(rendered2, name2);
             }
@@ -34505,8 +35509,8 @@ ${cue.text}`).join("\n\n")}
         showMomentNotice(t("plMomentUnavailable"));
         return;
       }
-      const result = addMoment(momentKey, clip2.inSec);
-      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+      const result2 = addMoment(momentKey, clip2.inSec);
+      showMomentNotice((result2.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result2.seconds)));
     };
     const gearChevron = /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: "h-4 w-4 flex-none text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) });
     const gearValue = (value) => value ? /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: value }) : null;
@@ -35016,6 +36020,28 @@ ${cue.text}`).join("\n\n")}
         group.map((id) => /* @__PURE__ */ jsx(react_shim_default.Fragment, { children: desktopControls[id] }, id))
       ] }, group.join("+")));
     };
+    const currentStream = streams?.currentUrl ? streams.items.find((s) => s.directUrl === streams.currentUrl) ?? null : null;
+    const engineVideo = isDroidEngine ? droid.stats && droid.stats.height > 0 ? { width: droid.stats.width, height: droid.stats.height, dvBaseProfile: droid.stats.dvBaseProfile ?? null } : null : engineVideoProbe;
+    const titleChips = playerTitleChips({
+      releaseText: [currentStream?.name, currentStream?.title, filename].filter(Boolean).join(" "),
+      engineVideo,
+      audioTrack: activeAudioInfo,
+      uiLang: lang,
+      commentaryLabel: t("audioTrackCommentary")
+    });
+    const renderTitleBlock = (size, className) => /* @__PURE__ */ jsx(
+      PlayerTitleBlock,
+      {
+        blockRef: titleBlockRef,
+        title: headerTitle,
+        chips: titleChips,
+        year,
+        metaSource: { kind: mediaType, tmdbId, imdbId },
+        playbackStarted: hasStarted,
+        size,
+        className
+      }
+    );
     const seekLook = seekBarAppearance(playerLayout);
     const seekHeightClass = seekLook.heightClass;
     const seekFillColorClass = seekLook.fillClass;
@@ -35833,6 +36859,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsxs(
               "div",
               {
+                "data-wc-avoid": "player-topbar",
                 className: `vp-topbar absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden px-[18px] transition-[height,opacity] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0" : "h-[52px]"}`,
                 inert: !controlsVisible,
                 style: {
@@ -35848,19 +36875,8 @@ ${cue.text}`).join("\n\n")}
                   right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : isTv ? TV_CLIP_PANEL_WIDTH : 340 : tvSidePanelOpen ? TV_SIDE_PANEL_WIDTH : void 0
                 },
                 children: [
-                  isDesktopTauriEnv ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
-                  /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-2.5", children: [
-                    /* @__PURE__ */ jsx("span", { className: "truncate text-sm font-medium text-slate-100", children: headerTitle }),
-                    streamQualityLabel ? /* @__PURE__ */ jsx("span", { className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null,
-                    showsControl("audioOutput") ? /* @__PURE__ */ jsx(
-                      "span",
-                      {
-                        title: t("currentAudioOutput"),
-                        className: "vp-chip flex-none rounded-md border border-white/[0.14] px-[7px] py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400",
-                        children: audioIndicator
-                      }
-                    ) : null
-                  ] }),
+                  isDesktopTauriEnv && !isWindowsDesktop() ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
+                  /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "min-w-0 flex-1" }),
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
                     /* @__PURE__ */ jsx(BingeModeChip, {}),
                     showClip && clip2 && isTv ? /* @__PURE__ */ jsx("span", { className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-black/60 px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-white", children: clip2.scrubbing ? tClip("clipFrame").replace("{time}", formatClipTime(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec)) : tClip("clipLoopChip").replace("{len}", String(Math.round(clip2.outSec - clip2.inSec))) }) : null,
@@ -35920,7 +36936,7 @@ ${cue.text}`).join("\n\n")}
                   paddingTop: PHONE_TOP_INSET
                 },
                 children: [
-                  /* @__PURE__ */ jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-medium text-slate-100", children: headerTitle }),
+                  /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "min-w-0 flex-1" }),
                   /* @__PURE__ */ jsx("div", { className: "flex flex-none items-center gap-2", children: showClip ? /* @__PURE__ */ jsx(
                     "button",
                     {
@@ -35959,6 +36975,7 @@ ${cue.text}`).join("\n\n")}
             "div",
             {
               inert: !controlsVisible,
+              "data-wc-avoid": "player-topbar-plain",
               className: `absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 overflow-hidden transition-[height,padding,opacity,background] duration-300 ${collapseMpvTopBar || cssFullscreen && !controlsVisible ? "h-0 px-4 py-0 opacity-0" : "min-h-[44px] px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top),var(--android-inset-top,0px))]"}`,
               style: {
                 // Spegelbild av kontrollradens gradient nedtill: solid svart
@@ -36111,9 +37128,9 @@ ${cue.text}`).join("\n\n")}
                           let mpvMediaTitle = null;
                           if (useMpv) {
                             try {
-                              const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-                              mpvFilename = await invoke6("mpv_get_property_ts", { name: "filename" }).catch(() => null);
-                              mpvMediaTitle = await invoke6("mpv_get_property_ts", { name: "media-title" }).catch(() => null);
+                              const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+                              mpvFilename = await invoke7("mpv_get_property_ts", { name: "filename" }).catch(() => null);
+                              mpvMediaTitle = await invoke7("mpv_get_property_ts", { name: "media-title" }).catch(() => null);
                             } catch {
                             }
                           }
@@ -36376,16 +37393,10 @@ ${cue.text}`).join("\n\n")}
                       right: showClip ? "calc(340px + 26px)" : void 0
                     },
                     children: [
-                      /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
-                        /* @__PURE__ */ jsx("button", { type: "button", onClick: handleClose, "aria-label": t("close"), className: "flex-none p-1 text-white", children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                          /* @__PURE__ */ jsx("path", { d: "M19 12H5" }),
-                          /* @__PURE__ */ jsx("path", { d: "m11 6-6 6 6 6" })
-                        ] }) }),
-                        /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
-                          /* @__PURE__ */ jsx("div", { className: "truncate text-[17px] font-semibold text-white drop-shadow-[0_1px_10px_rgba(0,0,0,0.8)]", children: headerTitle }),
-                          streamQualityLabel ? /* @__PURE__ */ jsx("div", { className: "truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400", children: streamQualityLabel }) : null
-                        ] })
-                      ] }),
+                      /* @__PURE__ */ jsx("div", { className: "flex min-w-0 items-center gap-3", children: /* @__PURE__ */ jsx("button", { type: "button", onClick: handleClose, "aria-label": t("close"), className: "flex-none p-1 text-white", children: /* @__PURE__ */ jsxs("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                        /* @__PURE__ */ jsx("path", { d: "M19 12H5" }),
+                        /* @__PURE__ */ jsx("path", { d: "m11 6-6 6 6 6" })
+                      ] }) }) }),
                       /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
                         renderSegmentPills(),
                         (introSegment || outroSegment) && phoneClusterIds.length > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-0.5 h-5 w-px flex-none bg-white/[0.16]" }) : null,
@@ -36434,13 +37445,12 @@ ${cue.text}`).join("\n\n")}
                     children: statsLines.map((line2) => /* @__PURE__ */ jsx("div", { children: line2 }, line2.split(" ")[0]))
                   }
                 ),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice || ownTrackPrompt) && /* @__PURE__ */ jsxs(
+                (syncNotice || ownTrackPrompt) && /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
-                    style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
+                    className: "pointer-events-none absolute inset-x-0 z-[45] flex flex-col items-center gap-1 px-8",
+                    style: { bottom: titleClearance > 0 ? `calc(${subVerticalPos}% + max(9rem, ${titleClearance + 12}px))` : `calc(${subVerticalPos}% + 9rem)` },
                     children: [
-                      secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
                       ownTrackPrompt && /* @__PURE__ */ jsxs("div", { className: "pointer-events-auto mb-1 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white/90", role: "status", children: [
                         /* @__PURE__ */ jsx("span", { children: ownTrackPrompt.message }),
                         /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
@@ -36481,7 +37491,17 @@ ${cue.text}`).join("\n\n")}
                             children: syncNotice.actionLabel
                           }
                         )
-                      ] }),
+                      ] })
+                    ]
+                  }
+                ),
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
+                    style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
+                    children: [
+                      secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
                       [
                         { text: overlayPrimaryText, scale: 1, color: subTextColor, key: "primary" },
                         { text: overlaySecondaryText, scale: 0.85, color: secondarySubColor, key: "secondary" }
@@ -36873,7 +37893,13 @@ ${cue.text}`).join("\n\n")}
                   {
                     inert: !controlsVisible,
                     className: `absolute z-[55] flex items-center gap-0.5 rounded-full border border-white/[0.14] bg-[rgba(13,14,22,0.82)] py-1 pl-4 pr-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md transition-opacity duration-300 ${desktopChrome ? "bottom-32 right-6" : landscapeChrome ? "bottom-28 right-[26px]" : portraitChrome ? "bottom-[172px] right-3.5" : "bottom-24 right-4"}`,
-                    style: newChrome ? { opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? "auto" : "none" } : void 0,
+                    style: newChrome ? {
+                      opacity: controlsVisible ? 1 : 0,
+                      pointerEvents: controlsVisible ? "auto" : "none",
+                      // Ovanför titelblocket, inte över titeln. Klassernas lägen
+                      // gäller när blocket saknas (måttet 0).
+                      ...titleClearance > 0 ? { bottom: titleClearance + 12 } : {}
+                    } : void 0,
                     onClick: (e) => e.stopPropagation(),
                     children: [
                       /* @__PURE__ */ jsxs(
@@ -37015,7 +38041,7 @@ ${cue.text}`).join("\n\n")}
                   "div",
                   {
                     ref: controlsRef,
-                    className: `vp-controls absolute inset-x-0 bottom-0 z-40 ${desktopChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.35)_40%,rgba(0,0,0,0.85)_100%)] px-6 pb-5 pt-16" : landscapeChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.45)_50%,rgba(0,0,0,0.85)_100%)] pb-3 pt-10" : portraitChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.5)_35%,rgba(0,0,0,0.92)_100%)] pb-[max(1.375rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3.5" : "bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-10"}`,
+                    className: `vp-controls absolute inset-x-0 bottom-0 z-40 ${desktopChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.45)_30%,rgba(0,0,0,0.88)_100%)] px-6 pb-5 pt-16" : landscapeChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.5)_32%,rgba(0,0,0,0.88)_100%)] pb-3 pt-10" : portraitChrome ? "bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.6)_22%,rgba(0,0,0,0.92)_100%)] pb-[max(1.375rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-8" : "bg-gradient-to-t from-black/80 via-black/30 to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-10"}`,
                     style: {
                       opacity: controlsVisible && controlsReady ? 1 : 0,
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
@@ -37038,7 +38064,7 @@ ${cue.text}`).join("\n\n")}
                     children: [
                       portraitPickerOpen ? /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-0 bg-slate-950/60", onClick: () => setOpenSurface(null) }) : null,
                       desktopChrome ? (() => {
-                        const timePillClass2 = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+                        const timePillClass2 = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-[var(--vp-time-pill-px)] py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
                         const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
                         const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
                         if (showClip && clip2 && isTv) {
@@ -37069,6 +38095,7 @@ ${cue.text}`).join("\n\n")}
                           ] });
                         }
                         return /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          renderTitleBlock("desktop", `mb-4 max-w-[min(44rem,62%)] ${showsControl("time") ? "pl-[var(--vp-time-pill-px)]" : ""}`),
                           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
                             showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass2, children: elapsedLabel }) : null,
                             renderSeekTrack("flex-1"),
@@ -37095,6 +38122,7 @@ ${cue.text}`).join("\n\n")}
                             ] })
                           ] })
                         ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                          renderTitleBlock("landscape", "mb-2.5 max-w-[62%]"),
                           renderSeekTrack("w-full"),
                           /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
                             renderPhoneClock("text-[15px]", "text-[13px]"),
@@ -37129,6 +38157,7 @@ ${cue.text}`).join("\n\n")}
                            kollapsar (står i handoffens README, och det stämmer). */
                         /* @__PURE__ */ jsxs(Fragment2, { children: [
                           /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2.5 px-3.5", children: [
+                            renderTitleBlock("portrait", "mb-1.5"),
                             renderSeekTrack("w-full"),
                             /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3", children: [
                               renderPhoneClock("text-sm", "text-xs"),
@@ -37958,9 +38987,9 @@ ${cue.text}`).join("\n\n")}
         ]
       }
     );
-    return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
+    return portalEl ? (0, import_react_dom2.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, TV_SIDE_PANEL_WIDTH, TV_CLIP_PANEL_WIDTH, MPV_TRANSITION_COVER_ATTR;
+  var import_react_dom2, import_core6, import_window2, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, TV_SIDE_PANEL_WIDTH, TV_CLIP_PANEL_WIDTH, MPV_TRANSITION_COVER_ATTR;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
@@ -37974,10 +39003,12 @@ ${cue.text}`).join("\n\n")}
       init_playback_speed_store();
       init_react_shim();
       init_timing();
-      import_react_dom = __toESM(require_react_dom());
-      import_core5 = __toESM(require_core());
-      import_window = __toESM(require_window());
+      import_react_dom2 = __toESM(require_react_dom());
+      import_core6 = __toESM(require_core());
+      import_window2 = __toESM(require_window());
       init_transparent_webview();
+      init_platform_os();
+      init_window_controls();
       init_video_progress();
       init_recorder();
       init_profile_storage_shim();
@@ -37987,6 +39018,8 @@ ${cue.text}`).join("\n\n")}
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
+      init_player_title_block2();
+      init_player_title_block();
       init_tauri_native_player();
       init_playback_settings();
       init_android_media_keys();
@@ -38500,7 +39533,7 @@ ${cue.text}`).join("\n\n")}
           ]
         }
       ),
-      open2 && menuPos ? (0, import_react_dom2.createPortal)(
+      open2 && menuPos ? (0, import_react_dom3.createPortal)(
         /* @__PURE__ */ jsx(
           "div",
           {
@@ -38808,14 +39841,14 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  var import_react_dom2, TOKENS, TYPE, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
+  var import_react_dom3, TOKENS, TYPE, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
   var init_primitives = __esm({
     "components/settings/redesigned/primitives.tsx"() {
       "use client";
       init_react_shim();
       init_tv_tab_heading();
       init_settings_heading();
-      import_react_dom2 = __toESM(require_react_dom());
+      import_react_dom3 = __toESM(require_react_dom());
       init_jsx_runtime_shim();
       TOKENS = {
         bg: "var(--tk-bg)",
@@ -40382,8 +41415,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners18 = this.eventListeners[eventName];
-            for (const listener of listeners18)
+            const listeners19 = this.eventListeners[eventName];
+            for (const listener of listeners19)
               listener(arg);
             return true;
           }
@@ -40650,12 +41683,15 @@ ${cue.text}`).join("\n\n")}
     cancelDesktopPlaybackSessions: () => cancelDesktopPlaybackSessions,
     cancelLibraryScan: () => cancelLibraryScan2,
     capturePlayerFrame: () => capturePlayerFrame,
-    channelListDebridCloud: () => channelListDebridCloud,
+    channelClearSourceToken: () => channelClearSourceToken,
+    channelMatchTitles: () => channelMatchTitles,
+    channelParseFileName: () => channelParseFileName,
+    channelPrefetch: () => channelPrefetch,
     channelRememberStream: () => channelRememberStream,
     channelResolveLibraryPlayback: () => channelResolveLibraryPlayback,
     channelResolveTitleStream: () => channelResolveTitleStream,
     channelSourceCacheSetting: () => channelSourceCacheSetting,
-    channelUnrestrictDebridFile: () => channelUnrestrictDebridFile,
+    channelSourceToken: () => channelSourceToken,
     checkEpisodeHasStream: () => checkEpisodeHasStream,
     checkMovieHasStream: () => checkMovieHasStream,
     checkPluginPathExists: () => checkPluginPathExists,
@@ -40921,19 +41957,28 @@ ${cue.text}`).join("\n\n")}
   function channelResolveTitleStream(input) {
     return channelHost()?.resolveTitleStream(input) ?? Promise.resolve(null);
   }
-  function channelListDebridCloud(options) {
-    return channelHost()?.listDebridCloud(options) ?? Promise.resolve([]);
+  function channelSourceToken(sourceId) {
+    return channelHost()?.sourceToken?.(sourceId) ?? null;
   }
-  function channelUnrestrictDebridFile(input) {
-    return channelHost()?.unrestrictDebridFile(input) ?? Promise.resolve(null);
+  function channelClearSourceToken(sourceId) {
+    channelHost()?.clearSourceToken?.(sourceId);
+  }
+  function channelPrefetch(url, headers) {
+    channelHost()?.prefetch?.(url, headers);
+  }
+  function channelParseFileName(fileName, parentFolder) {
+    return channelHost()?.parseFileName?.(fileName, parentFolder) ?? null;
+  }
+  function channelMatchTitles(wanted) {
+    return channelHost()?.matchTitles?.(wanted) ?? Promise.resolve(wanted.map(() => null));
   }
   function channelRememberStream(token) {
     channelHost()?.rememberChannelStream?.(token);
   }
   function channelSourceCacheSetting() {
-    const cache10 = channelHost()?.sourceCache;
-    if (!cache10 || !cache10.isAndroid()) return null;
-    return { isPhone: cache10.isPhone(), get: cache10.get, set: cache10.set };
+    const cache11 = channelHost()?.sourceCache;
+    if (!cache11 || !cache11.isAndroid()) return null;
+    return { isPhone: cache11.isPhone(), get: cache11.get, set: cache11.set };
   }
   function resolvePluginText(text2, lang) {
     if (typeof text2 === "string") return text2;
@@ -40946,15 +41991,15 @@ ${cue.text}`).join("\n\n")}
     const maybeTauriWindow = window;
     if (maybeTauriWindow.__LUMIO_DESKTOP_HOST__) return true;
     if (maybeTauriWindow.__TAURI_INTERNALS__ || maybeTauriWindow.__TAURI__) return true;
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    if (userAgent.includes("Tauri")) return true;
+    const userAgent2 = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    if (userAgent2.includes("Tauri")) return true;
     return false;
   }
   async function pickPluginFolder() {
     if (typeof window === "undefined") return null;
     if (isPluginDesktopHost()) {
-      const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-      return invoke6("pick_folder");
+      const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+      return invoke7("pick_folder");
     }
     try {
       const response = await fetch("/api/pick-folder", { method: "POST" });
@@ -40967,13 +42012,13 @@ ${cue.text}`).join("\n\n")}
   }
   async function pickPluginFiles(filters) {
     if (!isPluginDesktopHost()) return null;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    return invoke6("pick_files", { filters: filters ?? null });
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke7("pick_files", { filters: filters ?? null });
   }
   async function scanPluginDirectory(directory, extensions) {
     if (!isPluginDesktopHost()) return null;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    const files = await invoke6("scan_directory_files", {
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const files = await invoke7("scan_directory_files", {
       directory,
       extensions: extensions ?? null
     });
@@ -40992,12 +42037,12 @@ ${cue.text}`).join("\n\n")}
       cwd: options.cwd,
       env: options.env
     });
-    const result = await command.execute();
+    const result2 = await command.execute();
     return {
-      code: result.code,
-      signal: result.signal,
-      stdout: typeof result.stdout === "string" ? result.stdout : "",
-      stderr: typeof result.stderr === "string" ? result.stderr : ""
+      code: result2.code,
+      signal: result2.signal,
+      stdout: typeof result2.stdout === "string" ? result2.stdout : "",
+      stderr: typeof result2.stderr === "string" ? result2.stderr : ""
     };
   }
   async function spawnPluginDesktopCommand(options) {
@@ -41014,8 +42059,8 @@ ${cue.text}`).join("\n\n")}
   }
   async function checkPluginPathExists(path) {
     if (!isPluginDesktopHost()) return false;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    return invoke6("check_path_exists", { path });
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke7("check_path_exists", { path });
   }
   async function launchPluginProgram(program, args) {
     if (!isPluginDesktopHost()) {
@@ -41030,9 +42075,9 @@ ${cue.text}`).join("\n\n")}
       const candidate = args[0]?.trim() ?? "";
       return /^https?:\/\//i.test(candidate) ? candidate : null;
     };
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke6("launch_program", { program, args });
+      return await invoke7("launch_program", { program, args });
     } catch (error) {
       const url = inferUrlFromLaunchArgs();
       if (url && typeof window !== "undefined") {
@@ -41049,8 +42094,8 @@ ${cue.text}`).join("\n\n")}
       beginStreamTimelineFor(getStreamTimingTarget() ?? url);
       markStreamPhase("request-sent", { via: "plugin" });
     }
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    const payload = await invoke6("desktop_stream_lookup", {
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const payload = await invoke7("desktop_stream_lookup", {
       url,
       streamProviderName: streamProviderName ?? null,
       timeoutMs: timeoutMs ?? null
@@ -41062,8 +42107,8 @@ ${cue.text}`).join("\n\n")}
   async function lookupPluginStreamsBatch(requests) {
     if (!isPluginDesktopHost()) return null;
     if (requests.length === 0) return { streams: [], failures: [] };
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    return invoke6("desktop_stream_lookup_batch", {
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke7("desktop_stream_lookup_batch", {
       requests: requests.map((request) => ({
         url: request.url,
         streamProviderName: request.streamProviderName ?? null,
@@ -41075,8 +42120,8 @@ ${cue.text}`).join("\n\n")}
   async function lookupPluginStreamsBatchRanked(requests, mediaType, season, episode) {
     if (!isPluginDesktopHost()) return null;
     if (requests.length === 0) return { streams: [], failures: [] };
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    return invoke6("desktop_stream_lookup_batch_ranked", {
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke7("desktop_stream_lookup_batch_ranked", {
       requests: requests.map((request) => ({
         url: request.url,
         streamProviderName: request.streamProviderName ?? null,
@@ -41092,9 +42137,9 @@ ${cue.text}`).join("\n\n")}
     if (!isPluginDesktopHost()) return false;
     const stage = payload.stage.trim();
     if (!stage) return false;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke6("playback_session_telemetry", {
+      return await invoke7("playback_session_telemetry", {
         payload: {
           sessionId: payload.sessionId ?? null,
           stage,
@@ -41109,8 +42154,8 @@ ${cue.text}`).join("\n\n")}
   }
   async function cancelDesktopPlaybackSessions(reason) {
     if (!isPluginDesktopHost()) return;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    await invoke6("playback_session_cancel_all", {
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    await invoke7("playback_session_cancel_all", {
       reason: reason?.trim() || null
     });
   }
@@ -41119,8 +42164,8 @@ ${cue.text}`).join("\n\n")}
     const normalized = pathAndQuery.trim();
     if (!normalized.startsWith("/api/")) return null;
     try {
-      const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-      return await invoke6("desktop_api_query", {
+      const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+      return await invoke7("desktop_api_query", {
         pathAndQuery: normalized,
         timeoutMs: timeoutMs ?? null
       });
@@ -41132,23 +42177,23 @@ ${cue.text}`).join("\n\n")}
     if (!isPluginDesktopHost()) {
       throw new Error("Libretro embedding is only available in the desktop app.");
     }
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    await invoke6("libretro_launch", { corePath, romPath });
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    await invoke7("libretro_launch", { corePath, romPath });
   }
   async function stopLibretroGame() {
     if (!isPluginDesktopHost()) return;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    await invoke6("libretro_stop");
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    await invoke7("libretro_stop");
   }
   async function setLibretroBounds(x, y, w, h, windowHeight, scale) {
     if (!isPluginDesktopHost()) return;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    await invoke6("libretro_set_bounds", { x, y, w, h, windowHeight, scale });
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    await invoke7("libretro_set_bounds", { x, y, w, h, windowHeight, scale });
   }
   async function sendLibretroInput(buttons) {
     if (!isPluginDesktopHost()) return;
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-    await invoke6("libretro_set_input", { buttons });
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+    await invoke7("libretro_set_input", { buttons });
   }
   function onLibretroStopped(handler) {
     if (!isPluginDesktopHost()) return () => {
@@ -41286,7 +42331,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -41468,7 +42513,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -41479,7 +42524,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -41556,14 +42601,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/group-order.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/group-order.ts
   function sanitizeGroupOrder(raw) {
     return GROUP_ORDERS.includes(raw) ? raw : DEFAULT_GROUP_ORDER;
   }
@@ -41623,7 +42668,7 @@ ${cue.text}`).join("\n\n")}
   }
   var GROUP_ORDERS, DEFAULT_GROUP_ORDER, collator, rawOrderBySource;
   var init_group_order = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/group-order.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/group-order.ts"() {
       "use strict";
       GROUP_ORDERS = ["playlist", "name", "count"];
       DEFAULT_GROUP_ORDER = "playlist";
@@ -41632,7 +42677,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/list-curation.ts
   function splitGroups2(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -41730,13 +42775,13 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
       init_group_order();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-format.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-format.ts
   function sanitizeLiveFormat(raw) {
     return raw === "ts" || raw === "hls" ? raw : "auto";
   }
@@ -41782,7 +42827,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_FORMATS, XTREAM_LIVE_RE, hlsFailedUrls, isHlsPlayUrl;
   var init_live_format = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-format.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-format.ts"() {
       "use strict";
       LIVE_FORMATS = ["auto", "ts", "hls"];
       XTREAM_LIVE_RE = /^(https?:\/\/[^/?#]+)\/live\/([^/?#]+)\/([^/?#]+)\/(\d+)\.(ts|m3u8)((?:[?#].*)?)$/i;
@@ -41791,7 +42836,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -42305,18 +43350,18 @@ ${cue.text}`).join("\n\n")}
     const job = await startImport(body);
     const status = await waitForJob(job, onProgress);
     if (status.state === "done") {
-      const result = status.result;
+      const result2 = status.result;
       writeLists(readLists().map((entry) => entry.id === list.id ? {
         ...entry,
-        channelCount: result?.total ?? entry.channelCount ?? 0,
-        groups: result?.groups ?? entry.groups ?? [],
+        channelCount: result2?.total ?? entry.channelCount ?? 0,
+        groups: result2?.groups ?? entry.groups ?? [],
         // `urlTvg` tas RAKT AV ur jobbets svar när det finns ett svar:
         // `?? entry.urlTvg` behöll den gamla adressen när appen svarade
         // null, så en url-tvg som tagits bort ur spellistan levde kvar och
         // pluginet fortsatte be om en tablå ingen längre publicerade. Ett
         // FELAT jobb (ingen `result`) lämnar den orörd, som allt annat.
-        urlTvg: result ? result.urlTvg : entry.urlTvg,
-        truncated: result?.truncated === true,
+        urlTvg: result2 ? result2.urlTvg : entry.urlTvg,
+        truncated: result2?.truncated === true,
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
       } : entry));
       emitIndexChanged();
@@ -42423,7 +43468,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42449,7 +43494,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/playlist-title.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/playlist-title.ts
   function hostOf2(url) {
     try {
       return new URL(url).host || url;
@@ -42473,13 +43518,13 @@ ${cue.text}`).join("\n\n")}
     return `${host2} (${sameHost.findIndex((other) => other.id === list.id) + 1})`;
   }
   var init_playlist_title = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/playlist-title.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/playlist-title.ts"() {
       "use strict";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hls-playlist-proxy.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hls-playlist-proxy.ts
   function detectHlsPlaylistProxy() {
     if (available !== null) return Promise.resolve(available);
     if (probe) return probe;
@@ -42507,7 +43552,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HLS_PLAYLIST_PROXY_FEATURE, HLS_PLAYLIST_PROXY_PATH, available, probe;
   var init_hls_playlist_proxy = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
       "use strict";
       init_live_format();
       HLS_PLAYLIST_PROXY_FEATURE = "hlsPlaylistProxy";
@@ -42517,7 +43562,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-format-resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-format-resolve.ts
   function decode(part) {
     try {
       return decodeURIComponent(part);
@@ -42625,7 +43670,7 @@ ${cue.text}`).join("\n\n")}
   }
   var askedLogins, hlsBrokenAccounts, accountStreamEndedAt;
   var init_live_format_resolve = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-format-resolve.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-format-resolve.ts"() {
       "use strict";
       init_live_tv_data();
       init_hls_playlist_proxy();
@@ -42636,7 +43681,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -42690,7 +43735,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42702,7 +43747,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -42782,7 +43827,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42795,10 +43840,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
+    const words2 = name.trim().split(/\s+/).filter(Boolean);
+    const letters = words2.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
     return letters.join("") || "\u2022";
   }
   function progressOf(start3, stop2, nowMs) {
@@ -43012,7 +44057,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43052,7 +44097,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -43075,14 +44120,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -43105,14 +44150,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -43138,7 +44183,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -43146,7 +44191,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -43393,7 +44438,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCENE_TOP_INSET, TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43517,7 +44562,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -43533,7 +44578,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45026,19 +46071,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -45116,20 +46161,20 @@ ${cue.text}`).join("\n\n")}
   }
   function publish2(next) {
     active3 = next;
-    for (const listener of [...listeners9]) listener();
+    for (const listener of [...listeners10]) listener();
   }
   function getActiveNowSnapshot() {
     return active3;
   }
   function subscribeNowSnapshot(listener) {
-    listeners9.add(listener);
+    listeners10.add(listener);
     return () => {
-      listeners9.delete(listener);
+      listeners10.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, MAX_INCREMENTAL_KEYS, incrementalUnsupported, active3, listeners9;
+  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, MAX_INCREMENTAL_KEYS, incrementalUnsupported, active3, listeners10;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -45141,14 +46186,14 @@ ${cue.text}`).join("\n\n")}
       MAX_INCREMENTAL_KEYS = 4e3;
       incrementalUnsupported = false;
       active3 = { snapshot: null, failed: false };
-      listeners9 = /* @__PURE__ */ new Set();
+      listeners10 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
-    while (memo3.size > MAX_ENTRIES4) {
+    while (memo3.size > MAX_ENTRIES5) {
       const oldest = memo3.keys().next();
       if (oldest.done) break;
       memo3.delete(oldest.value);
@@ -45175,24 +46220,24 @@ ${cue.text}`).join("\n\n")}
   function clearResolvedChannels() {
     memo3.clear();
   }
-  var MAX_ENTRIES4, memo3;
+  var MAX_ENTRIES5, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
-      MAX_ENTRIES4 = 1e3;
+      MAX_ENTRIES5 = 1e3;
       memo3 = /* @__PURE__ */ new Map();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-surface.ts
-  function isDesktopTauri() {
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-surface.ts
+  function isDesktopTauri2() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
   }
   function useNewGuideSurface(phone) {
-    return useTvMode() || isDesktopTauri() && !phone;
+    return useTvMode() || isDesktopTauri2() && !phone;
   }
   function desktopGuideMode(stored) {
     if (stored === "now" || stored === "tl") return "nownext";
@@ -45201,14 +46246,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts3 = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -45266,7 +46311,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -45276,7 +46321,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-history.ts
   function sanitize2(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -45323,7 +46368,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -45333,7 +46378,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -45467,7 +46512,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS, shownHere;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45480,7 +46525,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/start-view.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/start-view.ts
   function sanitizeStartView(raw) {
     return START_VIEWS.includes(raw) ? raw : DEFAULT_START_VIEW;
   }
@@ -45513,14 +46558,14 @@ ${cue.text}`).join("\n\n")}
   }
   var START_VIEWS, DEFAULT_START_VIEW;
   var init_start_view = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/start-view.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/start-view.ts"() {
       "use strict";
       START_VIEWS = ["home", "hub", "guide", "sport", "library", "favs"];
       DEFAULT_START_VIEW = "home";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function nextFallbackAfter(current4) {
     return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current4) + 1) % FALLBACK_AFTER_OPTIONS.length];
   }
@@ -45582,7 +46627,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45616,7 +46661,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -45812,7 +46857,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => onPinnedLiveTvKeysChanged(() => setPinnedKeys(getPinnedLiveTvKeys())), []);
     useEffect(() => onChannelHistoryChanged(() => setHistory(getChannelHistory())), []);
     const tvMode = useTvMode();
-    const activeListGate = tvMode || isDesktopTauri();
+    const activeListGate = tvMode || isDesktopTauri2();
     const activeList = useMemo(
       () => activeListGate ? lists.find((list) => list.id === activePlaylistId) ?? null : null,
       [activeListGate, lists, activePlaylistId]
@@ -46066,7 +47111,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46101,7 +47146,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   function TvKeyboard({ value, onChange, onDone, initFocus }) {
     const { tt } = useTvText();
     const [symbols, setSymbols] = useState(false);
@@ -46127,7 +47172,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LETTERS, SYMBOLS;
   var init_tv_keyboard = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46139,7 +47184,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   function isComposing(event2) {
     return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
   }
@@ -46277,7 +47322,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_text_entry = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46289,10 +47334,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -46371,7 +47416,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, list, items: items2, onClose, pushLayer, testId, header, footer, activeKey }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -46448,7 +47493,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -46458,10 +47503,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -46540,19 +47585,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
   var init_mobile_toggle = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
       "use strict";
       init_mobile_tokens();
       init_jsx_runtime_shim();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -46667,7 +47712,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -46809,7 +47854,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -46864,7 +47909,7 @@ ${cue.text}`).join("\n\n")}
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -46959,7 +48004,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sportapi.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sportapi.ts
   function sportApiMinute(v) {
     if (typeof v === "number" && Number.isFinite(v)) return { minute: v, extra: null };
     const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?/.exec(String(v ?? ""));
@@ -47051,7 +48096,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORTAPI_REGISTER_URL, ESPN_CREST, arr3, num3, str3, enc3, foldTeamKey, STATUS, side2, STAT_LABELS, listOf, okBody, sportApi;
   var init_sportapi = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sportapi.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sportapi.ts"() {
       "use strict";
       SPORTAPI_REGISTER_URL = "https://sportapi.ai/pricing";
       ESPN_CREST = "https://a.espncdn.com/i/teamlogos/soccer/500";
@@ -47163,38 +48208,360 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/day-plan.ts
+  function planKey(c) {
+    return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
+  }
+  function planDay(input, provider) {
+    const sports = [...new Set(input.sports)].filter((s) => provider.coverage(s) === "full");
+    const out = sports.map((sport) => ({ kind: "day", sport, date: input.today }));
+    for (const sport of sports) {
+      for (const date of [input.yesterday, input.tomorrow]) {
+        const c = { kind: "day", sport, date };
+        if (!input.done.has(planKey(c))) out.push(c);
+      }
+    }
+    const seen2 = /* @__PURE__ */ new Set();
+    for (const l of input.leagues) {
+      if (provider.coverage(l.sport) !== "full") continue;
+      const c = { kind: "standings", sport: l.sport, leagueId: l.leagueId, season: l.season, ...l.provider ? { provider: l.provider } : {} };
+      const k = planKey(c);
+      if (seen2.has(k) || input.done.has(k)) continue;
+      seen2.add(k);
+      out.push(c);
+    }
+    return out;
+  }
+  function plannedPerSport(calls) {
+    const out = /* @__PURE__ */ new Map();
+    for (const c of calls) out.set(c.sport, (out.get(c.sport) ?? 0) + 1);
+    return out;
+  }
+  function ymd(ms2, tz2) {
+    const parts2 = new Intl.DateTimeFormat("en-CA", { timeZone: tz2, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ms2));
+    const get = (t) => parts2.find((p) => p.type === t)?.value ?? "00";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  }
+  function offsetMs(ms2, tz2) {
+    const parts2 = new Intl.DateTimeFormat("en-US", { timeZone: tz2, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }).formatToParts(new Date(ms2));
+    const n = (t) => Number(parts2.find((p) => p.type === t)?.value ?? 0);
+    return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - Math.floor(ms2 / 1e3) * 1e3;
+  }
+  function shiftDate(date, days) {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days, 12)).toISOString().slice(0, 10);
+  }
+  function localDates(now2, tz2) {
+    const today = ymd(now2, tz2);
+    const [y, m, d] = today.split("-").map(Number);
+    const shift = (days) => ymd(Date.UTC(y, m - 1, d + days, 12), "UTC");
+    const dayEndMs = (date) => {
+      const [yy, mm, dd] = date.split("-").map(Number);
+      const utcMidnight = Date.UTC(yy, mm - 1, dd + 1);
+      return utcMidnight - offsetMs(utcMidnight, tz2);
+    };
+    return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
+  }
+  var init_day_plan = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/day-plan.ts"() {
+      "use strict";
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/espn.ts
+  function localDay(date, tz2) {
+    const { dayEndMs } = localDates(0, tz2);
+    return { start: dayEndMs(shiftDate(date, -1)), end: dayEndMs(date) };
+  }
+  function espnDatesFor(day) {
+    const H = 36e5;
+    const edges = [day.start, day.end - 1];
+    return [...new Set(edges.flatMap((t) => [ymd2(new Date(t - 5 * H)), ymd2(new Date(t - 4 * H))]))].sort();
+  }
+  function espnFixtureId(slug, eventId) {
+    return `${slug}:${eventId}`;
+  }
+  function splitId(id) {
+    const i = id.lastIndexOf(":");
+    return i > 0 ? { slug: id.slice(0, i), event: id.slice(i + 1) } : null;
+  }
+  function statusOf(raw) {
+    const name = String(raw?.type?.name ?? "");
+    const state2 = String(raw?.type?.state ?? "");
+    if (/POSTPONED|CANCELED|CANCELLED|ABANDONED|SUSPENDED|DELAYED|FORFEIT/.test(name)) return "postponed";
+    if (/HALFTIME/.test(name)) return "ht";
+    if (state2 === "in") return "live";
+    if (state2 === "post") return "finished";
+    return "scheduled";
+  }
+  function espnMinute(displayClock) {
+    const m = /^\s*(\d{1,3})'/.exec(String(displayClock ?? ""));
+    return m ? Number(m[1]) : null;
+  }
+  function teamOf(t) {
+    const team3 = t?.team ?? {};
+    return { id: String(team3.id ?? ""), name: String(team3.displayName ?? team3.name ?? ""), crest: str4(team3.logo) ?? str4(arr4(team3.logos)[0]?.href) };
+  }
+  function fixtureOf2(sport, slug, league, e) {
+    const c = arr4(e?.competitions)[0] ?? e;
+    const sides = arr4(c?.competitors);
+    const home = sides.find((t) => t?.homeAway === "home");
+    const away = sides.find((t) => t?.homeAway === "away");
+    const kickoff = Date.parse(String(e?.date ?? c?.date ?? ""));
+    if (e?.id == null || !home || !away || !Number.isFinite(kickoff)) return null;
+    const statusRaw = e?.status ?? c?.status;
+    const status = statusOf(statusRaw);
+    const h = num4(home.score);
+    const a = num4(away.score);
+    const venue = c?.venue ?? e?.venue;
+    return {
+      provider: "espn",
+      id: espnFixtureId(slug, String(e.id)),
+      sport,
+      league: { id: slug, name: String(league?.name ?? league?.abbreviation ?? slug), season: String(league?.season?.year ?? e?.season?.year ?? ""), round: null, country: null },
+      kickoff,
+      status,
+      statusShort: String(statusRaw?.type?.shortDetail ?? statusRaw?.type?.detail ?? ""),
+      minute: status === "live" && sport === "football" ? espnMinute(statusRaw?.displayClock) : null,
+      home: teamOf(home),
+      away: teamOf(away),
+      score: status !== "scheduled" && status !== "postponed" && h != null && a != null ? { home: h, away: a } : null,
+      venue: str4(venue?.fullName) ?? str4(venue?.displayName),
+      venueCity: str4(venue?.address?.city),
+      lastGoal: null
+    };
+  }
+  function espnScoreboard(sport, slug, body) {
+    const league = arr4(body?.leagues)[0] ?? null;
+    return arr4(body?.events).map((e) => fixtureOf2(sport, slug, league, e)).filter((f) => f !== null);
+  }
+  function dayList(sport, list, bodies, day) {
+    const seen2 = /* @__PURE__ */ new Set();
+    const out = [];
+    list.forEach((b, i) => {
+      for (const f of espnScoreboard(sport, b.slug, bodies[i])) {
+        if (f.kickoff < day.start || f.kickoff >= day.end || seen2.has(f.id)) continue;
+        seen2.add(f.id);
+        out.push(f);
+      }
+    });
+    return out.sort((a, b) => a.kickoff - b.kickoff);
+  }
+  function espnEventType(e) {
+    const t = String(e?.type?.type ?? "").toLowerCase();
+    if (/^penalty---(missed|saved)/.test(t)) return "penalty";
+    if (e?.scoringPlay === true || /^(goal|own-goal|penalty---scored)/.test(t)) return "goal";
+    if (/card/.test(t)) return "card";
+    if (/^substitution/.test(t)) return "sub";
+    if (/^var/.test(t)) return "var";
+    return null;
+  }
+  function eventsOf(body, homeId) {
+    return arr4(body?.keyEvents).filter((e) => espnEventType(e) !== null).map((e) => {
+      const type = espnEventType(e);
+      const m = /^\s*(\d{1,3})'(?:\s*\+\s*(\d{1,2})')?/.exec(String(e?.clock?.displayValue ?? ""));
+      const people = arr4(e?.participants).map((p) => str4(p?.athlete?.displayName));
+      const teamId = e?.team?.id != null ? String(e.team.id) : null;
+      return {
+        minute: m ? Number(m[1]) : null,
+        extra: m?.[2] != null ? Number(m[2]) : null,
+        side: teamId == null ? null : teamId === homeId ? "home" : "away",
+        type,
+        detail: String(e?.type?.text ?? ""),
+        player: people[0] ?? null,
+        assist: type === "goal" ? people[1] ?? null : null
+      };
+    });
+  }
+  function statsOf2(body, homeId) {
+    const teams = arr4(body?.boxscore?.teams);
+    const home = teams.find((t) => String(t?.team?.id) === homeId);
+    const away = teams.find((t) => String(t?.team?.id) !== homeId);
+    if (!home || !away) return [];
+    const awayBy = new Map(arr4(away.statistics).map((s) => [String(s?.name), s]));
+    return arr4(home.statistics).filter((s) => str4(s?.label) && awayBy.has(String(s?.name))).map((s) => ({ label: String(s.label), home: String(s.displayValue ?? ""), away: String(awayBy.get(String(s.name))?.displayValue ?? "") }));
+  }
+  function lineupsOf2(body) {
+    return arr4(body?.rosters).flatMap((r) => {
+      const side3 = r?.homeAway === "home" || r?.homeAway === "away" ? r.homeAway : null;
+      if (!side3) return [];
+      const entry = (p) => ({ number: num4(p?.jersey), name: String(p?.athlete?.displayName ?? ""), pos: str4(p?.position?.abbreviation), photo: null });
+      const players2 = arr4(r?.roster);
+      const startXI = players2.filter((p) => p?.starter === true).map(entry);
+      const subs = players2.filter((p) => p?.starter !== true).map(entry);
+      return startXI.length || subs.length ? [{ side: side3, formation: str4(r?.formation), startXI, subs }] : [];
+    });
+  }
+  function detailOf(sport, slug, body) {
+    const header = body?.header;
+    const comp = arr4(header?.competitions)[0];
+    if (!comp) return null;
+    const fixture = fixtureOf2(sport, slug, { ...header?.league ?? {}, season: header?.season }, { ...comp, id: header?.id ?? comp?.id, venue: body?.gameInfo?.venue ?? comp?.venue });
+    if (!fixture) return null;
+    const homeId = fixture.home.id;
+    const events = eventsOf(body, homeId);
+    const goal = [...events].reverse().find((e) => e.type === "goal");
+    return {
+      fixture: { ...fixture, lastGoal: goal ? { side: goal.side, player: goal.player, minute: goal.minute } : null },
+      events,
+      stats: statsOf2(body, homeId),
+      lineups: lineupsOf2(body)
+    };
+  }
+  function standingRows(body) {
+    return arr4(body?.children).flatMap((group) => arr4(group?.standings?.entries).map((e) => {
+      const stats = arr4(e?.stats);
+      const team3 = e?.team ?? {};
+      return {
+        rank: num4(STAT(stats, "rank")?.value ?? STAT(stats, "rank")?.displayValue) ?? 0,
+        team: { id: String(team3.id ?? ""), name: String(team3.displayName ?? ""), crest: str4(arr4(team3.logos)[0]?.href) },
+        played: num4(STAT(stats, "gamesPlayed")?.value ?? STAT(stats, "gamesPlayed")?.displayValue) ?? 0,
+        points: num4(STAT(stats, "points")?.value ?? STAT(stats, "points")?.displayValue) ?? 0,
+        goalDiff: num4(STAT(stats, "pointDifferential")?.value ?? STAT(stats, "pointDifferential")?.displayValue),
+        form: null,
+        group: arr4(body?.children).length > 1 ? str4(group?.name) : null
+      };
+    }));
+  }
+  var ESPN_LEAGUES, LIVE_FALLBACK, SPORT_PATH, arr4, num4, str4, ymd2, leaguesToday, boards, scoreboard, STAT, covered, espn;
+  var init_espn = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/espn.ts"() {
+      "use strict";
+      init_day_plan();
+      ESPN_LEAGUES = {
+        football: [
+          "uefa.champions",
+          "uefa.europa",
+          "uefa.europa.conf",
+          "uefa.nations",
+          "eng.1",
+          "eng.2",
+          "eng.fa",
+          "eng.league_cup",
+          "esp.1",
+          "esp.copa_del_rey",
+          "ita.1",
+          "ita.coppa_italia",
+          "ger.1",
+          "ger.dfb_pokal",
+          "fra.1",
+          "ned.1",
+          "por.1",
+          "sco.1",
+          "swe.1",
+          "swe.2",
+          "nor.1",
+          "den.1",
+          "usa.1",
+          "fifa.world",
+          "fifa.worldq.uefa",
+          "fifa.friendly"
+        ],
+        hockey: ["nhl"],
+        basketball: ["nba", "wnba"]
+      };
+      LIVE_FALLBACK = /* @__PURE__ */ new Set(["uefa.champions", "uefa.europa", "eng.1", "esp.1", "ita.1", "ger.1", "swe.1"]);
+      SPORT_PATH = { football: "soccer", hockey: "hockey", basketball: "basketball" };
+      arr4 = (v) => Array.isArray(v) ? v : [];
+      num4 = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+      str4 = (v) => typeof v === "string" && v.trim() ? v : null;
+      ymd2 = (t) => `${t.getUTCFullYear()}${String(t.getUTCMonth() + 1).padStart(2, "0")}${String(t.getUTCDate()).padStart(2, "0")}`;
+      leaguesToday = /* @__PURE__ */ new Map();
+      boards = (slugs, day) => slugs.flatMap((slug) => espnDatesFor(day).map((date) => ({ slug, date })));
+      scoreboard = (sport, b, ttlS) => ({ sport, path: `site/v2/sports/${SPORT_PATH[sport]}/${b.slug}/scoreboard?dates=${b.date}&limit=300`, ttlS });
+      STAT = (stats, name) => stats.find((s) => s?.name === name);
+      covered = (sport) => ESPN_LEAGUES[sport] ?? [];
+      espn = {
+        id: "espn",
+        keyless: true,
+        liveFloorMs: 3e4,
+        coverage: (sport) => covered(sport).length > 0 ? "full" : "epg",
+        bucket: (sport) => sport,
+        day(sport, date, opts) {
+          const slugs = covered(sport);
+          const window2 = { start: localDay(date, opts.tz).start, end: opts.dayEndMs };
+          const list = boards(slugs, window2);
+          const past = date < opts.today;
+          const ttlS = date === opts.today ? 900 : past ? 21600 : 3600;
+          return {
+            requests: list.map((b) => ({ ...scoreboard(sport, b, ttlS), ...past ? { finalAfter: opts.dayEndMs + 3 * 36e5 } : {} })),
+            parse: (bodies) => {
+              const day = dayList(sport, list, bodies, window2);
+              if (date === opts.today) leaguesToday.set(sport, { date, slugs: slugs.filter((s) => day.some((f) => f.league.id === s) || list.some((b, j) => b.slug === s && bodies[j] == null)) });
+              return day;
+            }
+          };
+        },
+        live(sport, opts) {
+          const known = leaguesToday.get(sport);
+          const slugs = known && known.date === opts.today ? known.slugs : covered(sport).filter((s) => LIVE_FALLBACK.has(s) || covered(sport).length <= 3);
+          const window2 = localDay(opts.today, opts.tz);
+          const list = boards(slugs, window2);
+          return {
+            requests: list.map((b) => scoreboard(sport, b, 30)),
+            parse: (bodies) => dayList(sport, list, bodies, window2)
+          };
+        },
+        fixture(sport, id, opts) {
+          const ref = splitId(id);
+          if (!ref || !SPORT_PATH[sport]) return { requests: [], parse: () => null };
+          return {
+            requests: [{ sport, path: `site/v2/sports/${SPORT_PATH[sport]}/${ref.slug}/summary?event=${encodeURIComponent(ref.event)}`, ttlS: opts.finished ? -1 : 60 }],
+            parse: (bodies) => detailOf(sport, ref.slug, bodies[0])
+          };
+        },
+        standings(sport, leagueId) {
+          if (!SPORT_PATH[sport] || !covered(sport).includes(leagueId)) return { requests: [], parse: () => [] };
+          return { requests: [{ sport, path: `v2/sports/${SPORT_PATH[sport]}/${leagueId}/standings`, ttlS: 21600 }], parse: (bodies) => standingRows(bodies[0]) };
+        },
+        // Lag och ligor söks hos nyckelkällorna; ESPN har ingen sökväg som täcker allt i ett anrop.
+        searchTeams() {
+          return { requests: [], parse: () => [] };
+        },
+        validateKey: () => ({ requests: [], parse: () => ({ ok: true, plan: null, used: null, limit: null }) }),
+        quotaProbe: () => null,
+        crestUrl: (t) => t.crest,
+        teamArt: () => null
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
-    return id === "thesportsdb" ? theSportsDb : id === "sportapi" ? sportApi : apiSports;
+    return id === "thesportsdb" ? theSportsDb : id === "sportapi" ? sportApi : id === "espn" ? espn : apiSports;
   }
   function defaultOrder(sport) {
-    return sport === "football" ? ["sportapi", "api-sports", "thesportsdb"] : ["api-sports", "thesportsdb"];
+    return sport === "football" ? ["sportapi", "api-sports", "thesportsdb", "espn"] : ["api-sports", "thesportsdb", "espn"];
   }
   function orderFor(order, sport) {
-    const covering = PROVIDER_IDS.filter((id) => providerFor(id).coverage(sport) === "full");
+    const covering = ALL_IDS.filter((id) => providerFor(id).coverage(sport) === "full");
     const out = (order[sport] ?? []).filter((id) => covering.includes(id));
     for (const id of [...defaultOrder(sport), ...covering]) if (covering.includes(id) && !out.includes(id)) out.push(id);
     return out;
   }
   function effectiveOrder(s, sport) {
-    return orderFor(s.order, sport).filter((id) => !!s.keys[id]);
+    return orderFor(s.order, sport).filter((id) => isKeyless(id) || !!s.keys[id]);
   }
   function coverageFor(id, sport) {
     return id ? providerFor(id).coverage(sport) : "epg";
   }
-  var PROVIDER_IDS, PROVIDER_LABEL;
+  var PROVIDER_IDS, KEYLESS_IDS, ALL_IDS, PROVIDER_LABEL, isKeyless;
   var init_providers = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
       init_sportapi();
+      init_espn();
       PROVIDER_IDS = ["sportapi", "api-sports", "thesportsdb"];
-      PROVIDER_LABEL = { sportapi: "sportapi.ai", "api-sports": "API-Sports", thesportsdb: "TheSportsDB" };
+      KEYLESS_IDS = ["espn"];
+      ALL_IDS = [...PROVIDER_IDS, ...KEYLESS_IDS];
+      PROVIDER_LABEL = { sportapi: "sportapi.ai", "api-sports": "API-Sports", thesportsdb: "TheSportsDB", espn: "ESPN" };
+      isKeyless = (id) => KEYLESS_IDS.includes(id);
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -47236,7 +48603,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -47244,17 +48611,101 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-direct.ts
+  function remember2(key, data, at, final) {
+    cache7.delete(key);
+    cache7.set(key, { data, at, final });
+    while (cache7.size > MAX_ENTRIES6) cache7.delete(cache7.keys().next().value);
+  }
+  function isFresh(e, req, now2) {
+    if (req.ttlS < 0) return e.final;
+    if (req.finalAfter != null && e.at >= req.finalAfter) return true;
+    return req.ttlS > 0 && now2 - e.at < req.ttlS * 1e3;
+  }
+  async function sportDirect(args, deps2 = {}) {
+    const now2 = deps2.now ?? Date.now;
+    const source = BASES[args.provider];
+    if (!source || !source.allow.test(args.req.path)) return result(null, false, false, null, "not-allowed");
+    const url = source.base + args.req.path;
+    const hit = cache7.get(url);
+    if (args.mode === "cache-only") return hit ? result(hit.data, true, isFresh(hit, args.req, now2()), hit.at, null) : result(null, true, false, null, null);
+    if (hit && isFresh(hit, args.req, now2())) return result(hit.data, true, true, hit.at, null);
+    const running2 = inflight9.get(url);
+    if (running2) return running2;
+    let release2 = () => {
+    };
+    const gate = new Promise((resolve) => {
+      release2 = resolve;
+    });
+    const run2 = (async () => {
+      await gate;
+      try {
+        const res = await (deps2.fetch ?? fetch)(url, { headers: { Accept: "application/json" } });
+        if (res.status === 429) return result(hit?.data ?? null, !!hit, false, hit?.at ?? null, "rate-limited");
+        if (res.status === 400 || res.status === 404) {
+          const at2 = now2();
+          remember2(url, {}, at2, false);
+          return result({}, false, true, at2, null);
+        }
+        if (!res.ok) return result(hit?.data ?? null, !!hit, false, hit?.at ?? null, res.status >= 500 ? "upstream" : "network");
+        const data = await res.json();
+        const at = now2();
+        remember2(url, data, at, args.req.ttlS < 0);
+        return result(data, false, true, at, null);
+      } catch {
+        return result(hit?.data ?? null, !!hit, false, hit?.at ?? null, "network");
+      } finally {
+        inflight9.delete(url);
+      }
+    })();
+    inflight9.set(url, run2);
+    release2();
+    return run2;
+  }
+  var BASES, MAX_ENTRIES6, cache7, inflight9, result;
+  var init_sport_direct = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-direct.ts"() {
+      "use strict";
+      "use client";
+      BASES = {
+        espn: { base: "https://site.api.espn.com/apis/", allow: /^(site\/v2|v2)\/sports\/(soccer|hockey|basketball)\/[a-z0-9._]+\/(scoreboard|summary|standings)(\?[A-Za-z0-9=&%._-]*)?$/ }
+      };
+      MAX_ENTRIES6 = 120;
+      cache7 = /* @__PURE__ */ new Map();
+      inflight9 = /* @__PURE__ */ new Map();
+      result = (data, cached, fresh, fetchedAt, error) => ({ data, cached, fresh, fetchedAt, quota: null, error });
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/budget.ts
+  function pooled(items2, limit, run2) {
+    let active4 = 0;
+    const queue2 = [];
+    const next = () => {
+      active4--;
+      queue2.shift()?.();
+    };
+    return items2.map((item) => new Promise((resolve, reject) => {
+      const start3 = () => {
+        active4++;
+        run2(item).then(resolve, reject).finally(next);
+      };
+      if (active4 < limit) start3();
+      else queue2.push(start3);
+    }));
+  }
   function reserveFor(limit) {
     return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1));
   }
-  var RETRY_MS2, DAY_MS, unknownQuota, Budget;
+  var RETRY_MS2, KEYLESS_PARALLEL, DAY_MS, unknownQuota, Budget;
   var init_budget = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
       init_sport_fetch();
+      init_sport_direct();
       RETRY_MS2 = 2e3;
+      KEYLESS_PARALLEL = 6;
       DAY_MS = 864e5;
       unknownQuota = (bucket) => ({ bucket, limit: null, remaining: null, minuteLimit: null, minuteRemaining: null, blockedUntil: null, reason: null, plan: null });
       Budget = class {
@@ -47269,16 +48720,25 @@ ${cue.text}`).join("\n\n")}
           __publicField(this, "invalid", false);
           __publicField(this, "listeners", /* @__PURE__ */ new Set());
           __publicField(this, "fetchImpl");
+          __publicField(this, "directImpl");
           __publicField(this, "ledgerImpl");
           __publicField(this, "now");
           __publicField(this, "sleep");
           this.fetchImpl = deps2.fetch ?? sportFetch;
+          this.directImpl = deps2.direct ?? sportDirect;
           this.ledgerImpl = deps2.ledger ?? sportQuota;
           this.now = deps2.now ?? Date.now;
           this.sleep = deps2.sleep ?? ((ms2) => new Promise((resolve) => setTimeout(resolve, ms2)));
         }
         hasKey() {
           return !!this.key;
+        }
+        /** Kan göra anrop: har en nyckel, eller källan behöver ingen. */
+        canCall() {
+          return !!this.key || !!this.provider.keyless;
+        }
+        get(req, mode) {
+          return this.provider.keyless ? this.directImpl({ provider: this.provider.id, req, mode }) : this.fetchImpl({ provider: this.provider.id, key: this.key ?? "", req, mode });
         }
         /** Dagens kvot ur värdens bok (delas av TV och telefon). Lokalt anrop, kostar ingen kvot: för inställningarnas Nycklar. */
         async loadLedger() {
@@ -47383,7 +48843,7 @@ ${cue.text}`).join("\n\n")}
         }
         async run(kind, sport, call) {
           const none = (reason) => ({ ok: false, reason, data: null, fetchedAt: null, until: null });
-          if (!this.key) return none("no-key");
+          if (!this.canCall()) return none("no-key");
           if (this.provider.coverage(sport) !== "full") return none("no-coverage");
           if (this.invalid && kind !== "validate") return none("invalid-key");
           if (call.requests.length === 0) return { ok: true, data: call.parse([]), cached: true, fetchedAt: null };
@@ -47400,11 +48860,22 @@ ${cue.text}`).join("\n\n")}
           let cached = true;
           let fetchedAt = null;
           const bodies = [];
-          for (const req of call.requests) {
-            let res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode });
+          const keyless = !!this.provider.keyless;
+          const ahead = keyless ? pooled(call.requests, KEYLESS_PARALLEL, (req) => this.get(req, mode)) : null;
+          let errors = 0;
+          for (const [i, req] of call.requests.entries()) {
+            let res = await (ahead ? ahead[i] : this.get(req, mode));
+            if (keyless) {
+              if (res.error) errors++;
+              if (res.error && errors === call.requests.length && !failure) failure = res.error === "rate-limited" ? "paused" : "network";
+              if (!res.cached) cached = false;
+              if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt);
+              bodies.push(res.data);
+              continue;
+            }
             if (res.error === "network" && mode === "cache-first") {
               await this.sleep(RETRY_MS2);
-              if (this.allows(kind, bucket, 1)) res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode });
+              if (this.allows(kind, bucket, 1)) res = await this.get(req, mode);
             }
             if (res.quota) this.noteQuota(res.quota);
             if (res.error === "unauthorized") {
@@ -47454,9 +48925,9 @@ ${cue.text}`).join("\n\n")}
         }
         /** Startvärdet ur diskcachen innan något anrop görs. Alltid `cache-only`, så det kostar aldrig kvot. */
         async peek(sport, call) {
-          if (!this.key || this.provider.coverage(sport) !== "full" || call.requests.length === 0) return null;
+          if (!this.canCall() || this.provider.coverage(sport) !== "full" || call.requests.length === 0) return null;
           const bodies = [];
-          for (const req of call.requests) bodies.push((await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: "cache-only" })).data);
+          for (const req of call.requests) bodies.push((await this.get(req, "cache-only")).data);
           if (bodies.every((b) => b == null)) return null;
           try {
             return call.parse(bodies);
@@ -47469,11 +48940,11 @@ ${cue.text}`).join("\n\n")}
          * räknar sin TTL ur det: matcherna gäller fram till lagets nästa match.
          */
         async peekAged(sport, call) {
-          if (!this.key || this.provider.coverage(sport) !== "full" || call.requests.length === 0) return null;
+          if (!this.canCall() || this.provider.coverage(sport) !== "full" || call.requests.length === 0) return null;
           const bodies = [];
           let fetchedAt = null;
           for (const req of call.requests) {
-            const res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: "cache-only" });
+            const res = await this.get(req, "cache-only");
             bodies.push(res.data);
             if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt);
           }
@@ -47488,13 +48959,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
   }
   function crestText(name) {
-    const words = name.split(/\s+/).filter(Boolean);
-    const word = words.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words[0] ?? "?";
+    const words2 = name.split(/\s+/).filter(Boolean);
+    const word = words2.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words2[0] ?? "?";
     return word.slice(0, 3).toUpperCase();
   }
   function sourceChannel(s) {
@@ -47502,7 +48973,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
   var init_sport_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-model.ts"() {
       "use strict";
       SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
       SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
@@ -47510,7 +48981,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-store.ts
   function cardOpacity(cards, tv) {
     const own = tv ? cards.tvOpacity : cards.opacity;
     return typeof own === "number" ? own : tv ? CARD_OPACITY_DEFAULT.tv : CARD_OPACITY_DEFAULT.desktop;
@@ -47766,7 +49237,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_KEYS_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, ownImageDefaults, BACKDROPS_REV, CARD_OPACITY_DEFAULT, CARDS_REV, isMode, pct2, DEFAULT_CARDS, ALL_PROVIDERS, DEFAULT_SETTINGS, isProvider, KEY_RE, LEGACY_PROVIDERS, followAlert, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47811,7 +49282,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -47828,25 +49299,25 @@ ${cue.text}`).join("\n\n")}
     const key = cleanKey(raw);
     if (!key) return { ok: false, reason: "empty" };
     const budget = new Budget(providerFor(provider), key, { fetch: deps2.fetch });
-    const result = await budget.validate();
-    if (result.ok && result.data.ok) {
+    const result2 = await budget.validate();
+    if (result2.ok && result2.data.ok) {
       const q = budget.quota(budget.provider.bucket("football"));
-      const check = result.data.used == null && q.limit != null && q.remaining != null ? { ...result.data, used: Math.max(0, q.limit - q.remaining), limit: q.limit, plan: result.data.plan ?? q.plan } : result.data;
+      const check = result2.data.used == null && q.limit != null && q.remaining != null ? { ...result2.data, used: Math.max(0, q.limit - q.remaining), limit: q.limit, plan: result2.data.plan ?? q.plan } : result2.data;
       return { ok: true, key, check };
     }
-    if (!result.ok && result.reason === "network") return { ok: false, reason: "network" };
+    if (!result2.ok && result2.reason === "network") return { ok: false, reason: "network" };
     return { ok: false, reason: "rejected" };
   }
   async function saveValidatedKey(provider, raw, deps2 = {}) {
-    const result = await validateKey(provider, raw, deps2);
-    if (result.ok) setProviderKey(provider, result.key, result.check.plan);
-    return result;
+    const result2 = await validateKey(provider, raw, deps2);
+    if (result2.ok) setProviderKey(provider, result2.key, result2.check.plan);
+    return result2;
   }
   function removeKey(provider) {
     removeProviderKey(provider ?? getSportSettings().provider);
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -47855,7 +49326,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-handoff.ts
   async function startKeyHandoff() {
     try {
       const res = await fetch(BASE, { method: "POST" });
@@ -47927,7 +49398,7 @@ ${cue.text}`).join("\n\n")}
   }
   var BASE, POLL_MS2;
   var init_key_handoff = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-handoff.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-handoff.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47936,7 +49407,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/router.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/router.ts
   function lacksLiveData(f, now2) {
     return (f.status === "live" || f.status === "ht") && f.score == null && f.minute == null && now2 - f.kickoff >= NO_LIVE_GRACE_MS;
   }
@@ -47949,23 +49420,24 @@ ${cue.text}`).join("\n\n")}
       const k = `${pid}|${key}`;
       let b = budgets.get(k);
       if (!b) {
-        b = new Budget(providerFor(pid), key);
+        b = new Budget(providerFor(pid), key || null);
         budgets.set(k, b);
       }
       return b;
     };
     const router = new SportRouter(keys2, order, {}, make);
-    current2 = { id, router: router.hasKey() ? router : null };
+    current2 = { id, router: router.hasSource() ? router : null };
     return current2.router;
   }
-  var FALL_THROUGH, NO_LIVE_GRACE_MS, SportRouter, current2, budgets;
+  var keylessSources, FALL_THROUGH, NO_LIVE_GRACE_MS, SportRouter, current2, budgets;
   var init_router = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/router.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/router.ts"() {
       "use strict";
       "use client";
       init_budget();
       init_sport_store();
       init_providers();
+      keylessSources = () => globalThis.__lumioNoKeylessSources !== true;
       FALL_THROUGH = /* @__PURE__ */ new Set(["paused", "over-budget", "invalid-key"]);
       NO_LIVE_GRACE_MS = 10 * 6e4;
       SportRouter = class {
@@ -47987,20 +49459,30 @@ ${cue.text}`).join("\n\n")}
           for (const [id, k] of Object.entries(keys2)) {
             if (k?.key) this.budgets.set(id, make ? make(id, k.key) : new Budget(providerFor(id), k.key, deps2));
           }
+          if (keylessSources()) for (const id of KEYLESS_IDS) this.budgets.set(id, make ? make(id, "") : new Budget(providerFor(id), null, deps2));
+        }
+        keyed() {
+          return [...this.budgets.values()].filter((b) => !b.provider.keyless);
         }
         budget(id) {
           return this.budgets.get(id) ?? null;
         }
-        hasKey() {
+        /** Någon källa alls, med eller utan nyckel. */
+        hasSource() {
           return this.budgets.size > 0;
         }
-        /** Fler än en källa med nyckel: då säger takraden vilken källa som används. */
+        /** Någon källa med nyckel (källorna utan nyckel räknas inte). */
+        hasKey() {
+          return this.keyed().length > 0;
+        }
+        /** Fler än en källa: då säger takraden vilken källa som används. */
         multi() {
           return this.budgets.size > 1;
         }
         /** Alla nycklar ogiltiga (en ogiltig bland flera är bara den källans problem). */
         isInvalid() {
-          return this.budgets.size > 0 && [...this.budgets.values()].every((b) => b.isInvalid());
+          const k = this.keyed();
+          return k.length > 0 && k.every((b) => b.isInvalid());
         }
         /** Sportens källor med nyckel, i ordning. */
         candidates(sport) {
@@ -48166,10 +49648,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/surface.ts
   var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface2, sportCardStyle, SPORT_DRAWER_PADDING, sportDrawerStyle, SPORT_SOLID_BG, sportStackedStyle, focusAttr, ACC, TINT, ON, F, ROW_DECL, SPORT_FOCUS_CSS;
   var init_surface = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/surface.ts"() {
       "use strict";
       init_tv_ui();
       sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
@@ -48221,7 +49703,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-card.tsx
   function KeyCard({ variant, onDone, pushLayer, provider: fixed, current: current4, onRemove }) {
     const { tt } = useTvText();
     const tv = useTvMode();
@@ -48235,16 +49717,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const broken = !!settings.keys[provider] && !!currentRouter()?.budget(provider)?.isInvalid();
     const submit = async (raw) => {
       setPhase({ kind: "checking" });
-      const result = await saveValidatedKey(provider, raw);
-      setPhase({ kind: "done", result });
-      if (result.ok) {
+      const result2 = await saveValidatedKey(provider, raw);
+      setPhase({ kind: "done", result: result2 });
+      if (result2.ok) {
         setPhoneEntry(false);
         onDone?.();
       }
     };
     const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
-    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
-    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
+    const covered2 = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
+    const sportsText = covered2.length > 1 ? `${covered2.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered2[covered2.length - 1]}` : covered2.join("");
     const signupUrl = SIGNUP[provider];
     const message = (() => {
       if (phase.kind === "checking") return tt("sportKeyChecking");
@@ -48317,7 +49799,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SPORT_NAMES, SIGNUP;
   var init_key_card = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-card.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-card.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48345,7 +49827,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -48375,76 +49857,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { text: `${head}${left}${via}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
       init_providers();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/day-plan.ts
-  function planKey(c) {
-    return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
-  }
-  function planDay(input, provider) {
-    const sports = [...new Set(input.sports)].filter((s) => provider.coverage(s) === "full");
-    const out = sports.map((sport) => ({ kind: "day", sport, date: input.today }));
-    for (const sport of sports) {
-      for (const date of [input.yesterday, input.tomorrow]) {
-        const c = { kind: "day", sport, date };
-        if (!input.done.has(planKey(c))) out.push(c);
-      }
-    }
-    const seen2 = /* @__PURE__ */ new Set();
-    for (const l of input.leagues) {
-      if (provider.coverage(l.sport) !== "full") continue;
-      const c = { kind: "standings", sport: l.sport, leagueId: l.leagueId, season: l.season, ...l.provider ? { provider: l.provider } : {} };
-      const k = planKey(c);
-      if (seen2.has(k) || input.done.has(k)) continue;
-      seen2.add(k);
-      out.push(c);
-    }
-    return out;
-  }
-  function plannedPerSport(calls) {
-    const out = /* @__PURE__ */ new Map();
-    for (const c of calls) out.set(c.sport, (out.get(c.sport) ?? 0) + 1);
-    return out;
-  }
-  function ymd(ms2, tz2) {
-    const parts2 = new Intl.DateTimeFormat("en-CA", { timeZone: tz2, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ms2));
-    const get = (t) => parts2.find((p) => p.type === t)?.value ?? "00";
-    return `${get("year")}-${get("month")}-${get("day")}`;
-  }
-  function offsetMs(ms2, tz2) {
-    const parts2 = new Intl.DateTimeFormat("en-US", { timeZone: tz2, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }).formatToParts(new Date(ms2));
-    const n = (t) => Number(parts2.find((p) => p.type === t)?.value ?? 0);
-    return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - Math.floor(ms2 / 1e3) * 1e3;
-  }
-  function shiftDate(date, days) {
-    const [y, m, d] = date.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d + days, 12)).toISOString().slice(0, 10);
-  }
-  function localDates(now2, tz2) {
-    const today = ymd(now2, tz2);
-    const [y, m, d] = today.split("-").map(Number);
-    const shift = (days) => ymd(Date.UTC(y, m - 1, d + days, 12), "UTC");
-    const dayEndMs = (date) => {
-      const [yy, mm, dd] = date.split("-").map(Number);
-      const utcMidnight = Date.UTC(yy, mm - 1, dd + 1);
-      return utcMidnight - offsetMs(utcMidnight, tz2);
-    };
-    return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
-  }
-  var init_day_plan = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/day-plan.ts"() {
-      "use strict";
-    }
-  });
-
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/event-index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/event-index.ts
   var WINDOW_MS, fold, aliasKey, EventIndex;
   var init_event_index = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/event-index.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/event-index.ts"() {
       "use strict";
       init_sport_store();
       WINDOW_MS = 15 * 6e4;
@@ -48504,7 +49926,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -48634,7 +50056,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48650,12 +50072,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/goal-events.ts
-  function diffGoals(prev, next, now2, keyOf = (f) => f.id) {
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/goal-events.ts
+  function diffGoals(prev, next, now2, keyOf2 = (f) => f.id) {
     const out = [];
     for (const f of next) {
       if (!f.score) continue;
-      const before = prev.get(keyOf(f));
+      const before = prev.get(keyOf2(f));
       if (!before) continue;
       for (const side3 of ["home", "away"]) {
         if (f.score[side3] <= before[side3]) continue;
@@ -48677,23 +50099,23 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
   function emitGoals(events) {
-    for (const e of events) for (const cb of [...listeners10]) cb(e);
+    for (const e of events) for (const cb of [...listeners11]) cb(e);
   }
   function onGoal(cb) {
-    listeners10.add(cb);
+    listeners11.add(cb);
     return () => {
-      listeners10.delete(cb);
+      listeners11.delete(cb);
     };
   }
-  var listeners10;
+  var listeners11;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
-      listeners10 = /* @__PURE__ */ new Set();
+      listeners11 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -48728,7 +50150,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
   function fetchSportDay(day, now2 = Date.now()) {
-    const hit = cache7.get(day);
+    const hit = cache8.get(day);
     if (hit && now2 - hit.at < TTL_MS2) return hit.promise;
     const qs = new URLSearchParams({ listId: LIVE_TV_GLOBAL_EPG_ID, day, tzOffset: String(tzOffsetFor(day)) });
     const promise = fetch(`/api/live-tv/sport/day?${qs.toString()}`).then(async (res) => {
@@ -48736,14 +50158,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (!res.ok) throw new Error(`/api/live-tv/sport/day returned ${res.status}`);
       return sanitizeDay(await res.json(), day);
     });
-    cache7.set(day, { at: now2, promise });
+    cache8.set(day, { at: now2, promise });
     promise.catch(() => {
-      if (cache7.get(day)?.promise === promise) cache7.delete(day);
+      if (cache8.get(day)?.promise === promise) cache8.delete(day);
     });
     return promise;
   }
   function useSportDay(day, nowMs) {
-    const [result, setResult] = useState({ day: null, data: null, state: "loading" });
+    const [result2, setResult] = useState({ day: null, data: null, state: "loading" });
     const bucket = Math.floor(nowMs / TTL_MS2);
     useEffect(() => {
       if (!day) return;
@@ -48758,11 +50180,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       };
     }, [day, bucket]);
     if (!day) return { data: null, state: "ready" };
-    return result.day === day ? { data: result.data, state: result.state } : { data: null, state: "loading" };
+    return result2.day === day ? { data: result2.data, state: result2.state } : { data: null, state: "loading" };
   }
-  var pad2, SportEndpointMissing, TTL_MS2, cache7;
+  var pad2, SportEndpointMissing, TTL_MS2, cache8;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48774,11 +50196,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         }
       };
       TTL_MS2 = 5 * 6e4;
-      cache7 = /* @__PURE__ */ new Map();
+      cache8 = /* @__PURE__ */ new Map();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.rerun) return now2 < m.start ? "upcoming" : "finished";
     if (m.phase === "postponed") return "upcoming";
@@ -48976,7 +50398,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOUR, MIN, MERGE_GAP_MS, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
@@ -49006,7 +50428,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
@@ -49124,7 +50546,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TWO_HOURS, REPLAY_GAP, REPLAY_LOOKBACK, STATUS2, phaseOf, fitsTeams;
   var init_merge = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       init_sport_store();
@@ -49137,7 +50559,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-link.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-link.ts
   async function linkFixtures(args) {
     if (args.fixtures.length === 0) return {};
     try {
@@ -49159,7 +50581,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_sport_link = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-link.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-link.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
@@ -49168,7 +50590,58 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/spoiler.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/detail-fill.ts
+  function sameTeam(a, b) {
+    const x = words(a);
+    const y = words(b);
+    if (x.length === 0 || y.length === 0) return false;
+    const xs = x.join(" ");
+    const ys = y.join(" ");
+    if (xs === ys) return true;
+    const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+    return short.every((w) => long.some((v) => v === w || w.length >= 3 && v.startsWith(w)));
+  }
+  function findSameMatch(list, f) {
+    for (const x of list) {
+      if (Math.abs(x.kickoff - f.kickoff) > KICKOFF_SLACK_MS) continue;
+      if (sameTeam(x.home.name, f.home.name) && sameTeam(x.away.name, f.away.name)) return { fixture: x, swapped: false };
+      if (sameTeam(x.home.name, f.away.name) && sameTeam(x.away.name, f.home.name)) return { fixture: x, swapped: true };
+    }
+    return null;
+  }
+  function keepFilled(prev, fresh) {
+    if (!prev) return fresh;
+    return {
+      ...fresh,
+      stats: fresh.stats.length ? fresh.stats : prev.stats,
+      lineups: fresh.lineups.length ? fresh.lineups : prev.lineups
+    };
+  }
+  function fillFrom(detail, other, swapped) {
+    if (!other) return detail;
+    const stats = swapped ? other.stats.map(flipStat) : other.stats;
+    const lineups2 = swapped ? other.lineups.map(flipLineup) : other.lineups;
+    return {
+      ...detail,
+      stats: detail.stats.length ? detail.stats : stats,
+      lineups: detail.lineups.length ? detail.lineups : lineups2
+    };
+  }
+  var fold2, AFFIX, words, KICKOFF_SLACK_MS, flipStat, flipLineup, lacksDetail;
+  var init_detail_fill = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/detail-fill.ts"() {
+      "use strict";
+      fold2 = (name) => name.replace(/[øØ]/g, "o").replace(/[æÆ]/g, "ae").replace(/ß/g, "ss").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+      AFFIX = /* @__PURE__ */ new Set(["fc", "cf", "afc", "sc", "ac", "ssc", "fk", "sk", "if", "ik", "bk", "ff", "cd", "ud", "sv", "vfb", "vfl", "tsg", "rc", "as", "us", "club", "de"]);
+      words = (name) => fold2(name).split(" ").filter((w) => w && !AFFIX.has(w));
+      KICKOFF_SLACK_MS = 3 * 36e5;
+      flipStat = (s) => ({ ...s, home: s.away, away: s.home });
+      flipLineup = (l) => ({ ...l, side: l.side === "home" ? "away" : "home" });
+      lacksDetail = (d) => d.stats.length === 0 || d.lineups.length === 0;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/spoiler.ts
   function spoilerKey(m) {
     if (m.rerun) {
       const f = m.replayOf?.fixture;
@@ -49231,9 +50704,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return !(phoneId && key && phoneReveals.get(key)?.has(phoneId));
   }
   function onSpoilerChanged(cb) {
-    listeners11.add(cb);
+    listeners12.add(cb);
     return () => {
-      listeners11.delete(cb);
+      listeners12.delete(cb);
     };
   }
   function useSpoilerVersion() {
@@ -49251,9 +50724,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, []);
     return v;
   }
-  var SPOILER_KEEP_MS, REVEAL_TV_MS, SPOILER_TV_KEY, protectedUntil, phoneReveals, listeners11, emit3;
+  var SPOILER_KEEP_MS, REVEAL_TV_MS, SPOILER_TV_KEY, protectedUntil, phoneReveals, listeners12, emit3;
   var init_spoiler = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -49264,14 +50737,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       SPOILER_TV_KEY = "sport_spoiler_tv_v1";
       protectedUntil = /* @__PURE__ */ new Map();
       phoneReveals = /* @__PURE__ */ new Map();
-      listeners11 = /* @__PURE__ */ new Set();
+      listeners12 = /* @__PURE__ */ new Set();
       emit3 = () => {
-        for (const cb of [...listeners11]) cb();
+        for (const cb of [...listeners12]) cb();
       };
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
     const router = currentRouter();
     if (!router) {
@@ -49341,9 +50814,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (!controller2 || !channelKey2) return null;
     return controller2.merged().find((m) => m.coverage === "full" && !!m.fixture && !m.rerun && m.status === "live" && m.sources.some((s) => s.channelKey === channelKey2)) ?? null;
   }
-  var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, STANDINGS_MISS_MS, HISTORY_DAYS, ResultsController, current3, NO_KEY;
+  var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, FILL_REFRESH_MS, STANDINGS_MISS_MS, HISTORY_DAYS, ResultsController, current3, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -49358,12 +50831,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_sport_link();
       init_merge();
       init_providers();
+      init_detail_fill();
       init_sport_day_model();
       init_sport_store();
       init_spoiler();
       TEN_MIN = 10 * 6e4;
       TWO_HOURS2 = 2 * 36e5;
       LIVE_DETAIL_MS = 6e4;
+      FILL_REFRESH_MS = 5 * 6e4;
       STANDINGS_MISS_MS = 6 * 36e5;
       HISTORY_DAYS = [2, 3];
       ResultsController = class {
@@ -49405,6 +50880,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           /** Räknas upp vid varje dataändring (fixturer, tabeller, matchcenter, kvot). Hookarna memoiserar på den. */
           __publicField(this, "version", 0);
           __publicField(this, "mergedListeners", /* @__PURE__ */ new Set());
+          /** Senaste kompletteringen per match (`null` = ESPN hade inte matchen). */
+          __publicField(this, "fills", /* @__PURE__ */ new Map());
           this.tz = deps2.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
           this.now = deps2.now ?? Date.now;
           this.unsubBudget = router.subscribe(() => {
@@ -49486,8 +50963,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           const dk = this.dayKey(sport, date);
           const byKey = this.days.get(dk) ?? /* @__PURE__ */ new Map();
           const list = source === "live" && liveProvider ? [...input, ...this.droppedFromLiveList(byKey, input, sport, liveProvider)] : input;
-          const keyOf = new Map(list.map((f) => [f, this.events.resolve(f)]));
-          const key = (f) => keyOf.get(f) ?? this.events.resolve(f);
+          const keyOf2 = new Map(list.map((f) => [f, this.events.resolve(f)]));
+          const key = (f) => keyOf2.get(f) ?? this.events.resolve(f);
           const seen2 = (f) => this.observed.get(key(f)) ?? -Infinity;
           const blank = (f) => {
             const kept = byKey.get(key(f));
@@ -49634,9 +51111,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           this.standingsMiss.set(lookup, this.now());
           const res = await this.router.searchLeagues(sport, league.name);
           if (!res.ok || !res.provider || res.provider === provider) return null;
-          const fold2 = (x) => (x ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-          const name = fold2(league.name);
-          const hit = res.data.find((h) => fold2(h.name).includes(name) && (!league.country || !h.country || fold2(h.country) === fold2(league.country)));
+          const fold3 = (x) => (x ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+          const name = fold3(league.name);
+          const hit = res.data.find((h) => fold3(h.name).includes(name) && (!league.country || !h.country || fold3(h.country) === fold3(league.country)));
           if (!hit) return null;
           const found = { provider: res.provider, leagueId: hit.id, season: "current" };
           const k = `${sport}|${provider}|${leagueId}`;
@@ -49655,11 +51132,31 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail;
           const res = await this.router.fixture(sport, this.events.refsOf(ref.provider, ref.id), { finished, refresh: !!hit });
           if (res.data) {
-            this.details.set(key, { at: this.now(), detail: res.data });
+            let detail = keepFilled(hit?.detail, res.data);
+            if (lacksDetail(detail)) detail = await this.fillFromEspn(sport, key, detail, finished);
+            this.details.set(key, { at: this.now(), detail });
             this.emit();
-            return res.data;
+            return detail;
           }
           return hit?.detail ?? null;
+        }
+        /**
+         * Statistik och uppställning från ESPN när matchens källa saknar dem
+         * (sportapi.ai). ESPN har ingen kvot: dagens scoreboard (cachad 15 min)
+         * hittar matchen på lag och avspark, sedan en sammanfattning. Pågående
+         * matcher kompletteras högst var femte minut, avslutade en gång.
+         */
+        async fillFromEspn(sport, key, detail, finished) {
+          const espnBudget = this.router.budget("espn");
+          if (!espnBudget || detail.fixture.provider === "espn" || providerFor("espn").coverage(sport) !== "full") return detail;
+          const last2 = this.fills.get(key);
+          if (last2 && (finished || this.now() - last2.at < FILL_REFRESH_MS)) return fillFrom(detail, last2.detail, last2.swapped);
+          const d = localDates(detail.fixture.kickoff, this.tz);
+          const day = await espnBudget.day(sport, d.today, { today: this.dates().today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) });
+          const same4 = day.data ? findSameMatch(day.data, detail.fixture) : null;
+          const other = same4 ? (await espnBudget.fixture(sport, same4.fixture.id, { finished })).data ?? null : null;
+          this.fills.set(key, { at: this.now(), detail: other ?? last2?.detail ?? null, swapped: same4?.swapped ?? last2?.swapped ?? false });
+          return fillFrom(detail, other ?? last2?.detail ?? null, same4?.swapped ?? last2?.swapped ?? false);
         }
         /**
          * Reprisens matchinfo: originalmatchen BARA ur minnet eller diskcachen. Ingen
@@ -49779,7 +51276,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const best = (m) => rankedSources(m, overrides)[0] ?? null;
@@ -49868,7 +51365,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var KIND_KEYS, NOOP;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -49893,7 +51390,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -49912,17 +51409,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items2) => {
             const storedAt = Date.now();
             for (const key of wanted) {
-              cache8.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
+              cache9.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
             }
             evict(storedAt);
             return items2;
           });
-          for (const key of wanted) inflight9.set(entryKey2(listId, key, from, to), request);
+          for (const key of wanted) inflight10.set(entryKey2(listId, key, from, to), request);
           request.catch(() => {
           }).finally(() => {
             for (const key of wanted) {
-              if (inflight9.get(entryKey2(listId, key, from, to)) === request) {
-                inflight9.delete(entryKey2(listId, key, from, to));
+              if (inflight10.get(entryKey2(listId, key, from, to)) === request) {
+                inflight10.delete(entryKey2(listId, key, from, to));
               }
             }
           });
@@ -49943,13 +51440,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `${epgStoreId(listId)}|${key}|${from}|${to}`;
   }
   function evict(now2) {
-    for (const [key, entry] of cache8) {
-      if (now2 - entry.storedAt >= TTL_MS3) cache8.delete(key);
+    for (const [key, entry] of cache9) {
+      if (now2 - entry.storedAt >= TTL_MS3) cache9.delete(key);
     }
-    while (cache8.size > MAX_ENTRIES5) {
-      const oldest = cache8.keys().next();
+    while (cache9.size > MAX_ENTRIES7) {
+      const oldest = cache9.keys().next();
       if (oldest.done) break;
-      cache8.delete(oldest.value);
+      cache9.delete(oldest.value);
     }
   }
   function split(listId, keys2, from, to, now2) {
@@ -49957,11 +51454,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const missing = [];
     for (const key of keys2) {
       const id = entryKey2(listId, key, from, to);
-      const entry = cache8.get(id);
+      const entry = cache9.get(id);
       if (entry && now2 - entry.storedAt < TTL_MS3) {
         hits[key] = entry.programmes;
-        cache8.delete(id);
-        cache8.set(id, entry);
+        cache9.delete(id);
+        cache9.set(id, entry);
       } else {
         missing.push(key);
       }
@@ -49979,7 +51476,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const waiting = /* @__PURE__ */ new Set();
     const queue2 = [];
     for (const key of missing) {
-      const pending5 = inflight9.get(entryKey2(listId, key, from, to));
+      const pending5 = inflight10.get(entryKey2(listId, key, from, to));
       if (pending5) waiting.add(pending5);
       else queue2.push(key);
     }
@@ -49994,7 +51491,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           break;
         }
       }
-      merged[key] = value ?? cache8.get(entryKey2(listId, key, from, to))?.programmes ?? [];
+      merged[key] = value ?? cache9.get(entryKey2(listId, key, from, to))?.programmes ?? [];
     }
     return merged;
   }
@@ -50002,35 +51499,35 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS3, MAX_ENTRIES5, cache8, batches, inflight9, HOUR_MS;
+  var TTL_MS3, MAX_ENTRIES7, cache9, batches, inflight10, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
       init_store_id();
       TTL_MS3 = 5 * 60 * 1e3;
-      MAX_ENTRIES5 = 600;
-      cache8 = /* @__PURE__ */ new Map();
+      MAX_ENTRIES7 = 600;
+      cache9 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
-      inflight9 = /* @__PURE__ */ new Map();
+      inflight10 = /* @__PURE__ */ new Map();
       HOUR_MS = 36e5;
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
-    let result = -1;
+    let result2 = -1;
     while (lo <= hi) {
       const mid = lo + hi >>> 1;
       if (programmes[mid].start <= now2) {
-        result = mid;
+        result2 = mid;
         lo = mid + 1;
       } else hi = mid - 1;
     }
-    return result;
+    return result2;
   }
   function nowNextLaterFrom(programmes, now2 = Date.now()) {
     if (!programmes || programmes.length === 0) return EMPTY5;
@@ -50047,13 +51544,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-shell.tsx
   function encodeChannelParams(channel) {
     return {
       url: channel.url,
@@ -50065,14 +51562,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID;
   var init_live_tv_shell = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-shell.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-shell.tsx"() {
       "use strict";
       LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
       LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -50102,7 +51599,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50112,7 +51609,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/couch-channel-player.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/couch-channel-player.ts
   function channelSnapshot(a) {
     return {
       kind: "channel",
@@ -50144,12 +51641,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_couch_channel_player = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/couch-channel-player.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/couch-channel-player.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hls-recovery.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hls-recovery.ts
   function nextRecoveryStep(failures) {
     if (failures >= HLS_REOPEN_BACKOFF_MS.length) return { kind: "fallback-ts" };
     return { kind: "reopen", delayMs: HLS_REOPEN_BACKOFF_MS[Math.max(0, failures)], attempt: Math.max(0, failures) + 1 };
@@ -50170,7 +51667,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O, HLS_DEMUXER_LAVF_O_PROXIED;
   var init_hls_recovery = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hls-recovery.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hls-recovery.ts"() {
       "use strict";
       HLS_STALL_MS = 8e3;
       HLS_REOPEN_BACKOFF_MS = [3e3, 6e3, 12e3];
@@ -50181,7 +51678,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -50330,13 +51827,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -50355,14 +51852,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -50411,13 +51908,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -50428,13 +51925,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -50454,7 +51951,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -50467,7 +51964,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -50511,7 +52008,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -50524,7 +52021,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/score-model.ts
   function scoreHidden(m, now2 = Date.now()) {
     if (!spoilerProtected(m, now2)) return false;
     return hiddenOnTv(m, now2, getSportSettings());
@@ -50577,14 +52074,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return f.crest ?? null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
       init_spoiler();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -50605,7 +52102,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -50682,7 +52179,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card", px }) {
     const blink = useGoalBlink(match);
     useSpoilerVersion();
@@ -50732,7 +52229,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50751,15 +52248,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
   var init_sport_icons2 = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
       "use strict";
       init_sport_icons();
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/crest.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/crest.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -50769,7 +52266,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(colorKey), color: "#fff", fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: crestText(name) });
   }
   var init_crest = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/crest.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/crest.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50781,7 +52278,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function LeagueDot({ leagueKey, size = dp(12) }) {
     return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: dp(3), background: leagueColor(leagueKey), flexShrink: 0 } });
   }
@@ -50860,7 +52357,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn, GRID_MIN_CARD;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50899,7 +52396,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -51090,7 +52587,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51115,7 +52612,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/results-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/results-model.ts
   function groupResults(matches, filter, follows = []) {
     const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
     const isFollowed = (m) => followState(m, follows).any;
@@ -51142,7 +52639,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var isLive, isMine, FORM_COLOR;
   var init_results_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/results-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/results-model.ts"() {
       "use strict";
       init_sport_day_model();
       isLive = (m) => m.status === "live";
@@ -51151,7 +52648,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/league-jump.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/league-jump.ts
   function foldText(s) {
     return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
   }
@@ -51201,17 +52698,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function searchLeagues(entries2, query) {
     const q = foldText(query);
     if (!q) return [];
-    const words = q.split(/\s+/);
+    const words2 = q.split(/\s+/);
     const hits = entries2.filter((e) => {
       const hay = `${foldText(e.league)} ${e.country ? foldText(e.country) : ""}`;
-      return words.every((w) => hay.includes(w));
+      return words2.every((w) => hay.includes(w));
     });
     const prefix = (e) => foldText(e.league).startsWith(q) ? 0 : 1;
     return hits.sort((a, b) => prefix(a) - prefix(b) || byCount(a, b));
   }
   var YOUR_LEAGUES_MAX, TOP_LEAGUES_MAX, OPEN_COUNTRIES, HOME_COUNTRIES, isHomeCountry, byCount;
   var init_league_jump = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/league-jump.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/league-jump.ts"() {
       "use strict";
       init_merge();
       init_sport_day_model();
@@ -51224,15 +52721,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
   function sectionTarget(key, current4 = "sport") {
     return key === current4 ? null : key;
   }
   function leagueAbbr(name) {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    if (words.length === 0) return "";
-    if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
-    return words.slice(0, 4).map((w) => w[0]).join("").toUpperCase();
+    const words2 = name.trim().split(/\s+/).filter(Boolean);
+    if (words2.length === 0) return "";
+    if (words2.length === 1) return words2[0].slice(0, 4).toUpperCase();
+    return words2.slice(0, 4).map((w) => w[0]).join("").toUpperCase();
   }
   function phoneTimeline(matches, dayFrom, now2, follows = []) {
     const own = matches.filter((m) => m.sources.length > 0);
@@ -51268,7 +52765,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_SECTIONS, watchable;
   var init_phone_sport_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
       "use strict";
       init_sport_day_model();
       init_results_model();
@@ -51284,7 +52781,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
   function usePhonePlatform() {
     return phonePlatform(typeof navigator === "undefined" ? "" : navigator.userAgent || "", isAndroidTauriEnv);
   }
@@ -51348,7 +52845,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHEET_BG, sheetTitle, overline2;
   var init_phone_sport_sheet = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51363,7 +52860,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
   function Row2({ entry, on, showCountry, sportLabel: sportLabel2, onPick }) {
     const sub = [showCountry ? entry.country : null, sportLabel2].filter(Boolean).join(" \xB7 ");
     return /* @__PURE__ */ jsxs(SheetRow, { testId: `phone-league-row-${entry.key}`, on, height: 50, onPress: onPick, children: [
@@ -51429,7 +52926,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var dot;
   var init_sport_league_sheet_phone = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51443,7 +52940,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
   function PhoneTeamCrest({ name, colorKey, src, size }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: colorKey ?? name, src, size });
   }
@@ -51520,7 +53017,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var P, cardStyle2, svg4, PIcons;
   var init_phone_sport_parts = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51603,7 +53100,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
   function PhoneCrest({ name, src, size = 22 }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: name, src, size });
   }
@@ -51649,7 +53146,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const pickedKey = picked?.key ?? null;
     const [inline, setInline] = useState(null);
     useEffect(() => {
-      if (!picked || !controller2 || !settings.apiKey) {
+      if (!picked || !controller2) {
         setInline(null);
         return;
       }
@@ -51663,7 +53160,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         cancelled = true;
       };
     }, [pickedKey, controller2, settings.apiKey]);
-    if (!settings.apiKey || !controller2) {
+    if (!controller2) {
       return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", pushLayer });
     }
     const labels = new Map(entries2.map((e) => [e.key, e.label]));
@@ -51772,7 +53269,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
   var init_sport_results_phone = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51796,7 +53293,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
   function PhoneMatchList({ sport, currentKey, nowMs, locale, picked, onTogglePick, onDone }) {
     const { tt } = useTvText();
     const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
@@ -51834,7 +53331,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }, g.start ?? "now")) });
   }
   var init_player_matches_phone = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
       "use strict";
       "use client";
       init_live_tv_ui();
@@ -51850,7 +53347,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -52080,7 +53577,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer2, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52106,7 +53603,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/presence.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/presence.ts
   function sync() {
     const want = seen.size > 0;
     if (want && !release) release = acquirePollDemand("couch");
@@ -52114,7 +53611,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       release();
       release = null;
     }
-    for (const cb of [...listeners12]) cb();
+    for (const cb of [...listeners13]) cb();
   }
   function markPresence(phoneId, on, now2) {
     if (on) seen.set(phoneId, now2);
@@ -52130,19 +53627,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (changed) sync();
   }
   function onPresenceChanged(cb) {
-    listeners12.add(cb);
+    listeners13.add(cb);
     return () => {
-      listeners12.delete(cb);
+      listeners13.delete(cb);
     };
   }
-  var PRESENCE_TTL_MS, seen, listeners12, release, hasCouchPresence, TIP_PRESENCE_PREFIX, hasPhonePresence;
+  var PRESENCE_TTL_MS, seen, listeners13, release, hasCouchPresence, TIP_PRESENCE_PREFIX, hasPhonePresence;
   var init_presence = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/presence.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/presence.ts"() {
       "use strict";
       init_live_poller();
       PRESENCE_TTL_MS = 6e4;
       seen = /* @__PURE__ */ new Map();
-      listeners12 = /* @__PURE__ */ new Set();
+      listeners13 = /* @__PURE__ */ new Set();
       release = null;
       hasCouchPresence = () => seen.size > 0;
       TIP_PRESENCE_PREFIX = "tip:";
@@ -52150,7 +53647,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
   function useHidden(match) {
     useSpoilerVersion();
     return scoreHidden(match);
@@ -52212,7 +53709,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis4;
   var init_player_replay_badge = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52231,7 +53728,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -52429,8 +53926,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       ] })
     ] });
   }
-  function formatElapsed(seconds) {
-    const total = Math.max(0, Math.floor(seconds));
+  function formatElapsed(seconds2) {
+    const total = Math.max(0, Math.floor(seconds2));
     const h = Math.floor(total / 3600);
     const m = Math.floor(total % 3600 / 60);
     const s = total % 60;
@@ -52548,7 +54045,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FAV_WINDOW, DAY_MS2, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52592,7 +54089,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -52810,7 +54307,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52826,7 +54323,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
     const direct = merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId);
     if (direct || !e.aliases?.length) return direct ?? null;
@@ -52860,7 +54357,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var playing, playingListeners;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
@@ -52868,7 +54365,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
     const controller2 = useResultsController();
@@ -52903,7 +54400,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52921,11 +54418,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/stream-fallback-prompt.tsx
-  function StreamFallbackPrompt({ target: target2, seconds = FALLBACK_COUNTDOWN_S, onSwitch, onStay }) {
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/stream-fallback-prompt.tsx
+  function StreamFallbackPrompt({ target: target2, seconds: seconds2 = FALLBACK_COUNTDOWN_S, onSwitch, onStay }) {
     const { tt } = useTvText();
-    const auto = seconds > 0;
-    const [left, setLeft] = useState(seconds);
+    const auto = seconds2 > 0;
+    const [left, setLeft] = useState(seconds2);
     useEffect(() => {
       if (!auto) return;
       if (left <= 0) {
@@ -52947,7 +54444,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FALLBACK_COUNTDOWN_S;
   var init_stream_fallback_prompt = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52958,7 +54455,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
   function unique(matches) {
     const seen2 = /* @__PURE__ */ new Set();
     return matches.filter((m) => {
@@ -53043,7 +54540,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOUR2, WEEK_MS, ofSport, watchable2, byStart;
   var init_rows_model = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
       "use strict";
       init_live_tv_shell();
       init_score_model();
@@ -53058,9 +54555,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
   function emit4() {
-    for (const cb of [...listeners13]) cb();
+    for (const cb of [...listeners14]) cb();
   }
   function bindController() {
     const next = currentResults();
@@ -53191,14 +54688,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     timer3 = null;
   }
   function subscribe2(cb, week) {
-    listeners13.add(cb);
+    listeners14.add(cb);
     if (week) weekWanted += 1;
-    if (listeners13.size === 1) start2();
+    if (listeners14.size === 1) start2();
     else if (week && weekWanted === 1) void refresh();
     return () => {
-      listeners13.delete(cb);
+      listeners14.delete(cb);
       if (week) weekWanted -= 1;
-      if (listeners13.size === 0) stop();
+      if (listeners14.size === 0) stop();
     };
   }
   function useSportRows(opts = {}) {
@@ -53212,9 +54709,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     return [...seenLeagues].map(([key, name]) => ({ key, name }));
   }
-  var REFRESH_MS, WEEK_DAYS, listeners13, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer3, generation, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
+  var REFRESH_MS, WEEK_DAYS, listeners14, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer3, generation, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
   var init_rows_feed = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53231,7 +54728,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_sport_store();
       REFRESH_MS = 6e4;
       WEEK_DAYS = [2, 3, 4, 5, 6];
-      listeners13 = /* @__PURE__ */ new Set();
+      listeners14 = /* @__PURE__ */ new Set();
       weekWanted = 0;
       snapshot = { matches: [], ready: false };
       epg = /* @__PURE__ */ new Map();
@@ -53253,13 +54750,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/name-match.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/name-match.ts
   function normalizeChannelName(name) {
     return name.toLowerCase().replace(COUNTRY_TAG_RE, " ").replace(COUNTRY_BARE_RE, " ").replace(QUALITY_RE, " ").replace(REGION_HINTS_RE, " ").replace(NON_ALNUM_RE, "").trim();
   }
   var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
   var init_name_match2 = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/name-match.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/name-match.ts"() {
       "use strict";
       COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
       COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
@@ -53269,7 +54766,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/stream-fallback.ts
   function stallStep(s, e) {
     if (e.type === "start") return { state: { startedAt: e.at, stallSince: null, stalls: [], fired: false }, trigger: false };
     const inGrace = (at) => at - s.startedAt < GRACE_MS;
@@ -53312,7 +54809,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var GRACE_MS, LONG_STALL_MS, STALL_WINDOW_MS, STALLS_TO_TRIGGER, initialStall, RANK, rankOf;
   var init_stream_fallback = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/stream-fallback.ts"() {
       "use strict";
       init_name_match2();
       init_live_tv_data();
@@ -53327,7 +54824,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/use-stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/use-stream-fallback.ts
   function sportSourcesFor(key, matches, now2) {
     const m = matches.find((x) => x.start <= now2 && now2 < x.stop && x.sources.some((s) => s.channelKey === key));
     return m ? rankedSources(m, getOverrides()).map(sourceChannel) : [];
@@ -53378,7 +54875,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TICK_MS2;
   var init_use_stream_fallback = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/use-stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/use-stream-fallback.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53394,13 +54891,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
   function publish3() {
     snapshot2 = [...cutouts.values()];
-    for (const listener of [...listeners14]) listener();
+    for (const listener of [...listeners15]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -53416,9 +54913,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return snapshot2;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners14.add(listener);
+    listeners15.add(listener);
     return () => {
-      listeners14.delete(listener);
+      listeners15.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -53452,19 +54949,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners14, snapshot2;
+  var cutouts, listeners15, snapshot2;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners14 = /* @__PURE__ */ new Set();
+      listeners15 = /* @__PURE__ */ new Set();
       snapshot2 = [];
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -53773,7 +55270,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53795,7 +55292,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer,
@@ -54717,15 +56214,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         ]
       }
     );
-    return portalEl ? (0, import_react_dom4.createPortal)(content, portalEl) : content;
+    return portalEl ? (0, import_react_dom5.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS, TS_REFILL_ON_UNDERRUN;
+  var import_react_dom5, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS, TS_REFILL_ON_UNDERRUN;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
-      import_react_dom4 = __toESM(require_react_dom(), 1);
+      import_react_dom5 = __toESM(require_react_dom(), 1);
       init_plugin_sdk();
       init_channel_history();
       init_couch_channel_player();
@@ -54756,7 +56253,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -54766,13 +56263,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
-  var import_react_dom3 = __toESM(require_react_dom(), 1);
+  var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var UI = {
@@ -55230,7 +56727,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         ]
       }
     );
-    return typeof document === "undefined" ? node : (0, import_react_dom3.createPortal)(node, document.body);
+    return typeof document === "undefined" ? node : (0, import_react_dom4.createPortal)(node, document.body);
   }
   function LtConfirm({ title, body, confirmLabel, cancelLabel, onCancel, onConfirm, testId }) {
     return /* @__PURE__ */ jsx(LtDialog, { title, body, width: 400, onClose: onCancel, testId, children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }, children: [
@@ -55266,7 +56763,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) : null, [text2]);
     return /* @__PURE__ */ jsxs(ToastContext.Provider, { value: toast, children: [
       children,
-      node && typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(node, document.body) : node
+      node && typeof document !== "undefined" ? (0, import_react_dom4.createPortal)(node, document.body) : node
     ] });
   }
   function useToast() {
@@ -55283,7 +56780,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -55331,16 +56828,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -55351,17 +56848,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     jobProgress: null
   };
   var progress = IDLE;
-  var listeners8 = /* @__PURE__ */ new Set();
+  var listeners9 = /* @__PURE__ */ new Set();
   function publish(next) {
     progress = next;
-    for (const listener of [...listeners8]) listener();
+    for (const listener of [...listeners9]) listener();
   }
   function getM3uFetchProgress() {
     return progress;
   }
   function subscribeM3uFetch(listener) {
-    listeners8.add(listener);
-    return () => listeners8.delete(listener);
+    listeners9.add(listener);
+    return () => listeners9.delete(listener);
   }
   function reportM3uFetchJobProgress(received, total) {
     if (progress.status !== "fetching") return;
@@ -55405,7 +56902,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return true;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     liveFormat: "Live stream format",
@@ -55897,10 +57394,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -55952,7 +57449,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, urls, refreshing, refresh: refresh2, reload };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -56044,10 +57541,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_playlist_title();
   init_live_tv_data();
@@ -56057,7 +57554,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -56104,10 +57601,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const controller2 = new AbortController();
       const load = async () => {
         try {
-          const result = await listVodCategories(source, controller2.signal);
+          const result2 = await listVodCategories(source, controller2.signal);
           if (cancelled) return;
-          setState({ ...result, loading: false, error: null });
-          if (result.importing) timer4 = setTimeout(load, IMPORT_POLL_MS);
+          setState({ ...result2, loading: false, error: null });
+          if (result2.importing) timer4 = setTimeout(load, IMPORT_POLL_MS);
         } catch (err) {
           if (cancelled || controller2.signal.aborted) return;
           setState((prev) => ({
@@ -56196,7 +57693,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -56282,15 +57779,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return true;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -56363,7 +57860,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -56385,7 +57882,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -56393,8 +57890,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
-  var defaultDeps = { query: queryVod, status: vodStatus };
-  async function scanVodSource(libraryId, emit8, progress2, signal, deps2 = defaultDeps) {
+  var defaultDeps2 = { query: queryVod, status: vodStatus };
+  async function scanVodSource(libraryId, emit8, progress2, signal, deps2 = defaultDeps2) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps2.status();
@@ -56482,7 +57979,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   };
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -56530,18 +58027,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -56597,7 +58094,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/group-chips.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/group-chips.ts
   var MAX_GROUP_CHIPS = 12;
   var MORE_GROUPS = "__more_groups";
   var FAVS = "__favs";
@@ -56627,7 +58124,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return counts3;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
@@ -56691,14 +58188,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/picker-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/picker-panel.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -56754,7 +58251,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -56806,7 +58303,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_jsx_runtime_shim();
   var GROUP_PANEL_STEP = 40;
   var PREFETCH_ROWS = 5;
@@ -56904,7 +58401,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { open: () => setOpen(true), node };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
     const { tt } = useTvText();
@@ -57021,7 +58518,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -57179,7 +58676,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_text_entry();
   init_tv_ui();
   init_mobile_tokens();
@@ -57276,8 +58773,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       setLogoBusy(true);
       setLogoError(null);
       try {
-        const result = await completeLogos(list.source ?? "");
-        setLogoResult(result);
+        const result2 = await completeLogos(list.source ?? "");
+        setLogoResult(result2);
       } catch (err) {
         setLogoError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -57911,14 +59408,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
   init_key_card();
   init_key_flow();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/key-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/key-model.ts
   init_key_flow();
   init_providers();
   init_sport_model();
@@ -57985,7 +59482,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return tt("sportKeyLeftPerSport", { list });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_providers();
   init_rate_line();
   init_results_controller();
@@ -58156,7 +59653,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -58166,7 +59663,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_ctx();
   init_sport_epg();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
   init_plugin_sdk();
   init_router();
@@ -58480,7 +59977,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/backdrop-handoff.ts
   init_react_shim();
   var BASE2 = "/api/live-tv/sport/backdrop-handoff";
   var POLL_MS3 = 2e3;
@@ -58546,7 +60043,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { url, expired, received, restart };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
   var SCOPES = ["all", ...BACKDROP_SPORTS];
@@ -58842,7 +60339,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
   init_mobile_toggle();
   init_mobile_tokens();
   init_tv_ui();
@@ -58863,7 +60360,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { "data-testid": "sport-spoiler-settings", children: /* @__PURE__ */ jsx(LtRows, { children: /* @__PURE__ */ jsx(LtToggleRow, { testId: "sport-spoiler-toggle", label: tt("sportSpoilerSetting"), desc: tt("sportSpoilerSettingHint"), checked: on, onChange: (v) => setSportSettings({ spoilerReplays: v }) }) }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -59025,7 +60522,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function VodLibraryCardView({ controller: controller2, bare = false }) {
@@ -59061,7 +60558,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_group_order();
@@ -59069,10 +60566,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -59177,7 +60674,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_live_format();
@@ -59222,8 +60719,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (!list.source) return;
       setLogoComplete({ status: "running" });
       try {
-        const result = await completeLogos(list.source);
-        setLogoComplete({ status: "done", matched: result.matched, total: result.total });
+        const result2 = await completeLogos(list.source);
+        setLogoComplete({ status: "done", matched: result2.matched, total: result2.total });
       } catch (err) {
         setLogoComplete({ status: "error", error: err instanceof Error ? err.message : String(err) });
       }
@@ -59370,7 +60867,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -59536,11 +61033,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -59727,7 +61224,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_playlist_title();
   init_tv_strings();
@@ -59939,8 +61436,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (!list.source) return;
       setCompleting(true);
       try {
-        const result = await completeLogos(list.source);
-        toast(h("logoCompleteResult", { matched: fmtInt(result.matched, locale), total: fmtInt(result.total, locale) }));
+        const result2 = await completeLogos(list.source);
+        toast(h("logoCompleteResult", { matched: fmtInt(result2.matched, locale), total: fmtInt(result2.total, locale) }));
       } catch (err) {
         toast(err instanceof Error ? err.message : String(err));
       } finally {
@@ -60176,7 +61673,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_tv_settings_store();
   init_start_view();
   init_group_order();
@@ -60275,8 +61772,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         disableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID);
         return;
       }
-      const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID);
-      if (!result.ok) setHomeOverrideError(t("homeOverrideAlreadySet"));
+      const result2 = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID);
+      if (!result2.ok) setHomeOverrideError(t("homeOverrideAlreadySet"));
     }
     function setHideHero(value) {
       setLiveTvHideHero(value);
@@ -60435,11 +61932,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         ] }),
         /* @__PURE__ */ jsx(LtNote, { children: h("m3uFetchKeepOpen") })
       ] }),
-      fetchProgress.results.map((result) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }, children: [
+      fetchProgress.results.map((result2) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }, children: [
         /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { color: UI.green, flex: "none" }, children: "\u2713" }),
-        /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: UI.text }, children: hostOf(result.url) }),
-        /* @__PURE__ */ jsx("span", { style: { flex: "none" }, children: h("channelsCount", { count: fmtInt(result.channels, locale) }) })
-      ] }, result.url)),
+        /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: UI.text }, children: hostOf(result2.url) }),
+        /* @__PURE__ */ jsx("span", { style: { flex: "none" }, children: h("channelsCount", { count: fmtInt(result2.channels, locale) }) })
+      ] }, result2.url)),
       fetchProgress.status === "error" && /* @__PURE__ */ jsx("div", { role: "alert", style: { fontSize: 12.5, color: UI.danger, lineHeight: 1.45, overflowWrap: "anywhere" }, children: h("m3uFetchFailedOn", { host: hostOf(fetchProgress.url ?? ""), error: fetchProgress.error ?? "" }) })
     ] });
   }
@@ -60474,11 +61971,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_playlist_title();
   init_plugin_sdk();
@@ -60486,15 +61983,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -60504,7 +62001,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return () => clearTimeout(timer4);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -60537,7 +62034,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return data;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -60570,7 +62067,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -60600,14 +62097,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
   init_live_tv_shell();
   init_tv_settings_store();
   init_group_order();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -60636,7 +62133,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -60701,14 +62198,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -60748,7 +62245,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -60902,7 +62399,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -61206,9 +62703,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       try {
         for (const list of targets) {
           setLogoComplete({ status: "running", current: completed + 1, listCount });
-          const result = await completeLogos(list.source);
-          matched += result.matched;
-          total += result.total;
+          const result2 = await completeLogos(list.source);
+          matched += result2.matched;
+          total += result2.total;
           completed += 1;
         }
         setLogoComplete({ status: "done", matched, total });
@@ -61344,7 +62841,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           );
           if (cancelled) break;
           const batchLoaded = Object.fromEntries(
-            results.filter((result) => Boolean(result.src)).map((result) => [result.key, result.src])
+            results.filter((result2) => Boolean(result2.src)).map((result2) => [result2.key, result2.src])
           );
           Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
           if (Object.keys(batchLoaded).length > 0) {
@@ -62415,13 +63912,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -62438,7 +63935,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms2) {
     return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -62500,7 +63997,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
@@ -62719,13 +64216,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_shell();
   init_reminders();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -62808,15 +64305,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/toast-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/toast-center.tsx
   init_react_shim();
   init_plugin_sdk();
   init_goal_alerts();
   init_jsx_runtime_shim();
   var toasts = [];
-  var listeners15 = /* @__PURE__ */ new Set();
+  var listeners16 = /* @__PURE__ */ new Set();
   var emit5 = () => {
-    for (const l of [...listeners15]) l();
+    for (const l of [...listeners16]) l();
   };
   var seq = 0;
   function pushToast(t) {
@@ -62836,9 +64333,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function useToasts() {
     return useSyncExternalStore((cb) => {
-      listeners15.add(cb);
+      listeners16.add(cb);
       return () => {
-        listeners15.delete(cb);
+        listeners16.delete(cb);
       };
     }, () => toasts, () => toasts);
   }
@@ -63029,7 +64526,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
     const { h } = useHubText();
@@ -63054,19 +64551,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx(ToastCenter, {});
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
   init_live_tv_shell();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/context.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/context.ts
   init_react_shim();
   var counts = /* @__PURE__ */ new Map();
-  var listeners16 = /* @__PURE__ */ new Set();
+  var listeners17 = /* @__PURE__ */ new Set();
   var emit6 = () => {
-    for (const cb of [...listeners16]) cb();
+    for (const cb of [...listeners17]) cb();
   };
   function acquireCouchMark(kind) {
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
@@ -63086,17 +64583,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var couchMarks = () => ({ sportPage: counts.has("sport-page"), multiview: counts.has("multiview") });
   function onCouchMarksChanged(cb) {
-    listeners16.add(cb);
+    listeners17.add(cb);
     return () => {
-      listeners16.delete(cb);
+      listeners17.delete(cb);
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/goals.ts
   init_goal_alerts();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/snapshot.ts
   init_sport_day_model();
   init_score_model();
   var NOW_MAX = 40;
@@ -63207,15 +64704,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/goals.ts
   init_spoiler();
   var GOAL_TTL_MS = 12e4;
   var GOAL_TOAST_MS = 8e3;
   var GOALS_MAX = 5;
   var entries = [];
-  var listeners17 = /* @__PURE__ */ new Set();
+  var listeners18 = /* @__PURE__ */ new Set();
   var emit7 = () => {
-    for (const cb of [...listeners17]) cb();
+    for (const cb of [...listeners18]) cb();
   };
   function addGoal(g, now2) {
     if (entries.some((e) => e.goal.goalId === g.goalId)) return;
@@ -63236,9 +64733,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return entries.map((e) => e.goal);
   }
   function onGoalsChanged(cb) {
-    listeners17.add(cb);
+    listeners18.add(cb);
     return () => {
-      listeners17.delete(cb);
+      listeners18.delete(cb);
     };
   }
   function goalFromEvent(e, match, overrides) {
@@ -63269,7 +64766,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return goalAlertWanted(match, ctx.settings, ctx.follows, now2);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_goal_events();
   init_goal_alerts();
   init_results_controller();
@@ -63332,7 +64829,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return null;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -63341,7 +64838,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/follow-search.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/follow-search.ts
   init_router();
   init_merge();
   var MIN_PROVIDER_QUERY = 3;
@@ -63351,13 +64848,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (!needle) return true;
     return foldTeamKey2(c.name).includes(needle) || foldTeamKey2(c.key).includes(needle);
   }
-  var cache9 = /* @__PURE__ */ new Map();
+  var cache10 = /* @__PURE__ */ new Map();
   function searchFollowTargets(sport, q) {
     const router = currentRouter();
     const query = q.trim();
     if (!router || query.length < MIN_PROVIDER_QUERY || router.coverage(sport) !== "full") return Promise.resolve([]);
     const id = `${router.candidates(sport).map((b) => b.provider.id).join(",")}|${sport}|${foldTeamKey2(query)}`;
-    const hit = cache9.get(id);
+    const hit = cache10.get(id);
     if (hit) return hit;
     const run2 = (async () => {
       const [teams, leagues] = await Promise.all([router.searchTeams(sport, query), router.searchLeagues(sport, query)]);
@@ -63375,10 +64872,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       add("league", leagues?.data, leagues?.provider);
       return out;
     })();
-    cache9.set(id, run2);
+    cache10.set(id, run2);
     run2.then((res) => {
-      if (res.length === 0) cache9.delete(id);
-    }, () => cache9.delete(id));
+      if (res.length === 0) cache10.delete(id);
+    }, () => cache10.delete(id));
     return run2;
   }
   async function searchProviderTeams(sport, q) {
@@ -63386,12 +64883,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return res.filter((x) => x.kind === "team").map(({ kind: _k, sport: _s, ...t }) => t);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_sport_day_model();
   init_sport_ctx();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/follows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/follows.ts
   init_merge();
   init_score_model();
   init_sport_day_model();
@@ -63401,13 +64898,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var PROVIDER_SPORTS_MAX = 2;
   var HITS_MAX = 30;
   var EVENING_HOUR = 17;
-  var clock = (ms2, locale) => new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  var clock2 = (ms2, locale) => new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   var capital = (s) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
   function nextFor(f, matches, now2) {
     return matches.filter((m) => !m.rerun && statusAt(m, now2) !== "finished" && matchesFollow(m, f)).sort((a, b) => a.start - b.start)[0] ?? null;
   }
   function whenText(start3, now2, tt, locale) {
-    const time = clock(start3, locale);
+    const time = clock2(start3, locale);
     if (localDayKey(start3) === localDayKey(now2)) return new Date(start3).getHours() >= EVENING_HOUR ? tt("couchFollowTonight", { time }) : tt("sportTodayAt", { time });
     if (localDayKey(start3) === localDayKey(now2 + 864e5)) return tt("sportTomorrowAt", { time });
     return tt("couchFollowDayAt", { day: capital(new Date(start3).toLocaleDateString(locale, { weekday: "long" })), time });
@@ -63481,7 +64978,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/commands.ts
   init_live_tv_shell();
   init_sport_day_model();
   init_sport_model();
@@ -63489,7 +64986,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_presence();
   init_spoiler();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/tip.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/tip.ts
   init_sport_day_model();
   init_sport_epg();
   init_spoiler();
@@ -63550,7 +65047,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, spoilerTv };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/commands.ts
   var isSport = (s) => SPORT_KINDS.includes(s);
   function playSource(d, s) {
     d.open({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(s)) } });
@@ -63725,7 +65222,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_presence();
   init_spoiler();
   init_jsx_runtime_shim();
@@ -63917,14 +65414,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return enabled && (present || watching) ? /* @__PURE__ */ jsx(SportCouchFeeder, { onChange: notify2, merge: present }) : null;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -64045,12 +65542,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_live_tv_ui();
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -64075,7 +65572,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return phone;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -64127,12 +65624,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_tv_strings();
   init_tv_ui();
   init_sport_icons2();
@@ -64192,7 +65689,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -64307,10 +65804,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -64354,12 +65851,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -64368,12 +65865,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -64421,7 +65918,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var REPLAY_DAYS = 3;
   function useHubData(model, spotlightCount) {
@@ -64448,7 +65945,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -64459,7 +65956,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -64520,11 +66017,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -64573,7 +66070,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -64739,7 +66236,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -64750,7 +66247,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function TvHubDesktop({ model, nav }) {
     const { tt, locale } = useTvText();
     const isTv = useTvMode();
-    const clock2 = useTvClockNode(locale);
+    const clock3 = useTvClockNode(locale);
     const spotlightCount = SPOTLIGHT_COUNT_DESKTOP;
     const allChannelsColumns = ALL_CHANNELS_COLUMNS_DESKTOP;
     const [playlistOpen, setPlaylistOpen] = useState(false);
@@ -64830,7 +66327,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           " ",
           tt("railGuide")
         ] }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "hub-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock2 })
+        /* @__PURE__ */ jsx("div", { "data-testid": "hub-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock3 })
       ] }),
       spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick2, index) => {
         const info = model.nowFor(pick2.channel);
@@ -64947,7 +66444,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -64956,7 +66453,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS2 = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -64981,7 +66478,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS2 * 100));
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -65011,7 +66508,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -65020,7 +66517,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -65066,7 +66563,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -65075,14 +66572,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -65114,7 +66611,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -65186,7 +66683,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -65319,7 +66816,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS = 12;
   var ROW_STEP3 = 40;
@@ -65329,7 +66826,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }) {
     const { tt, locale } = useTvText();
-    const clock2 = useTvClockNode(locale);
+    const clock3 = useTvClockNode(locale);
     const [sel2, setSel] = useState({ listId: model.lists[0]?.id ?? null, group: null });
     const [selectedKey, setSelectedKey] = useState(null);
     const [, bump] = useState(0);
@@ -65412,7 +66909,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             tt("channelsCount", { count: rows.length }),
             " \xB7"
           ] }),
-          /* @__PURE__ */ jsx("div", { "data-testid": "pl-clock", style: { flexShrink: 0 }, children: clock2 }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "pl-clock", style: { flexShrink: 0 }, children: clock3 }),
           /* @__PURE__ */ jsx(Segment, { options: modeOptions, value: mode, onChange: onModeChange, style: { marginLeft: "auto", marginRight: dp(24), alignSelf: "center" } })
         ] }),
         shownRows.map((channel, index) => {
@@ -65469,7 +66966,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -65479,7 +66976,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -65517,7 +67014,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -65525,7 +67022,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -65596,7 +67093,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -65721,7 +67218,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -65974,11 +67471,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -65987,7 +67484,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -66082,7 +67579,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -66091,11 +67588,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -66140,7 +67637,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -66208,7 +67705,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -66438,7 +67935,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -66643,12 +68140,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
     const isTv = useTvMode();
-    const clock2 = useTvClockNode(locale);
+    const clock3 = useTvClockNode(locale);
     const settings = useTvSettings();
     const storedMode = useGuideMode();
     const [mode, setMode] = useState(() => desktopGuideMode(storedMode));
@@ -66745,7 +68242,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           onNow: jumpToNow,
           details: settings.nowNextDetails,
           onDetails: () => setTvSettings({ nowNextDetails: !settings.nowNextDetails }),
-          clock: clock2
+          clock: clock3
         }
       ),
       /* @__PURE__ */ jsx("div", { "data-testid": "guide-content", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: view }),
@@ -66789,7 +68286,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -66856,7 +68353,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }) {
     const { tt, locale } = useTvText();
-    const clock2 = useTvClockNode(locale);
+    const clock3 = useTvClockNode(locale);
     const channelColStyle = channelColumnStyle();
     const [group, setGroup] = useState(() => {
       const raw = params.group;
@@ -66914,7 +68411,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               /* @__PURE__ */ jsx("span", { "data-testid": "guide-channel-name", style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: selected.name }),
               selected.group ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", style: { flexShrink: 0 }, children: selected.group }) : null
             ] }) : null,
-            /* @__PURE__ */ jsx("div", { "data-testid": "guide-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock2 })
+            /* @__PURE__ */ jsx("div", { "data-testid": "guide-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock3 })
           ] }),
           /* @__PURE__ */ jsx("div", { style: { fontSize: headlineSize, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: info.now ? info.now.title : model.epgLoading ? tt("loadingGuide") : tt("noProgramme") }),
           info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -67039,7 +68536,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -67047,7 +68544,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -67057,7 +68554,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -67118,7 +68615,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -67214,7 +68711,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -67294,7 +68791,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -67303,7 +68800,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -67482,7 +68979,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -67612,7 +69109,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -67622,7 +69119,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -67656,7 +69153,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -67698,7 +69195,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return state2;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -67836,7 +69333,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -67951,14 +69448,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -67967,10 +69464,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -68011,7 +69508,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_plugin_sdk();
@@ -68082,7 +69579,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -68252,7 +69749,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -68392,7 +69889,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -68920,13 +70417,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -68984,7 +70481,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -69441,7 +70938,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return null;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -69476,7 +70973,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -69484,7 +70981,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_settings_store();
   init_group_order();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -69566,7 +71063,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_start_view();
   init_jsx_runtime_shim();
@@ -69643,7 +71140,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -69652,10 +71149,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info-model.ts
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/event-timeline.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/event-timeline.ts
   function markerKind(e) {
     if (e.type === "goal") return "goal";
     if (e.type === "penalty") return "penalty";
@@ -69663,7 +71160,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return null;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info-model.ts
   function dayHeaderCounts(matches, now2) {
     return {
       total: matches.length,
@@ -69691,14 +71188,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     });
     return out;
   }
-  var num4 = (v) => {
+  var num5 = (v) => {
     const n = Number(String(v).replace("%", "").trim());
     return Number.isFinite(n) ? n : 0;
   };
   function statBars(stats) {
     return stats.map((s) => {
-      const h = num4(s.home);
-      const a = num4(s.away);
+      const h = num5(s.home);
+      const a = num5(s.away);
       return { label: s.label, home: s.home, away: s.away, sum: h + a, h };
     }).filter((s) => s.sum > 0).map(({ label, home, away, sum, h }) => ({ label, home, away, homeShare: h / sum }));
   }
@@ -69719,9 +71216,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return POSITION_ORDER.map((group) => ({ group, home: home.filter((p) => positionGroup(p.pos) === group), away: away.filter((p) => positionGroup(p.pos) === group) })).filter((g) => g.home.length > 0 || g.away.length > 0);
   }
   function playerInitials(name) {
-    const words = name.split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).filter(Boolean);
-    if (words.length === 0) return "?";
-    return words.slice(0, 2).map((w) => w.charAt(0)).join("").toUpperCase();
+    const words2 = name.split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).filter(Boolean);
+    if (words2.length === 0) return "?";
+    return words2.slice(0, 2).map((w) => w.charAt(0)).join("").toUpperCase();
   }
   function playerMatchFacts(name, events) {
     const mine = (e) => e.player === name;
@@ -69733,7 +71230,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -69754,10 +71251,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/row-nav.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/row-nav.ts
   init_react_shim();
   var AUTO = "row";
   var seq2 = 0;
@@ -69838,12 +71335,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [ref, enabled]);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -69853,7 +71350,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_store();
   init_league_jump();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -69987,12 +71484,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_results_model();
   init_surface();
   init_sport_icons2();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -70180,7 +71677,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
@@ -70271,10 +71768,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(NOOP2), style: { fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }, children: text2 });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-model.ts
   init_merge();
   init_sport_store();
-  var PROVIDERS = ["api-sports", "sportapi", "thesportsdb"];
+  var PROVIDERS = ["api-sports", "sportapi", "thesportsdb", "espn"];
   var isProvider2 = (v) => PROVIDERS.includes(v);
   function teamMatches(key, matches) {
     const out = [];
@@ -70418,13 +71915,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const byNumber = (a, b) => (a.number ?? 999) - (b.number ?? 999) || a.name.localeCompare(b.name);
     return POSITION_ORDER.map((group) => ({ group, players: players2.filter((p) => positionGroup(p.pos) === group).sort(byNumber) })).filter((g) => g.players.length > 0);
   }
-  var KICKOFF_SLACK_MS = 3 * 36e5;
+  var KICKOFF_SLACK_MS2 = 3 * 36e5;
   function epgMatchFor(f, matches) {
     const linked = matches.find((m) => m.fixture?.provider === f.provider && m.fixture.id === f.id);
     if (linked) return linked;
     const h = foldTeamKey2(f.home.name);
     const a = foldTeamKey2(f.away.name);
-    return matches.find((m) => !m.rerun && m.sources.length > 0 && Math.abs(m.start - f.kickoff) <= (f.dateOnly ? 14 * 36e5 : KICKOFF_SLACK_MS) && teamKeysMatch(h, m.homeKey) && teamKeysMatch(a, m.awayKey)) ?? null;
+    return matches.find((m) => !m.rerun && m.sources.length > 0 && Math.abs(m.start - f.kickoff) <= (f.dateOnly ? 14 * 36e5 : KICKOFF_SLACK_MS2) && teamKeysMatch(h, m.homeKey) && teamKeysMatch(a, m.awayKey)) ?? null;
   }
   function roundFixtures(fixtures2, now2) {
     const sorted = [...fixtures2].sort((a, b) => a.kickoff - b.kickoff);
@@ -70472,7 +71969,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return [...g].map((c) => String.fromCodePoint(127462 + c.charCodeAt(0) - 65)).join("");
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_sport_store();
   init_merge();
   init_results_model();
@@ -70593,7 +72090,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const picked = league ? shown.find((g) => g.key === league) ?? null : null;
     const pickedKey = picked?.key ?? null;
     useEffect(() => {
-      if (!picked || !controller2 || !settings.apiKey) return;
+      if (!picked || !controller2) return;
       let cancelled = false;
       setTables((t) => t[picked.key] ? t : { ...t, [picked.key]: "loading" });
       const cached = controller2.standings(picked.sport, picked.leagueId, picked.season);
@@ -70609,7 +72106,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         });
       };
     }, [pickedKey, controller2, settings.apiKey]);
-    if (!settings.apiKey || !controller2) {
+    if (!controller2) {
       return /* @__PURE__ */ jsx(KeyCard, { variant: "tab" });
     }
     const openTable = async (g) => {
@@ -70671,11 +72168,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -70688,7 +72185,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_icons2();
   init_surface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -70733,10 +72230,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -70791,7 +72288,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { ref, "data-tab-body": "", style: { display: "flex", flexDirection: "column", gap }, children });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom, replays = [] }) {
     const tv = useTvMode();
@@ -70984,7 +72481,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -70993,7 +72490,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_day_model();
   init_sport_ctx();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/follow-crest.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/follow-crest.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -71018,7 +72515,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [matches]);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_score_model();
   init_sport_parts();
   init_sport_score();
@@ -71133,7 +72630,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -71323,7 +72820,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_plugin_sdk();
   init_react_shim();
   init_live_tv_data();
@@ -71335,7 +72832,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_surface();
   init_phone_sport_sheet();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
   init_sport_store();
   var FOUR_HOURS = 4 * 36e5;
   function eventLabel(e, tt) {
@@ -71372,7 +72869,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     setSportSettings({ goalAlertMatches: current4 });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
   init_react_shim();
   init_results_controller();
   init_live_poller();
@@ -71383,12 +72880,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [detail, setDetail] = useState(null);
     const [done, setDone] = useState(false);
     const replay = match.rerun ? match.replayOf?.fixture ?? null : null;
-    const covered = match.coverage === "full" && (match.rerun ? !!replay : !!match.fixture);
+    const covered2 = match.coverage === "full" && (match.rerun ? !!replay : !!match.fixture);
     useSpoilerVersion();
-    const hidden2 = covered && scoreHidden(match);
-    usePollDemand("match-center", covered && !hidden2 && !match.rerun && match.status === "live");
+    const hidden2 = covered2 && scoreHidden(match);
+    usePollDemand("match-center", covered2 && !hidden2 && !match.rerun && match.status === "live");
     useEffect(() => {
-      if (!covered || hidden2 || !controller2) return;
+      if (!covered2 || hidden2 || !controller2) return;
       let cancelled = false;
       const ref = replay ?? match.fixture;
       if (!ref) return;
@@ -71401,13 +72898,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => {
         cancelled = true;
       };
-    }, [covered, hidden2, controller2, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away]);
-    if (!covered || !controller2) return { detail: null, state: "none" };
+    }, [covered2, hidden2, controller2, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away]);
+    if (!covered2 || !controller2) return { detail: null, state: "none" };
     if (hidden2) return { detail: null, state: "hidden" };
     return { detail, state: detail || done ? "ready" : "loading" };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
@@ -71543,7 +73040,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_jsx_runtime_shim();
   var parentOf = (p) => p.kind === "player" ? { kind: "lineups" } : null;
   var SLIDE_CSS = "@keyframes lumio-sport-mi-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }";
@@ -71591,13 +73088,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const chosen = ranked[index] ?? null;
     const fs = followState(match, ctx.follows);
     const st = statusAt(match, ctx.now);
-    const covered = match.coverage === "full" && !!match.fixture;
+    const covered2 = match.coverage === "full" && !!match.fixture;
     const context = [match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(" \xB7 ");
     const venueName = match.venue ?? detail?.fixture.venue ?? null;
     const goalAlertOn = !!ctx.settings.goalAlertMatches?.[match.id];
     const summary = detail ? eventSummary(detail.events) : null;
     const leagueTarget = leagueTargetFromMatch(match);
-    const bell = covered && st === "live" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-goal-alert", on: goalAlertOn, label: ctx.tt("sportGoalAlert"), onPress: () => toggleGoalAlert(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-remind", on: ctx.isReminded(match), label: ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe"), onPress: () => ctx.toggleRemind(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : null;
+    const bell = covered2 && st === "live" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-goal-alert", on: goalAlertOn, label: ctx.tt("sportGoalAlert"), onPress: () => toggleGoalAlert(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-remind", on: ctx.isReminded(match), label: ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe"), onPress: () => ctx.toggleRemind(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : null;
     const main = /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsxs("div", { "data-testid": "mc-top", style: { display: "flex", alignItems: "center", gap: u(12) }, children: [
         /* @__PURE__ */ jsx(StatusPill, { u, match, ctx }),
@@ -71712,13 +73209,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_jsx_runtime_shim();
   function SportMatchCenter({ ctx, match, onClose }) {
     return /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match, onClose });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -71728,16 +73225,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_day_model();
   init_sport_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_sport_store();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -71859,18 +73356,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   init_react_shim();
   init_results_controller();
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-data.ts
   init_day_plan();
   init_merge();
   init_sport_store();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-providers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-providers.ts
   init_api_sports();
   init_sportapi();
   init_thesportsdb();
@@ -71880,35 +73377,35 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var TOPSCORERS_TTL_S = 43200;
   var LOOKUP_TTL_S = 30 * 86400;
   var TROPHIES_TTL_S = 7 * 86400;
-  var arr4 = (v) => Array.isArray(v) ? v : [];
-  var num5 = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
-  var str4 = (v) => typeof v === "string" && v.trim() ? v : null;
+  var arr5 = (v) => Array.isArray(v) ? v : [];
+  var num6 = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+  var str5 = (v) => typeof v === "string" && v.trim() ? v : null;
   var enc4 = encodeURIComponent;
   var LIST_OPTS = { today: "1970-01-01", tz: "UTC", dayEndMs: 0 };
   var apiSportsList = (sport, body) => apiSports.day(sport, LIST_OPTS.today, LIST_OPTS).parse([body]);
-  var tsdbList = (sport, list) => theSportsDb.day(sport, LIST_OPTS.today, LIST_OPTS).parse([{ events: arr4(list) }]);
+  var tsdbList = (sport, list) => theSportsDb.day(sport, LIST_OPTS.today, LIST_OPTS).parse([{ events: arr5(list) }]);
   function sportApiList(rows, finished) {
     const out = [];
-    for (const raw of arr4(rows)) {
-      const dateOnly = !str4(raw?.kickoff_utc) && !str4(raw?.datetime);
-      const shaped = { ...raw, status: raw?.status ?? (finished ? "FT" : "Scheduled"), ...dateOnly && str4(raw?.date) ? { datetime: `${raw.date} 12:00:00` } : {} };
+    for (const raw of arr5(rows)) {
+      const dateOnly = !str5(raw?.kickoff_utc) && !str5(raw?.datetime);
+      const shaped = { ...raw, status: raw?.status ?? (finished ? "FT" : "Scheduled"), ...dateOnly && str5(raw?.date) ? { datetime: `${raw.date} 12:00:00` } : {} };
       const [f] = sportApi.day("football", LIST_OPTS.today, LIST_OPTS).parse([{ data: [shaped] }]);
       if (f) out.push(dateOnly ? { ...f, dateOnly: true } : f);
     }
     return out;
   }
   function apiSportsSquad(squadBody, injuryBody) {
-    const players2 = arr4(arr4(squadBody?.response)[0]?.players);
-    const injuries = arr4(injuryBody?.response);
-    const latest2 = Math.max(0, ...injuries.map((x) => num5(x?.fixture?.timestamp) ?? 0));
+    const players2 = arr5(arr5(squadBody?.response)[0]?.players);
+    const injuries = arr5(injuryBody?.response);
+    const latest2 = Math.max(0, ...injuries.map((x) => num6(x?.fixture?.timestamp) ?? 0));
     const hurt = /* @__PURE__ */ new Map();
     for (const x of injuries) {
-      if ((num5(x?.fixture?.timestamp) ?? 0) !== latest2) continue;
+      if ((num6(x?.fixture?.timestamp) ?? 0) !== latest2) continue;
       const id = String(x?.player?.id ?? "");
-      const reason = str4(x?.player?.reason) ?? str4(x?.player?.type);
+      const reason = str5(x?.player?.reason) ?? str5(x?.player?.type);
       if (id && reason) hurt.set(id, reason);
     }
-    return uniqueByName(players2.map((p) => ({ name: String(p?.name ?? ""), number: num5(p?.number), pos: str4(p?.position), photo: str4(p?.photo), injury: hurt.get(String(p?.id ?? "")) ?? null, age: num5(p?.age) })));
+    return uniqueByName(players2.map((p) => ({ name: String(p?.name ?? ""), number: num6(p?.number), pos: str5(p?.position), photo: str5(p?.photo), injury: hurt.get(String(p?.id ?? "")) ?? null, age: num6(p?.age) })));
   }
   function uniqueByName(list) {
     const seen2 = /* @__PURE__ */ new Set();
@@ -71954,9 +73451,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (sport !== "football") return null;
       return {
         requests: [{ sport, path: `/players/topscorers?league=${enc4(leagueId)}&season=${enc4(season)}`, ttlS: TOPSCORERS_TTL_S }],
-        parse: (bodies) => arr4(bodies[0]?.response).map((x, i) => {
-          const s = arr4(x?.statistics)[0];
-          return { rank: i + 1, name: String(x?.player?.name ?? ""), team: String(s?.team?.name ?? ""), goals: num5(s?.goals?.total) ?? 0 };
+        parse: (bodies) => arr5(bodies[0]?.response).map((x, i) => {
+          const s = arr5(x?.statistics)[0];
+          return { rank: i + 1, name: String(x?.player?.name ?? ""), team: String(s?.team?.name ?? ""), goals: num6(s?.goals?.total) ?? 0 };
         }).filter((x) => x.name)
       };
     }
@@ -71969,13 +73466,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         requests: [{ sport, path: `/teams/${enc4(teamId)}`, ttlS: opts.ttlS }],
         parse: (bodies) => {
           const body = bodies[0];
-          const all = arr4(body?.matches);
+          const all = arr5(body?.matches);
           const done = (m) => m?.home_score != null && m?.away_score != null && String(m?.status ?? "").toLowerCase() !== "scheduled";
           return {
             fixtures: [...sportApiList(all.filter(done), true), ...sportApiList(all.filter((m) => !done(m)), false)],
             leagueId: body?.team?.league_id != null ? String(body.team.league_id) : null,
             crest: sportApiCrest(body?.team?.logo_file),
-            info: body?.team ? { country: str4(body.team.country), geo: str4(body.team.geo), city: str4(body.team.city), coach: str4(body.team.coach_name), stadium: str4(body.team.stadium_name), founded: num5(body.team.founded_year) } : null
+            info: body?.team ? { country: str5(body.team.country), geo: str5(body.team.geo), city: str5(body.team.city), coach: str5(body.team.coach_name), stadium: str5(body.team.stadium_name), founded: num6(body.team.founded_year) } : null
           };
         }
       };
@@ -71984,7 +73481,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (sport !== "football") return null;
       return {
         requests: [{ sport, path: `/teams/${enc4(teamId)}/squad`, ttlS: SQUAD_TTL_S }],
-        parse: (bodies) => uniqueByName(arr4(bodies[0]?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ""), number: num5(p?.jersey_number), pos: str4(p?.position), photo: null, injury: null, nationality: str4(p?.nationality), born: str4(p?.date_of_birth), height: num5(p?.height) != null ? `${num5(p?.height)} cm` : null })))
+        parse: (bodies) => uniqueByName(arr5(bodies[0]?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ""), number: num6(p?.jersey_number), pos: str5(p?.position), photo: null, injury: null, nationality: str5(p?.nationality), born: str5(p?.date_of_birth), height: num6(p?.height) != null ? `${num6(p?.height)} cm` : null })))
       };
     },
     lookup(sport, slug) {
@@ -71993,7 +73490,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         requests: [{ sport, path: `/teams/slug/${slug}`, ttlS: LOOKUP_TTL_S }],
         parse: (bodies) => {
           const t = bodies[0]?.team;
-          return t?.id != null && str4(t?.name) ? { id: String(t.id), name: String(t.name) } : null;
+          return t?.id != null && str5(t?.name) ? { id: String(t.id), name: String(t.name) } : null;
         }
       };
     },
@@ -72002,7 +73499,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return {
         requests: [{ sport, path: `/teams/${enc4(teamId)}/trophies`, ttlS: TROPHIES_TTL_S }],
         // Bara vunna (placering 1); finaler heter "1994 UEFA Cup Winners' Cup Final" — året står i namnet också.
-        parse: (bodies) => arr4(bodies[0]?.trophies).filter((t) => num5(t?.position) === 1 && str4(t?.name)).map((t) => ({ name: String(t.short_name ?? t.name), year: num5(t?.year) }))
+        parse: (bodies) => arr5(bodies[0]?.trophies).filter((t) => num6(t?.position) === 1 && str5(t?.name)).map((t) => ({ name: String(t.short_name ?? t.name), year: num6(t?.year) }))
       };
     },
     leagueFixtures(sport, leagueId) {
@@ -72019,7 +73516,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (sport !== "football") return null;
       return {
         requests: [{ sport, path: `/leagues/${enc4(leagueId)}/topscorers`, ttlS: TOPSCORERS_TTL_S }],
-        parse: (bodies) => arr4(bodies[0]?.data).map((x, i) => ({ rank: num5(x?.rank) ?? i + 1, name: String(x?.player_name ?? ""), team: String(x?.team_name ?? ""), goals: num5(x?.goals) ?? 0 })).filter((x) => x.name)
+        parse: (bodies) => arr5(bodies[0]?.data).map((x, i) => ({ rank: num6(x?.rank) ?? i + 1, name: String(x?.player_name ?? ""), team: String(x?.team_name ?? ""), goals: num6(x?.goals) ?? 0 })).filter((x) => x.name)
       };
     }
   };
@@ -72038,7 +73535,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     squad(sport, teamId) {
       return {
         requests: [{ sport, path: `/v1/lookup_all_players.php?id=${enc4(teamId)}`, ttlS: SQUAD_TTL_S }],
-        parse: (bodies) => arr4(bodies[0]?.player).filter((p) => !STAFF.test(String(p?.strPosition ?? ""))).map((p) => ({ name: String(p?.strPlayer ?? ""), number: num5(p?.strNumber), pos: str4(p?.strPosition), photo: str4(p?.strCutout) ?? str4(p?.strThumb), injury: null, nationality: str4(p?.strNationality), born: str4(p?.dateBorn), height: str4(p?.strHeight) })).filter((p) => p.name)
+        parse: (bodies) => arr5(bodies[0]?.player).filter((p) => !STAFF.test(String(p?.strPosition ?? ""))).map((p) => ({ name: String(p?.strPlayer ?? ""), number: num6(p?.strNumber), pos: str5(p?.strPosition), photo: str5(p?.strCutout) ?? str5(p?.strThumb), injury: null, nationality: str5(p?.strNationality), born: str5(p?.dateBorn), height: str5(p?.strHeight) })).filter((p) => p.name)
       };
     },
     leagueFixtures(sport, leagueId) {
@@ -72052,11 +73549,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     },
     topScorers: () => null
   };
+  var espnCalls = {
+    fixtures: () => null,
+    squad: () => null,
+    leagueFixtures: () => null,
+    topScorers: () => null,
+    needsSeason: false
+  };
   function teamCallsFor(id) {
-    return id === "sportapi" ? sportApiCalls : id === "thesportsdb" ? tsdbCalls : apiSportsCalls;
+    return id === "sportapi" ? sportApiCalls : id === "thesportsdb" ? tsdbCalls : id === "espn" ? espnCalls : apiSportsCalls;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-data.ts
   var NEAR_MS = 120 * 864e5;
   var MEMO_MS = 5 * 6e4;
   var memo4 = /* @__PURE__ */ new Map();
@@ -72079,7 +73583,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function standingsVia(controller2, now2) {
     return (sport, league) => controller2.loadStandings(sport, league.id, league.season ?? (league.provider === "sportapi" ? "current" : seasonGuesses(sport, now2)[0]), league.provider);
   }
-  function sameTeam(name, target2) {
+  function sameTeam2(name, target2) {
     const key = foldTeamKey2(target2.key || target2.name);
     const n = foldTeamKey2(name);
     return !!n && (n === key || teamKeysMatch(key, n) || n.includes(key) || key.includes(n));
@@ -72095,16 +73599,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function idFromFixtures(provider, fixtures2, target2) {
     for (const f of fixtures2) {
       if (f.provider !== provider) continue;
-      if (f.home.id && sameTeam(f.home.name, target2)) return f.home.id;
-      if (f.away.id && sameTeam(f.away.name, target2)) return f.away.id;
+      if (f.home.id && sameTeam2(f.home.name, target2)) return f.home.id;
+      if (f.away.id && sameTeam2(f.away.name, target2)) return f.away.id;
     }
     return null;
   }
-  var AFFIX = /* @__PURE__ */ new Set(["fc", "cf", "if", "ik", "ifk", "aif", "bk", "sk", "ff", "afc", "sc", "ac", "ssc", "club", "cd", "ud", "sv", "fk"]);
+  var AFFIX2 = /* @__PURE__ */ new Set(["fc", "cf", "if", "ik", "ifk", "aif", "bk", "sk", "ff", "afc", "sc", "ac", "ssc", "club", "cd", "ud", "sv", "fk"]);
   function slugCandidates(name) {
-    const words = foldTeamKey2(name).split(" ").filter(Boolean);
-    const full = words.join("-");
-    const bare = words.filter((w) => !AFFIX.has(w)).join("-");
+    const words2 = foldTeamKey2(name).split(" ").filter(Boolean);
+    const full = words2.join("-");
+    const bare = words2.filter((w) => !AFFIX2.has(w)).join("-");
     return [...new Set([full, bare].filter((x) => x.length >= 2))];
   }
   async function resolveId(b, target2, opts, standings) {
@@ -72126,7 +73630,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           const call = calls.lookup(target2.sport, slug);
           if (!call) break;
           const res = await run(b, target2.sport, call, opts.now);
-          if (res.data && sameTeam(res.data.name, target2)) {
+          if (res.data && sameTeam2(res.data.name, target2)) {
             id = res.data.id;
             break;
           }
@@ -72146,7 +73650,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function knownFeed(fixtures2, target2, providers) {
     let best = null;
     for (const provider of providers) {
-      const mine = fixtures2.filter((f) => f.provider === provider && (sameTeam(f.home.name, target2) || sameTeam(f.away.name, target2) || !!target2.ids[provider] && (f.home.id === target2.ids[provider] || f.away.id === target2.ids[provider])));
+      const mine = fixtures2.filter((f) => f.provider === provider && (sameTeam2(f.home.name, target2) || sameTeam2(f.away.name, target2) || !!target2.ids[provider] && (f.home.id === target2.ids[provider] || f.away.id === target2.ids[provider])));
       const unique2 = [...new Map(mine.map((f) => [f.id, f])).values()];
       if (unique2.length > (best?.fixtures.length ?? 0)) best = { provider, id: target2.ids[provider] ?? idFromFixtures(provider, unique2, target2), fixtures: unique2 };
     }
@@ -72294,7 +73798,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return data;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   var tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
   function useTeamPageData(target2) {
     const controller2 = useResultsController();
@@ -72374,7 +73878,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return useMemo(() => [...known, ...loaded.filter((m) => !known.some((k) => k.id === m.id))], [known, loaded]);
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_jsx_runtime_shim();
   function LeaguePage({ ctx, target: target2, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -72432,7 +73936,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_plugin_sdk();
   init_react_shim();
   init_tv_ui();
@@ -72449,7 +73953,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_icons();
   init_surface();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
   init_tv_ui();
   init_sport_icons();
   init_jsx_runtime_shim();
@@ -72491,7 +73995,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }, label)) }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_jsx_runtime_shim();
   function TeamPage({ ctx, target: target2, matches, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -72774,7 +74278,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_jsx_runtime_shim();
   var MAX_DEPTH = 6;
   function useSportPages() {
@@ -72792,14 +74296,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_results_controller();
   init_live_poller();
   init_sport_ctx();
   init_sport_icons();
   init_sport_results_phone();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -72849,7 +74353,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -73176,7 +74680,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -73284,7 +74788,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_phone_sport_model();
   init_phone_sport_sheet();
   init_phone_sport_parts();
@@ -73447,7 +74951,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_surface();
   init_jsx_runtime_shim();
   var NO_MATCHES3 = [];
@@ -73496,7 +75000,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const pages = useSportPages();
     const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker, openTeam: pages.openTeam, openLeague: pages.openLeague });
     const { tt, locale } = ctx;
-    const clock2 = useTvClockNode(locale);
+    const clock3 = useTvClockNode(locale);
     const today = localDayKey(model.nowMs);
     const day = shiftDay(today, offset);
     const selected = useSportDay(day, model.nowMs);
@@ -73544,7 +75048,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(40), fontWeight: 600 }, children: tt("sportTitle") }),
           /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportHeaderSummary", { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels }) }),
-          ownClock ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-clock", style: { marginLeft: "auto" }, children: clock2 }) : null
+          ownClock ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-clock", style: { marginLeft: "auto" }, children: clock3 }) : null
         ] }),
         /* @__PURE__ */ jsx(RateLineView, { status, tv: tvMode }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: dp(28), borderBottom: `1px solid ${TV2.s12}` }, children: [
@@ -73611,7 +75115,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -73626,10 +75130,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_start_view();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -73709,12 +75213,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_live_tv_shell();
   init_tv_settings_store();
@@ -73753,7 +75257,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
@@ -73786,10 +75290,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/shell-toast.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/shell-toast.ts
   init_tv_ui();
   init_mobile_tokens();
   function shellToastStyle(opts) {
@@ -73834,7 +75338,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
     const ref = useRef(null);
@@ -73911,7 +75415,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const isTv = useTvMode();
     const narrow = useNarrowSurface(rootRef) && !isTv;
     const phone = usePhoneSurface(rootRef) && !isTv;
-    const desktopSurface = isDesktopTauri() && !isTv && !phone;
+    const desktopSurface = isDesktopTauri2() && !isTv && !phone;
     const railLabels = settings.railLabels && !narrow;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
@@ -74330,7 +75834,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/sport-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/sport-page.tsx
   init_react_shim();
   init_live_tv_shell();
   var SPORT_PAGE_ID = LIVE_TV_SPORT_PAGE_ID;
@@ -74338,7 +75842,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return createElement(LiveTvTvShell, { ...props, sportOnly: true });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/register.ts
   init_react_shim();
   init_tv_strings();
   init_sport_ctx();
@@ -74347,7 +75851,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_rows_feed();
   init_rows_model();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_react_shim();
   init_tv_strings();
   init_crest();
@@ -74358,7 +75862,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_store();
   init_rows_feed();
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
   init_live_tv_ui();
   init_sport_ctx();
   init_sport_epg();
@@ -74408,7 +75912,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { kicker, title, metaLine: metaLine2, overview, backdropUrl: sportHeroBackdrop(m, d) };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_rows_model();
   init_jsx_runtime_shim();
   var TEXT2 = "#f8fafc";
@@ -74456,8 +75960,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           return zapRow(all, overrides, now2, sport, seed);
         case "league":
           return leagueRow(all, league, now2);
+        // Resultat finns även utan nyckel (ESPN).
         case "results":
-          return hasAnyKey(settings) ? resultsRow(all, follows, now2) : [];
+          return resultsRow(all, follows, now2);
       }
     }, [kind, feed.matches, follows, overrides, now2, sport, seed, league, settings]);
     if (!feed.ready || matches.length === 0) return null;
@@ -74559,7 +76064,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/sport/home-rows/register.ts
   var both = (key, vars) => ({ en: tvText("en", key, vars), sv: tvText("sv", key, vars) });
   var sportOption = {
     label: both("sportRowOptionSport"),
@@ -74604,7 +76109,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -74661,7 +76166,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -74703,7 +76208,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -74740,10 +76245,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     useEffect(() => {
       let cancelled = false;
       const playlistId = getActivePlaylistId();
-      const source = tvMode || isDesktopTauri() ? getLiveTvLists().find((list) => list.id === playlistId)?.source ?? null : null;
+      const source = tvMode || isDesktopTauri2() ? getLiveTvLists().find((list) => list.id === playlistId)?.source ?? null : null;
       if (getVodMode(playlistId) === "off") return;
-      listVodCategories(source).then((result) => {
-        if (!cancelled) setShowLibrary(result.total > 0);
+      listVodCategories(source).then((result2) => {
+        if (!cancelled) setShowLibrary(result2.total > 0);
       }).catch(() => {
       });
       return () => {
@@ -74819,7 +76324,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-0167/plugins/live-tv/runtime/index.ts
   init_hls_playlist_proxy();
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
