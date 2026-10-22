@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.8
 
 - Replays shown as replays: a channel re-airing a match from earlier in the week (V Sport with LIVE in the picture, no date in the guide) no longer shows as live. Live TV checks the league's last week at ESPN and shows the replay with the original result, events and stats.
 
