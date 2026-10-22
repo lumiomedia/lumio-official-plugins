@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Live scores without a key: football (Champions League, Premier League, LaLiga, Allsvenskan and more), NBA and NHL now get scores, match details and tables from ESPN's open scoreboard. Your own API-Sports, sportapi.ai or TheSportsDB key still goes first, and ESPN takes over when its daily quota runs out. Swedish hockey still needs an API-Sports key. Works with the current Lumio app.
+
 ## 0.16.6
 
 - Big playlists stay responsive: the guide's now/next refreshes only the channels whose programme changed, instead of reloading the whole guide every minute. Works with any Lumio version; Lumio 0.1.631 makes it faster still.

@@ -36,16 +36,19 @@ function dayBody(provider: ProviderId): unknown {
 }
 
 describe('källordning per sport', () => {
-  it('standard: fotboll sportapi.ai → API-Sports → TheSportsDB; övriga lagsporter API-Sports → TheSportsDB', () => {
-    expect(orderFor({}, 'football')).toEqual(['sportapi', 'api-sports', 'thesportsdb'])
-    expect(orderFor({}, 'hockey')).toEqual(['api-sports', 'thesportsdb'])
+  it('standard: fotboll sportapi.ai → API-Sports → TheSportsDB → ESPN; hockey/basket API-Sports → TheSportsDB → ESPN; handboll utan ESPN', () => {
+    expect(orderFor({}, 'football')).toEqual(['sportapi', 'api-sports', 'thesportsdb', 'espn'])
+    expect(orderFor({}, 'hockey')).toEqual(['api-sports', 'thesportsdb', 'espn'])
+    expect(orderFor({}, 'basketball')).toEqual(['api-sports', 'thesportsdb', 'espn'])
     expect(orderFor({}, 'handball')).toEqual(['api-sports', 'thesportsdb'])
     expect(orderFor({}, 'motorsport')).toEqual([])
   })
-  it('bara källor med nyckel; egen ordning vinner, källor som saknas i den läggs sist; okänd täckning släpps', () => {
-    expect(effectiveOrder({ keys: { 'api-sports': ALL['api-sports'] }, order: {} }, 'football')).toEqual(['api-sports'])
-    expect(effectiveOrder({ keys: ALL, order: { football: ['thesportsdb'] } }, 'football')).toEqual(['thesportsdb', 'sportapi', 'api-sports'])
-    expect(effectiveOrder({ keys: ALL, order: { hockey: ['sportapi', 'thesportsdb'] } }, 'hockey')).toEqual(['thesportsdb', 'api-sports'])
+  it('källor med nyckel plus ESPN sist; egen ordning vinner, källor som saknas i den läggs sist; okänd täckning släpps', () => {
+    expect(effectiveOrder({ keys: {}, order: {} }, 'football')).toEqual(['espn'])
+    expect(effectiveOrder({ keys: { 'api-sports': ALL['api-sports'] }, order: {} }, 'football')).toEqual(['api-sports', 'espn'])
+    expect(effectiveOrder({ keys: ALL, order: { football: ['thesportsdb'] } }, 'football')).toEqual(['thesportsdb', 'sportapi', 'api-sports', 'espn'])
+    expect(effectiveOrder({ keys: ALL, order: { hockey: ['sportapi', 'thesportsdb'] } }, 'hockey')).toEqual(['thesportsdb', 'api-sports', 'espn'])
+    expect(effectiveOrder({ keys: {}, order: {} }, 'handball')).toEqual([])
   })
 })
 

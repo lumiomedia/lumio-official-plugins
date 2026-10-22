@@ -39,6 +39,13 @@ describe('kvothanteraren äger varje anrop', () => {
       .map(([path]) => path)
     expect(offenders).toEqual([])
   })
+  it('bara budget.ts importerar sport-direct med värde', () => {
+    const offenders = Object.entries(sources)
+      .filter(([path]) => !/\.test\.tsx?$/.test(path) && !/(^|\/)budget\.ts$/.test(path) && !/(^|\/)sport-direct\.ts$/.test(path))
+      .filter(([, src]) => /^import (?!type)[^\n]*sport-direct'/m.test(src))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
   it('bara sport-fetch.ts känner genomkopplingens adress', () => {
     const offenders = Object.entries(sources)
       .filter(([path]) => !/\.test\.tsx?$/.test(path) && !/(^|\/)sport-fetch\.ts$/.test(path))

@@ -1,0 +1,88 @@
+{
+ "leagues": [
+  {
+   "id": "46",
+   "name": "National Basketball Association",
+   "abbreviation": "NBA",
+   "slug": "nba",
+   "season": {
+    "year": 2027
+   }
+  }
+ ],
+ "events": [
+  {
+   "id": "401909834",
+   "date": "2026-10-21T23:00Z",
+   "name": "Atlanta Hawks at Orlando Magic",
+   "season": {
+    "year": 2027,
+    "type": 2,
+    "slug": "regular-season"
+   },
+   "status": {
+    "clock": 720.0,
+    "displayClock": "12:00",
+    "period": 4,
+    "type": {
+     "id": "3",
+     "name": "STATUS_FINAL",
+     "state": "post",
+     "completed": true,
+     "description": "Final",
+     "detail": "Final",
+     "shortDetail": "Final"
+    }
+   },
+   "competitions": [
+    {
+     "id": "401909834",
+     "date": "2026-10-21T23:00Z",
+     "venue": {
+      "id": "3432",
+      "fullName": "Kia Center",
+      "address": {
+       "city": "Orlando",
+       "state": "FL"
+      },
+      "indoor": true
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "125",
+       "winner": false,
+       "team": {
+        "id": "19",
+        "displayName": "Orlando Magic",
+        "shortDisplayName": "Magic",
+        "abbreviation": "ORL",
+        "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/orl.png"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "132",
+       "winner": true,
+       "team": {
+        "id": "1",
+        "displayName": "Atlanta Hawks",
+        "shortDisplayName": "Hawks",
+        "abbreviation": "ATL",
+        "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/atl.png"
+       }
+      }
+     ],
+     "broadcasts": [
+      {
+       "market": "away",
+       "names": [
+        "NBA League Pass"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

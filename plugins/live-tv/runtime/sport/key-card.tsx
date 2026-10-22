@@ -13,7 +13,7 @@ import { saveValidatedKey, type KeyFlowResult } from './key-flow'
 import { useKeyHandoff } from './key-handoff'
 import { currentRouter } from './router'
 import { useSportSettings } from './sport-store'
-import type { ProviderId } from './provider'
+import type { KeyedProviderId } from './provider'
 import type { SportKind } from './sport-model'
 import { sportBg } from './surface'
 
@@ -23,7 +23,7 @@ const SPORT_NAMES: Array<[SportKind, TvStringKey]> = [
 
 type Phase = { kind: 'idle' } | { kind: 'checking' } | { kind: 'done'; result: KeyFlowResult }
 
-const SIGNUP: Record<ProviderId, string> = { sportapi: SPORTAPI_REGISTER_URL, 'api-sports': API_SPORTS_REGISTER_URL, thesportsdb: THESPORTSDB_PRICING_URL }
+const SIGNUP: Record<KeyedProviderId, string> = { sportapi: SPORTAPI_REGISTER_URL, 'api-sports': API_SPORTS_REGISTER_URL, thesportsdb: THESPORTSDB_PRICING_URL }
 
 /**
  * Nyckelkortet. Utan `provider` väljer användaren källa (start: första källan
@@ -32,7 +32,7 @@ const SIGNUP: Record<ProviderId, string> = { sportapi: SPORTAPI_REGISTER_URL, 'a
  * ERSÄTTER den — en nyckel per källa.
  */
 export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, onRemove }: {
-  variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void; provider?: ProviderId
+  variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void; provider?: KeyedProviderId
   /** Inställningarnas redigerare: källans nuvarande nyckel (maskad) och dagens kvot per sport. */
   current?: { masked: string; detail?: string | null }
   /** Ta bort nyckeln — bor här, där nyckeln skrivs in (inga separata Ta bort-rader). */
@@ -41,7 +41,7 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, 
   const { tt } = useTvText()
   const tv = useTvMode()
   const settings = useSportSettings()
-  const [chosen, setProvider] = useState<ProviderId>(() => PROVIDER_IDS.find((id) => !settings.keys[id]) ?? 'sportapi')
+  const [chosen, setProvider] = useState<KeyedProviderId>(() => PROVIDER_IDS.find((id) => !settings.keys[id]) ?? 'sportapi')
   const provider = fixed ?? chosen
   const [draft, setDraft] = useState('')
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })

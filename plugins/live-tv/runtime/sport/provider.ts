@@ -8,7 +8,9 @@
  */
 import type { SportKind } from './sport-model'
 
-export type ProviderId = 'api-sports' | 'thesportsdb' | 'sportapi'
+export type ProviderId = 'api-sports' | 'thesportsdb' | 'sportapi' | 'espn'
+/** Källorna som kräver en nyckel (inställningarnas Nycklar). */
+export type KeyedProviderId = Exclude<ProviderId, 'espn'>
 export type FixtureStatus = 'scheduled' | 'live' | 'ht' | 'finished' | 'postponed'
 export interface FixtureTeam { id: string; name: string; crest: string | null }
 export interface Fixture {
@@ -40,6 +42,8 @@ export interface DayOpts { today: string; tz: string; dayEndMs: number }
 export interface LiveOpts { today: string; tz: string }
 export interface SportsProvider {
   id: ProviderId
+  /** Ingen nyckel och ingen kvot: hämtas direkt från webbvyn (`sport-direct.ts`), inte genom värdens genomkoppling. */
+  keyless?: boolean
   liveFloorMs: number
   coverage(sport: SportKind): 'full' | 'epg'
   bucket(sport: SportKind): string

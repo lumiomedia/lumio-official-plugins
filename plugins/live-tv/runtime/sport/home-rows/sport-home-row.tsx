@@ -8,7 +8,7 @@ import { KIND_KEYS } from '../sport-ctx'
 import { leagueColor, rankedSources, statusAt } from '../sport-day-model'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { SPORT_KINDS, matchTitle, type SportFilter, type SportKind, type SportMatch } from '../sport-model'
-import { hasAnyKey, useFollows, useOverrides, useSportSettings, type SportOverrides } from '../sport-store'
+import { useFollows, useOverrides, useSportSettings, type SportOverrides } from '../sport-store'
 import { useSportRows } from './rows-feed'
 import { sportHeroMirror, whenText } from './rows-mirror'
 import { useBackdropUploads } from '../backdrop'
@@ -87,7 +87,8 @@ export function SportHomeRow({ kind, onNavigate, layout = 'slider', count = 20, 
       case 'tonight': return tonightRow(all, overrides, now, sport)
       case 'zap': return zapRow(all, overrides, now, sport, seed)
       case 'league': return leagueRow(all, league, now)
-      case 'results': return hasAnyKey(settings) ? resultsRow(all, follows, now) : []
+      // Resultat finns även utan nyckel (ESPN).
+      case 'results': return resultsRow(all, follows, now)
     }
   }, [kind, feed.matches, follows, overrides, now, sport, seed, league, settings])
 

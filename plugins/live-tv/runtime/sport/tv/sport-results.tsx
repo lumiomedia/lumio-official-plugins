@@ -144,7 +144,7 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
   const picked = league ? shown.find((g) => g.key === league) ?? null : null
   const pickedKey = picked?.key ?? null
   useEffect(() => {
-    if (!picked || !controller || !settings.apiKey) return
+    if (!picked || !controller) return
     let cancelled = false
     setTables((t) => (t[picked.key] ? t : { ...t, [picked.key]: 'loading' }))
     const cached = controller.standings(picked.sport, picked.leagueId, picked.season)
@@ -155,7 +155,7 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedKey, controller, settings.apiKey])
 
-  if (!settings.apiKey || !controller) {
+  if (!controller) {
     return <KeyCard variant="tab" />
   }
 

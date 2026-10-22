@@ -81,7 +81,7 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, onWatch, p
   const pickedKey = picked?.key ?? null
   const [inline, setInline] = useState<{ key: string; rows: StandingRow[] | null } | null>(null)
   useEffect(() => {
-    if (!picked || !controller || !settings.apiKey) { setInline(null); return }
+    if (!picked || !controller) { setInline(null); return }
     let cancelled = false
     const cached = controller.standings(picked.sport, picked.leagueId, picked.season)
     setInline({ key: picked.key, rows: cached })
@@ -90,7 +90,7 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, onWatch, p
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedKey, controller, settings.apiKey])
 
-  if (!settings.apiKey || !controller) {
+  if (!controller) {
     return <KeyCard variant="tab" pushLayer={pushLayer} />
   }
 

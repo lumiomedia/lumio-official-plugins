@@ -3,11 +3,18 @@
 
 import { Budget, type BudgetDeps, type BudgetFailure, type BudgetResult, type CallKind } from './budget'
 import { getSportSettings } from './sport-store'
-import { effectiveOrder, providerFor } from './providers'
+import { effectiveOrder, KEYLESS_IDS, providerFor } from './providers'
 import type { DayOpts, Fixture, FixtureDetail, LiveOpts, ProviderCall, ProviderId, SportsProvider, StandingRow, TeamHit } from './provider'
 import type { SportQuota } from './sport-fetch'
 import type { SportKind } from './sport-model'
 import type { ProviderKeys, SportOrder } from './sport-store'
+
+/**
+ * Källorna utan nyckel (ESPN) är alltid med, utom i testerna: de gör riktiga
+ * nätanrop, så testuppsättningen (setup.ts) stänger av dem och ESPN:s egna
+ * tester slår på dem igen.
+ */
+const keylessSources = (): boolean => (globalThis as { __lumioNoKeylessSources?: boolean }).__lumioNoKeylessSources !== true
 
 export type RoutedResult<T> = BudgetResult<T> & { provider: ProviderId | null }
 export interface FixtureRef { provider: ProviderId; id: string }
@@ -56,14 +63,21 @@ export class SportRouter {
     for (const [id, k] of Object.entries(keys) as Array<[ProviderId, ProviderKeys[ProviderId]]>) {
       if (k?.key) this.budgets.set(id, make ? make(id, k.key) : new Budget(providerFor(id), k.key, deps))
     }
+    // Källorna utan nyckel finns alltid (ESPN): sist i ordningen, så nyckelkällorna går först.
+    if (keylessSources()) for (const id of KEYLESS_IDS) this.budgets.set(id, make ? make(id, '') : new Budget(providerFor(id), null, deps))
   }
 
+  private keyed(): Budget[] { return [...this.budgets.values()].filter((b) => !b.provider.keyless) }
+
   budget(id: ProviderId): Budget | null { return this.budgets.get(id) ?? null }
-  hasKey(): boolean { return this.budgets.size > 0 }
-  /** Fler än en källa med nyckel: då säger takraden vilken källa som används. */
+  /** Någon källa alls, med eller utan nyckel. */
+  hasSource(): boolean { return this.budgets.size > 0 }
+  /** Någon källa med nyckel (källorna utan nyckel räknas inte). */
+  hasKey(): boolean { return this.keyed().length > 0 }
+  /** Fler än en källa: då säger takraden vilken källa som används. */
   multi(): boolean { return this.budgets.size > 1 }
   /** Alla nycklar ogiltiga (en ogiltig bland flera är bara den källans problem). */
-  isInvalid(): boolean { return this.budgets.size > 0 && [...this.budgets.values()].every((b) => b.isInvalid()) }
+  isInvalid(): boolean { const k = this.keyed(); return k.length > 0 && k.every((b) => b.isInvalid()) }
 
   /** Sportens källor med nyckel, i ordning. */
   candidates(sport: SportKind): Budget[] {
@@ -239,7 +253,8 @@ let current: { id: string; router: SportRouter | null } | null = null
 const budgets = new Map<string, Budget>()
 
 /**
- * EN router för nycklarna (standardordningen per sport). `null` utan nycklar: då görs inga anrop.
+ * EN router för nycklarna (standardordningen per sport). Aldrig `null` längre: ESPN behöver ingen
+ * nyckel, så resultat finns även utan egna nycklar (typen behålls för äldre anropare).
  * Samma nycklar och ordning = samma router (och samma resultatlager), även när
  * andra sportinställningar sparas.
  */
@@ -253,11 +268,12 @@ export function currentRouter(): SportRouter | null {
   const make = (pid: ProviderId, key: string): Budget => {
     const k = `${pid}|${key}`
     let b = budgets.get(k)
-    if (!b) { b = new Budget(providerFor(pid), key); budgets.set(k, b) }
+    if (!b) { b = new Budget(providerFor(pid), key || null); budgets.set(k, b) }
     return b
   }
   const router = new SportRouter(keys, order, {}, make)
-  current = { id, router: router.hasKey() ? router : null }
+  // Utan någon källa alls (bara i testerna: appen har alltid ESPN) görs inga anrop.
+  current = { id, router: router.hasSource() ? router : null }
   return current.router
 }
 

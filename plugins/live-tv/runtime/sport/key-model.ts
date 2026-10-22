@@ -3,7 +3,7 @@ import { maskKey } from './key-flow'
 import { PROVIDER_IDS, PROVIDER_LABEL, providerFor } from './providers'
 import { SPORT_CHIPS } from './sport-model'
 import type { Budget } from './budget'
-import type { ProviderId } from './provider'
+import type { KeyedProviderId, ProviderId } from './provider'
 import type { SportKind } from './sport-model'
 import type { SportSettings } from './sport-store'
 import type { TvStringKey } from '../tv/tv-strings'
@@ -21,13 +21,13 @@ export function sportLabel(sport: SportKind, tt: TT): string { return tt(SPORT_L
 export const ORDER_SPORTS: readonly SportKind[] = SPORT_CHIPS.filter((s) => PROVIDER_IDS.some((id) => providerFor(id).coverage(s) === 'full'))
 
 /** Kortets rad om täckning och gräns. */
-export const PROVIDER_BLURB_KEY: Record<ProviderId, TvStringKey> = {
+export const PROVIDER_BLURB_KEY: Record<KeyedProviderId, TvStringKey> = {
   sportapi: 'sportKeyBlurbSportApi', 'api-sports': 'sportKeyBlurbApiSports', thesportsdb: 'sportKeyBlurbTheSportsDb',
 }
 
 export interface KeyQuota { bucket: string; used: number; limit: number }
 export interface KeyRow {
-  id: ProviderId
+  id: KeyedProviderId
   label: string
   state: 'none' | 'ok' | 'paused' | 'invalid'
   masked: string | null

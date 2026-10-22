@@ -1,0 +1,557 @@
+{
+ "header": {
+  "id": "401915395",
+  "season": {
+   "year": 2026,
+   "current": true,
+   "type": 14534,
+   "name": "2026-27 UEFA Champions League, League Phase"
+  },
+  "league": {
+   "id": "775",
+   "name": "UEFA Champions League",
+   "slug": "uefa.champions",
+   "abbreviation": "UEFA Champions League"
+  },
+  "competitions": [
+   {
+    "id": "401915395",
+    "date": "2026-10-21T16:45Z",
+    "status": {
+     "type": {
+      "id": "28",
+      "name": "STATUS_FULL_TIME",
+      "state": "post",
+      "completed": true,
+      "description": "Full Time",
+      "detail": "FT",
+      "shortDetail": "FT"
+     }
+    },
+    "competitors": [
+     {
+      "homeAway": "home",
+      "score": "4",
+      "team": {
+       "id": "2572",
+       "displayName": "Como",
+       "abbreviation": "COMO",
+       "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/2572.png"
+      }
+     },
+     {
+      "homeAway": "away",
+      "score": "1",
+      "team": {
+       "id": "360",
+       "displayName": "Manchester United",
+       "abbreviation": "MAN",
+       "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/360.png"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "gameInfo": {
+  "venue": {
+   "fullName": "Giuseppe Sinigaglia",
+   "address": {
+    "city": "Como",
+    "country": "Italy"
+   }
+  }
+ },
+ "keyEvents": [
+  {
+   "type": {
+    "id": "80",
+    "text": "Kickoff",
+    "type": "kickoff"
+   },
+   "text": "First Half begins.",
+   "shortText": null,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 0.0,
+    "displayValue": ""
+   },
+   "scoringPlay": false,
+   "team": null,
+   "participants": null,
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Como 1, Manchester United 0. Nico Paz (Como) left footed shot from the centre of the box to the bottom left corner. Assisted by Lucas da Cunha.",
+   "shortText": "Nico Paz Goal",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 118.0,
+    "displayValue": "2'"
+   },
+   "scoringPlay": true,
+   "team": {
+    "id": "2572",
+    "displayName": "Como"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "337970",
+      "displayName": "Nico Paz"
+     }
+    },
+    {
+     "athlete": {
+      "id": "291285",
+      "displayName": "Lucas Da Cunha"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Andrey Santos (Manchester United) is shown the yellow card for a bad foul.",
+   "shortText": "Andrey Santos Yellow Card",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 1489.0,
+    "displayValue": "25'"
+   },
+   "scoringPlay": false,
+   "team": {
+    "id": "360",
+    "displayName": "Manchester United"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "314858",
+      "displayName": "Andrey Santos"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Manchester United. Amad Diallo replaces Matheus Cunha.",
+   "shortText": "Amad Diallo Substitution",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "team": {
+    "id": "360",
+    "displayName": "Manchester United"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "291630",
+      "displayName": "Amad Diallo"
+     }
+    },
+    {
+     "athlete": {
+      "id": "259902",
+      "displayName": "Matheus Cunha"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Manchester United. Carlos Baleba replaces Andrey Santos.",
+   "shortText": "Carlos Baleba Substitution",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "team": {
+    "id": "360",
+    "displayName": "Manchester United"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "338814",
+      "displayName": "Carlos Baleba"
+     }
+    },
+    {
+     "athlete": {
+      "id": "314858",
+      "displayName": "Andrey Santos"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Como 2, Manchester United 0. Tasos Douvikas (Como) right footed shot from the centre of the box to the top right corner. Assisted by Nico Paz with a through ball.",
+   "shortText": "Anastasios Douvikas Goal",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2906.0,
+    "displayValue": "49'"
+   },
+   "scoringPlay": true,
+   "team": {
+    "id": "2572",
+    "displayName": "Como"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "262071",
+      "displayName": "Anastasios Douvikas"
+     }
+    },
+    {
+     "athlete": {
+      "id": "337970",
+      "displayName": "Nico Paz"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Carlos Baleba (Manchester United) is shown the yellow card for a bad foul.",
+   "shortText": "Carlos Baleba Yellow Card",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2995.0,
+    "displayValue": "50'"
+   },
+   "scoringPlay": false,
+   "team": {
+    "id": "360",
+    "displayName": "Manchester United"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "338814",
+      "displayName": "Carlos Baleba"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  },
+  {
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Como 3, Manchester United 0. Nico Paz (Como) left footed shot from the right side of the box to the bottom left corner.",
+   "shortText": "Nico Paz Goal",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3376.0,
+    "displayValue": "57'"
+   },
+   "scoringPlay": true,
+   "team": {
+    "id": "2572",
+    "displayName": "Como"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "337970",
+      "displayName": "Nico Paz"
+     }
+    }
+   ],
+   "penaltyKick": null,
+   "ownGoal": null
+  }
+ ],
+ "boxscore": {
+  "teams": [
+   {
+    "team": {
+     "id": "2572"
+    },
+    "statistics": [
+     {
+      "name": "foulsCommitted",
+      "displayValue": "10",
+      "label": "Fouls"
+     },
+     {
+      "name": "yellowCards",
+      "displayValue": "1",
+      "label": "Yellow Cards"
+     },
+     {
+      "name": "redCards",
+      "displayValue": "0",
+      "label": "Red Cards"
+     },
+     {
+      "name": "offsides",
+      "displayValue": "2",
+      "label": "Offsides"
+     },
+     {
+      "name": "wonCorners",
+      "displayValue": "1",
+      "label": "Corner Kicks"
+     },
+     {
+      "name": "saves",
+      "displayValue": "3",
+      "label": "Saves"
+     },
+     {
+      "name": "possessionPct",
+      "displayValue": "54.8",
+      "label": "Possession"
+     },
+     {
+      "name": "totalShots",
+      "displayValue": "11",
+      "label": "SHOTS"
+     }
+    ]
+   },
+   {
+    "team": {
+     "id": "360"
+    },
+    "statistics": [
+     {
+      "name": "foulsCommitted",
+      "displayValue": "11",
+      "label": "Fouls"
+     },
+     {
+      "name": "yellowCards",
+      "displayValue": "3",
+      "label": "Yellow Cards"
+     },
+     {
+      "name": "redCards",
+      "displayValue": "0",
+      "label": "Red Cards"
+     },
+     {
+      "name": "offsides",
+      "displayValue": "1",
+      "label": "Offsides"
+     },
+     {
+      "name": "wonCorners",
+      "displayValue": "4",
+      "label": "Corner Kicks"
+     },
+     {
+      "name": "saves",
+      "displayValue": "4",
+      "label": "Saves"
+     },
+     {
+      "name": "possessionPct",
+      "displayValue": "45.2",
+      "label": "Possession"
+     },
+     {
+      "name": "totalShots",
+      "displayValue": "13",
+      "label": "SHOTS"
+     }
+    ]
+   }
+  ]
+ },
+ "rosters": [
+  {
+   "homeAway": "home",
+   "team": {
+    "id": "2572"
+   },
+   "formation": "4-2-3-1",
+   "roster": [
+    {
+     "starter": true,
+     "jersey": "1",
+     "athlete": {
+      "displayName": "Jean Butez"
+     },
+     "position": {
+      "abbreviation": "G",
+      "name": "Goalkeeper"
+     }
+    },
+    {
+     "starter": true,
+     "jersey": "2",
+     "athlete": {
+      "displayName": "Marc-Oliver Kempf"
+     },
+     "position": {
+      "abbreviation": "CD-L",
+      "name": "Center Left Defender"
+     }
+    },
+    {
+     "starter": true,
+     "jersey": "4",
+     "athlete": {
+      "displayName": "Jacobo Ramón"
+     },
+     "position": {
+      "abbreviation": "CD-R",
+      "name": "Center Right Defender"
+     }
+    },
+    {
+     "starter": false,
+     "jersey": "12",
+     "athlete": {
+      "displayName": "Lorenzo Luigi Ginelli"
+     },
+     "position": {
+      "abbreviation": "SUB",
+      "name": "Substitute"
+     }
+    },
+    {
+     "starter": false,
+     "jersey": "28",
+     "athlete": {
+      "displayName": "Ivan Smolcic"
+     },
+     "position": {
+      "abbreviation": "SUB",
+      "name": "Substitute"
+     }
+    }
+   ]
+  },
+  {
+   "homeAway": "away",
+   "team": {
+    "id": "360"
+   },
+   "formation": "4-2-3-1",
+   "roster": [
+    {
+     "starter": true,
+     "jersey": "1",
+     "athlete": {
+      "displayName": "Senne Lammens"
+     },
+     "position": {
+      "abbreviation": "G",
+      "name": "Goalkeeper"
+     }
+    },
+    {
+     "starter": true,
+     "jersey": "5",
+     "athlete": {
+      "displayName": "Harry Maguire"
+     },
+     "position": {
+      "abbreviation": "CD-L",
+      "name": "Center Left Defender"
+     }
+    },
+    {
+     "starter": true,
+     "jersey": "4",
+     "athlete": {
+      "displayName": "Matthijs de Ligt"
+     },
+     "position": {
+      "abbreviation": "CD-R",
+      "name": "Center Right Defender"
+     }
+    },
+    {
+     "starter": false,
+     "jersey": "27",
+     "athlete": {
+      "displayName": "Tynan Thompson"
+     },
+     "position": {
+      "abbreviation": "SUB",
+      "name": "Substitute"
+     }
+    },
+    {
+     "starter": false,
+     "jersey": "57",
+     "athlete": {
+      "displayName": "Daniel Armer"
+     },
+     "position": {
+      "abbreviation": "SUB",
+      "name": "Substitute"
+     }
+    }
+   ]
+  }
+ ]
+}

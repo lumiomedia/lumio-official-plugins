@@ -2,7 +2,8 @@
 'use client'
 
 import { sportFetch, sportQuota, type FetchMode, type SportFetchResponse, type SportQuota } from './sport-fetch'
-import type { DayOpts, Fixture, FixtureDetail, KeyCheck, LiveOpts, ProviderCall, ProviderId, SportsProvider, StandingRow, TeamHit } from './provider'
+import { sportDirect } from './sport-direct'
+import type { DayOpts, Fixture, FixtureDetail, KeyCheck, LiveOpts, ProviderCall, ProviderId, ProviderRequest, SportsProvider, StandingRow, TeamHit } from './provider'
 import type { SportKind } from './sport-model'
 
 /**
@@ -14,6 +15,9 @@ import type { SportKind } from './sport-model'
  * för en bok som delas av alla klienter mot värden). Mellan svaren räknar vi
  * ned lokalt, så att två samtidiga anrop inte båda tror att samma sista
  * anrop är ledigt.
+ *
+ * Källor utan nyckel (`provider.keyless`, ESPN) hämtas direkt från webbvyn
+ * (`sport-direct`) och har ingen kvot; resten av vägen är densamma.
  */
 /**
  * `fixture` = matchcentret öppnas (får ta ur reserven, som är till för just det).
@@ -28,6 +32,7 @@ export type BudgetResult<T> =
 
 export interface BudgetDeps {
   fetch?: typeof sportFetch
+  direct?: typeof sportDirect
   ledger?: typeof sportQuota
   now?: () => number
   sleep?: (ms: number) => Promise<void>
@@ -51,18 +56,28 @@ export class Budget {
   private invalid = false
   private listeners = new Set<() => void>()
   private readonly fetchImpl: typeof sportFetch
+  private readonly directImpl: typeof sportDirect
   private readonly ledgerImpl: typeof sportQuota
   private readonly now: () => number
   private readonly sleep: (ms: number) => Promise<void>
 
   constructor(readonly provider: SportsProvider, readonly key: string | null, deps: BudgetDeps = {}) {
     this.fetchImpl = deps.fetch ?? sportFetch
+    this.directImpl = deps.direct ?? sportDirect
     this.ledgerImpl = deps.ledger ?? sportQuota
     this.now = deps.now ?? Date.now
     this.sleep = deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   }
 
   hasKey(): boolean { return !!this.key }
+  /** Kan göra anrop: har en nyckel, eller källan behöver ingen. */
+  private canCall(): boolean { return !!this.key || !!this.provider.keyless }
+
+  private get(req: ProviderRequest, mode: FetchMode): Promise<SportFetchResponse> {
+    return this.provider.keyless
+      ? this.directImpl({ provider: this.provider.id, req, mode })
+      : this.fetchImpl({ provider: this.provider.id, key: this.key ?? '', req, mode })
+  }
 
   /** Dagens kvot ur värdens bok (delas av TV och telefon). Lokalt anrop, kostar ingen kvot: för inställningarnas Nycklar. */
   async loadLedger(): Promise<void> {
@@ -171,7 +186,7 @@ export class Budget {
 
   async run<T>(kind: CallKind, sport: SportKind, call: ProviderCall<T>): Promise<BudgetResult<T>> {
     const none = (reason: BudgetFailure): BudgetResult<T> => ({ ok: false, reason, data: null, fetchedAt: null, until: null })
-    if (!this.key) return none('no-key')
+    if (!this.canCall()) return none('no-key')
     if (this.provider.coverage(sport) !== 'full') return none('no-coverage')
     if (this.invalid && kind !== 'validate') return none('invalid-key')
     if (call.requests.length === 0) return { ok: true, data: call.parse([]), cached: true, fetchedAt: null }
@@ -188,11 +203,13 @@ export class Budget {
     let cached = true
     let fetchedAt: number | null = null
     const bodies: unknown[] = []
-    for (const req of call.requests) {
-      let res: SportFetchResponse = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode })
+    // En nyckelfri källa har ingen kvot att räkna ned i ordning: dess förfrågningar går samtidigt.
+    const ahead = this.provider.keyless ? call.requests.map((req) => this.get(req, mode)) : null
+    for (const [i, req] of call.requests.entries()) {
+      let res: SportFetchResponse = await (ahead ? ahead[i] : this.get(req, mode))
       if (res.error === 'network' && mode === 'cache-first') {
         await this.sleep(RETRY_MS)
-        if (this.allows(kind, bucket, 1)) res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode })
+        if (this.allows(kind, bucket, 1)) res = await this.get(req, mode)
       }
       if (res.quota) this.noteQuota(res.quota)
       if (res.error === 'unauthorized') {
@@ -230,9 +247,9 @@ export class Budget {
 
   /** Startvärdet ur diskcachen innan något anrop görs. Alltid `cache-only`, så det kostar aldrig kvot. */
   async peek<T>(sport: SportKind, call: ProviderCall<T>): Promise<T | null> {
-    if (!this.key || this.provider.coverage(sport) !== 'full' || call.requests.length === 0) return null
+    if (!this.canCall() || this.provider.coverage(sport) !== 'full' || call.requests.length === 0) return null
     const bodies: unknown[] = []
-    for (const req of call.requests) bodies.push((await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: 'cache-only' })).data)
+    for (const req of call.requests) bodies.push((await this.get(req, 'cache-only')).data)
     if (bodies.every((b) => b == null)) return null
     try { return call.parse(bodies) } catch { return null }
   }
@@ -242,11 +259,11 @@ export class Budget {
    * räknar sin TTL ur det: matcherna gäller fram till lagets nästa match.
    */
   async peekAged<T>(sport: SportKind, call: ProviderCall<T>): Promise<{ data: T; fetchedAt: number | null } | null> {
-    if (!this.key || this.provider.coverage(sport) !== 'full' || call.requests.length === 0) return null
+    if (!this.canCall() || this.provider.coverage(sport) !== 'full' || call.requests.length === 0) return null
     const bodies: unknown[] = []
     let fetchedAt: number | null = null
     for (const req of call.requests) {
-      const res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: 'cache-only' })
+      const res = await this.get(req, 'cache-only')
       bodies.push(res.data)
       if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt)
     }
