@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- tolkar extern JSON fält för fält */
 import type { DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, FixtureStat, FixtureStatus, KeyCheck, LineupEntry, ProviderCall, ProviderRequest, SportsProvider, StandingRow, TeamHit } from './provider'
 import type { SportKind } from './sport-model'
+import { localDates, shiftDate } from './day-plan'
 
 /**
  * ESPN:s öppna scoreboard-API. INGEN NYCKEL OCH INGEN KVOT: källan används
@@ -32,20 +33,28 @@ export const ESPN_LEAGUES: Partial<Record<SportKind, readonly string[]>> = {
   basketball: ['nba', 'wnba'],
 }
 
+/** Livepollens ligor innan dagens svar finns. */
+const LIVE_FALLBACK = new Set(['uefa.champions', 'uefa.europa', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'swe.1'])
+
 const SPORT_PATH: Partial<Record<SportKind, string>> = { football: 'soccer', hockey: 'hockey', basketball: 'basketball' }
 
 const arr = (v: any): any[] => (Array.isArray(v) ? v : [])
 const num = (v: any): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null
 const str = (v: any): string | null => (typeof v === 'string' && v.trim() ? v : null)
-const DAY_MS = 86_400_000
 
 const ymd = (t: Date): string => `${t.getUTCFullYear()}${String(t.getUTCMonth() + 1).padStart(2, '0')}${String(t.getUTCDate()).padStart(2, '0')}`
 
-/** Östkustdatumen (UTC−4 och UTC−5) som det lokala dygnet [slut − 24 h, slut) täcker. */
-export function espnDatesFor(dayEndMs: number): string[] {
+/** Det lokala dygnets gränser [start, slut) i användarens zon; 23 och 25 timmar vid sommartidsbytet. */
+export function localDay(date: string, tz: string): { start: number; end: number } {
+  const { dayEndMs } = localDates(0, tz)
+  return { start: dayEndMs(shiftDate(date, -1)), end: dayEndMs(date) }
+}
+
+/** Östkustdatumen (UTC−4 och UTC−5) som det lokala dygnet [start, slut) täcker. */
+export function espnDatesFor(day: { start: number; end: number }): string[] {
   const H = 3_600_000
-  const edges = [dayEndMs - DAY_MS, dayEndMs - 1]
+  const edges = [day.start, day.end - 1]
   return [...new Set(edges.flatMap((t) => [ymd(new Date(t - 5 * H)), ymd(new Date(t - 4 * H))]))].sort()
 }
 
@@ -114,17 +123,16 @@ const leaguesToday = new Map<string, { date: string; slugs: string[] }>()
 export function __resetEspnForTests(): void { leaguesToday.clear() }
 
 interface Board { slug: string; date: string }
-const boards = (slugs: readonly string[], dayEndMs: number): Board[] => slugs.flatMap((slug) => espnDatesFor(dayEndMs).map((date) => ({ slug, date })))
+const boards = (slugs: readonly string[], day: { start: number; end: number }): Board[] => slugs.flatMap((slug) => espnDatesFor(day).map((date) => ({ slug, date })))
 const scoreboard = (sport: SportKind, b: Board, ttlS: number): ProviderRequest =>
   ({ sport, path: `site/v2/sports/${SPORT_PATH[sport]}/${b.slug}/scoreboard?dates=${b.date}&limit=300`, ttlS })
 
-function dayList(sport: SportKind, list: Board[], bodies: unknown[], dayEndMs: number): Fixture[] {
-  const start = dayEndMs - DAY_MS
+function dayList(sport: SportKind, list: Board[], bodies: unknown[], day: { start: number; end: number }): Fixture[] {
   const seen = new Set<string>()
   const out: Fixture[] = []
   list.forEach((b, i) => {
     for (const f of espnScoreboard(sport, b.slug, bodies[i])) {
-      if (f.kickoff < start || f.kickoff >= dayEndMs || seen.has(f.id)) continue
+      if (f.kickoff < day.start || f.kickoff >= day.end || seen.has(f.id)) continue
       seen.add(f.id)
       out.push(f)
     }
@@ -132,16 +140,26 @@ function dayList(sport: SportKind, list: Board[], bodies: unknown[], dayEndMs: n
   return out.sort((a, b) => a.kickoff - b.kickoff)
 }
 
-const EVENT_TYPE: Record<string, FixtureEvent['type']> = {
-  goal: 'goal', 'own-goal': 'goal', 'penalty---scored': 'goal',
-  'yellow-card': 'card', 'red-card': 'card', 'yellow-red-card': 'card',
-  substitution: 'sub', 'var---goal-disallowed': 'var', 'penalty---missed': 'penalty', 'penalty---saved': 'penalty',
+/**
+ * ESPN:s händelsetyper har undertyper ("goal---header", "goal---free-kick",
+ * "penalty---scored", "yellow-card"). Ett mål känns igen på `scoringPlay`
+ * eller typen; en missad straff är ingen poäng.
+ */
+export function espnEventType(e: any): FixtureEvent['type'] | null {
+  const t = String(e?.type?.type ?? '').toLowerCase()
+  if (/^penalty---(missed|saved)/.test(t)) return 'penalty'
+  if (e?.scoringPlay === true || /^(goal|own-goal|penalty---scored)/.test(t)) return 'goal'
+  if (/card/.test(t)) return 'card'
+  if (/^substitution/.test(t)) return 'sub'
+  if (/^var/.test(t)) return 'var'
+  return null
 }
 
 function eventsOf(body: any, homeId: string): FixtureEvent[] {
   return arr(body?.keyEvents)
-    .filter((e) => EVENT_TYPE[String(e?.type?.type ?? '')] !== undefined)
+    .filter((e) => espnEventType(e) !== null)
     .map((e): FixtureEvent => {
+      const type = espnEventType(e)!
       const m = /^\s*(\d{1,3})'(?:\s*\+\s*(\d{1,2})')?/.exec(String(e?.clock?.displayValue ?? ''))
       const people = arr(e?.participants).map((p) => str(p?.athlete?.displayName))
       const teamId = e?.team?.id != null ? String(e.team.id) : null
@@ -149,10 +167,10 @@ function eventsOf(body: any, homeId: string): FixtureEvent[] {
         minute: m ? Number(m[1]) : null,
         extra: m?.[2] != null ? Number(m[2]) : null,
         side: teamId == null ? null : teamId === homeId ? 'home' : 'away',
-        type: EVENT_TYPE[String(e.type.type)],
+        type,
         detail: String(e?.type?.text ?? ''),
         player: people[0] ?? null,
-        assist: EVENT_TYPE[String(e.type.type)] === 'goal' ? people[1] ?? null : null,
+        assist: type === 'goal' ? people[1] ?? null : null,
       }
     })
 }
@@ -224,28 +242,29 @@ export const espn: SportsProvider = {
   bucket: (sport) => sport,
   day(sport, date, opts: DayOpts): ProviderCall<Fixture[]> {
     const slugs = covered(sport)
-    const list = boards(slugs, opts.dayEndMs)
+    const window = { start: localDay(date, opts.tz).start, end: opts.dayEndMs }
+    const list = boards(slugs, window)
     const past = date < opts.today
     const ttlS = date === opts.today ? 900 : past ? 21_600 : 3_600
     return {
       requests: list.map((b) => ({ ...scoreboard(sport, b, ttlS), ...(past ? { finalAfter: opts.dayEndMs + 3 * 3_600_000 } : {}) })),
       parse: (bodies) => {
-        const day = dayList(sport, list, bodies, opts.dayEndMs)
-        if (date === opts.today) leaguesToday.set(sport, { date, slugs: slugs.filter((s) => day.some((f) => f.league.id === s)) })
+        const day = dayList(sport, list, bodies, window)
+        // Ligor vars svar saknades (tillfälligt fel) får vara kvar i livepollen: hellre ett anrop för mycket än en missad match.
+        if (date === opts.today) leaguesToday.set(sport, { date, slugs: slugs.filter((s) => day.some((f) => f.league.id === s) || list.some((b, j) => b.slug === s && bodies[j] == null)) })
         return day
       },
     }
   },
   live(sport, opts): ProviderCall<Fixture[]> {
     const known = leaguesToday.get(sport)
-    const slugs = known && known.date === opts.today ? known.slugs : covered(sport)
-    // Dagens fönster i lokal tid: livepollen har bara datumet, så dygnet räknas ur det.
-    const [y, m, d] = opts.today.split('-').map(Number)
-    const dayEndMs = new Date(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + 1).getTime()
-    const list = boards(slugs, dayEndMs)
+    // Utan dagens svar (en nyckelkälla gav dagen, eller det är strax efter midnatt): bara de största ligorna, inte hela katalogen.
+    const slugs = known && known.date === opts.today ? known.slugs : covered(sport).filter((s) => LIVE_FALLBACK.has(s) || covered(sport).length <= 3)
+    const window = localDay(opts.today, opts.tz)
+    const list = boards(slugs, window)
     return {
       requests: list.map((b) => scoreboard(sport, b, 30)),
-      parse: (bodies) => dayList(sport, list, bodies, dayEndMs),
+      parse: (bodies) => dayList(sport, list, bodies, window),
     }
   },
   fixture(sport, id, opts): ProviderCall<FixtureDetail | null> {

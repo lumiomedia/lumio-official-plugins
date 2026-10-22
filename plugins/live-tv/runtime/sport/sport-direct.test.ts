@@ -50,6 +50,29 @@ describe('direkthämtningen (källor utan nyckel)', () => {
   })
 })
 
+describe('direkthämtningen: granskningens fall', () => {
+  it('400/404 är en tom liga, inte ett fel', async () => {
+    expect(await sportDirect({ provider: 'espn', req: req(SB), mode: 'cache-first' }, { fetch: fakeFetch(null, 400) as never })).toMatchObject({ data: {}, error: null })
+  })
+
+  it('en post från en pågående match blir inte slutgiltig när någon frågar med TTL −1', async () => {
+    const SUM = 'site/v2/sports/soccer/eng.1/summary?event=1'
+    const fetch = fakeFetch({ live: true })
+    await sportDirect({ provider: 'espn', req: req(SUM, 60), mode: 'cache-first' }, { fetch: fetch as never })
+    await sportDirect({ provider: 'espn', req: req(SUM, -1), mode: 'cache-first' }, { fetch: fetch as never })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await sportDirect({ provider: 'espn', req: req(SUM, -1), mode: 'cache-first' }, { fetch: fetch as never })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('en fetch som kastar direkt lämnar ingen hängande post', async () => {
+    const boom = vi.fn(() => { throw new Error('x') })
+    expect(await sportDirect({ provider: 'espn', req: req(SB), mode: 'cache-first' }, { fetch: boom as never })).toMatchObject({ error: 'network' })
+    const ok = fakeFetch({ events: [] })
+    expect(await sportDirect({ provider: 'espn', req: req(SB), mode: 'cache-first' }, { fetch: ok as never })).toMatchObject({ error: null })
+  })
+})
+
 describe('kvothanteraren och routern med ESPN', () => {
   const flag = globalThis as { __lumioNoKeylessSources?: boolean }
   beforeEach(() => { flag.__lumioNoKeylessSources = false })
@@ -64,6 +87,24 @@ describe('kvothanteraren och routern med ESPN', () => {
     // NHL: ett anrop per östkustdatum som dygnet täcker.
     expect(direct).toHaveBeenCalledTimes(2)
     expect(host).not.toHaveBeenCalled()
+  })
+
+  it('högst sex samtidigt, inga omförsök i följd, och ett fel i en liga fäller inte dagen', async () => {
+    let active = 0
+    let peak = 0
+    const sleep = vi.fn(async () => {})
+    const direct = vi.fn(async ({ req }: { req: ProviderRequest }) => {
+      active++; peak = Math.max(peak, active)
+      await new Promise((r) => setTimeout(r, 1))
+      active--
+      const bad = req.path.includes('/eng.1/')
+      return { data: bad ? null : {}, cached: false, fresh: true, fetchedAt: 1, quota: null, error: bad ? 'network' : null } as const
+    })
+    const b = new Budget(espn, null, { direct: direct as never, sleep })
+    const r = await b.day('football', '2026-10-21', { today: '2026-10-21', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 21, 22) })
+    expect(peak).toBeLessThanOrEqual(6)
+    expect(sleep).not.toHaveBeenCalled()
+    expect(r.ok).toBe(true)
   })
 
   it('utan nycklar svarar ESPN; med nyckel går nyckelkällan först', () => {

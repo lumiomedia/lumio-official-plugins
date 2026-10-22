@@ -26,7 +26,7 @@ export interface TeamTarget {
 /** Ligan sidan visar. `ref: null` = ligan finns bara i tablån; sidan har då inget att hämta. */
 export interface LeagueTarget { sport: SportKind; name: string; key: string; ref: LeagueRef | null }
 
-const PROVIDERS: readonly ProviderId[] = ['api-sports', 'sportapi', 'thesportsdb']
+const PROVIDERS: readonly ProviderId[] = ['api-sports', 'sportapi', 'thesportsdb', 'espn']
 const isProvider = (v: string): v is ProviderId => (PROVIDERS as readonly string[]).includes(v)
 
 /** Matcherna där laget spelar (samma nyckelregel som Följer). */

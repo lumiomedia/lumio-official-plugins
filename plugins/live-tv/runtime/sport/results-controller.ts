@@ -12,6 +12,7 @@ import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
 import { fixtureMatchKey, mergeLinked, relevantMatches } from './merge'
 import { coverageFor, providerFor } from './providers'
+import { fillFrom, findSameMatch, keepFilled, lacksDetail } from './detail-fill'
 import { followState } from './sport-day-model'
 import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
@@ -33,6 +34,8 @@ export interface RateStatus {
 const TEN_MIN = 10 * 60_000
 const TWO_HOURS = 2 * 3_600_000
 const LIVE_DETAIL_MS = 60_000
+/** En pågående matchs komplettering från ESPN (statistik ändras, uppställningen sällan). */
+const FILL_REFRESH_MS = 5 * 60_000
 /** En tabell som saknades (fel eller tom) frågas inte om hos samma källa på sex timmar. */
 const STANDINGS_MISS_MS = 6 * 3_600_000
 /** Dagarna före gårdagen som repriskollen läser ur diskcachen (aldrig nätet). */
@@ -346,11 +349,36 @@ export class ResultsController {
     if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail
     const res = await this.router.fixture(sport, this.events.refsOf(ref.provider, ref.id), { finished, refresh: !!hit })
     if (res.data) {
-      this.details.set(key, { at: this.now(), detail: res.data })
+      // Ett svar utan statistik eller uppställning raderar inte det som redan finns (detail-fill.ts).
+      let detail = keepFilled(hit?.detail, res.data)
+      if (lacksDetail(detail)) detail = await this.fillFromEspn(sport, key, detail, finished)
+      this.details.set(key, { at: this.now(), detail })
       this.emit()
-      return res.data
+      return detail
     }
     return hit?.detail ?? null
+  }
+
+  /** Senaste kompletteringen per match (`null` = ESPN hade inte matchen). */
+  private fills = new Map<string, { at: number; detail: FixtureDetail | null; swapped: boolean }>()
+
+  /**
+   * Statistik och uppställning från ESPN när matchens källa saknar dem
+   * (sportapi.ai). ESPN har ingen kvot: dagens scoreboard (cachad 15 min)
+   * hittar matchen på lag och avspark, sedan en sammanfattning. Pågående
+   * matcher kompletteras högst var femte minut, avslutade en gång.
+   */
+  private async fillFromEspn(sport: SportKind, key: string, detail: FixtureDetail, finished: boolean): Promise<FixtureDetail> {
+    const espnBudget = this.router.budget('espn')
+    if (!espnBudget || detail.fixture.provider === 'espn' || providerFor('espn').coverage(sport) !== 'full') return detail
+    const last = this.fills.get(key)
+    if (last && (finished || this.now() - last.at < FILL_REFRESH_MS)) return fillFrom(detail, last.detail, last.swapped)
+    const d = localDates(detail.fixture.kickoff, this.tz)
+    const day = await espnBudget.day(sport, d.today, { today: this.dates().today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) })
+    const same = day.data ? findSameMatch(day.data, detail.fixture) : null
+    const other = same ? (await espnBudget.fixture(sport, same.fixture.id, { finished })).data ?? null : null
+    this.fills.set(key, { at: this.now(), detail: other ?? last?.detail ?? null, swapped: same?.swapped ?? last?.swapped ?? false })
+    return fillFrom(detail, other ?? last?.detail ?? null, same?.swapped ?? last?.swapped ?? false)
   }
 
   /**

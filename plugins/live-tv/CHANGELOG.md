@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Live scores without a key: football (Champions League, Premier League, LaLiga, Allsvenskan and more), NBA and NHL now get scores, match details and tables from ESPN's open scoreboard. Your own API-Sports, sportapi.ai or TheSportsDB key still goes first, and ESPN takes over when its daily quota runs out. Swedish hockey still needs an API-Sports key. Works with the current Lumio app.
+- Match centre: stats and line-ups no longer vanish when the match finishes loading. When the match's own source has none (sportapi.ai), they are filled in from ESPN.
 
 ## 0.16.6
 

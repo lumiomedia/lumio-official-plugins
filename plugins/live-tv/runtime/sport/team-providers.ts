@@ -276,6 +276,15 @@ const tsdbCalls: TeamCalls = {
   topScorers: () => null,
 }
 
+/** ESPN har inga lag- eller ligavägar vi använder ännu: sidan faller tillbaka på dagens matcher i minnet. */
+const espnCalls: TeamCalls = {
+  fixtures: () => null,
+  squad: () => null,
+  leagueFixtures: () => null,
+  topScorers: () => null,
+  needsSeason: false,
+}
+
 export function teamCallsFor(id: ProviderId): TeamCalls {
-  return id === 'sportapi' ? sportApiCalls : id === 'thesportsdb' ? tsdbCalls : apiSportsCalls
+  return id === 'sportapi' ? sportApiCalls : id === 'thesportsdb' ? tsdbCalls : id === 'espn' ? espnCalls : apiSportsCalls
 }

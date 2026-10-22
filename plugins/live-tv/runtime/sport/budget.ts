@@ -39,6 +39,19 @@ export interface BudgetDeps {
 }
 
 const RETRY_MS = 2_000
+const KEYLESS_PARALLEL = 6
+
+/** `run` över listan med högst `limit` samtidigt; löftena i listans ordning. */
+function pooled<T, R>(items: readonly T[], limit: number, run: (item: T) => Promise<R>): Array<Promise<R>> {
+  let active = 0
+  const queue: Array<() => void> = []
+  const next = () => { active--; queue.shift()?.() }
+  return items.map((item) => new Promise<R>((resolve, reject) => {
+    const start = () => { active++; run(item).then(resolve, reject).finally(next) }
+    if (active < limit) start()
+    else queue.push(start)
+  }))
+}
 const DAY_MS = 86_400_000
 
 export function reserveFor(limit: number | null): number {
@@ -203,10 +216,22 @@ export class Budget {
     let cached = true
     let fetchedAt: number | null = null
     const bodies: unknown[] = []
-    // En nyckelfri källa har ingen kvot att räkna ned i ordning: dess förfrågningar går samtidigt.
-    const ahead = this.provider.keyless ? call.requests.map((req) => this.get(req, mode)) : null
+    // En nyckelfri källa har ingen kvot att räkna ned i ordning: dess förfrågningar går
+    // samtidigt, högst KEYLESS_PARALLEL åt gången (en svag TV-box ska inte få 50 på en gång),
+    // utan omförsök i följd, och ett fel i en av många (en liga) fäller inte hela svaret.
+    const keyless = !!this.provider.keyless
+    const ahead = keyless ? pooled(call.requests, KEYLESS_PARALLEL, (req) => this.get(req, mode)) : null
+    let errors = 0
     for (const [i, req] of call.requests.entries()) {
       let res: SportFetchResponse = await (ahead ? ahead[i] : this.get(req, mode))
+      if (keyless) {
+        if (res.error) errors++
+        if (res.error && errors === call.requests.length && !failure) failure = res.error === 'rate-limited' ? 'paused' : 'network'
+        if (!res.cached) cached = false
+        if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt)
+        bodies.push(res.data)
+        continue
+      }
       if (res.error === 'network' && mode === 'cache-first') {
         await this.sleep(RETRY_MS)
         if (this.allows(kind, bucket, 1)) res = await this.get(req, mode)

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { __resetEspnForTests, espn, espnDatesFor, espnMinute, espnScoreboard, ESPN_LEAGUES } from './espn'
+import { __resetEspnForTests, espn, espnDatesFor, espnEventType, espnMinute, espnScoreboard, ESPN_LEAGUES, localDay } from './espn'
 import type { ProviderRequest } from './provider'
 import ucl from './__fixtures__/espn/ucl-scoreboard.json'
 import nba from './__fixtures__/espn/nba-scoreboard.json'
@@ -10,7 +10,7 @@ import standings from './__fixtures__/espn/epl-standings.json'
 const DAY_END_21 = Date.UTC(2026, 9, 21, 22, 0)
 const OPTS = { today: '2026-10-21', tz: 'Europe/Stockholm', dayEndMs: DAY_END_21 }
 /** Svaren i förfrågningarnas ordning: `body` för ligan `slug`, tomt för resten. */
-const answer = (reqs: ProviderRequest[], slug: string, body: unknown) => reqs.map((r) => (r.path.includes(`/${slug}/`) ? body : null))
+const answer = (reqs: ProviderRequest[], slug: string, body: unknown) => reqs.map((r) => (r.path.includes(`/${slug}/`) ? body : {}))
 
 beforeEach(() => __resetEspnForTests())
 
@@ -52,7 +52,7 @@ describe('ESPN: scoreboarden', () => {
 describe('ESPN: dagen och livepollen', () => {
   it('ett anrop per liga och östkustdatum, och bara matcher inom det lokala dygnet', () => {
     const call = espn.day('football', '2026-10-21', OPTS)
-    expect(espnDatesFor(DAY_END_21)).toEqual(['20261020', '20261021'])
+    expect(espnDatesFor({ start: DAY_END_21 - 86_400_000, end: DAY_END_21 })).toEqual(['20261020', '20261021'])
     expect(call.requests).toHaveLength(ESPN_LEAGUES.football!.length * 2)
     expect(call.requests[0]).toMatchObject({ path: 'site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261020&limit=300', ttlS: 900 })
     expect(call.requests[1].path).toContain('dates=20261021')
@@ -74,15 +74,17 @@ describe('ESPN: dagen och livepollen', () => {
     const live = espn.live('football', { today: '2026-10-21', tz: 'Europe/Stockholm' })
     expect(live.requests.length).toBeGreaterThan(0)
     expect(live.requests.every((r) => r.path.includes('/uefa.champions/scoreboard') && r.ttlS === 30)).toBe(true)
-    // En ny dag: alla ligor igen tills dagsanropet svarat.
-    expect(new Set(espn.live('football', { today: '2026-10-22', tz: 'Europe/Stockholm' }).requests.map((r) => r.path.split('/')[4])).size).toBe(ESPN_LEAGUES.football!.length)
+    // En ny dag: reservlistan (de största ligorna) tills dagsanropet svarat.
+    const next = new Set(espn.live('football', { today: '2026-10-22', tz: 'Europe/Stockholm' }).requests.map((r) => r.path.split('/')[4]))
+    expect(next.has('uefa.champions')).toBe(true)
+    expect(next.size).toBeLessThan(ESPN_LEAGUES.football!.length)
   })
 
   it('täcker fotboll, hockey och basket; inte handboll, motorsport eller tennis', () => {
     expect(['football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis'].map((s) => espn.coverage(s as never))).toEqual(['full', 'full', 'full', 'epg', 'epg', 'epg'])
     expect(espn.keyless).toBe(true)
     // Nyårsskiftet: dygnet 1 jan svensk vintertid täcker östkustens 31 dec och 1 jan.
-    expect(espnDatesFor(Date.UTC(2027, 0, 1, 23))).toEqual(['20261231', '20270101'])
+    expect(espnDatesFor({ start: Date.UTC(2026, 11, 31, 23), end: Date.UTC(2027, 0, 1, 23) })).toEqual(['20261231', '20270101'])
   })
 })
 
@@ -113,5 +115,38 @@ describe('ESPN: matchcentret och tabellen', () => {
     const rows = call.parse([standings])
     expect(rows[0]).toMatchObject({ rank: 1, team: { name: 'Manchester City' }, played: 7, points: 21, goalDiff: 12, group: null })
     expect(espn.standings('football', 'okand.liga', '2026').requests).toEqual([])
+  })
+})
+
+describe('ESPN: granskningens fall', () => {
+  it('målens undertyper räknas som mål; missad straff gör det inte', () => {
+    expect(espnEventType({ type: { type: 'goal---header' } })).toBe('goal')
+    expect(espnEventType({ type: { type: 'goal---free-kick' } })).toBe('goal')
+    expect(espnEventType({ type: { type: 'penalty---scored' }, scoringPlay: true })).toBe('goal')
+    expect(espnEventType({ type: { type: 'own-goal' } })).toBe('goal')
+    expect(espnEventType({ type: { type: 'penalty---missed' } })).toBe('penalty')
+    expect(espnEventType({ type: { type: 'yellow-red-card' } })).toBe('card')
+    expect(espnEventType({ type: { type: 'kickoff' } })).toBeNull()
+  })
+
+  it('livepollen utan dagens svar: bara de största ligorna, inte hela katalogen', () => {
+    const slugs = new Set(espn.live('football', { today: '2026-10-21', tz: 'Europe/Stockholm' }).requests.map((r) => r.path.split('/')[4]))
+    expect(slugs.has('uefa.champions')).toBe(true)
+    expect(slugs.has('swe.1')).toBe(true)
+    expect(slugs.size).toBeLessThan(10)
+    // Hockey och basket har få ligor: alla.
+    expect(espn.live('hockey', { today: '2026-10-21', tz: 'Europe/Stockholm' }).requests.length).toBeGreaterThan(0)
+  })
+
+  it('sommartidsbytet: dygnet 25 oktober är 25 timmar', () => {
+    const d = localDay('2026-10-25', 'Europe/Stockholm')
+    expect(d.end - d.start).toBe(25 * 3_600_000)
+  })
+
+  it('en liga vars svar saknades stannar i livepollen', () => {
+    const day = espn.day('football', '2026-10-21', OPTS)
+    day.parse(day.requests.map((r) => (r.path.includes('/uefa.champions/') ? ucl : r.path.includes('/swe.1/') ? null : {})))
+    const live = new Set(espn.live('football', { today: '2026-10-21', tz: 'Europe/Stockholm' }).requests.map((r) => r.path.split('/')[4]))
+    expect([...live].sort()).toEqual(['swe.1', 'uefa.champions'])
   })
 })
