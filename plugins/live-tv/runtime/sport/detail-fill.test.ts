@@ -84,3 +84,40 @@ describe('matchcentret kompletteras från ESPN', () => {
     expect(direct.mock.calls.some(([a]) => (a as { req: { path: string } }).req.path.includes('summary?event=401915395'))).toBe(true)
   })
 })
+
+describe('repriser som tablån inte märker', () => {
+  const flag = globalThis as { __lumioNoKeylessSources?: boolean }
+  const NOW = Date.UTC(2026, 9, 22, 18, 10) // torsdag 20:10 i Stockholm
+  beforeEach(() => { flag.__lumioNoKeylessSources = false; __resetEspnForTests(); vi.useFakeTimers(); vi.setSystemTime(NOW) })
+  afterEach(() => { flag.__lumioNoKeylessSources = true; vi.useRealTimers() })
+
+  it('en Premier League-match utan match i dag slår upp ligans vecka hos ESPN; en riktig match i dag gör det inte', async () => {
+    const played = {
+      leagues: [{ name: 'English Premier League', season: { year: 2026 } }],
+      events: [{ id: '700', date: '2026-10-17T16:30Z', status: { type: { name: 'STATUS_FULL_TIME', state: 'post', shortDetail: 'FT' } },
+        competitions: [{ competitors: [
+          { homeAway: 'home', score: '0', team: { id: '361', displayName: 'Newcastle United' } },
+          { homeAway: 'away', score: '1', team: { id: '362', displayName: 'Aston Villa' } }] }] }],
+    }
+    const direct = vi.fn(async ({ req }: { req: { path: string } }) => ({
+      data: req.path.includes('/eng.1/') && req.path.includes('dates=20261017') ? played : {}, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null,
+    }) as SportFetchResponse)
+    const router = new SportRouter({}, {}, { direct: direct as never, now: () => NOW, sleep: async () => {} })
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    const epgMatch = (id: string, leagueKey: string, home: string, away: string) =>
+      ({ id, kind: 'football', league: '', leagueKey, home, away, homeKey: home.toLowerCase(), awayKey: away.toLowerCase(), event: null, start: NOW - 30 * 60_000, stop: NOW + 90 * 60_000, status: 'live', rerun: false, round: null, venue: null, sources: [] }) as never
+    const epg = [epgMatch('nu', 'premier-league', 'Newcastle', 'Aston Villa'), epgMatch('el', 'uefa-europa-league', 'Juventus', 'Rennes')]
+    // Före dagens fixturer: inget uppslag.
+    c.probeReplays(epg, '2026-10-22')
+    expect(direct).not.toHaveBeenCalled()
+    c.applyFixtures('football', '2026-10-22', [fx('Juventus', 'Rennes', NOW - 80 * 60_000, 'espn')], 'day', NOW)
+    c.probeReplays(epg, '2026-10-22')
+    await vi.waitFor(() => expect(c.history('2026-10-22').some((f) => f.home.name === 'Newcastle United')).toBe(true))
+    const paths = direct.mock.calls.map(([a]) => (a as { req: { path: string } }).req.path)
+    expect(paths.every((p) => p.includes('/eng.1/'))).toBe(true)
+    expect(paths).toHaveLength(8)
+    // Samma liga samma dag: inget nytt uppslag.
+    c.probeReplays(epg, '2026-10-22')
+    expect(direct).toHaveBeenCalledTimes(8)
+  })
+})

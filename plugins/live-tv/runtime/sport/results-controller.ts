@@ -10,11 +10,12 @@ import { createLivePoller, type LivePoller, type LiveTarget } from './live-polle
 import { diffGoals, emitGoals, type Score } from './goal-events'
 import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
-import { fixtureMatchKey, mergeLinked, relevantMatches } from './merge'
+import { fixtureMatchKey, foldTeamKey, mergeLinked, relevantMatches } from './merge'
 import { coverageFor, providerFor } from './providers'
 import { fillFrom, findSameMatch, keepFilled, lacksDetail } from './detail-fill'
+import { ESPN_SLUG_BY_LEAGUE, espnRecent } from './espn'
 import { followState } from './sport-day-model'
-import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useFollows, useOverrides } from './sport-store'
+import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, sportsCompatible, teamKeysMatch, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { noteReplays } from './couch/spoiler'
@@ -129,7 +130,48 @@ export class ResultsController {
     const days = new Set([1, ...HISTORY_DAYS].map((n) => shiftDate(date, -n)))
     const out: Fixture[] = []
     for (const [k, byKey] of this.days) if (days.has(k.slice(k.indexOf('|') + 1))) out.push(...byKey.values())
+    for (const [k, list] of this.recent) if (k.endsWith(`|${date}`)) out.push(...list)
     return out
+  }
+
+  /** Ligornas senaste vecka från ESPN, per `sport|slugg|datum` (repriskollen). */
+  private recent = new Map<string, Fixture[]>()
+  private recentAsked = new Set<string>()
+
+  /**
+   * REPRISER SOM TABLÅN INTE MÄRKER. En match i dagens tablå som inte finns
+   * bland dagens fixturer (källan har ingen sådan match i dag) kan vara en
+   * repris av en match för flera dagar sedan — V Sport sände Newcastle–Aston
+   * Villa fem dagar efter matchen, utan datum och med LIVE i bild. Ligans
+   * senaste vecka hämtas då från ESPN (ingen kvot, en gång per liga och dag),
+   * och `mergeLinked` känner igen reprisen via `history`.
+   * Görs först när dagens fixturer för sporten finns, så att en riktig
+   * match i dag aldrig kostar ett uppslag.
+   */
+  probeReplays(epg: readonly SportMatch[], date: string): void {
+    const espnBudget = this.router.budget('espn')
+    if (!espnBudget) return
+    for (const m of epg) {
+      if (m.rerun || !m.homeKey || !m.awayKey) continue
+      const target = ESPN_SLUG_BY_LEAGUE[m.leagueKey]
+      if (!target || !sportsCompatible(target.sport, m.kind)) continue
+      if (!this.days.has(this.dayKey(target.sport, date))) continue
+      const today = this.fixtures(target.sport, date)
+      const playsToday = today.some((f) => {
+        const h = foldTeamKey(f.home.name)
+        const a = foldTeamKey(f.away.name)
+        return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
+      })
+      if (playsToday) continue
+      const key = `${target.sport}|${target.slug}|${date}`
+      if (this.recentAsked.has(key)) continue
+      this.recentAsked.add(key)
+      void espnBudget.run('day', target.sport, espnRecent(target.sport, target.slug, date, this.tz)).then((res) => {
+        if (!res.data?.length) return
+        this.recent.set(key, res.data)
+        this.emit()
+      })
+    }
   }
 
   /**
@@ -573,6 +615,9 @@ export function useSportResults(opts: { day: string | null; epg: SportMatch[] })
     return mergeLinked({ epg: opts.epg, fixtures, links, overrides, history, coverage: (s) => controller.router.coverage(s), canonical: (f) => controller.canonicalOf(f) })
   }, [controller, opts.epg, opts.day, fixtures, links, overrides, version])
   const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows])
+
+  // Repriser som tablån inte märker: ligans senaste vecka från ESPN (se probeReplays).
+  useEffect(() => { if (controller && opts.day) controller.probeReplays(opts.epg, opts.day) }, [controller, opts.day, opts.epg, version])
 
   useEffect(() => { if (opts.day) controller?.setMerged(matches) }, [controller, opts.day, matches])
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Replays shown as replays: a channel re-airing a match from earlier in the week (V Sport with LIVE in the picture, no date in the guide) no longer shows as live. Live TV checks the league's last week at ESPN and shows the replay with the original result, events and stats.
+
 ## 0.16.7
 
 - Live scores without a key: football (Champions League, Premier League, LaLiga, Allsvenskan and more), NBA and NHL now get scores, match details and tables from ESPN's open scoreboard. Your own API-Sports, sportapi.ai or TheSportsDB key still goes first, and ESPN takes over when its daily quota runs out. Swedish hockey still needs an API-Sports key. Works with the current Lumio app.

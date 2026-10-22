@@ -33,6 +33,39 @@ export const ESPN_LEAGUES: Partial<Record<SportKind, readonly string[]>> = {
   basketball: ['nba', 'wnba'],
 }
 
+/** Tablåns ligor (Rusts `league_key`) i ESPN:s sluggar: repriskollen slår upp ligans senaste vecka. */
+export const ESPN_SLUG_BY_LEAGUE: Record<string, { sport: SportKind; slug: string }> = {
+  'premier-league': { sport: 'football', slug: 'eng.1' }, 'efl-championship': { sport: 'football', slug: 'eng.2' },
+  'fa-cup': { sport: 'football', slug: 'eng.fa' }, 'efl-cup': { sport: 'football', slug: 'eng.league_cup' },
+  'la-liga': { sport: 'football', slug: 'esp.1' }, 'serie-a': { sport: 'football', slug: 'ita.1' },
+  bundesliga: { sport: 'football', slug: 'ger.1' }, 'ligue-1': { sport: 'football', slug: 'fra.1' },
+  eredivisie: { sport: 'football', slug: 'ned.1' }, 'liga-portugal': { sport: 'football', slug: 'por.1' },
+  'scottish-premiership': { sport: 'football', slug: 'sco.1' }, allsvenskan: { sport: 'football', slug: 'swe.1' },
+  superettan: { sport: 'football', slug: 'swe.2' }, eliteserien: { sport: 'football', slug: 'nor.1' },
+  superligaen: { sport: 'football', slug: 'den.1' }, mls: { sport: 'football', slug: 'usa.1' },
+  'uefa-champions-league': { sport: 'football', slug: 'uefa.champions' }, 'uefa-europa-league': { sport: 'football', slug: 'uefa.europa' },
+  'uefa-conference-league': { sport: 'football', slug: 'uefa.europa.conf' }, 'uefa-nations-league': { sport: 'football', slug: 'uefa.nations' },
+  nhl: { sport: 'hockey', slug: 'nhl' }, nba: { sport: 'basketball', slug: 'nba' }, wnba: { sport: 'basketball', slug: 'wnba' },
+}
+
+/**
+ * En ligas matcher den senaste veckan före `date` (repriskollen). Tablån
+ * märker inte reprisen av en match som spelades för fem dagar sedan, och
+ * källornas dagar längre bak än i förrgår finns inte i minnet. Åtta anrop
+ * mot en liga, som inte ändras längre: cachade i sex timmar.
+ */
+export function espnRecent(sport: SportKind, slug: string, date: string, tz: string): ProviderCall<Fixture[]> {
+  if (!SPORT_PATH[sport]) return { requests: [], parse: () => [] }
+  const end = localDay(date, tz).start
+  const dates = [...new Set(Array.from({ length: 8 }, (_, i) => ymdLocal(shiftDate(date, -(i + 1)))))]
+  const list: Board[] = dates.map((d) => ({ slug, date: d }))
+  return {
+    requests: list.map((b) => scoreboard(sport, b, 21_600)),
+    parse: (bodies) => dayList(sport, list, bodies, { start: end - 8 * 86_400_000, end }),
+  }
+}
+const ymdLocal = (date: string): string => date.replace(/-/g, '')
+
 /** Livepollens ligor innan dagens svar finns. */
 const LIVE_FALLBACK = new Set(['uefa.champions', 'uefa.europa', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'swe.1'])
 

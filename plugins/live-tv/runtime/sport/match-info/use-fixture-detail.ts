@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useResultsController } from '../results-controller'
 import { usePollDemand } from '../live-poller'
+import { providerFor } from '../providers'
 import type { FixtureDetail, ProviderId } from '../provider'
 import type { SportMatch } from '../sport-model'
 import { scoreHidden } from '../score-model'
@@ -20,7 +21,7 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
   const controller = useResultsController()
   const [detail, setDetail] = useState<FixtureDetail | null>(null)
   const [done, setDone] = useState(false)
-  // En repris visar originalmatchen, och BARA ur cachen (inga nya anrop för en repris).
+  // En repris visar originalmatchen: ur cachen, eller från ESPN som inte har någon kvot.
   const replay = match.rerun ? match.replayOf?.fixture ?? null : null
   const covered = match.coverage === 'full' && (match.rerun ? !!replay : !!match.fixture)
   // Spoilerskyddet: händelserna avslöjar resultatet, så de hämtas inte förrän det visas.
@@ -34,7 +35,10 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
     const ref = replay ?? match.fixture
     if (!ref) return
     const load = replay
-      ? controller.cachedFixture(match.kind, { provider: replay.provider as ProviderId, id: replay.id })
+      // Originalet från en källa utan kvot (ESPN) hämtas; annars bara ur cachen.
+      ? providerFor(replay.provider as ProviderId).keyless
+        ? controller.loadFixture(match.kind, { provider: replay.provider as ProviderId, id: replay.id }, true)
+        : controller.cachedFixture(match.kind, { provider: replay.provider as ProviderId, id: replay.id })
       : controller.loadFixture(match.kind, { provider: ref.provider as ProviderId, id: ref.id }, match.status === 'finished')
     void load.then((d) => {
       if (cancelled) return

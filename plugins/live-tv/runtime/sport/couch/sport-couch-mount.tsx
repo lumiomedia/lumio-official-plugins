@@ -5,6 +5,7 @@ import { hasCouchSdk, notifyCouchSurface, onPluginStorageChanged, openCouchTip, 
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { MULTIVIEW_KEY, getMultiviewState, setMultiviewState } from '../../tv/tv-multiview-store'
 import { onPlayingChannelChanged, playingChannel } from '../goal-alerts'
+import { providerFor } from '../providers'
 import type { ProviderId } from '../provider'
 import { currentResults, useSportResults, type ResultsController } from '../results-controller'
 import { localDayKey, useSportDay } from '../sport-epg'
@@ -82,7 +83,10 @@ function loadDetail(m: SportMatch) {
   if (!c || m.coverage !== 'full') return Promise.resolve(null)
   if (m.rerun) {
     const of = m.replayOf?.fixture
-    return of ? c.cachedFixture(m.kind, { provider: of.provider as ProviderId, id: of.id }) : Promise.resolve(null)
+    if (!of) return Promise.resolve(null)
+    const ref = { provider: of.provider as ProviderId, id: of.id }
+    // Originalet från en källa utan kvot (ESPN) hämtas; annars bara ur cachen.
+    return providerFor(ref.provider).keyless ? c.loadFixture(m.kind, ref, true) : c.cachedFixture(m.kind, ref)
   }
   if (!m.fixture) return Promise.resolve(null)
   const fr = { provider: m.fixture.provider as ProviderId, id: m.fixture.id }
