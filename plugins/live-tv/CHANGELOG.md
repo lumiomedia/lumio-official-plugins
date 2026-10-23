@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1
+
+- The movie and series categories can now be reached from the playlist's Categories dialog, where the live categories are, through a new Movie and series categories entry.
+
 ## 0.17.0
 
 - Choose which movie and series categories to include from an Xtream playlist. The picker has a Movies and a Series tab with the number of titles per category, and opens from the Library view, Settings → Content, the library card in desktop settings and the TV settings rows.

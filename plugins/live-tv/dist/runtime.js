@@ -58906,6 +58906,25 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (!isVodChoiceMigrated()) return [];
     return sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id));
   }
+  function useSourceHasVod(source) {
+    const [has, setHas] = useState(false);
+    useEffect(() => {
+      if (!source) {
+        setHas(false);
+        return;
+      }
+      let live2 = true;
+      listVodCategories(source).then((result2) => {
+        if (live2) setHas(result2.total > 0);
+      }).catch(() => {
+        if (live2) setHas(false);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [source]);
+    return has;
+  }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
@@ -59420,6 +59439,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         setError(null);
       });
     };
+    const hasVod = useSourceHasVod(list.source);
+    const [vodOpen, setVodOpen] = useState(false);
     const save = () => {
       updateLiveTvListCuration(list.id, normalizeCuration(draft));
       onClose();
@@ -59429,75 +59450,82 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       onClose();
     };
     const dismiss = mode === "after-import" ? skip : onClose;
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title: `${tt("categories")} \xB7 ${list.name}`,
-        testId: "curation-picker",
-        onClose: dismiss,
-        chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
-        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("div", { "data-testid": "curation-save", ...station(save, void 0, { "data-init": "" }), style: { ...rowStyle, color: TV2.acc }, children: tt("save") }),
-          /* @__PURE__ */ jsx("div", { "data-testid": "curation-skip", ...station(dismiss), style: rowStyle, children: mode === "after-import" ? tt("skip") : tt("cancel") }),
-          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: [] }))), style: rowStyle, children: tt("showAll") }),
-          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) }))), style: rowStyle, children: tt("hideAll") }),
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              "data-testid": "curation-merge-mode",
-              ...station(() => {
-                setMergeMode((m) => !m);
-                setMarked(/* @__PURE__ */ new Set());
-                setError(null);
-              }),
-              style: { ...rowStyle, color: mergeMode ? TV2.acc : void 0 },
-              children: tt("mergeInto")
-            }
-          ),
-          mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
-          error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
-          groups === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : null,
-          groups && groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noCategoriesInList") }) : null,
-          merges.map((m) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `curation-merge-${m.name}`,
-              ...station(() => setDraft((d) => ({ ...d, merges: d.merges.filter((x) => x.name !== m.name) }))),
-              style: rowStyle,
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: true, label: m.name }),
-                /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                  m.name,
-                  /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
-                    " \xB7 ",
-                    tt("mergeContains", { groups: m.groups.join(", ") }),
-                    " \xB7 ",
-                    tt("splitMerge")
-                  ] })
-                ] }),
-                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: m.count })
-              ]
-            },
-            `m:${m.name}`
-          )),
-          plain.map((g) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `curation-row-${g.name}`,
-              ...station(() => mergeMode ? toggleMark(g.name) : toggleHidden(g.name)),
-              style: rowStyle,
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: mergeMode ? marked.has(g.name) : !draft.hidden.includes(g.name), label: g.name }),
-                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: draft.hidden.includes(g.name) && !mergeMode ? TV2.dim : void 0 }, children: g.name }),
-                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: g.count })
-              ]
-            },
-            `g:${g.name}`
-          ))
-        ] })
-      }
-    );
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(
+        PickerPanel,
+        {
+          nav,
+          title: `${tt("categories")} \xB7 ${list.name}`,
+          testId: "curation-picker",
+          onClose: dismiss,
+          chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
+          rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": "curation-save", ...station(save, void 0, { "data-init": "" }), style: { ...rowStyle, color: TV2.acc }, children: tt("save") }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "curation-skip", ...station(dismiss), style: rowStyle, children: mode === "after-import" ? tt("skip") : tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: [] }))), style: rowStyle, children: tt("showAll") }),
+            /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) }))), style: rowStyle, children: tt("hideAll") }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-testid": "curation-merge-mode",
+                ...station(() => {
+                  setMergeMode((m) => !m);
+                  setMarked(/* @__PURE__ */ new Set());
+                  setError(null);
+                }),
+                style: { ...rowStyle, color: mergeMode ? TV2.acc : void 0 },
+                children: tt("mergeInto")
+              }
+            ),
+            mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
+            hasVod && list.source ? /* @__PURE__ */ jsxs("div", { "data-testid": "curation-vod-categories", ...station(() => setVodOpen(true)), style: rowStyle, children: [
+              tt("vodCategoriesTitle"),
+              " \u203A"
+            ] }) : null,
+            error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
+            groups === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : null,
+            groups && groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noCategoriesInList") }) : null,
+            merges.map((m) => /* @__PURE__ */ jsxs(
+              "div",
+              {
+                "data-testid": `curation-merge-${m.name}`,
+                ...station(() => setDraft((d) => ({ ...d, merges: d.merges.filter((x) => x.name !== m.name) }))),
+                style: rowStyle,
+                children: [
+                  /* @__PURE__ */ jsx(Check, { on: true, label: m.name }),
+                  /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                    m.name,
+                    /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
+                      " \xB7 ",
+                      tt("mergeContains", { groups: m.groups.join(", ") }),
+                      " \xB7 ",
+                      tt("splitMerge")
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: m.count })
+                ]
+              },
+              `m:${m.name}`
+            )),
+            plain.map((g) => /* @__PURE__ */ jsxs(
+              "div",
+              {
+                "data-testid": `curation-row-${g.name}`,
+                ...station(() => mergeMode ? toggleMark(g.name) : toggleHidden(g.name)),
+                style: rowStyle,
+                children: [
+                  /* @__PURE__ */ jsx(Check, { on: mergeMode ? marked.has(g.name) : !draft.hidden.includes(g.name), label: g.name }),
+                  /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: draft.hidden.includes(g.name) && !mergeMode ? TV2.dim : void 0 }, children: g.name }),
+                  /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: g.count })
+                ]
+              },
+              `g:${g.name}`
+            ))
+          ] })
+        }
+      ),
+      vodOpen && list.source ? /* @__PURE__ */ jsx(TvVodCategoryPicker, { nav, source: list.source, onClose: () => setVodOpen(false) }) : null
+    ] });
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
@@ -61721,6 +61749,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  init_tv_strings();
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -61734,6 +61763,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var CategoryCurationPanel = CategoriesDialog;
   function DialogBody({ list, mode, onClose }) {
     const { h, locale } = useHubText();
+    const { tt } = useTvText();
+    const hasVod = useSourceHasVod(list.source);
+    const [vodOpen, setVodOpen] = useState(false);
     const toast = useToast();
     const [groups, setGroups] = useState(null);
     const [draft, setDraft] = useState(() => cloneCuration(list.curation));
@@ -61812,78 +61844,85 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       onClose();
     };
     const smallBtn = { padding: "7px 13px", fontSize: 12.5 };
-    return /* @__PURE__ */ jsx(LtDialog, { title: h("categoriesTitle", { host: playlistHost(list) }), body: h("categoriesBody"), width: 620, onClose: dismiss, testId: "categories-dialog", children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }, children: [
-      /* @__PURE__ */ jsx(LtNote, { children: groups ? summary : "" }),
-      mode === "after-import" ? /* @__PURE__ */ jsx(LtNote, { children: h("curationIntro") }) : null,
-      groups && groups.length === 0 ? /* @__PURE__ */ jsx(LtNote, { children: h("noCategoriesInList") }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: [
-          /* @__PURE__ */ jsx(LtInput, { title: h("searchCategories"), placeholder: h("searchCategories"), value: query, onChange: setQuery, style: { flex: "1 1 180px" } }),
-          /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: [] })), children: h("showAll") }),
-          /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) })), children: h("hideAll") })
+    return /* @__PURE__ */ jsxs(LtDialog, { title: h("categoriesTitle", { host: playlistHost(list) }), body: h("categoriesBody"), width: 620, onClose: dismiss, testId: "categories-dialog", children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }, children: [
+        /* @__PURE__ */ jsx(LtNote, { children: groups ? summary : "" }),
+        mode === "after-import" ? /* @__PURE__ */ jsx(LtNote, { children: h("curationIntro") }) : null,
+        groups && groups.length === 0 ? /* @__PURE__ */ jsx(LtNote, { children: h("noCategoriesInList") }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: [
+            /* @__PURE__ */ jsx(LtInput, { title: h("searchCategories"), placeholder: h("searchCategories"), value: query, onChange: setQuery, style: { flex: "1 1 180px" } }),
+            /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: [] })), children: h("showAll") }),
+            /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) })), children: h("hideAll") }),
+            hasVod && list.source ? /* @__PURE__ */ jsxs(LtBtn, { style: smallBtn, testId: "categories-vod", onClick: () => setVodOpen(true), children: [
+              tt("vodCategoriesTitle"),
+              " \u203A"
+            ] }) : null
+          ] }),
+          merges.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+            /* @__PURE__ */ jsx(LtEyebrow, { children: h("merged") }),
+            merges.map((m) => /* @__PURE__ */ jsxs("div", { "data-merge-row": "", style: { display: "flex", alignItems: "center", gap: 10, borderRadius: 9, background: UI.inset, padding: "10px 12px" }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+                /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    type: "text",
+                    "aria-label": h("mergeNameLabel"),
+                    value: editNames[m.index] ?? m.name,
+                    onChange: (event2) => setEditNames((e) => ({ ...e, [m.index]: event2.target.value })),
+                    onBlur: () => commitRename(m.index),
+                    onKeyDown: (event2) => {
+                      if (event2.key === "Enter") {
+                        event2.preventDefault();
+                        event2.target.blur();
+                      }
+                    },
+                    style: { width: "100%", border: 0, borderRadius: 6, background: "transparent", padding: "2px 0", fontSize: 13.5, fontFamily: "inherit", color: UI.text, outline: "none" }
+                  }
+                ),
+                /* @__PURE__ */ jsx("p", { style: { margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.muted }, children: h("mergedMeta", { members: m.members.join(" \xB7 "), channels: fmtInt(m.count, locale) }) })
+              ] }),
+              /* @__PURE__ */ jsx(LtBtn, { style: { padding: "6px 11px" }, onClick: () => split2(m.index), children: h("splitMerge") })
+            ] }, `m:${m.index}`))
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
+            groups === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
+            rows.map((g, i) => {
+              const hidden2 = draft.hidden.includes(g.name);
+              const isMarked = marked.includes(g.name);
+              return /* @__PURE__ */ jsxs("div", { "data-cat-row": "", style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${i === 0 ? "transparent" : UI.lineSoft}`, padding: "10px 0" }, children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    role: "checkbox",
+                    "aria-checked": !hidden2,
+                    "aria-label": g.name,
+                    onClick: () => toggleHidden(g.name),
+                    style: { display: "flex", flex: "none", cursor: "pointer", background: "transparent", border: 0, padding: 0 },
+                    children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden2 })
+                  }
+                ),
+                /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden2 ? UI.muted : UI.text }, children: g.name }),
+                /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }, children: fmtInt(g.count, locale) }),
+                /* @__PURE__ */ jsx(LtBtn, { active: isMarked, style: { padding: "5px 11px", color: isMarked ? UI.text : UI.muted }, onClick: () => toggleMark(g.name), children: isMarked ? h("marked") : h("mark") })
+              ] }, `g:${g.name}`);
+            })
+          ] }),
+          marked.length >= 2 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, borderRadius: 9, borderWidth: 1, borderStyle: "solid", borderColor: UI.accent700, background: UI.accent900, padding: 12 }, children: [
+            /* @__PURE__ */ jsx("p", { style: { margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.soft }, children: marked.join(" \xB7 ") }),
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+              /* @__PURE__ */ jsx(LtInput, { title: h("mergeNameLabel"), placeholder: h("mergeNameSuggest"), value: mergeName, onChange: setMergeName, onEnter: merge, dark: true, style: { flex: 1 } }),
+              /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, onClick: merge, children: h("mergeN", { n: marked.length }) })
+            ] })
+          ] }) : /* @__PURE__ */ jsx(LtNote, { children: h("mergeHelp") })
         ] }),
-        merges.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
-          /* @__PURE__ */ jsx(LtEyebrow, { children: h("merged") }),
-          merges.map((m) => /* @__PURE__ */ jsxs("div", { "data-merge-row": "", style: { display: "flex", alignItems: "center", gap: 10, borderRadius: 9, background: UI.inset, padding: "10px 12px" }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-              /* @__PURE__ */ jsx(
-                "input",
-                {
-                  type: "text",
-                  "aria-label": h("mergeNameLabel"),
-                  value: editNames[m.index] ?? m.name,
-                  onChange: (event2) => setEditNames((e) => ({ ...e, [m.index]: event2.target.value })),
-                  onBlur: () => commitRename(m.index),
-                  onKeyDown: (event2) => {
-                    if (event2.key === "Enter") {
-                      event2.preventDefault();
-                      event2.target.blur();
-                    }
-                  },
-                  style: { width: "100%", border: 0, borderRadius: 6, background: "transparent", padding: "2px 0", fontSize: 13.5, fontFamily: "inherit", color: UI.text, outline: "none" }
-                }
-              ),
-              /* @__PURE__ */ jsx("p", { style: { margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.muted }, children: h("mergedMeta", { members: m.members.join(" \xB7 "), channels: fmtInt(m.count, locale) }) })
-            ] }),
-            /* @__PURE__ */ jsx(LtBtn, { style: { padding: "6px 11px" }, onClick: () => split2(m.index), children: h("splitMerge") })
-          ] }, `m:${m.index}`))
-        ] }) : null,
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
-          groups === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
-          rows.map((g, i) => {
-            const hidden2 = draft.hidden.includes(g.name);
-            const isMarked = marked.includes(g.name);
-            return /* @__PURE__ */ jsxs("div", { "data-cat-row": "", style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${i === 0 ? "transparent" : UI.lineSoft}`, padding: "10px 0" }, children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  role: "checkbox",
-                  "aria-checked": !hidden2,
-                  "aria-label": g.name,
-                  onClick: () => toggleHidden(g.name),
-                  style: { display: "flex", flex: "none", cursor: "pointer", background: "transparent", border: 0, padding: 0 },
-                  children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden2 })
-                }
-              ),
-              /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden2 ? UI.muted : UI.text }, children: g.name }),
-              /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }, children: fmtInt(g.count, locale) }),
-              /* @__PURE__ */ jsx(LtBtn, { active: isMarked, style: { padding: "5px 11px", color: isMarked ? UI.text : UI.muted }, onClick: () => toggleMark(g.name), children: isMarked ? h("marked") : h("mark") })
-            ] }, `g:${g.name}`);
-          })
-        ] }),
-        marked.length >= 2 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, borderRadius: 9, borderWidth: 1, borderStyle: "solid", borderColor: UI.accent700, background: UI.accent900, padding: 12 }, children: [
-          /* @__PURE__ */ jsx("p", { style: { margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.soft }, children: marked.join(" \xB7 ") }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-            /* @__PURE__ */ jsx(LtInput, { title: h("mergeNameLabel"), placeholder: h("mergeNameSuggest"), value: mergeName, onChange: setMergeName, onEnter: merge, dark: true, style: { flex: 1 } }),
-            /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, onClick: merge, children: h("mergeN", { n: marked.length }) })
-          ] })
-        ] }) : /* @__PURE__ */ jsx(LtNote, { children: h("mergeHelp") })
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }, children: [
+          /* @__PURE__ */ jsx(LtBtn, { size: "md", onClick: dismiss, children: mode === "after-import" ? h("skip") : h("cancel") }),
+          /* @__PURE__ */ jsx(LtBtn, { size: "md", variant: "accent", onClick: save, disabled: groups === null, children: h("save") })
+        ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }, children: [
-        /* @__PURE__ */ jsx(LtBtn, { size: "md", onClick: dismiss, children: mode === "after-import" ? h("skip") : h("cancel") }),
-        /* @__PURE__ */ jsx(LtBtn, { size: "md", variant: "accent", onClick: save, disabled: groups === null, children: h("save") })
-      ] })
-    ] }) });
+      vodOpen && list.source ? /* @__PURE__ */ jsx(VodCategoriesDialog, { source: list.source, name: playlistHost(list), onClose: () => setVodOpen(false) }) : null
+    ] });
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
@@ -62182,6 +62221,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function TvCategoriesPanel({ target: target2, crumb, onClose }) {
     const { list, mode } = target2;
+    const { tt } = useTvText();
     const { h, locale } = useHubText();
     const toast = useToast();
     const keyboardAvailable = getTvKeyboardPanel() !== null;
@@ -62271,6 +62311,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       onClose();
     };
     const namingMembers = naming ? naming.edit === null ? marked : draft.merges[naming.edit]?.groups ?? [] : [];
+    const hasVod = useSourceHasVod(list.source);
+    const [vodOpen, setVodOpen] = useState(false);
     return /* @__PURE__ */ jsxs(TvPanel, { title: h("categoriesTitle", { host: titleOf(list) }), hint: h("categoriesBody"), crumb, onBack: dismiss, testId: "tv-categories-panel", children: [
       /* @__PURE__ */ jsx(TvNote, { size: "panel", children: groups ? summary : h("listImportProgressUnknown") }),
       mode === "after-import" ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("curationIntro") }) : null,
@@ -62288,6 +62330,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           setMarked([]);
         } }
       ] }),
+      hasVod && list.source && !marking ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: tt("vodCategoriesTitle"), hint: tt("vodCategoriesHint"), value: tt("vodCategoriesButton"), caret: true, onOk: () => setVodOpen(true) }) : null,
+      vodOpen && list.source ? /* @__PURE__ */ jsx(TvVodCategoriesPanel, { source: list.source, name: titleOf(list), onClose: () => setVodOpen(false) }) : null,
       merges.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(TvEyebrow, { size: "panel", children: h("merged") }),
         merges.map((m) => /* @__PURE__ */ jsxs("div", { style: { display: "contents" }, children: [
@@ -77009,7 +77053,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.17.0"
+      version: "0.17.1"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -77023,7 +77067,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.17.0",
+    version: "0.17.1",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
