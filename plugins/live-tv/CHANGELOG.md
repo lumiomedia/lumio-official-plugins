@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.0
+
+- Choose which movie and series categories to include from an Xtream playlist. The picker has a Movies and a Series tab with the number of titles per category, and opens from the Library view, Settings → Content, the library card in desktop settings and the TV settings rows.
+- Categories you leave out are hidden in the Library view, its category list and search, and are never added to your Lumio library. Changing the choice later updates the library to match.
+- A newly added playlist asks for the choice once its movies and series have arrived ("Choose categories" or "Include all"), and its library is built only after that. Playlists you already have keep everything included, as before.
+- The app still downloads the full movie and series list from the provider in the background. Skipping excluded categories at download time comes with a later app version.
+
 ## 0.16.8
 
 - Replays shown as replays: a channel re-airing a match from earlier in the week (V Sport with LIVE in the picture, no date in the guide) no longer shows as live. Live TV checks the league's last week at ESPN and shows the replay with the original result, events and stats.
