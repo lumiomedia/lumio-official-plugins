@@ -9,7 +9,7 @@
  * pluginet äger: bibliotekssvepet, Bibliotek-vyn, sökningen och om svepet
  * får börja alls.
  *
- * Lagras som UTESLUTNA kategori-id:n: en kategori som panelen lägger till
+ * Lagras som UTESLUTNA kategorinycklar (id + namn, se `vodCategoryKey`): en kategori som panelen lägger till
  * senare är med tills man väljer bort den, samma som "alla" betyder i dag.
  *
  * `decided` skiljer "valt att ta med allt" från "inte valt än". En ny källa
@@ -107,8 +107,18 @@ export function useVodChoiceMade(source: string | null): boolean {
   return made
 }
 
-export function isVodItemIncluded(item: Pick<VodItem, 'categoryId'>, excluded: ReadonlySet<string>): boolean {
-  return excluded.size === 0 || !excluded.has(item.categoryId)
+/**
+ * En kategori identifieras av id OCH namn. Xtreams id:n är små tal per panel:
+ * utan namnet hade "12" som valts bort i en spellista (Vuxen) dolt en annan
+ * spellistas "12" (Action) i vyn som spänner alla spellistor — titlarna bär
+ * ingen källa att skilja dem på.
+ */
+export function vodCategoryKey(id: string, name: string): string {
+  return `${id}\u0001${name}`
+}
+
+export function isVodItemIncluded(item: Pick<VodItem, 'categoryId' | 'categoryName'>, excluded: ReadonlySet<string>): boolean {
+  return excluded.size === 0 || !excluded.has(vodCategoryKey(item.categoryId, item.categoryName))
 }
 
 /**

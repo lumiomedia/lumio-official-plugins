@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import type { LibraryBatch } from '@/lib/plugin-sdk'
+import { vodCategoryKey } from './vod-category-filter'
 import {
   scanVodSource,
   vodPlaybackUrl,
@@ -230,8 +231,18 @@ describe('scanVodSource med bortvalda kategorier', () => {
       query: query as never,
       status: (async () => [{ id: 'kkz', total: 3, movies: 2, series: 1, updatedAt: 1, importing: false }]) as never,
       categories: categories as never,
-      excluded: () => new Set(['2']),
+      excluded: () => new Set([vodCategoryKey('2', 'B')]),
     })
     expect(calls).toEqual(['1', '3'])
+  })
+  it('en ofärdig kategorilista avbryter i stället för att tömma källan', async () => {
+    const query = vi.fn()
+    await expect(scanVodSource('xtream-vod:kkz', async () => {}, () => {}, undefined, {
+      query: query as never,
+      status: (async () => []) as never,
+      categories: (async () => ({ categories: [], total: 0, known: false, importing: true })) as never,
+      excluded: () => new Set([vodCategoryKey('2', 'B')]),
+    })).rejects.toThrow()
+    expect(query).not.toHaveBeenCalled()
   })
 })

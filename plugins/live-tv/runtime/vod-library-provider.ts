@@ -17,7 +17,7 @@
 
 import type { LibraryBatch, LibraryScanProgress, LibraryTitle } from '@/lib/plugin-sdk'
 import { fetchVodEpisodes, listVodCategories, queryVod, vodStatus, type VodItem } from './vod-client'
-import { getVodExcluded } from './vod-category-filter'
+import { getVodExcluded, vodCategoryKey } from './vod-category-filter'
 import { findXtreamLoginByPseudoUrl } from './live-tv-data'
 import { seriesIdFromKey, vodEpisodeToLibrary, vodItemToLibraryTitle, VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 
@@ -80,7 +80,12 @@ export async function scanVodSource(
   let categoryIds: (string | undefined)[] = [undefined]
   if (excluded.size > 0 && deps.categories) {
     const listed = await deps.categories(source, signal)
-    categoryIds = listed.categories.map((c) => c.id).filter((id) => !excluded.has(id))
+    // En ofärdig lista (import pågår, källan okänd) får inte läsas som "allt
+    // bortvalt": en full genomgång utan titlar tömmer källan i biblioteket.
+    if (listed.importing || !listed.known || listed.categories.length === 0) {
+      throw new Error('VOD-kategorierna är inte klara än')
+    }
+    categoryIds = listed.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name))).map((c) => c.id)
   }
   for (const categoryId of categoryIds) {
     let offset = 0

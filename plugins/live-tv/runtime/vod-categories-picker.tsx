@@ -5,7 +5,7 @@ import { LtBtn, LtCheckMark, LtDialog, LtNote, UI, fmtInt } from './settings-ui'
 import { TvBtns, TvNote, TvPanel, TvRow } from './tv-settings-ui'
 import { useTvText } from './tv/tv-strings'
 import { listVodCategories, onVodChanged, vodStatus, type VodCategory, type VodKind, type VodSourceStatus } from './vod-client'
-import { getVodCategoryChoice, isVodChoiceMade, isVodChoiceMigrated, onVodCategoryChoiceChanged } from './vod-category-filter'
+import { ensureVodChoiceMigrated, getVodCategoryChoice, isVodChoiceMade, isVodChoiceMigrated, onVodCategoryChoiceChanged, vodCategoryKey } from './vod-category-filter'
 import { applyVodCategoryChoice } from './vod-category-apply'
 import type { TvNav } from './tv/tv-shell'
 import { Check, PickerPanel } from './tv/picker-panel'
@@ -40,15 +40,18 @@ export function useVodCategoryDraft(source: string) {
     series: (categories ?? []).filter((c) => c.kind === 'series'),
   }), [categories])
 
-  const toggle = (id: string) => setExcluded((cur) => {
+  const keyOf = (c: VodCategory) => vodCategoryKey(c.id, c.name)
+  const isIn = (c: VodCategory) => !excluded.has(keyOf(c))
+  const toggle = (c: VodCategory) => setExcluded((cur) => {
     const next = new Set(cur)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
+    const key = keyOf(c)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
     return next
   })
   /** "Alla" för en sort: alla med om någon saknas, annars alla bort. */
   const toggleAll = (kind: VodKind) => setExcluded((cur) => {
-    const ids = byKind[kind].map((c) => c.id)
+    const ids = byKind[kind].map(keyOf)
     const allIn = ids.every((id) => !cur.has(id))
     const next = new Set(cur)
     for (const id of ids) {
@@ -57,16 +60,16 @@ export function useVodCategoryDraft(source: string) {
     }
     return next
   })
-  const allIn = (kind: VodKind) => byKind[kind].every((c) => !excluded.has(c.id))
+  const allIn = (kind: VodKind) => byKind[kind].every(isIn)
   // Bara id:n panelen faktiskt har: ett gammalt val för en kategori som inte
   // längre finns ska inte ligga kvar för evigt.
   const save = () => {
-    const known = new Set((categories ?? []).map((c) => c.id))
+    const known = new Set((categories ?? []).map(keyOf))
     const kept = categories && categories.length > 0 ? [...excluded].filter((id) => known.has(id)) : [...excluded]
     return applyVodCategoryChoice(source, kept)
   }
-  const includedCount = (categories ?? []).filter((c) => !excluded.has(c.id)).length
-  return { categories, byKind, excluded, toggle, toggleAll, allIn, save, includedCount }
+  const includedCount = (categories ?? []).filter(isIn).length
+  return { categories, byKind, isIn, toggle, toggleAll, allIn, save, includedCount }
 }
 
 /** "3 av 120 kategorier" — utan hämtning, ur det sparade valet. */
@@ -103,9 +106,9 @@ export function VodCategoriesDialog({ source, name, onClose }: { source: string;
             </button>
           ) : null}
           {rows.map((c) => {
-            const on = !draft.excluded.has(c.id)
+            const on = draft.isIn(c)
             return (
-              <button key={c.id} type="button" role="checkbox" aria-checked={on} aria-label={c.name} onClick={() => draft.toggle(c.id)} style={{ ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }}>
+              <button key={c.id} type="button" role="checkbox" aria-checked={on} aria-label={c.name} onClick={() => draft.toggle(c)} style={{ ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }}>
                 <LtCheckMark on={on} />
                 <span style={{ fontSize: 13.5, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                 <span style={{ fontSize: 12.5, color: UI.muted }}>{fmtInt(c.count, locale)}</span>
@@ -160,8 +163,8 @@ export function TvVodCategoryPicker({ nav, source, onClose }: { nav: TvNav; sour
             </div>
           ) : null}
           {rows.map((c) => (
-            <div key={c.id} data-testid={`vod-picker-row-${c.name}`} {...station(() => draft.toggle(c.id))} style={rowStyle}>
-              <Check on={!draft.excluded.has(c.id)} label={c.name} />
+            <div key={c.id} data-testid={`vod-picker-row-${c.name}`} {...station(() => draft.toggle(c))} style={rowStyle}>
+              <Check on={draft.isIn(c)} label={c.name} />
               <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
               <span style={{ fontSize: dp(16), color: TV.dim }}>{fmtInt(c.count, locale)}</span>
             </div>
@@ -194,7 +197,7 @@ export function TvVodCategoriesPanel({ source, name, onClose }: { source: string
         <TvRow size="panel" label={kind === 'movie' ? tt('vodCategoriesAllMovies') : tt('vodCategoriesAllSeries')} toggle={draft.allIn(kind)} onToggle={() => draft.toggleAll(kind)} />
       ) : null}
       {rows.map((c) => (
-        <TvRow key={c.id} size="panel" label={c.name} hint={fmtInt(c.count, locale)} toggle={!draft.excluded.has(c.id)} onToggle={() => draft.toggle(c.id)} />
+        <TvRow key={c.id} size="panel" label={c.name} hint={fmtInt(c.count, locale)} toggle={draft.isIn(c)} onToggle={() => draft.toggle(c)} />
       ))}
       <TvBtns buttons={[
         { label: tt('vodCategoriesCancel'), style: 'ghost', onOk: onClose },
@@ -215,6 +218,11 @@ export function usePendingVodSources(): VodSourceStatus[] {
   const [sources, setSources] = useState<VodSourceStatus[]>([])
   const [nonce, setNonce] = useState(0)
   useEffect(() => onVodCategoryChoiceChanged(() => setNonce((n) => n + 1)), [])
+  // Migreringen kör vid pluginstart; misslyckades den där (värden svarade
+  // inte) görs den här, annars hade uppmaningen aldrig kunnat visas.
+  useEffect(() => {
+    if (!isVodChoiceMigrated()) void ensureVodChoiceMigrated(vodStatus).then(() => setNonce((n) => n + 1)).catch(() => {})
+  }, [])
   useEffect(() => {
     let live = true
     const load = () => {

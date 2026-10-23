@@ -10,7 +10,7 @@ import {
   type VodSort,
 } from '../vod-client'
 import { getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
-import { isVodItemIncluded, useVodExcluded } from '../vod-category-filter'
+import { isVodItemIncluded, useVodExcluded, vodCategoryKey } from '../vod-category-filter'
 
 /** En sida i affischrutnätet. 120 titlar ≈ 17 rader à 7 — långt under taket. */
 const PAGE_SIZE = 120
@@ -148,7 +148,7 @@ export function useVodCategories(requested: string | null): VodLibraryCategories
   const excluded = useVodExcluded(source)
   return useMemo(() => {
     if (excluded.size === 0) return { ...state, reload }
-    const categories = state.categories.filter((c) => !excluded.has(c.id))
+    const categories = state.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)))
     const total = categories.reduce((sum, c) => sum + (c.count ?? 0), 0)
     return { ...state, categories, total, reload }
   }, [state, reload, excluded])
@@ -268,6 +268,13 @@ export function useVodPage(opts: {
   // Mot värdens rader, inte de som syns: en sida med bara bortvalda titlar
   // får inte se ut som slutet.
   const hasMore = rawCount < total + (rawCount - items.length)
+  // En sida där nästan allt var bortvalt fyller inte vyn, och då når man
+  // aldrig rullningsvakten som laddar mer. Hämta vidare själv tills sidan
+  // är full eller värden inte har mer.
+  useEffect(() => {
+    if (!enabled || loading || loadingMore || !hasMore || excluded.size === 0) return
+    if (items.length < limit * wanted) setWanted((n) => n + 1)
+  }, [enabled, loading, loadingMore, hasMore, items.length, limit, wanted, excluded.size])
   /**
    * Nästa sida hämtas som `offset 0, limit n×sidan` — hela listan om igen,
    * inte ett tillägg.
