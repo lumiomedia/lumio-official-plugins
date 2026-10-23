@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3
+
+- The "Twitch is not set up yet" screen no longer traps you. It has an Open Twitch settings button and a Back button, and the remote's Back button leaves the page. On TV and phones there was no way out before, and the app had to be force-closed.
+
 ## 1.4.2
 
 - Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
