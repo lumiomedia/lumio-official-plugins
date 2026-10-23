@@ -5,6 +5,9 @@ import { useHubText } from './hub-strings'
 import { useTvText } from './tv/tv-strings'
 import { useVodLibrarySources, type VodLibraryController } from './hooks/useVodLibrarySources'
 import type { VodLibraryRow } from './vod-library-rows'
+import { useState } from 'react'
+import { VodCategoriesDialog, usePendingVodSources } from './vod-categories-picker'
+import { applyVodCategoryChoice } from './vod-category-apply'
 
 /**
  * USE AS LIBRARY på skrivbordet och telefonen (handoff §3 block 6): rubrik +
@@ -26,6 +29,8 @@ export function VodLibraryCardView({ controller, bare = false }: { controller: V
   const { tt } = useTvText()
   const toast = useToast()
   const { rows, progress, error, build, disabled } = controller
+  const [catsFor, setCatsFor] = useState<VodLibraryRow | null>(null)
+  const pending = new Set(usePendingVodSources().map((source) => source.id))
   if (rows.length === 0) return null
 
   const statusText = (row: VodLibraryRow) => {
@@ -49,13 +54,26 @@ export function VodLibraryCardView({ controller, bare = false }: { controller: V
               <p style={{ margin: 0, fontSize: 13.5, color: UI.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</p>
               <p style={{ margin: '4px 0 0', fontSize: 12.5, color: UI.muted }}>{statusText(row)}</p>
             </div>
+            <LtBtn style={{ padding: '7px 14px', fontSize: 12.5 }} testId={`vod-categories-${row.vodSource}`} onClick={() => setCatsFor(row)}>
+              {tt('vodCategoriesButton')}
+            </LtBtn>
             <LtBtn variant="accent" style={{ padding: '7px 14px', fontSize: 12.5 }} disabled={disabled(row)} onClick={() => { void run(row) }}>
               {row.indexedTitles === null ? tt('vodLibraryBuild') : tt('vodLibraryRebuild')}
             </LtBtn>
+            {pending.has(row.vodSource) ? (
+              <div data-testid={`vod-choice-pending-${row.vodSource}`} style={{ flexBasis: '100%', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 9, background: UI.inset }}>
+                <p style={{ margin: 0, flex: '1 1 16rem', fontSize: 12.5, color: UI.text }}>
+                  {tt('vodChoicePendingBody', { count: fmtInt(row.vodTitles, locale), name: row.label })}
+                </p>
+                <LtBtn variant="accent" style={{ padding: '7px 14px', fontSize: 12.5 }} onClick={() => setCatsFor(row)}>{tt('vodChoiceChoose')}</LtBtn>
+                <LtBtn style={{ padding: '7px 14px', fontSize: 12.5 }} onClick={() => { void applyVodCategoryChoice(row.vodSource, []) }}>{tt('vodChoiceIncludeAll')}</LtBtn>
+              </div>
+            ) : null}
           </div>
         ))}
         <LtNote style={error ? { color: UI.danger } : undefined}>{error ? tt('vodLibraryFailed', { error }) : tt('vodLibraryWhereToEnable')}</LtNote>
       </LtCard>
+      {catsFor ? <VodCategoriesDialog source={catsFor.vodSource} name={catsFor.label} onClose={() => setCatsFor(null)} /> : null}
     </div>
   )
 }

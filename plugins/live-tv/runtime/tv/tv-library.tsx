@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
-import { useVodCategories, useVodPage } from '../hooks/useVodLibrary'
+import { resolveVodSource, useVodCategories, useVodPage } from '../hooks/useVodLibrary'
+import { TvVodCategoryPicker, usePendingVodSources } from '../vod-categories-picker'
+import { applyVodCategoryChoice } from '../vod-category-apply'
 import { canOpenDetails, getVodCategory, getVodSort, openVodItem, setVodCategory, setVodSort } from '../vod-data'
 import type { VodItem, VodKind, VodSort } from '../vod-client'
 import type { TvViewProps } from './tv-shell'
@@ -295,6 +297,40 @@ export function TvLibrary({ model, nav }: TvViewProps) {
     )
   }
 
+  /**
+   * Kategorivalet för film och serier (vod-category-filter.ts). Källan är den
+   * aktiva spellistan, eller den enda som finns; med flera spellistor och
+   * ingen aktiv finns valet i inställningarna i stället.
+   */
+  const choiceSource = resolveVodSource(source)
+  const pendingSources = usePendingVodSources()
+  const pending = pendingSources.find((entry) => entry.id === choiceSource) ?? (choiceSource ? null : pendingSources[0] ?? null)
+  const pickerSource = pending?.id ?? choiceSource
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const choiceStation = (chip: boolean) => (pickerSource ? (
+    <div
+      key="__vod_categories__"
+      data-testid="library-choose-categories"
+      {...station(() => setPickerOpen(true))}
+      style={chip
+        ? { height: dp(36), padding: `0 ${dp(16)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap', fontSize: dp(14), cursor: 'pointer', background: TV.s06, color: 'rgba(243,244,248,0.65)' }
+        : { display: 'flex', alignItems: 'center', padding: `${dp(10)}px ${dp(14)}px`, marginBottom: dp(8), borderRadius: dp(12), fontSize: dp(isTv ? 19 : 17), cursor: 'pointer', color: 'rgba(243,244,248,0.65)' }}
+    >
+      {tt('vodCategoriesButton')} ›
+    </div>
+  ) : null)
+  const pendingBox = pending ? (
+    <div data-testid="library-choice-pending" style={{ display: 'flex', flexDirection: 'column', gap: dp(10), padding: dp(16), margin: narrow ? `0 ${dp(20)}px ${dp(12)}px` : `0 0 ${dp(20)}px`, borderRadius: dp(14), background: TV.accMix(14) }}>
+      <div style={{ fontSize: dp(isTv ? 21 : 18), fontWeight: 600 }}>{tt('vodChoicePendingTitle')}</div>
+      <div style={{ fontSize: dp(isTv ? 17 : 15), color: 'rgba(243,244,248,0.7)' }}>{tt('vodChoicePendingBody', { count: pending.total.toLocaleString(), name: playlistName })}</div>
+      <div data-row="" style={{ display: 'flex', gap: dp(8), flexWrap: 'wrap' }}>
+        <div data-testid="library-choice-choose" {...station(() => setPickerOpen(true), undefined, { 'data-init': '' })} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), fontWeight: 600, cursor: 'pointer', background: TV.acc, color: TV.onAcc }}>{tt('vodChoiceChoose')}</div>
+        <div data-testid="library-choice-all" {...station(() => { void applyVodCategoryChoice(pending.id, []) })} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), cursor: 'pointer', background: TV.s06 }}>{tt('vodChoiceIncludeAll')}</div>
+      </div>
+    </div>
+  ) : null
+  const picker = pickerOpen && pickerSource ? <TvVodCategoryPicker nav={nav} source={pickerSource} onClose={() => setPickerOpen(false)} /> : null
+
   const status = (
     <LibraryStatus
       cats={cats}
@@ -348,6 +384,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
             }}
           />
         </div>
+        {pendingBox}
         <div
           data-row=""
           style={{ display: 'flex', gap: dp(8), overflowX: 'auto', padding: `${dp(14)}px ${dp(20)}px` }}
@@ -385,6 +422,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
               </div>
             )
           })}
+          {choiceStation(true)}
         </div>
         <div
           style={{
@@ -398,6 +436,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           {page.items.map(card)}
           {status}
         </div>
+        {picker}
       </div>
     )
   }
@@ -418,6 +457,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
         <div style={{ fontSize: dp(isTv ? 19 : 17), color: 'rgba(243,244,248,0.55)', marginBottom: dp(20) }}>
           {tt('librarySub', { playlist: playlistName, count: cats.total })}
         </div>
+        {pendingBox}
         {/* Filmer / Serier — en segmentväxlare (handoffen). */}
         <div data-testid="library-kind" style={{ display: 'flex', padding: dp(4), borderRadius: 999, background: TV.s06, marginBottom: dp(22) }}>
           {(['movie', 'series'] as const).map((k) => {
@@ -448,6 +488,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           {tt('libraryCategories')}
         </div>
         {allChip(false)}
+        {choiceStation(false)}
         {kindCategories.map((category) => {
           const isActive = category.id === validSelected
           return (
@@ -548,6 +589,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           {status}
         </div>
       </div>
+      {picker}
     </div>
   )
 }

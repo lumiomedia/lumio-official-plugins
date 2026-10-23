@@ -18,6 +18,8 @@ import { vodLibraryProvider } from './vod-library-provider'
 import { LiveTvLibraryFrame } from './tv/live-tv-library-frame'
 import { LIVE_TV_FRAME_ID } from './vod-home'
 import { detectHlsPlaylistProxy } from './hls-playlist-proxy'
+import { ensureVodChoiceMigrated } from './vod-category-filter'
+import { vodStatus } from './vod-client'
 
 declare global {
   interface Window {
@@ -90,6 +92,9 @@ export const LiveTvPlugin: LumioPlugin = {
     // Finns appens HLS-spellisteproxy? Svaret behövs före första kanalstarten
     // (Auto väljer HLS bara med proxyn, se live-format.ts).
     void detectHlsPlaylistProxy()
+    // Kategorivalet för film och serier: källor som redan finns räknas som
+    // valda innan någon ny hinner komma in (vod-category-filter.ts).
+    if (typeof window !== 'undefined') void ensureVodChoiceMigrated(vodStatus).catch(() => {})
     // Påminnelser om kommande program, oavsett var i appen man står.
     ctx.registerBootstrap({ id: 'live-tv-reminders', Mount: LiveTvRemindersMount })
     ctx.registerBootstrap({ id: 'live-tv-sport-goals', Mount: SportGoalMount })

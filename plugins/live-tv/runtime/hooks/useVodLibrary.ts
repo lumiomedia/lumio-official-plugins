@@ -10,6 +10,7 @@ import {
   type VodSort,
 } from '../vod-client'
 import { getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
+import { isVodItemIncluded, useVodExcluded } from '../vod-category-filter'
 
 /** En sida i affischrutnätet. 120 titlar ≈ 17 rader à 7 — långt under taket. */
 const PAGE_SIZE = 120
@@ -142,7 +143,15 @@ export function useVodCategories(requested: string | null): VodLibraryCategories
     }
   }, [source, nonce])
 
-  return useMemo(() => ({ ...state, reload }), [state, reload])
+  // Bortvalda kategorier (vod-category-filter.ts) finns inte i vyn alls —
+  // varken i kolumnen eller i summan.
+  const excluded = useVodExcluded(source)
+  return useMemo(() => {
+    if (excluded.size === 0) return { ...state, reload }
+    const categories = state.categories.filter((c) => !excluded.has(c.id))
+    const total = categories.reduce((sum, c) => sum + (c.count ?? 0), 0)
+    return { ...state, categories, total, reload }
+  }, [state, reload, excluded])
 }
 
 export interface VodLibraryPage {
@@ -185,10 +194,15 @@ export function useVodPage(opts: {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [wanted, setWanted] = useState(1)
+  const [rawCount, setRawCount] = useState(0)
+  const excluded = useVodExcluded(source)
+  const excludedRef = useRef(excluded)
+  excludedRef.current = excluded
+  const excludedKey = [...excluded].sort().join(',')
 
   // Sidnumret nollställs av filtret, inte av en effekt som råkar köra senare:
   // en `setWanted(1)` i samma effekt som hämtar hade gett ett extra varv.
-  const filterKey = `${source ?? ''}|${categoryId ?? ''}|${kind ?? ''}|${q ?? ''}|${sort}`
+  const filterKey = `${source ?? ''}|${categoryId ?? ''}|${kind ?? ''}|${q ?? ''}|${sort}|${excludedKey}`
   const lastFilter = useRef(filterKey)
   if (lastFilter.current !== filterKey) {
     lastFilter.current = filterKey
@@ -223,8 +237,12 @@ export function useVodPage(opts: {
           signal: controller.signal,
         })
         if (cancelled) return
-        setItems(uniqueByKey(page.items))
-        setTotal(page.total)
+        // Bortvalda kategorier sållas här: värden vet inget om valet. Summan
+        // blir en undre gräns tills allt är hämtat — exakt därefter.
+        const kept = uniqueByKey(page.items).filter((item) => isVodItemIncluded(item, excludedRef.current))
+        setItems(kept)
+        setTotal(Math.max(kept.length, page.total - (page.items.length - kept.length)))
+        setRawCount(page.items.length)
         setKnown(page.known)
         setError(null)
       } catch (err) {
@@ -247,7 +265,9 @@ export function useVodPage(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey, wanted, enabled, limit])
 
-  const hasMore = items.length < total
+  // Mot värdens rader, inte de som syns: en sida med bara bortvalda titlar
+  // får inte se ut som slutet.
+  const hasMore = rawCount < total + (rawCount - items.length)
   /**
    * Nästa sida hämtas som `offset 0, limit n×sidan` — hela listan om igen,
    * inte ett tillägg.

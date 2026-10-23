@@ -217,3 +217,21 @@ describe('loadEpisodes', () => {
     expect(spelbar).toEqual({ url: 'http://panel.example/s1e2.mkv' })
   })
 })
+
+describe('scanVodSource med bortvalda kategorier', () => {
+  it('går bara igenom de medtagna kategorierna, var för sig', async () => {
+    const calls: Array<string | undefined> = []
+    const query = async (opts: { categoryId?: string }) => {
+      calls.push(opts.categoryId)
+      return { items: [{ key: `m:${opts.categoryId}`, kind: 'movie', title: `T ${opts.categoryId}`, categoryId: opts.categoryId ?? '', categoryName: 'x', tmdbId: 1, url: 'http://x/1.mkv' }], total: 1, known: true }
+    }
+    const categories = async () => ({ categories: [{ id: '1', name: 'A', kind: 'movie', count: 1 }, { id: '2', name: 'B', kind: 'movie', count: 1 }, { id: '3', name: 'C', kind: 'series', count: 1 }], total: 3, known: true, importing: false })
+    await scanVodSource('xtream-vod:kkz', async () => {}, () => {}, undefined, {
+      query: query as never,
+      status: (async () => [{ id: 'kkz', total: 3, movies: 2, series: 1, updatedAt: 1, importing: false }]) as never,
+      categories: categories as never,
+      excluded: () => new Set(['2']),
+    })
+    expect(calls).toEqual(['1', '3'])
+  })
+})

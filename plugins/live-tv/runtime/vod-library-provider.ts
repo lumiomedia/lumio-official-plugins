@@ -16,7 +16,8 @@
  */
 
 import type { LibraryBatch, LibraryScanProgress, LibraryTitle } from '@/lib/plugin-sdk'
-import { fetchVodEpisodes, queryVod, vodStatus, type VodItem } from './vod-client'
+import { fetchVodEpisodes, listVodCategories, queryVod, vodStatus, type VodItem } from './vod-client'
+import { getVodExcluded } from './vod-category-filter'
 import { findXtreamLoginByPseudoUrl } from './live-tv-data'
 import { seriesIdFromKey, vodEpisodeToLibrary, vodItemToLibraryTitle, VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 
@@ -38,9 +39,11 @@ export function vodSourceFromLibraryId(libraryId: string): string | null {
 export interface VodScanDeps {
   query: typeof queryVod
   status: typeof vodStatus
+  categories?: typeof listVodCategories
+  excluded?: (source: string) => Set<string>
 }
 
-const defaultDeps: VodScanDeps = { query: queryVod, status: vodStatus }
+const defaultDeps: VodScanDeps = { query: queryVod, status: vodStatus, categories: listVodCategories, excluded: getVodExcluded }
 
 export interface VodScanResult {
   titles: number
@@ -68,24 +71,36 @@ export async function scanVodSource(
   const sources = await deps.status()
   const cursor = sources.find((entry) => entry.id === source)?.updatedAt ?? null
 
-  let offset = 0
   let titles = 0
   progress({ phase: 'listing', done: 0 })
-  for (;;) {
-    if (signal?.aborted) break
-    const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: 'new', signal })
-    const upsert = page.items
-      .map((item: VodItem) => vodItemToLibraryTitle(item, source))
-      .filter((title): title is LibraryTitle => title !== null)
-    if (upsert.length > 0) {
-      await emit({ upsert })
-      titles += upsert.length
-      progress({ phase: 'titles', done: titles })
+  // Bortvalda kategorier (vod-category-filter.ts) gås aldrig igenom: med ett
+  // val pagineras bara de medtagna kategorierna, var för sig. Utan val är det
+  // samma enda genomgång som förut.
+  const excluded = deps.excluded?.(source) ?? new Set<string>()
+  let categoryIds: (string | undefined)[] = [undefined]
+  if (excluded.size > 0 && deps.categories) {
+    const listed = await deps.categories(source, signal)
+    categoryIds = listed.categories.map((c) => c.id).filter((id) => !excluded.has(id))
+  }
+  for (const categoryId of categoryIds) {
+    let offset = 0
+    for (;;) {
+      if (signal?.aborted) break
+      const page = await deps.query({ source, categoryId, offset, limit: VOD_SCAN_PAGE, sort: 'new', signal })
+      const upsert = page.items
+        .map((item: VodItem) => vodItemToLibraryTitle(item, source))
+        .filter((title): title is LibraryTitle => title !== null)
+      if (upsert.length > 0) {
+        await emit({ upsert })
+        titles += upsert.length
+        progress({ phase: 'titles', done: titles })
+      }
+      // Kortare sida än begärt = sista sidan. Att i stället lita på `total`
+      // hade låst sig om en import växte katalogen mitt i genomgången.
+      if (page.items.length < VOD_SCAN_PAGE) break
+      offset += VOD_SCAN_PAGE
     }
-    // Kortare sida än begärt = sista sidan. Att i stället lita på `total`
-    // hade låst sig om en import växte katalogen mitt i genomgången.
-    if (page.items.length < VOD_SCAN_PAGE) break
-    offset += VOD_SCAN_PAGE
+    if (signal?.aborted) break
   }
   return { titles, cursor: cursor === null ? null : String(cursor) }
 }

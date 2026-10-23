@@ -14,6 +14,7 @@ import { curationSummary, formatFetchedAt } from './playlist-card'
 import { playlistTitle } from './playlist-title'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
+import { TvVodCategoriesPanel } from './vod-categories-picker'
 import { useTvText } from './tv/tv-strings'
 import { nextFallbackAfter, setTvSettings, useTvSettings } from './tv/tv-settings-store'
 import { nextStartView, startViewLabelKey } from './tv/start-view'
@@ -108,6 +109,7 @@ export function TvSettingsPage() {
   }, [])
   const epg = useEpgStatus()
   const vod = useVodLibrarySources()
+  const [vodCats, setVodCats] = useState<{ source: string; name: string } | null>(null)
 
   const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null
   // Stängs när listan tas bort under panelen.
@@ -204,9 +206,21 @@ export function TvSettingsPage() {
               onOk={() => { void vod.build(row).then(() => toast(h('libraryBuiltToast', { count: fmtInt(row.vodTitles, locale) }))) }}
             />
           ))}
+          {/* Vilka film- och seriekategorier som tas med (vod-category-filter.ts). */}
+          {vod.rows.map((row) => (
+            <TvRow
+              key={`cats-${row.libraryId}`}
+              label={`${tt('vodCategoriesTitle')} · ${row.label}`}
+              hint={tt('vodCategoriesHint')}
+              value={tt('vodCategoriesButton')}
+              caret
+              onOk={() => setVodCats({ source: row.vodSource, name: row.label })}
+            />
+          ))}
           <TvNote tone={vod.error ? 'danger' : 'muted'}>{vod.error ? tt('vodLibraryFailed', { error: vod.error }) : tt('vodLibraryWhereToEnable')}</TvNote>
         </>
       ) : null}
+      {vodCats ? <TvVodCategoriesPanel source={vodCats.source} name={vodCats.name} onClose={() => setVodCats(null)} /> : null}
 
       {/* Skärmens mått, att fotografera.
 

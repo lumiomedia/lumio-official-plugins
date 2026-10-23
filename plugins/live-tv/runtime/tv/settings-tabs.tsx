@@ -49,6 +49,8 @@ import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode, setVodMode, type VodMode } from '../vod-data'
 import type { VodLibraryRow } from '../vod-library-rows'
 import { useVodLibrarySources } from '../hooks/useVodLibrarySources'
+import { TvVodCategoryPicker, usePendingVodSources } from '../vod-categories-picker'
+import { applyVodCategoryChoice } from '../vod-category-apply'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { TvCurationPicker } from './tv-curation-picker'
@@ -853,7 +855,7 @@ function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan =
  * Bor här och inte i tv-settings.tsx av samma skäl som de andra flikarna:
  * telefonvyn återanvänder dem, och den får inte importera skrivbordsvyn.
  */
-export function ContentTab({ model, tt, phone = false }: { model: TvViewProps['model']; tt: TT; phone?: boolean }) {
+export function ContentTab({ model, nav, tt, phone = false }: { model: TvViewProps['model']; nav?: TvNav; tt: TT; phone?: boolean }) {
   const source = model.activeSource
   const playlistId = model.activePlaylistId
   const cats = useVodCategories(source)
@@ -897,7 +899,7 @@ export function ContentTab({ model, tt, phone = false }: { model: TvViewProps['m
           )
         })}
       </div>
-      <VodLibrarySection tt={tt} phone={phone} />
+      <VodLibrarySection tt={tt} phone={phone} nav={nav} />
     </section>
   )
 }
@@ -914,13 +916,16 @@ export function ContentTab({ model, tt, phone = false }: { model: TvViewProps['m
  * är null utanför TV-läget, och en källa ska gå att bygga från vilken yta som
  * helst.
  */
-function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
+function VodLibrarySection({ tt, phone, nav }: { tt: TT; phone: boolean; nav?: TvNav }) {
   const { rows, progress, error, build, disabled } = useVodLibrarySources()
+  const [catsFor, setCatsFor] = useState<string | null>(null)
+  const pending = new Set(usePendingVodSources().map((source) => source.id))
   if (rows.length === 0) return null
 
   const statusText = (row: VodLibraryRow) => {
     if (progress?.libraryId === row.libraryId) return tt('vodLibraryBuilding', { count: progress.done.toLocaleString() })
     if (row.importing) return tt('vodLibraryImporting')
+    if (pending.has(row.vodSource)) return tt('vodChoicePendingBody', { count: row.vodTitles.toLocaleString(), name: row.label })
     if (row.indexedTitles === null) return tt('vodLibraryNotBuilt', { count: row.vodTitles.toLocaleString() })
     return tt('vodLibraryBuilt', { count: row.indexedTitles.toLocaleString() })
   }
@@ -940,15 +945,30 @@ function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
             <div style={{ fontSize: phone ? 15 : dp(19), ...ellipsis }}>{row.label}</div>
             <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim }}>{statusText(row)}</div>
           </div>
-          <Action
-            phone={phone}
-            testId={`vod-library-build-${row.vodSource}`}
-            label={row.indexedTitles === null ? tt('vodLibraryBuild') : tt('vodLibraryRebuild')}
-            disabled={disabled(row)}
-            onOk={() => { void build(row) }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: phone ? 8 : dp(10), flexShrink: 0 }}>
+            {nav ? (
+              <Action
+                phone={phone}
+                testId={`vod-categories-${row.vodSource}`}
+                label={pending.has(row.vodSource) ? tt('vodChoiceChoose') : tt('vodCategoriesButton')}
+                onOk={() => setCatsFor(row.vodSource)}
+              />
+            ) : null}
+            {pending.has(row.vodSource) ? (
+              <Action phone={phone} testId={`vod-include-all-${row.vodSource}`} label={tt('vodChoiceIncludeAll')} onOk={() => { void applyVodCategoryChoice(row.vodSource, []) }} />
+            ) : (
+              <Action
+                phone={phone}
+                testId={`vod-library-build-${row.vodSource}`}
+                label={row.indexedTitles === null ? tt('vodLibraryBuild') : tt('vodLibraryRebuild')}
+                disabled={disabled(row)}
+                onOk={() => { void build(row) }}
+              />
+            )}
+          </div>
         </div>
       ))}
+      {catsFor && nav ? <TvVodCategoryPicker nav={nav} source={catsFor} onClose={() => setCatsFor(null)} /> : null}
       {/* 5 px under texten på telefon: raden är sektionens sista, och utan den
           låg den kant i kant med kortets underkant (Jerry 2026-09-22). */}
       <div style={{ fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV.dim, padding: phone ? '0 14px 5px' : undefined }}>

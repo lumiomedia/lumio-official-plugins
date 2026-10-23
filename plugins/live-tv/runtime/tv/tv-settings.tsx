@@ -50,7 +50,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
       </div>
       <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
-        {tab === 'content' ? <ContentTab model={model} tt={tt} /> : null}
+        {tab === 'content' ? <ContentTab model={model} nav={nav} tt={tt} /> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}

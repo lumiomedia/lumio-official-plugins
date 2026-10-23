@@ -5,12 +5,13 @@ import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/
 import { vodStatus, type VodSourceStatus } from './vod-client'
 import { maybeAutoScanVod, resetVodAutoScanForTests } from './vod-autoscan'
 import { setVodMode } from './vod-data'
+import { ensureVodChoiceMigrated, resetVodCategoryChoiceForTests, setVodCategoryChoice } from './vod-category-filter'
 
 const source = (id: string): VodSourceStatus => ({ id, total: 100, movies: 80, series: 20, updatedAt: 1, importing: false })
 const status = (sources: Array<{ id: string; lastFullSync?: number | null }>) =>
   ({ sources: sources.map((s) => ({ provider: 'xtream-vod', titles: 1, ...s })), movies: 0, series: 0, unmatched: 0, total: 0 }) as never
 
-beforeEach(() => { vi.clearAllMocks(); vi.mocked(isLibraryScanRunning).mockReturnValue(false); resetVodAutoScanForTests() })
+beforeEach(() => { vi.clearAllMocks(); vi.mocked(isLibraryScanRunning).mockReturnValue(false); resetVodAutoScanForTests(); resetVodCategoryChoiceForTests() })
 
 describe('maybeAutoScanVod', () => {
   it('indexerar aldrig när VOD-läget är off, och förbrukar inte flaggan', async () => {
@@ -74,5 +75,20 @@ describe('maybeAutoScanVod', () => {
     vi.mocked(vodStatus).mockResolvedValue([source('a')])
     expect(await maybeAutoScanVod()).toBe('started')
     expect(runLibraryScan).toHaveBeenCalledTimes(1)
+  })
+  it('en källa som kommer efter migreringen väntar på kategorivalet', async () => {
+    await ensureVodChoiceMigrated(async () => [])
+    vi.mocked(vodStatus).mockResolvedValue([source('ny')])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    expect(await maybeAutoScanVod()).toBe('skipped')
+    expect(runLibraryScan).not.toHaveBeenCalled()
+    setVodCategoryChoice('ny', ['42'])
+    expect(await maybeAutoScanVod()).toBe('started')
+    expect(runLibraryScan).toHaveBeenCalledTimes(1)
+  })
+  it('källor som fanns före funktionen räknas som valda', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([source('gammal')])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    expect(await maybeAutoScanVod()).toBe('started')
   })
 })

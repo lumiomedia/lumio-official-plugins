@@ -5,6 +5,7 @@ import { vodLibraryProvider } from './vod-library-provider'
 import { vodLibraryRows } from './vod-library-rows'
 import { VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 import { vodHiddenForActivePlaylist } from './vod-home'
+import { ensureVodChoiceMigrated, isVodChoiceMade } from './vod-category-filter'
 
 const AUTOSCAN_KEY = 'live_tv_vod_autoscan_v1'
 
@@ -29,7 +30,13 @@ export async function maybeAutoScanVod(): Promise<'started' | 'skipped'> {
   try {
     const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()])
     if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return 'skipped'
-    const rows = vodLibraryRows(sources, library).filter((row) => row.indexedTitles === null)
+    // Källor som fanns före kategorivalet räknas som valda; först därefter
+    // kan en ny källa sägas vänta på sitt val.
+    await ensureVodChoiceMigrated(async () => sources)
+    const unindexed = vodLibraryRows(sources, library).filter((row) => row.indexedTitles === null)
+    // En ny källa väntar tills användaren valt kategorier (vod-category-filter.ts).
+    // Ingen flagga: valet anropar maybeAutoScanVod igen.
+    const rows = unindexed.filter((row) => isVodChoiceMade(row.vodSource))
     if (rows.length === 0) return 'skipped'
     // Värden hämtar fortfarande katalogen: en genomgång nu blir ofullständig och flaggan förbrukad. Ingen flagga — nästa montering försöker igen.
     if (rows.some((row) => row.importing)) return 'skipped'
