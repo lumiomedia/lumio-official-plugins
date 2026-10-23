@@ -1,7 +1,7 @@
 'use client'
 
 import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/plugin-sdk'
-import { setVodCategoryChoice } from './vod-category-filter'
+import { getVodCategoryChoice, setVodCategoryChoice, type VodCategoryMerge } from './vod-category-filter'
 import { vodStatus } from './vod-client'
 import { vodLibraryProvider } from './vod-library-provider'
 import { vodLibrarySourceId } from './vod-library-map'
@@ -28,8 +28,13 @@ const generation = new Map<string, number>()
  * för att valet tyst blir kvar ogenomfört. Valet är sparat och vyerna
  * filtrerade direkt; genomgången går i bakgrunden.
  */
-export async function applyVodCategoryChoice(source: string, excluded: readonly string[]): Promise<void> {
-  setVodCategoryChoice(source, excluded)
+export async function applyVodCategoryChoice(source: string, excluded: readonly string[], merges?: readonly VodCategoryMerge[]): Promise<void> {
+  const before = getVodCategoryChoice(source)
+  setVodCategoryChoice(source, excluded, merges)
+  // Bara sammanslagningarna ändrades (eller inget alls på en redan vald
+  // källa): de styr visningen, inte vad biblioteket innehåller.
+  const sameExcluded = before.excluded.length === excluded.length && excluded.every((key) => before.excluded.includes(key))
+  if (before.decided && sameExcluded) return
   const mine = (generation.get(source) ?? 0) + 1
   generation.set(source, mine)
   try {

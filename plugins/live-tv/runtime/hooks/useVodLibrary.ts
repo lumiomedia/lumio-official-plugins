@@ -10,7 +10,7 @@ import {
   type VodSort,
 } from '../vod-client'
 import { getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
-import { isVodItemIncluded, useVodExcluded, vodCategoryKey } from '../vod-category-filter'
+import { VOD_MERGE_PREFIX, getVodMerges, isVodItemIncluded, useVodExcluded, useVodMerges, vodCategoryKey, vodIdFromKey, vodMergeId, type VodCategoryMerge } from '../vod-category-filter'
 
 /** En sida i affischrutnätet. 120 titlar ≈ 17 rader à 7 — långt under taket. */
 const PAGE_SIZE = 120
@@ -146,12 +146,51 @@ export function useVodCategories(requested: string | null): VodLibraryCategories
   // Bortvalda kategorier (vod-category-filter.ts) finns inte i vyn alls —
   // varken i kolumnen eller i summan.
   const excluded = useVodExcluded(source)
+  const merges = useVodMerges(source)
   return useMemo(() => {
-    if (excluded.size === 0) return { ...state, reload }
-    const categories = state.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)))
+    if (excluded.size === 0 && merges.length === 0) return { ...state, reload }
+    const kept = state.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)))
+    const categories = applyVodMerges(kept, merges)
     const total = categories.reduce((sum, c) => sum + (c.count ?? 0), 0)
     return { ...state, categories, total, reload }
-  }, [state, reload, excluded])
+  }, [state, reload, excluded, merges])
+}
+
+/**
+ * Sammanslagningarna i kategorikolumnen: medlemmarna ersätts av EN rad på den
+ * första medlemmens plats, med summan av deras antal. En sammanslagning utan
+ * kvarvarande medlemmar (alla bortvalda eller borta ur panelen) syns inte.
+ */
+export function applyVodMerges(categories: VodCategory[], merges: readonly VodCategoryMerge[]): VodCategory[] {
+  if (merges.length === 0) return categories
+  const owner = new Map<string, VodCategoryMerge>()
+  for (const merge of merges) for (const key of merge.keys) if (!owner.has(key)) owner.set(key, merge)
+  const out: VodCategory[] = []
+  const placed = new Map<VodCategoryMerge, VodCategory>()
+  for (const category of categories) {
+    const merge = owner.get(vodCategoryKey(category.id, category.name))
+    if (!merge) { out.push(category); continue }
+    const existing = placed.get(merge)
+    if (existing) { existing.count += category.count ?? 0; continue }
+    const row: VodCategory = { id: vodMergeId(merge.name), name: merge.name, kind: category.kind, count: category.count ?? 0 }
+    placed.set(merge, row)
+    out.push(row)
+  }
+  return out
+}
+
+/** Medlemmarnas kategori-id:n för en sammanslagen rad, annars null. */
+export function vodMergeMemberIds(categoryId: string | null | undefined, source: string | null): string[] | null {
+  if (!categoryId || !categoryId.startsWith(VOD_MERGE_PREFIX)) return null
+  const name = categoryId.slice(VOD_MERGE_PREFIX.length)
+  const merge = getVodMerges(source).find((m) => m.name === name)
+  return merge ? merge.keys.map(vodIdFromKey) : []
+}
+
+function compareVod(sort: VodSort): (a: VodItem, b: VodItem) => number {
+  if (sort === 'az') return (a, b) => a.title.localeCompare(b.title)
+  if (sort === 'rating') return (a, b) => (b.rating ?? 0) - (a.rating ?? 0)
+  return (a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0)
 }
 
 export interface VodLibraryPage {
@@ -199,10 +238,11 @@ export function useVodPage(opts: {
   const excludedRef = useRef(excluded)
   excludedRef.current = excluded
   const excludedKey = [...excluded].sort().join(',')
+  const mergesKey = JSON.stringify(useVodMerges(source))
 
   // Sidnumret nollställs av filtret, inte av en effekt som råkar köra senare:
   // en `setWanted(1)` i samma effekt som hämtar hade gett ett extra varv.
-  const filterKey = `${source ?? ''}|${categoryId ?? ''}|${kind ?? ''}|${q ?? ''}|${sort}|${excludedKey}`
+  const filterKey = `${source ?? ''}|${categoryId ?? ''}|${kind ?? ''}|${q ?? ''}|${sort}|${excludedKey}|${mergesKey}`
   const lastFilter = useRef(filterKey)
   if (lastFilter.current !== filterKey) {
     lastFilter.current = filterKey
@@ -226,9 +266,12 @@ export function useVodPage(opts: {
 
     void (async () => {
       try {
-        const page = await queryVod({
+        // En sammanslagen kategori: varje medlem för sig, ihopsorterade. De
+        // första n i föreningen ligger alltid bland varje medlems första n.
+        const members = vodMergeMemberIds(categoryId, source)
+        const ask = (id: string | undefined) => queryVod({
           source: source ?? undefined,
-          categoryId: categoryId ?? undefined,
+          categoryId: id,
           kind: kind ?? undefined,
           q: q?.trim() || undefined,
           sort,
@@ -236,6 +279,13 @@ export function useVodPage(opts: {
           limit: limit * wanted,
           signal: controller.signal,
         })
+        const page = members
+          ? await Promise.all(members.map((id) => ask(id))).then((pages) => ({
+              items: pages.flatMap((p) => p.items).sort(compareVod(sort)).slice(0, limit * wanted),
+              total: pages.reduce((sum, p) => sum + p.total, 0),
+              known: pages.some((p) => p.known),
+            }))
+          : await ask(categoryId ?? undefined)
         if (cancelled) return
         // Bortvalda kategorier sållas här: värden vet inget om valet. Summan
         // blir en undre gräns tills allt är hämtat — exakt därefter.

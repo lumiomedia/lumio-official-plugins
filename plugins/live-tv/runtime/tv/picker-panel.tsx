@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import type { TvNav } from './tv-shell'
-import { TV, belowTitleBar, dp } from './tv-ui'
+import { TV, belowTitleBar, dp, station } from './tv-ui'
 
 /**
  * FLERVALSVÄLJAREN — `tv-channel-picker.tsx` med bock i stället för "välj och
@@ -22,6 +22,7 @@ export function PickerPanel({
   testId = 'list-picker',
   opener,
   surface,
+  backButton,
 }: {
   nav: TvNav
   title: string
@@ -45,6 +46,12 @@ export function PickerPanel({
   opener?: HTMLElement | null
   /** Sport: samma ytvariabler/kant/padding som matchlådan (`sportDrawerStyle`). Utan den: oförändrat utseende. */
   surface?: CSSProperties
+  /**
+   * En synlig ‹ före rubriken som stänger panelen (samma väg som Bakåt).
+   * För paneler som öppnas ur en annan panel: med mus eller finger fanns
+   * annars ingen synlig väg tillbaka (Jerry 2026-10-23).
+   */
+  backButton?: string
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -78,7 +85,21 @@ export function PickerPanel({
       data-live-tv-layer=""
       style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}
     >
-      <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
+      {backButton ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
+          <div
+            {...station(() => closeRef.current?.())}
+            data-testid={`${testId}-back`}
+            aria-label={backButton}
+            style={{ width: dp(44), height: dp(44), flexShrink: 0, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, cursor: 'pointer' }}
+          >
+            <svg width={dp(22)} height={dp(22)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
+          </div>
+          <div style={{ fontSize: dp(28), fontWeight: 600, minWidth: 0 }}>{title}</div>
+        </div>
+      ) : (
+        <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
+      )}
       {chips}
       <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
     </div>

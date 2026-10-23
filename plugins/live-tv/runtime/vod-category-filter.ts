@@ -26,9 +26,20 @@ import type { VodItem } from './vod-client'
 const FILTER_KEY = 'vod_category_filter_v1'
 const MIGRATED_KEY = 'vod_category_filter_migrated_v1'
 
+/**
+ * Sammanslagning: flera av panelens kategorier visas som EN i Bibliotek-vyn
+ * (samma idé som kanalgruppernas "Slå ihop"). Medlemmarna är kategorinycklar
+ * (`vodCategoryKey`), och bara samma sort (film/serie) slås ihop.
+ */
+export interface VodCategoryMerge {
+  name: string
+  keys: string[]
+}
+
 export interface VodCategoryChoice {
   excluded: string[]
   decided: boolean
+  merges: VodCategoryMerge[]
 }
 
 type ChoiceMap = Record<string, VodCategoryChoice>
@@ -39,10 +50,16 @@ function readMap(): ChoiceMap {
   const out: ChoiceMap = {}
   for (const [source, value] of Object.entries(parsed as Record<string, unknown>)) {
     if (!value || typeof value !== 'object') continue
-    const entry = value as { excluded?: unknown; decided?: unknown }
+    const entry = value as { excluded?: unknown; decided?: unknown; merges?: unknown }
     out[source] = {
       excluded: Array.isArray(entry.excluded) ? entry.excluded.filter((id): id is string => typeof id === 'string' && id !== '') : [],
       decided: entry.decided === true,
+      merges: Array.isArray(entry.merges)
+        ? entry.merges
+          .filter((m): m is { name: unknown; keys: unknown } => Boolean(m) && typeof m === 'object')
+          .map((m) => ({ name: String(m.name ?? '').trim(), keys: Array.isArray(m.keys) ? m.keys.filter((k): k is string => typeof k === 'string') : [] }))
+          .filter((m) => m.name && m.keys.length > 0)
+        : [],
     }
   }
   return out
@@ -53,7 +70,7 @@ function writeMap(map: ChoiceMap): void {
 }
 
 export function getVodCategoryChoice(source: string): VodCategoryChoice {
-  return readMap()[source] ?? { excluded: [], decided: false }
+  return readMap()[source] ?? { excluded: [], decided: false, merges: [] }
 }
 
 /** Har användaren valt för källan (eller fanns den före funktionen)? */
@@ -72,10 +89,40 @@ export function getVodExcluded(source: string | null): Set<string> {
   return new Set(Object.values(map).flatMap((entry) => entry.excluded))
 }
 
-export function setVodCategoryChoice(source: string, excluded: readonly string[]): void {
+export function setVodCategoryChoice(source: string, excluded: readonly string[], merges?: readonly VodCategoryMerge[]): void {
   const map = readMap()
-  map[source] = { excluded: [...new Set(excluded)], decided: true }
+  map[source] = {
+    excluded: [...new Set(excluded)],
+    decided: true,
+    merges: merges ? merges.map((m) => ({ name: m.name, keys: [...m.keys] })) : (map[source]?.merges ?? []),
+  }
   writeMap(map)
+}
+
+/** Sammanslagningarna. `null` = alla källor (vyn utan aktiv spellista). */
+export function getVodMerges(source: string | null): VodCategoryMerge[] {
+  const map = readMap()
+  if (source) return map[source]?.merges ?? []
+  return Object.values(map).flatMap((entry) => entry.merges)
+}
+
+export function useVodMerges(source: string | null): VodCategoryMerge[] {
+  const [merges, setMerges] = useState(() => getVodMerges(source))
+  useEffect(() => {
+    setMerges(getVodMerges(source))
+    return onVodCategoryChoiceChanged(() => setMerges(getVodMerges(source)))
+  }, [source])
+  return merges
+}
+
+/** Bibliotek-vyns id för en sammanslagen kategori. */
+export const VOD_MERGE_PREFIX = 'merge:'
+export function vodMergeId(name: string): string {
+  return `${VOD_MERGE_PREFIX}${name}`
+}
+/** Panelens kategori-id ur en nyckel. */
+export function vodIdFromKey(key: string): string {
+  return key.split('\u0001')[0] ?? key
 }
 
 export function onVodCategoryChoiceChanged(listener: () => void): () => void {
@@ -132,7 +179,7 @@ export async function ensureVodChoiceMigrated(listSources: () => Promise<{ id: s
   const sources = await listSources()
   const map = readMap()
   for (const source of sources) {
-    if (!map[source.id]) map[source.id] = { excluded: [], decided: true }
+    if (!map[source.id]) map[source.id] = { excluded: [], decided: true, merges: [] }
   }
   writeMap(map)
   writePluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, true)

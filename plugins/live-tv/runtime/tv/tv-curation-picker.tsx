@@ -113,6 +113,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
       nav={nav}
       title={`${tt('categories')} · ${list.name}`}
       testId="curation-picker"
+      backButton={tt('back')}
       onClose={dismiss}
       chips={<div style={{ fontSize: dp(16), color: TV.dim }}>{mode === 'after-import' ? tt('curationIntro') : summary}</div>}
       rows={(
