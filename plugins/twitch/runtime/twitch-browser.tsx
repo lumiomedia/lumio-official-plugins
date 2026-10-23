@@ -149,6 +149,7 @@ const TEXT = {
     en: 'Twitch needs your own application registration. Open Settings → Twitch, follow the five steps there, and paste your Client ID.',
     sv: 'Twitch behöver din egen applikationsregistrering. Öppna Inställningar → Twitch, följ de fem stegen där och klistra in ditt Client ID.',
   },
+  setupOpenSettings: { en: 'Open Twitch settings', sv: 'Öppna Twitch-inställningar' },
   setupSignInTitle: { en: 'Sign in to Twitch', sv: 'Logga in på Twitch' },
   setupSignInBody: {
     en: 'Your application is registered. Open Settings → Twitch and press Connect Twitch to finish signing in.',
@@ -932,6 +933,16 @@ function TwitchSetupGate({ children }: { children: ReactNode }) {
     return () => { stopPlugin(); stopAuth() }
   }, [])
 
+  // TV: fjärrens Bakåt på en sida utan öppna ytor ber värden öppna menyn
+  // (lumio-tv-open-menu) — men menyn är avmonterad på Twitch-sidorna, så
+  // ingen svarade. Medan vakten står här betyder Bakåt "lämna sidan".
+  useEffect(() => {
+    if (ready) return
+    const leave = () => requestBrowseBack()
+    window.addEventListener('lumio-tv-open-menu', leave)
+    return () => window.removeEventListener('lumio-tv-open-menu', leave)
+  }, [ready])
+
   if (ready) return <>{children}</>
 
   const missingApp = !hasTwitchClientId()
@@ -948,6 +959,27 @@ function TwitchSetupGate({ children }: { children: ReactNode }) {
       <p style={{ margin: 0, maxWidth: '34em', fontSize: 'var(--st-small)', lineHeight: 1.55, color: 'var(--tk-text-mute, #94a3b8)' }}>
         {missingApp ? text('setupBody') : text('setupSignInBody')}
       </p>
+      {/* Utvägen. Värden döljer sin meny på Twitch-sidorna (TV och mobil) och
+          räknar med TwitchPageNav:s Tillbaka — som aldrig monteras här. Utan
+          de här knapparna fanns inget att fokusera och Bakåt gjorde ingenting:
+          appen fick tvångsavslutas (testare 2026-10-23). */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.75em', marginTop: '0.75em' }}>
+        <button
+          type="button" {...tvf()}
+          {...(isTvDom() ? { 'data-init': '' } : {})}
+          onClick={() => window.dispatchEvent(new CustomEvent('lumio-open-settings', { detail: { section: 'plugin:twitch' } }))}
+          className="h-10 rounded-full bg-white px-5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+        >
+          {text('setupOpenSettings')}
+        </button>
+        <button
+          type="button" {...tvf()}
+          onClick={() => requestBrowseBack()}
+          className="h-10 rounded-full bg-[#fcfcff14] px-5 text-sm text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white"
+        >
+          {text('backToApp')}
+        </button>
+      </div>
     </div>
   )
 }

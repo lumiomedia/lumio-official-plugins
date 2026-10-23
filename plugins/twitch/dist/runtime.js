@@ -134,7 +134,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke6(`plugin:${this.plugin}|remove_listener`, {
+          return invoke7(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -143,23 +143,23 @@
       async function addPluginListener(plugin2, event, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke6(`plugin:${plugin2}|register_listener`, {
+          await invoke7(`plugin:${plugin2}|register_listener`, {
             event,
             handler
           });
           return new PluginListener(plugin2, event, handler.id);
         } catch {
-          await invoke6(`plugin:${plugin2}|registerListener`, { event, handler });
+          await invoke7(`plugin:${plugin2}|registerListener`, { event, handler });
           return new PluginListener(plugin2, event, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|check_permissions`);
+        return invoke7(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|request_permissions`);
+        return invoke7(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke6(cmd, args = {}, options) {
+      async function invoke7(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -178,7 +178,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke6("plugin:resources|close", {
+          return invoke7("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -194,7 +194,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke6;
+      exports.invoke = invoke7;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -376,8 +376,165 @@
     if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
     return false;
   }
+  function isLanClientHost(hostname) {
+    return !isLocalAppHost(hostname);
+  }
+  function isLanClientSession() {
+    if (typeof window === "undefined") return false;
+    return isLanClientHost(window.location.hostname);
+  }
+  function isClientSession() {
+    return isLanClientSession();
+  }
   var init_session_host = __esm({
     "lib/session-host.ts"() {
+    }
+  });
+
+  // lib/storage-cache-keys.ts
+  var init_storage_cache_keys = __esm({
+    "lib/storage-cache-keys.ts"() {
+    }
+  });
+
+  // lib/storage-quota.ts
+  var lastEmptyPassAt;
+  var init_storage_quota = __esm({
+    "lib/storage-quota.ts"() {
+      "use client";
+      init_app_storage();
+      init_storage_cache_keys();
+      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
+    }
+  });
+
+  // lib/app-storage.ts
+  function ensureStore() {
+    if (store) return store;
+    const seeded = /* @__PURE__ */ new Map();
+    if (typeof window !== "undefined") {
+      const snapshot = window.__lumioNativeStorageSnapshot;
+      if (snapshot) {
+        if (nativeState === "unknown") nativeState = "durable";
+        for (const [key, value] of Object.entries(snapshot)) {
+          seeded.set(key, String(value));
+        }
+      }
+      try {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (key === null) continue;
+          const value = localStorage.getItem(key);
+          if (value !== null) seeded.set(key, value);
+        }
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const snapshot = window.__lumioNativeStorageSnapshot;
+        const snapRaw = snapshot?.["app_profiles"];
+        const localRaw = seeded.get("app_profiles");
+        const revOf = (raw) => {
+          if (!raw) return -1;
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return 0;
+            const rev = Number(parsed?.rev);
+            return Number.isFinite(rev) ? rev : 0;
+          } catch {
+            return -1;
+          }
+        };
+        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
+          seeded.set("app_profiles", snapRaw);
+          try {
+            localStorage.setItem("app_profiles", snapRaw);
+          } catch {
+          }
+        }
+      } catch {
+      }
+    }
+    store = seeded;
+    return seeded;
+  }
+  function getItem(key) {
+    if (typeof window === "undefined") return null;
+    return ensureStore().get(key) ?? null;
+  }
+  var nativeState, store;
+  var init_app_storage = __esm({
+    "lib/app-storage.ts"() {
+      "use client";
+      init_storage_quota();
+      init_storage_cache_keys();
+      nativeState = "unknown";
+      store = null;
+    }
+  });
+
+  // lib/android-source-cache.ts
+  var init_android_source_cache = __esm({
+    "lib/android-source-cache.ts"() {
+      init_app_storage();
+    }
+  });
+
+  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
+  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, onProfileChanged;
+  var init_profile_storage_shim = __esm({
+    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
+      sdk = globalThis.__lumioPluginRuntime?.sdk;
+      getActiveProfileId = () => sdk.getActiveProfileId();
+      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
+      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
+    }
+  });
+
+  // lib/plugin-state.ts
+  function normalizeState(state, fallback) {
+    return {
+      ...fallback,
+      ...state,
+      installed: state?.installed ?? fallback.installed,
+      active: state?.active ?? fallback.active,
+      order: state?.order ?? fallback.order,
+      sourceType: state?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state?.runtimeAvailable ?? fallback.runtimeAvailable
+    };
+  }
+  function readAll() {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = getScopedStorageItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+  function getPluginPersistedState(pluginId, defaultOrder, defaults = {}) {
+    const all = readAll();
+    return normalizeState(all[pluginId], {
+      installed: true,
+      active: true,
+      sourceType: "builtin",
+      runtimeAvailable: true,
+      ...defaults,
+      order: defaults.order ?? defaultOrder
+    });
+  }
+  function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
+    const state = getPluginPersistedState(pluginId, defaultOrder, defaults);
+    return Boolean(state.installed && state.active);
+  }
+  var STORAGE_KEY;
+  var init_plugin_state = __esm({
+    "lib/plugin-state.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      STORAGE_KEY = "lumio:plugin-state";
     }
   });
 
@@ -393,7 +550,10 @@
     getHomeRows: () => getHomeRows,
     getHomeSources: () => getHomeSources,
     getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryFrame: () => getLibraryFrame,
     getLibraryProviders: () => getLibraryProviders,
+    getListSource: () => getListSource,
+    getListSources: () => getListSources,
     getMainMenuItems: () => getMainMenuItems,
     getManagedAuthConsumers: () => getManagedAuthConsumers,
     getMediaDetailsActions: () => getMediaDetailsActions,
@@ -410,6 +570,7 @@
     getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
     getSyncIdentityProviders: () => getSyncIdentityProviders,
     getTopbarItems: () => getTopbarItems,
+    getTrackers: () => getTrackers,
     hasStreamProviders: () => hasStreamProviders,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     registerPlugin: () => registerPlugin,
@@ -484,6 +645,15 @@
         if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
         authCapabilityProviders.push(provider);
       },
+      registerTracker(tracker) {
+        if (trackers.find((entry) => entry.id === tracker.id)) return;
+        trackers.push({ ...tracker, pluginId });
+      },
+      registerListSource(source) {
+        if (listSources.find((entry) => entry.id === source.id)) return;
+        listSources.push({ ...source, pluginId });
+        scheduleRegistryNotify();
+      },
       registerOverviewStatusProvider(provider) {
         if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
         overviewStatusProviders.push({ ...provider, pluginId });
@@ -513,7 +683,7 @@
       },
       registerBootstrap(bootstrap) {
         if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
+        bootstraps.push({ ...bootstrap, pluginId });
       },
       registerHero(hero) {
         if (heroes.find((entry) => entry.id === hero.id)) return;
@@ -525,6 +695,11 @@
           ...homeOverride,
           pluginId
         });
+      },
+      registerLibraryFrame(frame) {
+        if (libraryFrames.find((entry) => entry.id === frame.id)) return;
+        libraryFrames.push({ ...frame, pluginId });
+        scheduleRegistryNotify();
       },
       registerBrowsePage(page) {
         if (browsePages.find((entry) => entry.id === page.id)) return;
@@ -612,6 +787,15 @@
   function getAuthCapabilityProviders() {
     return authCapabilityProviders;
   }
+  function getTrackers() {
+    return trackers;
+  }
+  function getListSources() {
+    return listSources.filter((source) => !source.pluginId || isPluginEnabled(source.pluginId, 0, { installed: true, active: true }));
+  }
+  function getListSource(id) {
+    return getListSources().find((source) => source.id === id) ?? null;
+  }
   function getSettingsSections() {
     return settingsSections;
   }
@@ -628,10 +812,13 @@
     return homeSources;
   }
   function getBootstraps() {
-    return bootstraps;
+    return bootstraps.filter((entry) => !entry.pluginId || isPluginEnabled(entry.pluginId, 0, { installed: true, active: true }));
   }
   function getHeroes() {
     return heroes;
+  }
+  function getLibraryFrame(id) {
+    return libraryFrames.find((entry) => entry.id === id) ?? null;
   }
   function getHomeOverrides() {
     return homeOverrides;
@@ -674,10 +861,11 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, libraryFrames, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
+      init_plugin_state();
       streamProviders = [];
       libraryProviders = [];
       mediaStreamCatalogProviders = [];
@@ -699,10 +887,13 @@
       bootstraps = [];
       heroes = [];
       homeOverrides = [];
+      libraryFrames = [];
       browsePages = [];
       mainMenuItems = [];
       topbarItems = [];
       managedAuthConsumers = [];
+      trackers = [];
+      listSources = [];
       registeredPluginIds = /* @__PURE__ */ new Set();
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
@@ -734,95 +925,13 @@
       import_event = __toESM(require_event());
       init_react_shim();
       init_session_host();
+      init_android_source_cache();
       init_plugin_registry();
       isTauriEnv = detectTauriEnv();
       hasTauriIpc = typeof window !== "undefined" && Boolean(
         window.__TAURI_INTERNALS__ || window.__TAURI__
       );
       isDesktopTauriEnv = isTauriEnv && hasTauriIpc && !(typeof navigator !== "undefined" && /android/i.test(navigator.userAgent));
-    }
-  });
-
-  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, onProfileChanged;
-  var init_profile_storage_shim = __esm({
-    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
-      sdk = globalThis.__lumioPluginRuntime?.sdk;
-      getActiveProfileId = () => sdk.getActiveProfileId();
-      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
-      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
-      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
-    }
-  });
-
-  // lib/storage-quota.ts
-  var init_storage_quota = __esm({
-    "lib/storage-quota.ts"() {
-      "use client";
-      init_app_storage();
-    }
-  });
-
-  // lib/app-storage.ts
-  function ensureStore() {
-    if (store) return store;
-    const seeded = /* @__PURE__ */ new Map();
-    if (typeof window !== "undefined") {
-      const snapshot = window.__lumioNativeStorageSnapshot;
-      if (snapshot) {
-        for (const [key, value] of Object.entries(snapshot)) {
-          seeded.set(key, String(value));
-        }
-      }
-      try {
-        for (let index = 0; index < localStorage.length; index += 1) {
-          const key = localStorage.key(index);
-          if (key === null) continue;
-          const value = localStorage.getItem(key);
-          if (value !== null) seeded.set(key, value);
-        }
-      } catch {
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const snapshot = window.__lumioNativeStorageSnapshot;
-        const snapRaw = snapshot?.["app_profiles"];
-        const localRaw = seeded.get("app_profiles");
-        const revOf = (raw) => {
-          if (!raw) return -1;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return 0;
-            const rev = Number(parsed?.rev);
-            return Number.isFinite(rev) ? rev : 0;
-          } catch {
-            return -1;
-          }
-        };
-        if (snapRaw !== void 0 && revOf(snapRaw) > revOf(localRaw)) {
-          seeded.set("app_profiles", snapRaw);
-          try {
-            localStorage.setItem("app_profiles", snapRaw);
-          } catch {
-          }
-        }
-      } catch {
-      }
-    }
-    store = seeded;
-    return seeded;
-  }
-  function getItem(key) {
-    if (typeof window === "undefined") return null;
-    return ensureStore().get(key) ?? null;
-  }
-  var store;
-  var init_app_storage = __esm({
-    "lib/app-storage.ts"() {
-      "use client";
-      init_storage_quota();
-      store = null;
     }
   });
 
@@ -842,8 +951,8 @@
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
     try {
-      const scoped = getScopedStorageItem(STORAGE_KEY);
-      const legacy = getItem(STORAGE_KEY);
+      const scoped = getScopedStorageItem(STORAGE_KEY2);
+      const legacy = getItem(STORAGE_KEY2);
       const value = scoped ?? legacy;
       if (value === "sv" || value === "en") return value;
     } catch {
@@ -868,7 +977,7 @@
     const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
-        setScopedStorageItem(STORAGE_KEY, l);
+        setScopedStorageItem(STORAGE_KEY2, l);
         setDetachedLang(l);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT));
@@ -879,7 +988,7 @@
     if (!detached) return ctx;
     return detachedValue;
   }
-  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY, DEFAULT_LANG;
+  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG;
   var init_i18n = __esm({
     "lib/i18n.tsx"() {
       "use strict";
@@ -895,9 +1004,14 @@
           releases: "Releases",
           settings: "Settings",
           lastWatched: "Continue watching",
+          nextEpisodesTitle: "Next episode",
+          nextEpisodesTab: "Next episode",
+          nextEpisodesEmpty: "Nothing new to watch next. Finish an episode of a series and the next one shows up here.",
+          homeSourceNextEpisodes: "Next episode",
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
           startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
+          startNextSourceWaiting: "The source didn\u2019t respond \u2014 waiting for more sources\u2026",
           startSlateNext: "The source sent no film \u2014 trying {stream}\u2026",
           startCancel: "Cancel",
           startNoSourceTitle: "No source started",
@@ -1100,6 +1214,8 @@
           showAllMovies: "Show all movies",
           showAllSeries: "Show all series",
           searchPlaceholder: "Search titles or cast names",
+          searchInLibrary: "Search in {name}",
+          searchInYourLibrary: "Search your library",
           searchTitlePlaceholder: "Search title",
           sampleData: "Sample data",
           tmdbLive: "TMDb live",
@@ -1120,7 +1236,6 @@
           liveTvStreamError: "Could not load stream.",
           liveTvStreamErrorHelp: "The stream may be geo-blocked, offline, or unsupported.",
           allCategories: "All categories",
-          sceneReleases: "Scene Releases",
           activeFiltersTitle: "Active filters",
           activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
           activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
@@ -1175,7 +1290,7 @@
           listenedAt: "at",
           streamAvailable: "Cached",
           streamDeviceUnsupported: "unsupported",
-          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio or Dolby Vision) \u2014 expect no sound, or no playback.",
+          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio, Dolby Vision, 4K or HDR) \u2014 expect no sound, no picture, or no playback.",
           streamDownload: "Download",
           startingMovie: "Starting movie...",
           findingMovie: "Finding movie...",
@@ -1203,6 +1318,8 @@
           movieWatchlistAdded: "My list \u2713",
           moreInfo: "More info",
           watchTrailer: "Watch Trailer",
+          shuffleEpisodes: "Shuffle",
+          shuffleEpisodesOn: "Shuffle on",
           openOnImdb: "Open on IMDb",
           seasons: "Seasons:",
           matchedOnTitle: "Matched on title:",
@@ -1233,6 +1350,7 @@
           allSources: "All sources",
           tvSearchTypeTab: "Type",
           tvSearchSpace: "Space",
+          tvSearchSystemKeyboard: "System keyboard",
           tvSearchDelete: "Delete",
           sourcesStillSearching: "Still searching:",
           sourceFilter: "Source",
@@ -1317,18 +1435,14 @@
           dtSeasonsN: "{n} seasons",
           settingsDetailsEyebrow: "Details page",
           sideMenuTitle: "Side menu",
-          sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
-          sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
-          sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
-          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the top bar on desktop and mobile.",
           menuPillPlaceTitle: "Menu pill position",
           menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
           menuPillTopLeft: "Top left",
           menuPillTopRight: "Top right",
           menuPillBottomLeft: "Bottom left",
           menuPillBottomRight: "Bottom right",
-          sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
           vlcToggleTitle: "Open streams directly in VLC",
@@ -1351,6 +1465,8 @@
           appUpdateNotesTitle: "What\u2019s new",
           appUpdatePromptInstall: "Update now",
           appUpdatePromptInstalling: "Updating\u2026",
+          appUpdateDownloading: "Downloading update",
+          appUpdateInstallingStep: "Installing the update \u2013 Lumio will restart",
           appUpdatePromptLater: "Not now",
           appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
           appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -1421,6 +1537,37 @@
           sortHighestTmdb: "Highest TMDb rating",
           sortNewest: "Newest to Oldest",
           sortOldest: "Oldest to Newest",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Browse",
+          browseSummary: "Showing {scope} on {services}, {sort}",
+          browseKindMovies: "movies",
+          browseKindSeries: "series",
+          browseKindTitles: "titles",
+          browseKindAnime: "anime",
+          browseScopeAll: "all {kind}",
+          browseScopeGenres: "{genres} {kind}",
+          browseScopeManyGenres: "{n} genres of {kind}",
+          browseGenresAnd: " and ",
+          browseYearFrom: "from {year}",
+          browseYearTo: "up to {year}",
+          browseYearRange: "from {min}\u2013{max}",
+          browseRatedAtLeast: "rated {n}+",
+          browseEveryService: "every service",
+          browseManyServices: "{n} services",
+          browseSortPopular: "most popular first",
+          browseSortRelevant: "most relevant first",
+          browseSortRating: "highest rated first",
+          browseSortNewest: "newest first",
+          browseSortOldest: "oldest first",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Showing {scope} in {services}, {sort}",
+          browseYourLibrary: "your library",
+          browseManySources: "{n} sources",
+          browseSortAdded: "recently added first",
+          browseSortTitle: "by title A\u2013Z",
+          sortRecentlyAdded: "Recently added",
+          sortTitleAZ: "Title A\u2013Z",
+          filterSource: "Source",
           // Results
           aboutResults: "About",
           results: "results",
@@ -1452,9 +1599,6 @@
           subtitleAlignedToReference: "Synced against a subtitle matching your file",
           subtitleHashMatch: "Matches your file",
           subtitleAlignedToAudio: "Synced against the full audio track",
-          subtitleAnchorApplied: "Synced from your tap",
-          subtitleAnchorDrift: "drift corrected too",
-          subtitleManualSync: "Sync by ear",
           vpSecondarySubFailed: "Could not load the second subtitle",
           vpSecondarySubMissing: "No {lang} subtitle found",
           learningModeTitle: "Learning mode",
@@ -1467,13 +1611,6 @@
           secondarySubtitleLanguageDesc: "Shown under the main subtitle when learning mode is on",
           secondarySubtitleColor: "Second subtitle colour",
           secondarySubtitleColorDesc: "Colour of the second line in learning mode",
-          subtitleManualSyncTapPrompt: "Press when you hear a line you recognise",
-          subtitleManualSyncTapButton: "I hear it now",
-          subtitleManualSyncPickPrompt: "Which line did you just hear?",
-          subtitleManualSyncSecondHint: "Repeat this later in the film to also correct drift.",
-          subtitleManualSyncNoCues: "No subtitle lines near this point.",
-          subtitleManualSyncApplying: "Applying your sync\u2026",
-          subtitleManualSyncRefining: "Fine-tuning against the audio\u2026",
           castTitle: "Play on another device",
           castScanning: "Looking for devices\u2026",
           castNoDevices: "No Chromecast or DLNA devices found.",
@@ -1491,7 +1628,6 @@
           castPairConfirm: "Pair",
           castPairing: "Pairing\u2026",
           castPairFailed: "Pairing failed. Try again.",
-          cancel2: "Cancel",
           subtitleAutoSyncNoReference: "Not certain enough from audio alone. Add an OpenSubtitles API key in Settings to sync against a subtitle matching your file.",
           subtitleAutoSyncFailed: "Could not auto-sync subtitles",
           subtitleAutoSyncDriftApplied: "drift corrected ({rate}s/min)",
@@ -1507,6 +1643,7 @@
           audio: "Audio",
           audioLanguage: "Audio language",
           currentAudioOutput: "Current audio output",
+          audioTrackCommentary: "Commentary",
           info: "Info",
           actor: "Actor",
           readMore: "Read more",
@@ -1599,6 +1736,11 @@
           tvGreetingReleaseToday: "{title} is out now",
           tvGreetingReleaseTomorrow: "{title} arrives tomorrow",
           tvGreetingReleaseSoon: "{title} arrives in {days} days",
+          // Korta former när meddelandet inte ryms bredvid snabbmenyn (tv-clock.tsx).
+          tvGreetingResumeShort: "{minutes} min left \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Out now \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Tomorrow \xB7 {title}",
+          tvGreetingReleaseSoonShort: "In {days} days \xB7 {title}",
           tvGreetingNight: "Still up",
           settingsPageOverview: "Overview",
           settingsPageAccount: "Account & profiles",
@@ -1714,6 +1856,11 @@
           plEditorHiddenEmpty: "Nothing hidden \u2014 click a control and use the eye to hide it.",
           plEditorControl: "Control",
           plEditorOrder: "Order",
+          plEditorFixedPlace: "Has a fixed place in this layout \u2014 it can only be hidden.",
+          plEditorLayoutDesktop: "Desktop",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Phone, landscape",
+          plEditorLayoutPortrait: "Phone, portrait",
           plEditorVisible: "Visible",
           plTimeFormatTitle: "Time format on the seek bar",
           plTimeElapsedTotal: "Elapsed and total",
@@ -1731,6 +1878,64 @@
           plTime: "Time display",
           plSpacer: "Spacer (left/right split)",
           plSegmentBadges: "Intro/outro badges",
+          plEndsAt: "Ends {time}",
+          plGearTitle: "Settings",
+          plGearSkipIntros: "Skip intros & recaps",
+          plSpeedNormal: "Normal",
+          plChapters: "Chapters",
+          plChapterN: "Chapter {n}",
+          plCreditsChapter: "Credits",
+          shortcutsSaveMoment: "Keep this moment",
+          clipTitle: "Clip",
+          clipNew: "New clip",
+          clipZoomed: "Zoomed \xB7 4 min",
+          clipShare: "Share clip",
+          clipShareSection: "Share",
+          clipCopyLink: "Copy link",
+          clipCopyImage: "Copy image",
+          clipSaveFile: "Save file",
+          clipSaveMoment: "Save to moments",
+          clipFrom: "From {time}",
+          clipSendTo: "Send to {phone}",
+          clipPhoneGone: "The phone is no longer connected",
+          clipShowQr: "Show QR code for the link",
+          clipTvNote: "The TV only sends the in and out times. The phone renders and shares.",
+          clipTvCancel: "Cancel with Back",
+          clipTvStill: "Still \xB7 preview in the picture",
+          clipScanQr: "Scan with your phone",
+          clipTvBackCloses: "Back closes",
+          clipSentTo: "Sent to {phone} \xB7 {len} s",
+          clipFrame: "Frame {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 hold 5 s \xB7 OK next \xB7 Back cancels",
+          clipMomentSavedAt: "Moment saved \xB7 {time}",
+          clipSavePhotos: "Save to Photos",
+          clipCancel: "Cancel clip",
+          clipShareNow: "Share now",
+          clipTileLink: "Link",
+          clipTileSave: "Save",
+          clipTileMoment: "Moment",
+          clipSavedPhotos: "Saved to Photos",
+          clipSaveNeedsAndroid10: "Saving to Photos needs Android 10 \u2014 share it instead",
+          clipNewWithLength: "New clip \xB7 {len}",
+          clipRenderingIndeterminate: "Creating clip \u2026",
+          clipFormatStill: "Image",
+          clipRendering: "Creating clip \xB7 {pct} %",
+          clipFailed: "The clip couldn't be created",
+          clipLinkCopied: "Link copied",
+          clipImageCopied: "Image copied",
+          clipSaved: "Clip saved",
+          clipClose: "Close clip",
+          shortcutsClip: "Clip",
+          plMoments: "Moments",
+          plMomentKeep: "Keep this moment",
+          plMomentJump: "Jump",
+          plMomentRemove: "Remove moment",
+          plMomentsClear: "Clear moments",
+          plMomentsEmpty: "No moments yet",
+          plMomentSaved: "Moment kept at {time}",
+          plMomentExists: "There's a moment at {time} already",
+          plMomentUnavailable: "Moments can't be kept for this source",
           plMute: "Mute",
           plVolume: "Volume slider",
           plAudioDelay: "Audio delay",
@@ -1753,6 +1958,8 @@
           btAudioAutoOffset: "Compensate for Bluetooth latency",
           btAudioAutoOffsetDesc: "Wireless audio arrives 100\u2013300 ms late depending on codec. Added to your own delay when the output is wireless.",
           plFullscreen: "Fullscreen",
+          plPip: "Picture-in-picture",
+          plPipMobileOnly: "Phone only",
           plShow: "Show",
           plHide: "Hide",
           settingsTabTheme: "Theme",
@@ -1825,7 +2032,7 @@
           langAppLanguageDesc: "The interface language of Lumio itself.",
           langMetadataLanguage: "Metadata language",
           langRegion: "Region",
-          langRegionDesc: "Country code for availability \u2014 which streaming services and release dates apply.",
+          langRegionDesc: "The country that sets availability \u2014 which streaming services and release dates apply.",
           langMetadataLanguageDesc: "Titles, overviews and taglines from TMDb display in this language when a translation exists.",
           langBehaviorGroup: "AUTO-SELECTION",
           subtitlesOffByDefault: "Start with subtitles off",
@@ -1855,6 +2062,15 @@
           rtInverseTmDesc: "Expands SDR material toward HDR on capable displays.",
           rtHwdec: "Hardware acceleration",
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
+          allowSoftwareDecoding: "Allow software decoding",
+          allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
+          dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "On",
+          dv7AsHdr10Off: "Off",
+          androidSourceCache: "Cache streams",
+          androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
           atEyebrow: "Audio tuning",
           atTitle: "Shape the sound",
@@ -1869,6 +2085,10 @@
           atDownmixDesc: "Folds 5.1/7.1 down to two channels \u2014 laptop speakers and headphones.",
           atEngineNote: "Requires the built-in desktop engine (mpv). Night mode composes on top.",
           vtTitle: "Picture adjustments",
+          vtScopeLabel: "Applies to",
+          vtScopeFilm: "Just this film",
+          vtScopeAll: "All films",
+          vtActive: "On",
           vtHint: "Applies live to an open player and to every playback that follows.",
           vtBrightness: "Brightness",
           vtContrast: "Contrast",
@@ -1880,6 +2100,7 @@
           vtPresetVivid: "Vivid",
           vtPresetCinema: "Cinema dark",
           vtPresetSharp: "Sharp",
+          vtPresetLabel: "Preset",
           vtEngineNote: "Gamma and sharpen require the built-in desktop engine; the browser player applies the rest.",
           sfTabSafety: "Safety",
           sfDisplayEyebrow: "Display",
@@ -2068,6 +2289,13 @@
           homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
           cardShapePoster: "Poster",
           cardShapeLandscape: "Landscape",
+          homeExpandCards: "Expand card on focus",
+          homeCardVhs: "VHS cases",
+          homeCardVhsAuto: "Follow Theme & scale",
+          homeCardVhsOn: "Turn on focus",
+          homeCardVhsShelf: "Turned on the shelf",
+          homeCardVhsOff: "Off",
+          homeExpandCardsHint: "The card in focus widens into a backdrop with logo and facts. Portrait cards only.",
           qrAddonOpen: "Add via phone",
           qrAddonTitle: "Scan with your phone",
           qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
@@ -2104,6 +2332,13 @@
           menuScaleDesc: "Scales only the side menu \u2014 icons and labels \u2014 independently of the interface scale.",
           reduceMotion: "Reduce motion",
           reduceMotionDesc: "Turns off animations and soft transitions throughout the app.",
+          cardSheen: "Shine on cards",
+          cardSheenDesc: "A soft light sweeps across a card when you point at it or select it.",
+          vhsCards: "VHS cases",
+          vhsCardsDesc: "Cards turn like a VHS case and show the title on the spine: when you point at or select them, or all the time like a shelf, straightening up when selected.",
+          vhsModeOff: "Off",
+          vhsModeFocus: "Turn on focus",
+          vhsModeShelf: "Turned on the shelf",
           performanceMode: "Performance mode",
           performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
           heroActionsExpanded: "Always show action labels",
@@ -2116,6 +2351,7 @@
           settingsTabApiKeys: "API keys",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "Sources & addons",
+          settingsTabFolders: "Folders & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "New",
@@ -2210,6 +2446,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (optional)",
           profilePinEnterTitle: "Enter PIN for {name}",
+          slLockWith: "Lock with\u2026",
+          slEyebrow: "{title} \xB7 Series lock",
+          slCreateTitle: "Lock this series with\u2026",
+          slCreateLead: "None of you sees the next episode until the others have seen the previous one.",
+          slYou: "You",
+          slHasPin: "Has PIN",
+          slNoPin: "No PIN",
+          slMode: "Mode",
+          slTogether: "Together",
+          slTogetherHint: "You watch it together. An episode that counts as watched is marked for everyone, whichever profile was on.",
+          slSolo: "Separately",
+          slSoloHint: "Everyone watches on their own profile. Whoever is ahead waits for the others.",
+          slPinToggle: "Require PIN for Watch anyway",
+          slPinOff: "Off: anyone can choose Watch anyway right away.",
+          slPinOn: "Whoever chooses Watch anyway enters their profile PIN.",
+          slPinNone: "None of the selected profiles has a PIN.",
+          slPinPartialOne: "{names} has no PIN and can watch anyway without a code.",
+          slPinPartialMany: "{names} have no PIN and can watch anyway without a code.",
+          slPosMe: "You're on {code}",
+          slPosOther: "{name} is on {code}",
+          slPosMeNotStarted: "You haven't started",
+          slPosOtherNotStarted: "{name} hasn't started",
+          slWaitOne: "You'll wait until {name} has seen {code}.",
+          slWaitMany: "{ahead} will wait until {name} has caught up to {code}.",
+          slOthersWait: "{names} will wait until you've seen {code}.",
+          slSame: "You're on the same episode, {code}. Good start.",
+          slConfirm: "Lock series",
+          slCreatedTogether: "{title} is locked with {names}. You're watching it together.",
+          slCreatedSolo: "{title} is locked with {names}. You'll wait for each other.",
+          slMarker: "Locked with {names} \xB7 {mode}",
+          slManage: "Manage lock",
+          slParticipants: "Participants",
+          slSeenCode: "Seen {code}",
+          slNotStarted: "Not started",
+          slRemoveMember: "Remove",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Nobody has watched ahead yet.",
+          slDone: "Done",
+          slRemoveLock: "Remove lock",
+          slRemoveTitle: "Remove the lock?",
+          slRemoveText: "You'll each watch at your own pace again. Nothing you've watched changes.",
+          slKeep: "Keep the lock",
+          slRemoveLastTitle: "Remove {name}?",
+          slRemoveLastText: "A lock needs at least two. Removing {name} ends the lock on {title} and you'll watch at your own pace again.",
+          slRemovedToast: "The lock is removed. You're back to your own pace.",
+          slLockedTitle: "{code} is locked",
+          slLockedTextOne: "{names} hasn't seen {code} yet.",
+          slLockedTextMany: "{names} haven't seen {code} yet.",
+          slWatchAnyway: "Watch anyway",
+          slFootnote: "{names} will see that you watched ahead.",
+          slFootnotePin: "Watch anyway needs your PIN.",
+          slFootnoteNoPin: "You don't have a PIN, so no code is needed.",
+          slPinTitle: "Enter PIN for {name}",
+          slPinSubtitle: "to watch {code} anyway",
+          slContinueWaiting: "Waiting for {names} \xB7 {code}",
+          slContinueMetaLocked: "Series \xB7 {code} \xB7 Locked",
+          slNextLocked: "Next episode is locked. Waiting for {names}",
+          slClose: "Close",
+          slTogetherToast: "{code} marked as watched for {names}.",
+          slUnlockedToastOne: "{names} has seen {code}. You can carry on.",
+          slUnlockedToastMany: "{names} have seen {code}. You can carry on.",
+          slPlayCode: "Play {code}",
+          slAheadToast: "{name} watched {code} before you.",
+          slOkay: "Okay",
+          slOwnOverrideToast: "You watched {code} before {names}. {names} will see it.",
+          slWaitingForYouOne: "{names} is waiting for you. {next} opens when you've seen {code}.",
+          slWaitingForYouMany: "{names} are waiting for you. {next} opens when you've seen {code}.",
+          slEndedOne: "The lock on {title} has ended. {names} is no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slEndedMany: "The lock on {title} has ended. {names} are no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slNewSeasonOne: "{code} is waiting for {names}. Season {season} starts when {names} has seen {requires}.",
+          slNewSeasonMany: "{code} is waiting for {names}. Season {season} starts when {names} have seen {requires}.",
+          slFinishedTitle: "Finished together",
+          slFinishedText: "You've seen all {count} episodes. The lock isn't needed anymore.",
+          slMyLocksTitle: "Series locks",
+          slMyLocksLead: "Series you've locked with others",
+          slMyLocksEmpty: "Lock a series from its details page with Lock with\u2026",
+          slStatusWaiting: "You're waiting for {names}",
+          slStatusCanContinue: "You can carry on",
+          slStatusInStep: "You're in step",
+          slStatusWaitedOnOne: "{names} is waiting for you",
+          slStatusWaitedOnMany: "{names} are waiting for you",
+          slRowSeenAll: "Seen by everyone",
+          slRowMissingOne: "{names} hasn't seen it",
+          slRowMissingMany: "{names} haven't seen it",
+          slRowNext: "Up next",
+          slRowNextSeenByOne: "Up next \xB7 {names} has seen it",
+          slRowNextSeenByMany: "Up next \xB7 {names} have seen it",
+          slRowWaiting: "Waiting for {names}",
+          slRowLocked: "Locked",
+          slRowAheadOfYou: "{names} watched before you",
+          slRowOverrideMineOne: "You watched anyway \xB7 {names} hasn't seen it",
+          slRowOverrideMineMany: "You watched anyway \xB7 {names} haven't seen it",
+          slGroupMoreOne: "1 more episode waiting",
+          slGroupMoreMany: "{count} more episodes waiting",
+          slGroupMoreHint: "Open one at a time, in step with {names}.",
+          slGroupSeason: "All of season {season} is waiting",
+          slGroupSeasonHint: "Opens one episode at a time after {code}, in step with {names}.",
+          slShow: "Show",
+          slHide: "Hide",
+          slAnd: "and",
           profilePinSetTitle: "Choose a PIN for {name}",
           profilePinCurrentTitle: "Enter the current PIN for {name}",
           profilePinRemoveTitle: "Enter PIN to remove the lock for {name}",
@@ -2701,6 +3038,7 @@
           tvRowFailed: "Could not be loaded",
           tvRowNoRenderer: "Not available in TV mode yet",
           tvQuickPlay: "Play",
+          tvQuickSource: "Source: {source} \u203A",
           tvQuickMarkWatched: "Mark as watched",
           tvQuickUnmarkWatched: "Mark as unwatched",
           tvQuickMoreInfo: "More info",
@@ -2744,6 +3082,29 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestige Drama",
+          homeSourceMoment: "Right now (changes with the moment)",
+          homeSourceComingUp: "Calendar",
+          comingUpTitle: "Coming up",
+          comingUpSubtitle: "From series you follow \xB7 {n}",
+          comingUpAvailableOne: "1 episode available now",
+          comingUpAvailableMany: "{n} episodes available now",
+          comingUpNothingNew: "nothing new right now",
+          comingUpOpenCalendar: "Open calendar",
+          comingUpMissed: "Missed",
+          comingUpToday: "Today",
+          comingUpTomorrow: "Tomorrow",
+          comingUpEpisodesCount: "{n} episodes",
+          comingUpInDays: "in {n} days",
+          comingUpPillAvailable: "Available",
+          comingUpPillMissedAvailable: "Missed \xB7 Available",
+          comingUpPillTonight: "Tonight {time}",
+          comingUpPillWatched: "Watched",
+          comingUpTagPremiere: "Premiere",
+          comingUpTagFinale: "Finale",
+          comingUpShowMissedSetting: "Show missed episodes in Coming up",
+          comingUpShowMissedHint: "Episodes from yesterday you haven't watched yet.",
+          homeSourceMomentMovies: "Right now \xB7 Movies",
+          homeSourceMomentSeries: "Right now \xB7 Series",
           homeSourceAnimeMovies: "Anime Movies",
           homeSourceAnimeTopSeries: "Top Rated Anime",
           homeSourceStreamingServices: "Streaming",
@@ -2784,7 +3145,7 @@
           traktAutoRemoveMovies: "Remove watched movies from the watchlist",
           traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
           traktAutoUnfollowSeries: "Unfollow series you have finished",
-          traktAutoUnfollowSeriesHint: "Removes a series once you have watched its final season in full. Your watch history is kept, so a revived show can come back.",
+          traktAutoUnfollowSeriesHint: "Removes a series only when it has ended and you have watched the last episode. Ongoing series are never removed. Your watch history is kept, so a revived show can come back.",
           // Named per operation: a 420 on history and a 420 on the watchlist are
           // different caps with different fixes, and a bare code taught us nothing.
           traktHistoryRefused: "Trakt would not accept your watch history",
@@ -2913,6 +3274,13 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Remember aspect ratio",
           rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
+          matchFrameRate: "Match frame rate",
+          matchFrameRateDesc: "Switches the TV to the frame rate of what you watch, so motion stops juddering. The screen goes black for a moment when it switches.",
+          matchResolution: "Match resolution too",
+          matchResolutionDesc: "Switches the TV to the resolution of the film (a 1080p film plays in 1080p mode) instead of letting the TV upscale it. Films and episodes only. Most TVs upscale well on their own.",
+          matchFrameRateOff: "Off",
+          matchFrameRateVod: "Films and series",
+          matchFrameRateAll: "Live TV too",
           autoSkipIntro: "Auto-skip intro",
           autoSkipIntroDesc: "When enabled, intros are skipped automatically. When disabled, a Skip intro button is shown if IntroDB has a match.",
           resumePromptEyebrow: "CONTINUE OR START OVER",
@@ -2943,6 +3311,9 @@
           exitAppTitle: "Quit Lumio?",
           exitAppConfirm: "Quit",
           quizMenuLabel: "Film quiz",
+          couchMenuLabel: "Couch mode",
+          couchOpenButton: "Open Couch mode",
+          couchOpenHint: "Control your TV or computer running Lumio from this phone. Both must be on the same wifi.",
           quizLobbyTitle: "Who knows their movies?",
           quizLobbyIntro: "Scan the code with your phone to join. The questions come from movies you have watched.",
           quizOrGoTo: "Or go to",
@@ -2997,6 +3368,104 @@
           quizCreateFailed: "Could not start the quiz. Try again in a moment.",
           quizClose: "Close",
           quizBankError: "Could not build questions. Check the connection and try again.",
+          matchMenuLabel: "Film Match",
+          matchLobbyTitle: "What are we watching?",
+          matchLobbyIntro: "Scan the code and swipe on your phone. When everyone says yes to the same film, it starts.",
+          matchPlayers: "Players",
+          matchPaired: "paired",
+          matchGuest: "Guest",
+          matchRoundLabel: "This round",
+          matchRoundDefault: "20 films from My List and similar titles",
+          matchStart: "Go",
+          matchStartOnPhone: "or press Go on {owner} phone",
+          matchMinTwo: "At least two players",
+          matchRoundEyebrow: "Round %1 \xB7 %2 films",
+          matchOngoing: "In progress",
+          matchSwipeTitle: "Swipe on your phones",
+          matchSwipeIntro: "When everyone says yes to the same film, it's a match. Nobody sees anyone else's answers.",
+          matchNoMatchYet: "No match yet",
+          matchDoneOf: "%1 of %2 have swiped them all",
+          matchPlayerLeft: "Left",
+          matchEyebrow: "Match",
+          matchYouChose: "You chose",
+          matchIt: "It's a match!",
+          matchAllYes: "Everyone said yes",
+          matchPickedBy: "{name} picked \xB7 %1 of %2 said yes",
+          matchStartsIn: "Starting in",
+          matchPreparing: "Getting the stream ready \u2026",
+          matchReady: "Ready",
+          matchPlayNow: "Play now",
+          matchNotThis: "Not this one",
+          matchStarting: "Starting \u2026",
+          matchNone: "No matches this time",
+          matchTop3Intro: "These are the films most of you said yes to. {name} picks on the phone, or pick here.",
+          matchTop3IntroHost: "These are the films most of you said yes to. Pick one here.",
+          matchRank1: "Most yes",
+          matchRank2: "Second",
+          matchRank3: "Third",
+          matchVotes: "%1 of %2 said yes",
+          matchNewRound: "New round",
+          matchCouldNotStart: "Couldn't start",
+          matchNoSource: "Couldn't find a source for {film}",
+          matchBackToCards: "Back to the cards in %1 s",
+          matchEndedTitle: "Film Match ended",
+          matchEndedBody: "The phones have been disconnected from the room.",
+          matchNewMatch: "New Film Match",
+          matchCloseTitle: "Close Film Match?",
+          matchCloseBody: "The phones will be disconnected from the room.",
+          matchKeepGoing: "Keep going",
+          matchCreateFailed: "Could not start Film Match. Try again in a moment.",
+          matchDeckEmpty: "Found no films \u2014 add films to My List and try again.",
+          matchJoinTitle: "What's your name?",
+          matchJoin: "Join",
+          matchWaitingFor: "Waiting for {name} to start",
+          matchUndo: "Undo",
+          matchLeft: "You left Film Match",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "PREDICT THE MATCH \xB7 {league}",
+          tipKickoff: "Kick-off {time}",
+          tipIn: "in {n} min",
+          tipScan: "Scan with the camera, or open Couch mode",
+          tipInSofa: "On the couch",
+          tipCount: "{n} of {m} have predicted",
+          tipHasTipped: "\u2713 Predicted",
+          tipTipping: "Predicting \u2026",
+          tipLobbyHint: "Predictions lock at kick-off. The score is not shown if spoiler protection is on.",
+          tipLockNow: "Lock now",
+          tipCancel: "Cancel",
+          tipPill: "Predict",
+          tipPillAgain: "Press down again",
+          tipManageOverline: "PREDICT THE MATCH",
+          tipShowLobby: "Show lobby",
+          tipRow: "PREDICTIONS",
+          tipFinal: "FULL TIME",
+          tipExact: "EXACT SCORE",
+          tipWinner: "RIGHT WINNER",
+          tipClosest: "CLOSEST OF THE REST",
+          tipDone: "Done",
+          tipSeason: "Season",
+          tipSeasonOverline: "COUCH SEASON \xB7 {n} MATCHES",
+          tipNewSeason: "New season",
+          tipNewSeasonConfirm: "Press again for a new season",
+          tipColName: "NAME",
+          tipColExact: "EXACT",
+          tipColWinner: "WINNER",
+          tipColTonight: "TONIGHT",
+          tipColPoints: "POINTS",
+          tipExactSub: "predicted {tip} \xB7 3 pts",
+          tipWon: "{team} won",
+          tipDraw: "Draw",
+          tipOneOff: "one goal off",
+          tipNOff: "{n} goals off",
+          tipPlusOne: "+1 pt",
+          tipNobody: "Nobody",
+          tipWhyExact: "Exact score",
+          tipWhyWinner: "Right winner",
+          tipWhyWinnerClosest: "Right winner \xB7 closest",
+          tipWhyClosest: "Closest",
+          tipWhyWrong: "Wrong winner",
+          tipCreateFailed: "Could not start Predict the match. Try again in a moment.",
+          matchEnded: "Film Match ended on the TV",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -3085,9 +3554,17 @@
           upgradeSubtitleWhenBetter: "Upgrade subtitles when better ones load",
           upgradeSubtitleWhenBetterDesc: "Swap to a higher-priority subtitle if one arrives after playback starts. Manual picks are never overridden.",
           ipDescRpdb: "Posters with the rating burned in, on every card. Free key at ratingposterdb.com.",
-          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Free key at mdblist.com.",
+          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Uses your MDBList login, or a free key.",
           ipRpdbHint: "With a key set, card posters swap to RPDB rated posters (IMDb-keyed).",
           ipMdblistHint: "Shown as extra badges next to the year on the details page.",
+          ipMdblistViaLogin: "Uses your MDBList login (Tracking services \u2192 Accounts) \u2014 no key needed.",
+          ipMdblistLoginHint: "Easier: connect MDBList under Tracking services \u2192 Accounts, then no key is needed.",
+          hpListChoose: "Choose a list",
+          hpListCategory: "Category",
+          hpListPasteLabel: "Or paste a link or id",
+          hpListLookup: "Find",
+          hpListNotFound: "Couldn't find that list",
+          hpListLoadError: "Couldn't load your lists",
           ratingBadgePosition: "Rating badge position",
           ratingBadgePositionDesc: "Which corner of the poster the score badge sits in.",
           badgePosTr: "Top right",
@@ -3131,6 +3608,21 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          dailyPosterTitle: "Poster of the day",
+          dailyPosterHint: "Your lock screen shows a poster from your watchlist, changed every morning at 6.",
+          dailyPosterToggleTitle: "Poster of the day on the lock screen",
+          dailyPosterToggleDesc: "A quiet morning notification opens the title. When you turn it off, the lock screen shows your home screen wallpaper \u2014 the previous lock screen image can\u2019t be restored. Some manufacturers (Xiaomi, Oppo) may override the lock screen.",
+          dailyPosterOn: "On",
+          dailyPosterOff: "Off",
+          dailyPosterRunNowTitle: "Change now",
+          dailyPosterRunNowDesc: "Pick the next poster right away.",
+          dailyPosterRunNow: "Change now",
+          dailyPosterQueued: "The lock screen changes in a moment.",
+          dailyPosterEmpty: "Your watchlist has no titles with a poster yet.",
+          dailyPosterError: "Could not change: {e}",
+          dailyPosterNotAllowed: "This phone doesn\u2019t let apps change the wallpaper (manufacturer or work policy).",
+          dailyPosterNotificationTitle: "Poster of the day",
+          dailyPosterChannelName: "Poster of the day",
           hapticsTitle: "Feel the bass",
           hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
           hapticsHostToggleTitle: "Allow Feel the bass from a phone",
@@ -3244,6 +3736,7 @@
           plShortMusic: "Music",
           plShortZoom: "Zoom",
           plShortCast: "Cast",
+          plShortPip: "PiP",
           plShortFullscreen: "Fullscreen",
           plShortMore: "More",
           recapFound: "Recap",
@@ -3298,6 +3791,29 @@
           defaultAudioTrackDesc: "Tries to choose the language automatically when multiple audio tracks exist.",
           disableSubtitlesWhenAudioMatches: "Turn off subtitles when audio matches",
           disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
+          subtitleAutoSyncSetting: "Sync subtitles automatically",
+          subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
+          subtitleAutoSyncGroup: "Auto-sync",
+          subtitleSyncFastReadAhead: "Faster sync (uses more data)",
+          subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
+          subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
+          subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
+          subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
+          subtitleAutoSyncOtherEdit: "These subtitles seem to be from a different version of the film. Switch to the file\u2019s own {lang} subtitles?",
+          subtitleAutoSyncOtherEditSwitch: "Switch",
+          subtitleAutoSyncOtherEditKeep: "Keep",
+          subtitleLanguageDetected: "language detected",
+          subtitleForced: "Forced",
+          subtitleSdh: "SDH",
+          subtitleAutoSyncUndo: "Undo",
+          subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
+          subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
+          subtitleAutoSyncAmbiguous: "Auto-sync: couldn't tell for sure \u2014 left as is",
+          subtitleAutoSyncChecking: "Auto-sync: checking\u2026",
+          subtitleAutoSyncNoTextTracks: "Auto-sync: this file has no text subtitles to sync against",
+          subtitleAutoSyncReadingTracks: "Auto-sync: reading the file's subtitles\u2026",
+          subtitleAutoSyncFetchFailed: "Auto-sync: couldn't fetch the subtitles \u2014 left as is",
+          subtitleAutoSyncRefined: "Subtitle sync refined ({offset})",
           subtitleSize: "Subtitle size",
           subtitleSizeDesc: "Used by default for new movies and episodes.",
           subtitleVerticalPositionDesc: "How high above the controls bar the subtitles are placed.",
@@ -3311,8 +3827,23 @@
           subtitleOutlineColorDesc: "Used for the text outline/shadow.",
           resetSubtitleAppearance: "Reset subtitle appearance",
           resetSubtitleAppearanceDesc: "Restores size, position, opacity, colors, background, and outline to defaults.",
-          subtitlePreviewText: "This is how your subtitles will look",
+          subtitlePreviewText: "This is how your subtitles\nwill look",
           subtitlePreviewCaption: "Preview of the default look",
+          subtitleFont: "Font",
+          subtitleFontDesc: "Easier-to-read fonts for subtitles. Picking one also widens the letter spacing, which helps the most. Picture-based subtitles (PGS/VobSub from Blu-ray and DVD) keep their own look.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (recommended)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Letter spacing",
+          subtitleLetterSpacingDesc: "The setting that helps most with dyslexia: letters that sit close together crowd each other. Wider or Widest is a good start.",
+          subtitleLineSpacing: "Line spacing",
+          subtitleLineSpacingDesc: "Space between the lines of a two-line subtitle. In the desktop app it only applies in learning mode \u2014 the built-in player cannot change it.",
+          subtitleSpacingNormal: "Normal",
+          subtitleSpacingWide: "Wide",
+          subtitleSpacingWider: "Wider",
+          subtitleSpacingWidest: "Widest",
+          subtitleBold: "Bold text",
+          subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
           skipIntro: "Skip intro",
           originalFirst: "Original / first",
           noFallback: "No fallback",
@@ -3646,6 +4177,13 @@
           coreStreamsHidden: "{count} streams hidden by quality filters",
           coreStreamsSelectEpisode: "Pick an episode to see its streams.",
           coreStreamsSource: "Source",
+          streamSourceAllSources: "All sources",
+          streamSourceVod: "VOD",
+          streamSourceCloud: "Cloud",
+          streamSourceEpisodeCount: "{n}/{total} ep",
+          streamSourceSeriesHint: "Applies to every episode in this series",
+          streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
+          streamSourceFallback: "E{episode} isn't in {source} \u2014 showing {fallback}",
           coreStreamsCached: "Cached",
           coreStreamsLoading: "Checking sources\u2026",
           streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
@@ -3705,6 +4243,8 @@
           continueLayoutGrid: "Grid",
           /* Settings → Display → Continue watching */
           cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+          cwFramesTitle: "Scene preview on hover",
+          cwFramesDesc: "Saves a frame when you pause or leave a title and shows it when you hover over the card (or focus it on TV).",
           cwModeRows: "Side-scrolling rows",
           cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
           cwModeGrid: "Grid",
@@ -3727,6 +4267,11 @@
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Scanning your library: {name}",
+          libraryScanIndicatorProgress: "{done} of {total} titles",
+          libraryScanIndicatorSoFar: "{done} titles so far",
+          libraryScanIndicatorHint: "Sorting, filters and library rows appear when it is done.",
+          libraryScanUnreachable: "{name} is not responding \u2013 will try again later",
           plexIndexTitle: "Library index",
           plexIndexDesc: "Lumio indexes your Plex libraries locally so the home page, recommendations and Zapp can run entirely on what you own.",
           plexIndexEmpty: "No index yet.",
@@ -3960,12 +4505,75 @@
           hpUpload: "Upload",
           hpHomeEyebrow: "Home page",
           hpSearchFieldTitle: "Search field",
+          startPageTitle: "Start page",
+          startPageHint: "The page the app opens on when it starts. Applies to this kind of device (TV, computer or phone). If the page is no longer available, the app opens on Home.",
+          startPageGroupBuiltIn: "Built-in",
+          startPageGroupPages: "Custom pages",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Top row",
-          hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+          hpTopSlotHint: "What sits at the top centre: a search field, the quick menu or nothing. Movies, Series and the other filter pages always show their filters in a Browse row under the hero.",
+          qmEyebrow: "Quick menu",
+          qmShow: "Show quick menu",
+          qmStyle: "Style",
+          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 7.",
+          qmScrollsTen: "Scrolls \xB7 up to 10 items",
+          qmUpToSix: "Up to 7 items",
+          qmItems: "Items",
+          qmItemsHint: "Pages in the quick menu, in order.",
+          qmItemsPanelHint: "OK on an item to move or remove it.",
+          qmAddPage: "Add page",
+          qmSlotsLeft: "{n} slots left",
+          qmFull: "{style} holds 7. Horizon and Sentence hold 10.",
+          qmHiddenWarn: "{n} items are hidden with {style}. Pick a scrolling style or remove items.",
+          qmHidden: "Hidden",
+          qmReset: "Reset to default",
+          qmOffTitle: "Off",
+          qmOffHint: "Turn it on by choosing Quick menu under Top row.",
+          qmUse: "Use quick menu",
+          qmStyleCurrent: "Style: {style}",
+          qmStyleWhere: "Change the style, or switch to search or filters, under Top row.",
+          hpTopSlotQuick: "Quick menu",
+          qmStyle_horizon: "Horizon",
+          qmStyle_initials: "Initials",
+          qmStyle_constellation: "Constellation",
+          qmStyle_dark: "Dusk",
+          "qmStyle_focus-depth": "Depth of field",
+          qmStyle_sentence: "Sentence",
+          qmStyle_viewfinder: "Viewfinder",
+          qmStyle_tracking: "Tracking",
+          qmStyle_numbers: "Number keys",
+          qmStyle_italic: "Italic",
+          qmSentenceLead: "Show me",
+          qmSentence_search: "to search",
+          qmSentence_movies: "movies",
+          qmSentence_series: "series",
+          qmSentence_continue: "where I left off",
+          qmSentence_live: "live TV",
+          qmSentence_home: "home",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "my watchlist",
+          qmSentence_calendar: "the calendar",
+          qmSentence_releases: "new releases",
+          qmSourceBuiltIn: "Built-in",
+          qmSourceCustomPage: "Custom page",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Position {i} of {n}",
+          qmHiddenWith: "hidden with {style}",
+          qmDone: "Done",
+          qmGroupFilters: "Filters",
+          qmGroupSearch: "Search",
+          qmGroupOther: "Other",
+          qmNew: "New",
+          qmUpTo10: "up to 10",
+          qmResetHint: "Restores the default items for this menu. The style stays.",
+          qmSectionHint: "Shortcuts centred at the top of the home screen.",
+          qmItemsCount: "{n} of {max}",
+          qmHiddenCount: "{n} hidden",
           hpTopSlotFilterPages: "Filters where they apply",
           hpTopSlotFilterAll: "Filters on every page",
           hpTopSlotSearch: "Search field",
-          hpTopSlotNone: "Nothing (filters sit above the grid)",
+          hpTopSlotNone: "Nothing",
           hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
           hpSearchStaysHint: "Search remains available in the top menu",
           hpSearchTopChosenHint: "The search field sits in the top row (see Top row above), so the large field is hidden.",
@@ -3992,6 +4600,7 @@
           sssMoreSeasons: "More seasons",
           sssSeasonN: "Season {num}",
           sssEpisodesWord: "episodes",
+          sssEpisodesShort: "ep",
           sssMarkSeasonUnwatchedTitle: "Mark whole season unwatched",
           sssMarkSeasonWatchedTitle: "Mark whole season watched",
           sssSeasonWatched: "Season watched",
@@ -4415,6 +5024,61 @@
           profGxConstellations: "Constellations",
           profGxZones: "Dark zones",
           settingsPageProfilePage: "Profile page",
+          settingsPagePairedPhones: "Paired phones",
+          couchEyebrow: "COUCH MODE",
+          couchTitle: "Phones that control Lumio",
+          couchHint: "Your phone becomes a remote, shows info about what's playing and sends ratings to the profile's Trakt. Home network only.",
+          couchPairNew: "Pair new phone",
+          couchColPhone: "PHONE",
+          couchColProfile: "PROFILE",
+          couchColLastSeen: "LAST CONNECTED",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID APP",
+          couchSubPwa: "iPhone \xB7 launched from the home screen",
+          couchSubAndroid: "Lumio for Android \xB7 Feel the bass",
+          couchRemove: "Remove",
+          couchCancel: "Cancel",
+          couchRemoveConfirm: "Remove {name}? The phone stops working right away and has to be paired again with a new code.",
+          couchFootnote: "The profile decides whose Trakt account ratings and history go to. Feel the bass is only available on phones with Lumio for Android.",
+          couchHapticsTitle: "Feel the bass",
+          couchHapticsHint: "The phone vibrates in time with the film's bass hits. Moved here from Playback.",
+          couchHapticsSensHint: "How faint the bass hits that count.",
+          couchHapticsStrength: "Strength",
+          couchHapticsSync: "Early / late",
+          couchHapticsSyncHint: "Shift the vibration if it arrives too early or too late.",
+          couchHapticsLegacy: "Re-pair with Couch mode to control Feel the bass here",
+          couchHapticsLiveHint: "Strength and timing apply when Couch mode is open on the phone.",
+          couchEmptyTitle: "No phones paired yet",
+          couchDialogInstr: "**Scan with the phone camera** and open the page \u2014 on iPhone, add it to the Home Screen. **Lumio app on Android:** open Couch mode, pick this computer and enter the code.",
+          couchWaiting: "Waiting for the phone \u2026",
+          couchClosesIn: "Closes in {time}",
+          couchNewCode: "New code",
+          couchPaired: "{name} is paired",
+          couchPairedSub: "Profile {profile} \xB7 closes by itself",
+          couchExpiredTitle: "The code has expired",
+          couchExpiredBody: "The code window is only open for two minutes so nobody else on the network can pair. Get a new code and try again.",
+          couchNewBadge: "New",
+          couchPortError: "Port 3012 is busy: {error}",
+          couchBundleMissing: "The phone page is missing from this app build.",
+          couchTvPairHint: "Shows a code and a QR code for two minutes",
+          couchTvEyebrow: "PHONES",
+          couchTvSubAndroid: "Android app \xB7 Profile {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profile {profile}",
+          couchTvNoProfile: "no profile",
+          couchTvDetailSub: "{kind} \xB7 Last connected: {when}",
+          couchTvKindAndroid: "Android app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "CODE",
+          couchTvCodeInstr: "iPhone: scan the QR code. Android: enter the code in the app.",
+          couchTvWaiting: "Waiting for the phone",
+          couchTvClosesIn: "Closes in {time}",
+          couchTvClose: "Close",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "No Trakt",
+          couchTvRemovePhone: "Remove the phone",
+          couchTvRemoveTitle: "Remove {name}?",
+          couchTvRemoveBody: "The phone stops working right away and has to be paired again with a new code. Ratings already sent to Trakt stay.",
+          couchTvEmptyHint: "No phones paired yet",
           ppWeatherGroup: "Weather in the diary",
           ppWeatherToggle: "Record the weather",
           ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
@@ -4499,9 +5163,14 @@
           releases: "Releases",
           settings: "Inst\xE4llningar",
           lastWatched: "Forts\xE4tt titta",
+          nextEpisodesTitle: "N\xE4sta avsnitt",
+          nextEpisodesTab: "N\xE4sta avsnitt",
+          nextEpisodesEmpty: "Inget nytt att se h\xE4rn\xE4st. Se klart ett avsnitt av en serie s\xE5 hamnar n\xE4sta h\xE4r.",
+          homeSourceNextEpisodes: "N\xE4sta avsnitt",
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
           startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
+          startNextSourceWaiting: "K\xE4llan svarade inte \u2014 v\xE4ntar in fler k\xE4llor\u2026",
           startSlateNext: "K\xE4llan skickade ingen film \u2014 provar {stream}\u2026",
           startCancel: "Avbryt",
           startNoSourceTitle: "Ingen k\xE4lla startade",
@@ -4701,6 +5370,8 @@
           showAllMovies: "Visa alla filmer",
           showAllSeries: "Visa alla serier",
           searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
+          searchInLibrary: "S\xF6k i {name}",
+          searchInYourLibrary: "S\xF6k i ditt bibliotek",
           searchTitlePlaceholder: "S\xF6k titel",
           sampleData: "Exempeldata",
           tmdbLive: "TMDb live",
@@ -4721,7 +5392,6 @@
           liveTvStreamError: "Kunde inte ladda str\xF6mmen.",
           liveTvStreamErrorHelp: "Str\xF6mmen kan vara geoblockerad, offline eller ej st\xF6dd.",
           allCategories: "Alla kategorier",
-          sceneReleases: "Scene-releaser",
           activeFiltersTitle: "Aktiva filter",
           activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
           activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
@@ -4776,7 +5446,7 @@
           listenedAt: "vid",
           streamAvailable: "Cachad",
           streamDeviceUnsupported: "st\xF6ds ej",
-          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud eller Dolby Vision) \u2014 r\xE4kna med inget ljud, eller ingen uppspelning.",
+          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud, Dolby Vision, 4K eller HDR) \u2014 r\xE4kna med inget ljud, ingen bild eller ingen uppspelning.",
           streamDownload: "Ladda ned",
           startingMovie: "Startar film...",
           findingMovie: "Hittar film...",
@@ -4804,6 +5474,8 @@
           movieWatchlistAdded: "Min lista \u2713",
           moreInfo: "Mer info",
           watchTrailer: "Se trailer",
+          shuffleEpisodes: "Blanda",
+          shuffleEpisodesOn: "Blandar",
           openOnImdb: "\xD6ppna p\xE5 IMDb",
           seasons: "S\xE4songer:",
           matchedOnTitle: "Matchad p\xE5 titel:",
@@ -4834,6 +5506,7 @@
           allSources: "Alla k\xE4llor",
           tvSearchTypeTab: "Skriv",
           tvSearchSpace: "Mellanslag",
+          tvSearchSystemKeyboard: "Systemets tangentbord",
           tvSearchDelete: "Radera",
           sourcesStillSearching: "S\xF6ker fortfarande:",
           sourceFilter: "K\xE4lla",
@@ -4918,18 +5591,14 @@
           dtSeasonsN: "{n} s\xE4songer",
           settingsDetailsEyebrow: "Detaljsidan",
           sideMenuTitle: "Sidomeny",
-          sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
-          sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
-          sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
-          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter toppraden p\xE5 skrivbord och mobil.",
           menuPillPlaceTitle: "Menypillrets placering",
           menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
           menuPillTopLeft: "Uppe till v\xE4nster",
           menuPillTopRight: "Uppe till h\xF6ger",
           menuPillBottomLeft: "Nere till v\xE4nster",
           menuPillBottomRight: "Nere till h\xF6ger",
-          sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
           vlcToggleTitle: "\xD6ppna streams direkt i VLC",
@@ -4952,6 +5621,8 @@
           appUpdateNotesTitle: "Nyheter i den h\xE4r versionen",
           appUpdatePromptInstall: "Uppdatera nu",
           appUpdatePromptInstalling: "Uppdaterar\u2026",
+          appUpdateDownloading: "Laddar ner uppdateringen",
+          appUpdateInstallingStep: "Installerar uppdateringen \u2013 Lumio startar om",
           appUpdatePromptLater: "Inte nu",
           appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
           appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
@@ -5022,6 +5693,37 @@
           sortHighestTmdb: "H\xF6gst TMDb-betyg",
           sortNewest: "Nyast till \xE4ldst",
           sortOldest: "\xC4ldst till nyast",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Bl\xE4ddra",
+          browseSummary: "Visar {scope} p\xE5 {services}, {sort}",
+          browseKindMovies: "filmer",
+          browseKindSeries: "serier",
+          browseKindTitles: "titlar",
+          browseKindAnime: "animetitlar",
+          browseScopeAll: "alla {kind}",
+          browseScopeGenres: "{kind} inom {genres}",
+          browseScopeManyGenres: "{kind} inom {n} genrer",
+          browseGenresAnd: " och ",
+          browseYearFrom: "fr\xE5n {year}",
+          browseYearTo: "till och med {year}",
+          browseYearRange: "fr\xE5n {min}\u2013{max}",
+          browseRatedAtLeast: "med betyg {n}+",
+          browseEveryService: "alla tj\xE4nster",
+          browseManyServices: "{n} tj\xE4nster",
+          browseSortPopular: "mest popul\xE4ra f\xF6rst",
+          browseSortRelevant: "mest relevanta f\xF6rst",
+          browseSortRating: "h\xF6gst betyg f\xF6rst",
+          browseSortNewest: "nyast f\xF6rst",
+          browseSortOldest: "\xE4ldst f\xF6rst",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Visar {scope} i {services}, {sort}",
+          browseYourLibrary: "ditt bibliotek",
+          browseManySources: "{n} k\xE4llor",
+          browseSortAdded: "senast tillagda f\xF6rst",
+          browseSortTitle: "efter titel A\u2013\xD6",
+          sortRecentlyAdded: "Senast tillagda",
+          sortTitleAZ: "Titel A\u2013\xD6",
+          filterSource: "K\xE4lla",
           // Results
           aboutResults: "Ungef\xE4r",
           results: "resultat",
@@ -5053,9 +5755,6 @@
           subtitleAlignedToReference: "Synkad mot en undertext som matchar din fil",
           subtitleHashMatch: "Matchar din fil",
           subtitleAlignedToAudio: "Synkad mot hela ljudsp\xE5ret",
-          subtitleAnchorApplied: "Synkad fr\xE5n din markering",
-          subtitleAnchorDrift: "drift korrigerad ocks\xE5",
-          subtitleManualSync: "Synka p\xE5 geh\xF6r",
           vpSecondarySubFailed: "Kunde inte ladda andraspr\xE5ket",
           vpSecondarySubMissing: "Inget undertextsp\xE5r p\xE5 {lang} hittades",
           learningModeTitle: "Inl\xE4rningsl\xE4ge",
@@ -5068,13 +5767,6 @@
           secondarySubtitleLanguageDesc: "Visas under huvudtexten n\xE4r inl\xE4rningsl\xE4get \xE4r p\xE5",
           secondarySubtitleColor: "Andraspr\xE5kets f\xE4rg",
           secondarySubtitleColorDesc: "F\xE4rg p\xE5 den andra raden i inl\xE4rningsl\xE4get",
-          subtitleManualSyncTapPrompt: "Tryck n\xE4r du h\xF6r en replik du k\xE4nner igen",
-          subtitleManualSyncTapButton: "Jag h\xF6r den nu",
-          subtitleManualSyncPickPrompt: "Vilken rad h\xF6rde du nyss?",
-          subtitleManualSyncSecondHint: "G\xF6r om det senare i filmen f\xF6r att \xE4ven r\xE4tta driften.",
-          subtitleManualSyncNoCues: "Inga undertextrader n\xE4ra den h\xE4r punkten.",
-          subtitleManualSyncApplying: "Till\xE4mpar din synkning\u2026",
-          subtitleManualSyncRefining: "Finjusterar mot ljudet\u2026",
           castTitle: "Spela p\xE5 annan enhet",
           castScanning: "S\xF6ker efter enheter\u2026",
           castNoDevices: "Inga Chromecast- eller DLNA-enheter hittades.",
@@ -5092,7 +5784,6 @@
           castPairConfirm: "Parkoppla",
           castPairing: "Parkopplar\u2026",
           castPairFailed: "Parkopplingen misslyckades. F\xF6rs\xF6k igen.",
-          cancel2: "Avbryt",
           subtitleAutoSyncNoReference: "Inte s\xE4ker nog utifr\xE5n bara ljudet. L\xE4gg in en OpenSubtitles API-nyckel i Inst\xE4llningar f\xF6r att synka mot en undertext som matchar din fil.",
           subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
           subtitleAutoSyncDriftApplied: "drift korrigerad ({rate}s/min)",
@@ -5108,6 +5799,7 @@
           audio: "Ljud",
           audioLanguage: "Ljudspr\xE5k",
           currentAudioOutput: "Aktuellt ljudl\xE4ge",
+          audioTrackCommentary: "Kommentar",
           info: "Info",
           actor: "Sk\xE5dis",
           readMore: "L\xE4s mer",
@@ -5199,6 +5891,10 @@
           tvGreetingReleaseToday: "{title} finns nu",
           tvGreetingReleaseTomorrow: "{title} sl\xE4pps imorgon",
           tvGreetingReleaseSoon: "{title} sl\xE4pps om {days} dagar",
+          tvGreetingResumeShort: "{minutes} min kvar \xB7 {title}",
+          tvGreetingReleaseTodayShort: "Nu \xB7 {title}",
+          tvGreetingReleaseTomorrowShort: "Imorgon \xB7 {title}",
+          tvGreetingReleaseSoonShort: "Om {days} dagar \xB7 {title}",
           tvGreetingNight: "Fortfarande vaken",
           settingsPageOverview: "\xD6versikt",
           settingsPageAccount: "Konto & profiler",
@@ -5314,6 +6010,11 @@
           plEditorHiddenEmpty: "Inget dolt \u2014 klicka p\xE5 en kontroll och anv\xE4nd \xF6gat f\xF6r att d\xF6lja den.",
           plEditorControl: "Kontroll",
           plEditorOrder: "Ordning",
+          plEditorFixedPlace: "Har en fast plats i det h\xE4r lagret \u2014 den kan bara d\xF6ljas.",
+          plEditorLayoutDesktop: "Skrivbord",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Telefon, liggande",
+          plEditorLayoutPortrait: "Telefon, st\xE5ende",
           plEditorVisible: "Synlig",
           plTimeFormatTitle: "Tidsformat p\xE5 s\xF6kraden",
           plTimeElapsedTotal: "F\xF6rfluten och total",
@@ -5331,6 +6032,64 @@
           plTime: "Tidsvisning",
           plSpacer: "Mellanrum (v\xE4nster/h\xF6ger-delning)",
           plSegmentBadges: "Intro/outro-m\xE4rken",
+          plEndsAt: "Slutar {time}",
+          plGearTitle: "Inst\xE4llningar",
+          plGearSkipIntros: "Hoppa \xF6ver intro och recap",
+          plSpeedNormal: "Normal",
+          plChapters: "Kapitel",
+          plChapterN: "Kapitel {n}",
+          plCreditsChapter: "Eftertexter",
+          shortcutsSaveMoment: "Spara \xF6gonblick",
+          clipTitle: "Klipp",
+          clipNew: "Nytt klipp",
+          clipZoomed: "Inzoomat \xB7 4 min",
+          clipShare: "Dela klipp",
+          clipShareSection: "Dela",
+          clipCopyLink: "Kopiera l\xE4nk",
+          clipCopyImage: "Kopiera bild",
+          clipSaveFile: "Spara fil",
+          clipSaveMoment: "Spara bland \xF6gonblick",
+          clipFrom: "Fr\xE5n {time}",
+          clipSendTo: "Skicka till {phone}",
+          clipPhoneGone: "Telefonen \xE4r inte l\xE4ngre ansluten",
+          clipShowQr: "Visa QR-kod f\xF6r l\xE4nken",
+          clipTvNote: "TV:n skickar bara in- och ut-tid. Telefonen renderar och delar.",
+          clipTvCancel: "Avbryt med Bak\xE5t",
+          clipTvStill: "Stillbild \xB7 f\xF6rhandsvisning i bilden",
+          clipScanQr: "Skanna med telefonen",
+          clipTvBackCloses: "Bak\xE5t st\xE4nger",
+          clipSentTo: "Skickat till {phone} \xB7 {len} s",
+          clipFrame: "Bildruta {time}",
+          clipLoopChip: "Loop \xB7 {len} s",
+          clipTvKeys: "\u2190 \u2192 \xB11 s \xB7 h\xE5ll 5 s \xB7 OK n\xE4sta \xB7 Bak\xE5t avbryter",
+          clipMomentSavedAt: "\xD6gonblick sparat \xB7 {time}",
+          clipSavePhotos: "Spara i Bilder",
+          clipCancel: "Avbryt klipp",
+          clipShareNow: "Dela nu",
+          clipTileLink: "L\xE4nk",
+          clipTileSave: "Spara",
+          clipTileMoment: "\xD6gonblick",
+          clipSavedPhotos: "Sparat i Bilder",
+          clipSaveNeedsAndroid10: "Spara i Bilder kr\xE4ver Android 10 \u2014 dela i st\xE4llet",
+          clipNewWithLength: "Nytt klipp \xB7 {len}",
+          clipRenderingIndeterminate: "Skapar klipp \u2026",
+          clipFormatStill: "Bild",
+          clipRendering: "Skapar klipp \xB7 {pct} %",
+          clipFailed: "Klippet kunde inte skapas",
+          clipLinkCopied: "L\xE4nk kopierad",
+          clipImageCopied: "Bild kopierad",
+          clipSaved: "Klippet sparat",
+          clipClose: "St\xE4ng klipp",
+          shortcutsClip: "Klipp",
+          plMoments: "\xD6gonblick",
+          plMomentKeep: "Spara detta \xF6gonblick",
+          plMomentJump: "Hoppa",
+          plMomentRemove: "Ta bort \xF6gonblick",
+          plMomentsClear: "Rensa \xF6gonblick",
+          plMomentsEmpty: "Inga \xF6gonblick \xE4n",
+          plMomentSaved: "\xD6gonblick sparat vid {time}",
+          plMomentExists: "Det finns redan ett \xF6gonblick vid {time}",
+          plMomentUnavailable: "\xD6gonblick kan inte sparas f\xF6r den h\xE4r k\xE4llan",
           plMute: "Ljud av",
           plVolume: "Volymreglage",
           plAudioDelay: "Ljudf\xF6rdr\xF6jning",
@@ -5353,6 +6112,8 @@
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
           btAudioAutoOffsetDesc: "Tr\xE5dl\xF6st ljud kommer 100\u2013300 ms f\xF6r sent beroende p\xE5 kodek. L\xE4ggs p\xE5 din egen f\xF6rdr\xF6jning n\xE4r utg\xE5ngen \xE4r tr\xE5dl\xF6s.",
           plFullscreen: "Helsk\xE4rm",
+          plPip: "Bild-i-bild",
+          plPipMobileOnly: "Bara mobil",
           plShow: "Visa",
           plHide: "D\xF6lj",
           settingsTabTheme: "Tema",
@@ -5425,7 +6186,7 @@
           langAppLanguageDesc: "Spr\xE5ket i sj\xE4lva Lumio-gr\xE4nssnittet.",
           langMetadataLanguage: "Metadataspr\xE5k",
           langRegion: "Region",
-          langRegionDesc: "Landskod f\xF6r tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
+          langRegionDesc: "Landet som styr tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
           langMetadataLanguageDesc: "Titlar, beskrivningar och taglines fr\xE5n TMDb visas p\xE5 detta spr\xE5k n\xE4r \xF6vers\xE4ttning finns.",
           langBehaviorGroup: "AUTOVAL",
           subtitlesOffByDefault: "Starta med undertexter av",
@@ -5455,6 +6216,15 @@
           rtInverseTmDesc: "Expanderar SDR-material mot HDR p\xE5 kapabla sk\xE4rmar.",
           rtHwdec: "H\xE5rdvaruacceleration",
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
+          allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
+          allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          dv7AsHdr10: "Dolby Vision profil 7: spela som HDR10",
+          dv7AsHdr10Desc: "Spelar HDR10-basen i Dolby Vision profil 7 (UHD Blu-ray-remuxar) i st\xE4llet f\xF6r Dolby Vision. Undviker fel f\xE4rger (gr\xF6nt eller lila stick, \xF6versaturerad hud) p\xE5 enheter som avkodar profil 7 d\xE5ligt. Auto sl\xE5r p\xE5 det f\xF6r Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "P\xE5",
+          dv7AsHdr10Off: "Av",
+          androidSourceCache: "Mellanlagra str\xF6mmar",
+          androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
           atEyebrow: "Ljudjustering",
           atTitle: "Forma ljudet",
@@ -5469,6 +6239,10 @@
           atDownmixDesc: "F\xE4ller ihop 5.1/7.1 till tv\xE5 kanaler \u2014 laptoph\xF6gtalare och h\xF6rlurar.",
           atEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv). Nattl\xE4get l\xE4ggs ovanp\xE5.",
           vtTitle: "Bildjusteringar",
+          vtScopeLabel: "G\xE4ller",
+          vtScopeFilm: "Bara den h\xE4r filmen",
+          vtScopeAll: "Alla filmer",
+          vtActive: "P\xE5",
           vtHint: "G\xE4ller live i en \xF6ppen spelare och f\xF6r all uppspelning fram\xE5t.",
           vtBrightness: "Ljusstyrka",
           vtContrast: "Kontrast",
@@ -5480,6 +6254,7 @@
           vtPresetVivid: "Levande",
           vtPresetCinema: "Bio-m\xF6rkt",
           vtPresetSharp: "Skarp",
+          vtPresetLabel: "F\xF6rval",
           vtEngineNote: "Gamma och sk\xE4rpa kr\xE4ver den inbyggda desktop-motorn; webbspelaren till\xE4mpar resten.",
           sfTabSafety: "S\xE4kerhet",
           sfDisplayEyebrow: "Visning",
@@ -5665,6 +6440,13 @@
           homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
           cardShapePoster: "St\xE5ende",
           cardShapeLandscape: "Liggande",
+          homeExpandCards: "F\xE4ll ut kort vid fokus",
+          homeCardVhs: "VHS-fodral",
+          homeCardVhsAuto: "F\xF6lj Tema & skala",
+          homeCardVhsOn: "Vrids vid fokus",
+          homeCardVhsShelf: "Vridna i hyllan",
+          homeCardVhsOff: "Av",
+          homeExpandCardsHint: "Kortet i fokus breddas till en bakgrundsbild med logga och fakta. Bara st\xE5ende kort.",
           qrAddonOpen: "L\xE4gg till via mobilen",
           qrAddonTitle: "Skanna med mobilen",
           qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
@@ -5701,6 +6483,13 @@
           menuScaleDesc: "Skalar bara sidomenyn \u2014 ikoner och etiketter \u2014 oberoende av gr\xE4nssnittsskalan.",
           reduceMotion: "Minska r\xF6relse",
           reduceMotionDesc: "St\xE4nger av animationer och mjuka \xF6verg\xE5ngar i hela appen.",
+          cardSheen: "Bl\xE4nk p\xE5 korten",
+          cardSheenDesc: "Ett mjukt ljus sveper \xF6ver ett kort n\xE4r du pekar p\xE5 det eller v\xE4ljer det.",
+          vhsCards: "VHS-fodral",
+          vhsCardsDesc: "Korten vrids som ett VHS-fodral med titeln p\xE5 ryggen: n\xE4r du pekar p\xE5 eller v\xE4ljer dem, eller hela tiden som i en hylla och r\xE4tas upp n\xE4r de v\xE4ljs.",
+          vhsModeOff: "Av",
+          vhsModeFocus: "Vrids vid fokus",
+          vhsModeShelf: "Vridna i hyllan",
           performanceMode: "Prestandal\xE4ge",
           performanceModeDesc: "F\xF6r svagare tv-boxar: tar bort osk\xE4rpa och skuggor bakom menyer och kort, och l\xE5ter inte heron spela trailern av sig sj\xE4lv. Inget f\xF6rsvinner ur gr\xE4nssnittet.",
           heroActionsExpanded: "Visa alltid \xE5tg\xE4rdernas namn",
@@ -5713,6 +6502,7 @@
           settingsTabApiKeys: "API-nycklar",
           settingsTabAddons: "Addons",
           settingsTabSourcesMain: "K\xE4llor & addons",
+          settingsTabFolders: "Mappar & WebDAV",
           settingsTabScrapers: "Scrapers",
           settingsTabPlugins: "Plugins",
           cardTagNew: "Nyhet",
@@ -5805,6 +6595,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (valfritt)",
           profilePinEnterTitle: "Ange PIN f\xF6r {name}",
+          slLockWith: "L\xE5s med\u2026",
+          slEyebrow: "{title} \xB7 Seriel\xE5s",
+          slCreateTitle: "L\xE5s serien med\u2026",
+          slCreateLead: "Ingen av er ser n\xE4sta avsnitt f\xF6rr\xE4n de andra har sett det f\xF6reg\xE5ende.",
+          slYou: "Du",
+          slHasPin: "Har PIN",
+          slNoPin: "Ingen PIN",
+          slMode: "L\xE4ge",
+          slTogether: "Tillsammans",
+          slTogetherHint: "Ni ser serien ihop. Ett avsnitt som r\xE4knas som sett markeras f\xF6r alla, oavsett vems profil som var p\xE5.",
+          slSolo: "Var f\xF6r sig",
+          slSoloHint: "Var och en tittar p\xE5 sin egen profil. Den som ligger f\xF6re v\xE4ntar in de andra.",
+          slPinToggle: "Kr\xE4v PIN f\xF6r Titta \xE4nd\xE5",
+          slPinOff: "Av: alla kan v\xE4lja Titta \xE4nd\xE5 direkt.",
+          slPinOn: "Den som v\xE4ljer Titta \xE4nd\xE5 anger sin profil-PIN.",
+          slPinNone: "Ingen av de valda profilerna har en PIN.",
+          slPinPartialOne: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPinPartialMany: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPosMe: "Du \xE4r p\xE5 {code}",
+          slPosOther: "{name} \xE4r p\xE5 {code}",
+          slPosMeNotStarted: "Du har inte b\xF6rjat",
+          slPosOtherNotStarted: "{name} har inte b\xF6rjat",
+          slWaitOne: "Du f\xE5r v\xE4nta tills {name} har sett {code}.",
+          slWaitMany: "{ahead} f\xE5r v\xE4nta tills {name} har kommit ikapp till {code}.",
+          slOthersWait: "{names} f\xE5r v\xE4nta tills du har sett {code}.",
+          slSame: "Ni \xE4r p\xE5 samma avsnitt, {code}. Bra start.",
+          slConfirm: "L\xE5s serien",
+          slCreatedTogether: "{title} \xE4r l\xE5st med {names}. Ni ser den tillsammans.",
+          slCreatedSolo: "{title} \xE4r l\xE5st med {names}. Ni v\xE4ntar in varandra.",
+          slMarker: "L\xE5st med {names} \xB7 {mode}",
+          slManage: "Hantera l\xE5s",
+          slParticipants: "Deltagare",
+          slSeenCode: "Har sett {code}",
+          slNotStarted: "Har inte b\xF6rjat",
+          slRemoveMember: "Ta bort",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Ingen har tittat \xE4nd\xE5 \xE4n.",
+          slDone: "Klar",
+          slRemoveLock: "Ta bort l\xE5s",
+          slRemoveTitle: "Ta bort l\xE5set?",
+          slRemoveText: "Ni tittar i egen takt igen. Inget ni har sett \xE4ndras.",
+          slKeep: "Beh\xE5ll l\xE5set",
+          slRemoveLastTitle: "Ta bort {name}?",
+          slRemoveLastText: "Ett l\xE5s beh\xF6ver minst tv\xE5. Tar du bort {name} upph\xF6r l\xE5set p\xE5 {title}, och ni tittar i egen takt igen.",
+          slRemovedToast: "L\xE5set \xE4r borttaget. Ni tittar i egen takt igen.",
+          slLockedTitle: "{code} \xE4r l\xE5st",
+          slLockedTextOne: "{names} har inte sett {code} \xE4n.",
+          slLockedTextMany: "{names} har inte sett {code} \xE4n.",
+          slWatchAnyway: "Titta \xE4nd\xE5",
+          slFootnote: "{names} ser att du tittade f\xF6re.",
+          slFootnotePin: "Titta \xE4nd\xE5 kr\xE4ver din PIN.",
+          slFootnoteNoPin: "Du har ingen PIN, s\xE5 ingen kod beh\xF6vs.",
+          slPinTitle: "Ange PIN f\xF6r {name}",
+          slPinSubtitle: "f\xF6r att titta p\xE5 {code} \xE4nd\xE5",
+          slContinueWaiting: "V\xE4ntar p\xE5 {names} \xB7 {code}",
+          slContinueMetaLocked: "Serie \xB7 {code} \xB7 L\xE5st",
+          slNextLocked: "N\xE4sta avsnitt \xE4r l\xE5st. V\xE4ntar p\xE5 {names}",
+          slClose: "St\xE4ng",
+          slTogetherToast: "{code} markerat som sett f\xF6r {names}.",
+          slUnlockedToastOne: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slUnlockedToastMany: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slPlayCode: "Spela {code}",
+          slAheadToast: "{name} tittade p\xE5 {code} f\xF6re dig.",
+          slOkay: "Okej",
+          slOwnOverrideToast: "Du tittade p\xE5 {code} f\xF6re {names}. {names} f\xE5r se det.",
+          slWaitingForYouOne: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slWaitingForYouMany: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slEndedOne: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slEndedMany: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slNewSeasonOne: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slNewSeasonMany: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slFinishedTitle: "Klart ihop",
+          slFinishedText: "Ni har sett alla {count} avsnitt. L\xE5set beh\xF6vs inte l\xE4ngre.",
+          slMyLocksTitle: "Seriel\xE5s",
+          slMyLocksLead: "Serier du har l\xE5st med andra",
+          slMyLocksEmpty: "L\xE5s en serie fr\xE5n dess detaljsida med L\xE5s med\u2026",
+          slStatusWaiting: "Du v\xE4ntar p\xE5 {names}",
+          slStatusCanContinue: "Du kan forts\xE4tta",
+          slStatusInStep: "Ni \xE4r i fas",
+          slStatusWaitedOnOne: "{names} v\xE4ntar p\xE5 dig",
+          slStatusWaitedOnMany: "{names} v\xE4ntar p\xE5 dig",
+          slRowSeenAll: "Sett av alla",
+          slRowMissingOne: "{names} har inte sett",
+          slRowMissingMany: "{names} har inte sett",
+          slRowNext: "N\xE4sta",
+          slRowNextSeenByOne: "N\xE4sta \xB7 {names} har sett",
+          slRowNextSeenByMany: "N\xE4sta \xB7 {names} har sett",
+          slRowWaiting: "V\xE4ntar p\xE5 {names}",
+          slRowLocked: "L\xE5st",
+          slRowAheadOfYou: "{names} tittade f\xF6re dig",
+          slRowOverrideMineOne: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slRowOverrideMineMany: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slGroupMoreOne: "1 avsnitt till v\xE4ntar",
+          slGroupMoreMany: "{count} avsnitt till v\xE4ntar",
+          slGroupMoreHint: "\xD6ppnas ett i taget, i takt med {names}.",
+          slGroupSeason: "Hela s\xE4song {season} v\xE4ntar",
+          slGroupSeasonHint: "\xD6ppnas ett avsnitt i taget efter {code}, i takt med {names}.",
+          slShow: "Visa",
+          slHide: "D\xF6lj",
+          slAnd: "och",
           profilePinSetTitle: "V\xE4lj PIN f\xF6r {name}",
           profilePinCurrentTitle: "Ange nuvarande PIN f\xF6r {name}",
           profilePinRemoveTitle: "Ange PIN f\xF6r att ta bort l\xE5set f\xF6r {name}",
@@ -6293,6 +7184,7 @@
           tvRowFailed: "Kunde inte h\xE4mtas",
           tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
           tvQuickPlay: "Spela",
+          tvQuickSource: "K\xE4lla: {source} \u203A",
           tvQuickMarkWatched: "Markera som sedd",
           tvQuickUnmarkWatched: "Markera som osedd",
           tvQuickMoreInfo: "Mer info",
@@ -6336,6 +7228,29 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestigedrama",
+          homeSourceMoment: "Just nu (byter efter stund)",
+          homeSourceComingUp: "Kalender",
+          comingUpTitle: "Kommer snart",
+          comingUpSubtitle: "Fr\xE5n serier du f\xF6ljer \xB7 {n}",
+          comingUpAvailableOne: "1 avsnitt tillg\xE4ngligt nu",
+          comingUpAvailableMany: "{n} avsnitt tillg\xE4ngliga nu",
+          comingUpNothingNew: "inget nytt just nu",
+          comingUpOpenCalendar: "\xD6ppna kalender",
+          comingUpMissed: "Missade",
+          comingUpToday: "Idag",
+          comingUpTomorrow: "Imorgon",
+          comingUpEpisodesCount: "{n} avsnitt",
+          comingUpInDays: "om {n} dagar",
+          comingUpPillAvailable: "Tillg\xE4nglig",
+          comingUpPillMissedAvailable: "Missad \xB7 Tillg\xE4nglig",
+          comingUpPillTonight: "Ikv\xE4ll {time}",
+          comingUpPillWatched: "Sedd",
+          comingUpTagPremiere: "Premi\xE4r",
+          comingUpTagFinale: "Final",
+          comingUpShowMissedSetting: "Visa missade avsnitt i Kommer snart",
+          comingUpShowMissedHint: "Avsnitt fr\xE5n ig\xE5r som du inte har sett \xE4n.",
+          homeSourceMomentMovies: "Just nu \xB7 Filmer",
+          homeSourceMomentSeries: "Just nu \xB7 Serier",
           homeSourceAnimeMovies: "Animefilmer",
           homeSourceAnimeTopSeries: "H\xF6gst betygsatt anime",
           homeSourceStreamingServices: "Streaming",
@@ -6374,7 +7289,7 @@
           traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
           traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
           traktAutoUnfollowSeries: "Avf\xF6lj serier du sett klart",
-          traktAutoUnfollowSeriesHint: "Tar bort en serie n\xE4r du sett hela sista s\xE4songen. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
+          traktAutoUnfollowSeriesHint: "Tar bara bort en serie n\xE4r den \xE4r helt avslutad och du sett sista avsnittet. P\xE5g\xE5ende serier tas aldrig bort. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
           traktHistoryRefused: "Trakt tog inte emot din sedd-historik",
           traktHistoryRefusedBody: "Bevakningslistan synkade som den ska \u2014 det h\xE4r g\xE4ller bara sedd-historiken. Trakt har ett tak p\xE5 100 000 uppspelningar. Din lokala historik \xE4r intakt och Lumio p\xE5verkas inte.",
           traktRejectedBy: "Avvisat av Trakt",
@@ -6501,6 +7416,13 @@
           cropZoomZoomPlus: "Zoom +",
           rememberAspectRatio: "Kom ih\xE5g bildformat",
           rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
+          matchFrameRate: "Matcha bildfrekvens",
+          matchFrameRateDesc: "Byter TV:n till bildfrekvensen i det du tittar p\xE5, s\xE5 att r\xF6relser inte hackar. Sk\xE4rmen blir svart en kort stund n\xE4r den byter.",
+          matchResolution: "Matcha \xE4ven uppl\xF6sning",
+          matchResolutionDesc: "Byter TV:n till filmens uppl\xF6sning (en 1080p-film spelas i 1080p-l\xE4ge) i st\xE4llet f\xF6r att TV:n skalar upp den. Bara filmer och avsnitt. De flesta TV-apparater skalar upp bra sj\xE4lva.",
+          matchFrameRateOff: "Av",
+          matchFrameRateVod: "Filmer och serier",
+          matchFrameRateAll: "\xC4ven live-TV",
           autoSkipIntro: "Auto-skippa intro",
           autoSkipIntroDesc: "Om det \xE4r p\xE5slaget hoppas intro \xF6ver automatiskt. Om det \xE4r av visas en Skippa intro-knapp n\xE4r IntroDB har en tr\xE4ff.",
           resumePromptEyebrow: "FORTS\xC4TT ELLER B\xD6RJA OM",
@@ -6531,6 +7453,9 @@
           exitAppTitle: "Avsluta Lumio?",
           exitAppConfirm: "Avsluta",
           quizMenuLabel: "Filmquiz",
+          couchMenuLabel: "Soffl\xE4ge",
+          couchOpenButton: "\xD6ppna Soffl\xE4ge",
+          couchOpenHint: "Styr TV:n eller datorn som k\xF6r Lumio fr\xE5n den h\xE4r telefonen. B\xE5da m\xE5ste vara p\xE5 samma wifi.",
           quizLobbyTitle: "Vem kan sin film?",
           quizLobbyIntro: "Skanna koden med telefonen f\xF6r att vara med. Fr\xE5gorna kommer ur filmer ni har sett.",
           quizOrGoTo: "Eller g\xE5 till",
@@ -6585,6 +7510,104 @@
           quizCreateFailed: "Kunde inte starta quizet. F\xF6rs\xF6k igen om en stund.",
           quizClose: "St\xE4ng",
           quizBankError: "Kunde inte bygga fr\xE5gor. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          matchMenuLabel: "Filmmatch",
+          matchLobbyTitle: "Vad ska vi se?",
+          matchLobbyIntro: "Skanna koden och svep p\xE5 telefonen. N\xE4r alla har sagt ja till samma film startar den.",
+          matchPlayers: "Deltagare",
+          matchPaired: "kopplad",
+          matchGuest: "G\xE4st",
+          matchRoundLabel: "Omg\xE5ngen",
+          matchRoundDefault: "20 filmer ur Min lista och liknande titlar",
+          matchStart: "K\xF6r",
+          matchStartOnPhone: "eller tryck K\xF6r p\xE5 {owner} telefon",
+          matchMinTwo: "Minst tv\xE5 deltagare",
+          matchRoundEyebrow: "Omg\xE5ng %1 \xB7 %2 filmer",
+          matchOngoing: "P\xE5g\xE5r",
+          matchSwipeTitle: "Svep p\xE5 telefonen",
+          matchSwipeIntro: "N\xE4r alla har sagt ja till samma film blir det match. Ingen f\xE5r se vad de andra har svarat.",
+          matchNoMatchYet: "Ingen match \xE4n",
+          matchDoneOf: "%1 av %2 har svept klart",
+          matchPlayerLeft: "L\xE4mnade",
+          matchEyebrow: "Match",
+          matchYouChose: "Ni valde",
+          matchIt: "Match!",
+          matchAllYes: "Alla sa ja",
+          matchPickedBy: "{name} valde \xB7 %1 av %2 sa ja",
+          matchStartsIn: "Startar om",
+          matchPreparing: "G\xF6r i ordning str\xF6mmen \u2026",
+          matchReady: "Redo",
+          matchPlayNow: "Spela nu",
+          matchNotThis: "Inte den",
+          matchStarting: "Startar \u2026",
+          matchNone: "Inga matchningar den h\xE4r g\xE5ngen",
+          matchTop3Intro: "Det h\xE4r \xE4r filmerna som flest sa ja till. {name} v\xE4ljer p\xE5 telefonen, eller v\xE4lj h\xE4r.",
+          matchTop3IntroHost: "Det h\xE4r \xE4r filmerna som flest sa ja till. V\xE4lj h\xE4r.",
+          matchRank1: "Flest ja",
+          matchRank2: "Tv\xE5a",
+          matchRank3: "Trea",
+          matchVotes: "%1 av %2 sa ja",
+          matchNewRound: "Ny omg\xE5ng",
+          matchCouldNotStart: "Kunde inte starta",
+          matchNoSource: "Hittade ingen k\xE4lla f\xF6r {film}",
+          matchBackToCards: "Tillbaka till korten om %1 s",
+          matchEndedTitle: "Filmmatch avslutades",
+          matchEndedBody: "Telefonerna har kopplats fr\xE5n rummet.",
+          matchNewMatch: "Ny Filmmatch",
+          matchCloseTitle: "St\xE4nga Filmmatch?",
+          matchCloseBody: "Telefonerna kopplas fr\xE5n rummet.",
+          matchKeepGoing: "Forts\xE4tt",
+          matchCreateFailed: "Kunde inte starta Filmmatch. F\xF6rs\xF6k igen om en stund.",
+          matchDeckEmpty: "Hittade inga filmer \u2014 l\xE4gg till filmer i Min lista och f\xF6rs\xF6k igen.",
+          matchJoinTitle: "Vad heter du?",
+          matchJoin: "G\xE5 med",
+          matchWaitingFor: "V\xE4ntar p\xE5 att {name} k\xF6r ig\xE5ng",
+          matchUndo: "\xC5ngra",
+          matchLeft: "Du l\xE4mnade Filmmatch",
+          // Tippa matchen (TV:ns vyer 2c–2f)
+          tipLobbyOverline: "TIPPA MATCHEN \xB7 {league}",
+          tipKickoff: "Avspark {time}",
+          tipIn: "om {n} min",
+          tipScan: "Skanna med kameran, eller \xF6ppna Soffl\xE4ge",
+          tipInSofa: "I soffan",
+          tipCount: "{n} av {m} har tippat",
+          tipHasTipped: "\u2713 Har tippat",
+          tipTipping: "Tippar \u2026",
+          tipLobbyHint: "Tipsen l\xE5ses vid avspark. St\xE4llningen visas inte om spoilerskyddet \xE4r p\xE5.",
+          tipLockNow: "L\xE5s nu",
+          tipCancel: "Avbryt",
+          tipPill: "Tippa",
+          tipPillAgain: "Tryck ned igen",
+          tipManageOverline: "TIPPA MATCHEN",
+          tipShowLobby: "Visa lobbyn",
+          tipRow: "TIPS",
+          tipFinal: "SLUT",
+          tipExact: "R\xC4TT RESULTAT",
+          tipWinner: "R\xC4TT VINNARE",
+          tipClosest: "N\xC4RMAST AV \xD6VRIGA",
+          tipDone: "Klar",
+          tipSeason: "S\xE4songen",
+          tipSeasonOverline: "S\xC4SONG I SOFFAN \xB7 {n} MATCHER",
+          tipNewSeason: "Ny s\xE4song",
+          tipNewSeasonConfirm: "Tryck igen f\xF6r ny s\xE4song",
+          tipColName: "NAMN",
+          tipColExact: "R\xC4TT RES.",
+          tipColWinner: "R\xC4TT VINN.",
+          tipColTonight: "IKV\xC4LL",
+          tipColPoints: "PO\xC4NG",
+          tipExactSub: "tippade {tip} \xB7 3 p",
+          tipWon: "{team} vann",
+          tipDraw: "Oavgjort",
+          tipOneOff: "ett m\xE5l ifr\xE5n",
+          tipNOff: "{n} m\xE5l ifr\xE5n",
+          tipPlusOne: "+1 p",
+          tipNobody: "Ingen",
+          tipWhyExact: "R\xE4tt resultat",
+          tipWhyWinner: "R\xE4tt vinnare",
+          tipWhyWinnerClosest: "R\xE4tt vinnare \xB7 n\xE4rmast",
+          tipWhyClosest: "N\xE4rmast",
+          tipWhyWrong: "Fel vinnare",
+          tipCreateFailed: "Kunde inte starta Tippa matchen. F\xF6rs\xF6k igen om en stund.",
+          matchEnded: "Filmmatch avslutades p\xE5 TV:n",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -6673,9 +7696,17 @@
           upgradeSubtitleWhenBetter: "Uppgradera undertext n\xE4r b\xE4ttre laddas",
           upgradeSubtitleWhenBetterDesc: "Byt till en h\xF6gre prioriterad undertext om en dyker upp efter uppspelningsstart. Manuella val skrivs aldrig \xF6ver.",
           ipDescRpdb: "Posters med betyget inbr\xE4nt, p\xE5 varje kort. Gratis nyckel p\xE5 ratingposterdb.com.",
-          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Gratis nyckel p\xE5 mdblist.com.",
+          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Anv\xE4nder din MDBList-inloggning, eller en gratis nyckel.",
           ipRpdbHint: "Med nyckel satt byts kortens posters till RPDB:s betygsposters (IMDb-nycklade).",
           ipMdblistHint: "Visas som extra badges bredvid \xE5rtalet p\xE5 detaljsidan.",
+          ipMdblistViaLogin: "Anv\xE4nder din MDBList-inloggning (Sp\xE5rningstj\xE4nster \u2192 Konton) \u2014 ingen nyckel beh\xF6vs.",
+          ipMdblistLoginHint: "Enklare: anslut MDBList under Sp\xE5rningstj\xE4nster \u2192 Konton, d\xE5 beh\xF6vs ingen nyckel.",
+          hpListChoose: "V\xE4lj en lista",
+          hpListCategory: "Kategori",
+          hpListPasteLabel: "Eller klistra in l\xE4nk eller id",
+          hpListLookup: "H\xE4mta",
+          hpListNotFound: "Hittade ingen s\xE5dan lista",
+          hpListLoadError: "Kunde inte h\xE4mta dina listor",
           ratingBadgePosition: "Betygsbadgens position",
           ratingBadgePositionDesc: "Vilket h\xF6rn av postern betygsbadgen sitter i.",
           badgePosTr: "Uppe till h\xF6ger",
@@ -6716,6 +7747,21 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          dailyPosterTitle: "Dagens affisch",
+          dailyPosterHint: "L\xE5ssk\xE4rmen visar en affisch ur din watchlist och byts varje morgon kl. 6.",
+          dailyPosterToggleTitle: "Dagens affisch p\xE5 l\xE5ssk\xE4rmen",
+          dailyPosterToggleDesc: "En tyst morgonavisering \xF6ppnar titeln. N\xE4r du st\xE4nger av visar l\xE5ssk\xE4rmen hemsk\xE4rmens bakgrund \u2014 den tidigare l\xE5ssk\xE4rmsbilden g\xE5r inte att f\xE5 tillbaka. Vissa tillverkare (Xiaomi, Oppo) kan skriva \xF6ver l\xE5ssk\xE4rmen.",
+          dailyPosterOn: "P\xE5",
+          dailyPosterOff: "Av",
+          dailyPosterRunNowTitle: "Byt nu",
+          dailyPosterRunNowDesc: "V\xE4lj n\xE4sta affisch direkt.",
+          dailyPosterRunNow: "Byt nu",
+          dailyPosterQueued: "L\xE5ssk\xE4rmen byts om en liten stund.",
+          dailyPosterEmpty: "Watchlisten har inga titlar med affisch \xE4n.",
+          dailyPosterError: "Det gick inte: {e}",
+          dailyPosterNotAllowed: "Telefonen l\xE5ter inte appar byta bakgrund (tillverkaren eller en jobbpolicy).",
+          dailyPosterNotificationTitle: "Dagens affisch",
+          dailyPosterChannelName: "Dagens affisch",
           hapticsTitle: "K\xE4nn basen",
           hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
           hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
@@ -6825,6 +7871,7 @@
           plShortMusic: "Musik",
           plShortZoom: "Zoom",
           plShortCast: "Casta",
+          plShortPip: "Bild-i-bild",
           plShortFullscreen: "Fullsk\xE4rm",
           plShortMore: "Mer",
           recapFound: "Recap",
@@ -6879,6 +7926,29 @@
           defaultAudioTrackDesc: "F\xF6rs\xF6ker v\xE4lja spr\xE5k automatiskt n\xE4r flera ljudsp\xE5r finns.",
           disableSubtitlesWhenAudioMatches: "St\xE4ng av textning n\xE4r ljudspr\xE5ket matchar",
           disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
+          subtitleAutoSyncSetting: "Synka undertexter automatiskt",
+          subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
+          subtitleAutoSyncGroup: "Autosynk",
+          subtitleSyncFastReadAhead: "Snabbare synk (anv\xE4nder mer data)",
+          subtitleSyncFastReadAheadHint: "L\xE4ser upp till 6 minuter ljud i f\xF6rv\xE4g i st\xE4llet f\xF6r 3, s\xE5 att undertexterna synkas tidigare i sv\xE5ra partier som s\xE5ng och musik. Anv\xE4nder mer mobildata. P\xE5verkar aldrig uppspelningen.",
+          subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
+          subtitleAutoSyncSwapped: "Bytte till en b\xE4ttre synkad version av samma undertext",
+          subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
+          subtitleAutoSyncOtherEdit: "Undertexten verkar vara fr\xE5n en annan version av filmen. Byt till filens egen {lang} undertext?",
+          subtitleAutoSyncOtherEditSwitch: "Byt",
+          subtitleAutoSyncOtherEditKeep: "Beh\xE5ll",
+          subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
+          subtitleForced: "Tvingad",
+          subtitleSdh: "H\xF6rselskadade",
+          subtitleAutoSyncUndo: "\xC5ngra",
+          subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
+          subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
+          subtitleAutoSyncAmbiguous: "Autosynk: kunde inte avg\xF6ra s\xE4kert \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncChecking: "Autosynk: kontrollerar\u2026",
+          subtitleAutoSyncNoTextTracks: "Autosynk: filen har inga textundertexter att synka mot",
+          subtitleAutoSyncReadingTracks: "Autosynk: l\xE4ser in filens undertexter\u2026",
+          subtitleAutoSyncFetchFailed: "Autosynk: kunde inte h\xE4mta undertexten \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncRefined: "Undertextsynken finjusterad ({offset})",
           subtitleSize: "Textstorlek",
           subtitleSizeDesc: "Anv\xE4nds som standard f\xF6r nya filmer och avsnitt.",
           subtitleVerticalPositionDesc: "Hur h\xF6gt \xF6ver kontrollbaren textningen placeras.",
@@ -6892,8 +7962,23 @@
           subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
           resetSubtitleAppearance: "\xC5terst\xE4ll textutseende",
           resetSubtitleAppearanceDesc: "\xC5terst\xE4ller storlek, position, opacitet, f\xE4rger, bakgrund och kontur till standard.",
-          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
+          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning\natt se ut",
           subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
+          subtitleFont: "Typsnitt",
+          subtitleFontDesc: "L\xE4ttl\xE4sta typsnitt f\xF6r undertexter. V\xE4ljer du ett blir teckenavst\xE5ndet ocks\xE5 luftigare, och det \xE4r det som hj\xE4lper mest. Bildbaserade undertexter (PGS/VobSub fr\xE5n Blu-ray och dvd) beh\xE5ller sitt eget utseende.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (rekommenderas)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Teckenavst\xE5nd",
+          subtitleLetterSpacingDesc: "Det reglage som hj\xE4lper mest vid dyslexi: bokst\xE4ver som st\xE5r t\xE4tt tr\xE4ngs med varandra. Luftigare eller Luftigast \xE4r en bra b\xF6rjan.",
+          subtitleLineSpacing: "Radavst\xE5nd",
+          subtitleLineSpacingDesc: "Luft mellan raderna i en tv\xE5radig undertext. I skrivbordsappen g\xE4ller det bara i inl\xE4rningsl\xE4get \u2014 den inbyggda spelaren kan inte \xE4ndra det.",
+          subtitleSpacingNormal: "Normalt",
+          subtitleSpacingWide: "Luftigt",
+          subtitleSpacingWider: "Luftigare",
+          subtitleSpacingWidest: "Luftigast",
+          subtitleBold: "Fet text",
+          subtitleBoldDesc: "St\xE4ngs av n\xE4r du v\xE4ljer ett l\xE4ttl\xE4st typsnitt, som l\xE4ses b\xE4st i normal vikt.",
           skipIntro: "Skippa intro",
           originalFirst: "Original / f\xF6rsta",
           noFallback: "Ingen fallback",
@@ -7225,6 +8310,13 @@
           coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
           coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
           coreStreamsSource: "K\xE4lla",
+          streamSourceAllSources: "Alla k\xE4llor",
+          streamSourceVod: "VOD",
+          streamSourceCloud: "Molnet",
+          streamSourceEpisodeCount: "{n}/{total} avs",
+          streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
+          streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
+          streamSourceFallback: "E{episode} finns inte i {source} \u2014 visar {fallback}",
           coreStreamsCached: "Cachad",
           coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
           streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
@@ -7283,6 +8375,8 @@
           continueLayoutRows: "Rader",
           continueLayoutGrid: "Rutn\xE4t",
           cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+          cwFramesTitle: "Scenbild vid hovring",
+          cwFramesDesc: "Sparar en bildruta n\xE4r du pausar eller l\xE4mnar en titel och visar den n\xE4r du h\xE5ller muspekaren \xF6ver kortet (eller fokuserar det p\xE5 TV).",
           cwModeRows: "Rullande rader",
           cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
           cwModeGrid: "Rutn\xE4t",
@@ -7305,6 +8399,11 @@
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Biblioteket skannas: {name}",
+          libraryScanIndicatorProgress: "{done} av {total} titlar",
+          libraryScanIndicatorSoFar: "{done} titlar hittills",
+          libraryScanIndicatorHint: "Sortering, filter och bibliotekets rader kommer n\xE4r den \xE4r klar.",
+          libraryScanUnreachable: "{name} svarar inte \u2013 f\xF6rs\xF6ker igen senare",
           plexIndexTitle: "Biblioteksindex",
           plexIndexDesc: "Lumio indexerar dina Plex-bibliotek lokalt s\xE5 att startsidan, rekommendationerna och Zapp kan bygga helt p\xE5 det du \xE4ger.",
           plexIndexEmpty: "Inget index \xE4nnu.",
@@ -7538,12 +8637,75 @@
           hpUpload: "Ladda upp",
           hpHomeEyebrow: "Startsida",
           hpSearchFieldTitle: "S\xF6kf\xE4lt",
+          startPageTitle: "Startsida",
+          startPageHint: "Sidan appen \xF6ppnar p\xE5 n\xE4r den startar. G\xE4ller den h\xE4r sortens enhet (TV, dator eller telefon). Finns sidan inte l\xE4ngre \xF6ppnas Hem.",
+          startPageGroupBuiltIn: "Inbyggda",
+          startPageGroupPages: "Egna sidor",
+          startPageGroupPlugins: "Plugins",
           hpTopSlotTitle: "Toppraden",
-          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: ett s\xF6kf\xE4lt, snabbmenyn eller ingenting. Filmer, Serier och de andra filtersidorna visar alltid filtren i en Bl\xE4ddra-rad under heron.",
+          qmEyebrow: "Snabbmeny",
+          qmShow: "Visa snabbmeny",
+          qmStyle: "Stil",
+          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 7.",
+          qmScrollsTen: "Scrollar \xB7 upp till 10 poster",
+          qmUpToSix: "Upp till 7 poster",
+          qmItems: "Poster",
+          qmItemsHint: "Sidor i snabbmenyn, i ordning.",
+          qmItemsPanelHint: "OK p\xE5 en post f\xF6r att flytta eller ta bort den.",
+          qmAddPage: "L\xE4gg till sida",
+          qmSlotsLeft: "{n} platser kvar",
+          qmFull: "{style} rymmer 7. Horisont och Mening rymmer 10.",
+          qmHiddenWarn: "{n} poster d\xF6ljs med {style}. V\xE4lj en stil som scrollar eller ta bort poster.",
+          qmHidden: "Dold",
+          qmReset: "\xC5terst\xE4ll standard",
+          qmOffTitle: "Av",
+          qmOffHint: "Sl\xE5 p\xE5 genom att v\xE4lja Snabbmeny under Toppraden.",
+          qmUse: "Anv\xE4nd snabbmeny",
+          qmStyleCurrent: "Stil: {style}",
+          qmStyleWhere: "Byt stil, eller v\xE4xla till s\xF6k eller filter, under Toppraden.",
+          hpTopSlotQuick: "Snabbmeny",
+          qmStyle_horizon: "Horisont",
+          qmStyle_initials: "Initialer",
+          qmStyle_constellation: "Stj\xE4rnbild",
+          qmStyle_dark: "M\xF6rkret",
+          "qmStyle_focus-depth": "Sk\xE4rpedjup",
+          qmStyle_sentence: "Mening",
+          qmStyle_viewfinder: "S\xF6karen",
+          qmStyle_tracking: "Sp\xE4rrning",
+          qmStyle_numbers: "Sifferknappar",
+          qmStyle_italic: "Kursiv",
+          qmSentenceLead: "Visa mig",
+          qmSentence_search: "s\xF6ka",
+          qmSentence_movies: "filmer",
+          qmSentence_series: "serier",
+          qmSentence_continue: "d\xE4r jag slutade",
+          qmSentence_live: "live-tv",
+          qmSentence_home: "hem",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "min bevakningslista",
+          qmSentence_calendar: "kalendern",
+          qmSentence_releases: "nya sl\xE4pp",
+          qmSourceBuiltIn: "Inbyggd",
+          qmSourceCustomPage: "Egen sida",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Plats {i} av {n}",
+          qmHiddenWith: "dold med {style}",
+          qmDone: "Klar",
+          qmGroupFilters: "Filter",
+          qmGroupSearch: "S\xF6k",
+          qmGroupOther: "\xD6vrigt",
+          qmNew: "Ny",
+          qmUpTo10: "upp till 10",
+          qmResetHint: "\xC5terst\xE4ller standardposterna f\xF6r den h\xE4r menyn. Stilen ligger kvar.",
+          qmSectionHint: "Genv\xE4gar centrerade h\xF6gst upp p\xE5 startsidan.",
+          qmItemsCount: "{n} av {max}",
+          qmHiddenCount: "{n} dolda",
           hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
           hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
           hpTopSlotSearch: "S\xF6kf\xE4lt",
-          hpTopSlotNone: "Ingenting (filtren ligger vid rutn\xE4tet)",
+          hpTopSlotNone: "Ingenting",
           hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
           hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
           hpSearchTopChosenHint: "S\xF6kf\xE4ltet ligger i toppraden (se Toppraden ovan), s\xE5 det stora f\xE4ltet \xE4r dolt.",
@@ -7570,6 +8732,7 @@
           sssMoreSeasons: "Fler s\xE4songer",
           sssSeasonN: "S\xE4song {num}",
           sssEpisodesWord: "avsnitt",
+          sssEpisodesShort: "avs.",
           sssMarkSeasonUnwatchedTitle: "Markera hela s\xE4songen som osedd",
           sssMarkSeasonWatchedTitle: "Markera hela s\xE4songen som sedd",
           sssSeasonWatched: "S\xE4songen sedd",
@@ -7993,6 +9156,61 @@
           profGxConstellations: "Stj\xE4rnbilder",
           profGxZones: "M\xF6rka zoner",
           settingsPageProfilePage: "Profilsida",
+          settingsPagePairedPhones: "Kopplade telefoner",
+          couchEyebrow: "SOFFL\xC4GE",
+          couchTitle: "Telefoner som styr Lumio",
+          couchHint: "Telefonen blir fj\xE4rrkontroll, visar info om det som spelas och skickar betyg till profilens Trakt. Bara p\xE5 hemman\xE4tet.",
+          couchPairNew: "Koppla ny telefon",
+          couchColPhone: "TELEFON",
+          couchColProfile: "PROFIL",
+          couchColLastSeen: "SENAST ANSLUTEN",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID-APP",
+          couchSubPwa: "iPhone \xB7 startas fr\xE5n hemsk\xE4rmen",
+          couchSubAndroid: "Lumio-appen f\xF6r Android \xB7 K\xE4nn basen",
+          couchRemove: "Ta bort",
+          couchCancel: "Avbryt",
+          couchRemoveConfirm: "Ta bort {name}? Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod.",
+          couchFootnote: "Profilen styr vems Trakt-konto betyg och historik hamnar p\xE5. K\xE4nn basen finns bara f\xF6r telefoner med Lumio-appen f\xF6r Android.",
+          couchHapticsTitle: "K\xE4nn basen",
+          couchHapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar. Flyttad hit fr\xE5n Uppspelning.",
+          couchHapticsSensHint: "Hur svaga bassm\xE4llar som r\xE4knas.",
+          couchHapticsStrength: "Styrka",
+          couchHapticsSync: "F\xF6re / efter",
+          couchHapticsSyncHint: "Flytta vibrationen om den kommer f\xF6r tidigt eller sent.",
+          couchHapticsLegacy: "Koppla om med Soffl\xE4ge f\xF6r att styra K\xE4nn basen h\xE4r",
+          couchHapticsLiveHint: "Styrka och f\xF6re/efter g\xE4ller n\xE4r Soffl\xE4ge \xE4r \xF6ppet p\xE5 telefonen.",
+          couchEmptyTitle: "Inga telefoner kopplade \xE4n",
+          couchDialogInstr: "**Skanna med telefonens kamera** och \xF6ppna sidan \u2014 p\xE5 iPhone l\xE4gger du den p\xE5 hemsk\xE4rmen. **Lumio-appen p\xE5 Android:** \xF6ppna Soffl\xE4ge, v\xE4lj den h\xE4r datorn och ange koden.",
+          couchWaiting: "V\xE4ntar p\xE5 telefonen \u2026",
+          couchClosesIn: "St\xE4ngs om {time}",
+          couchNewCode: "Ny kod",
+          couchPaired: "{name} \xE4r kopplad",
+          couchPairedSub: "Profil {profile} \xB7 st\xE4ngs av sig sj\xE4lv",
+          couchExpiredTitle: "Koden har g\xE5tt ut",
+          couchExpiredBody: "Kodf\xF6nstret \xE4r bara \xF6ppet i tv\xE5 minuter, s\xE5 ingen annan p\xE5 n\xE4tet kan koppla sig. Ta fram en ny kod och f\xF6rs\xF6k igen.",
+          couchNewBadge: "Ny",
+          couchPortError: "Port 3012 \xE4r upptagen: {error}",
+          couchBundleMissing: "Telefonsidan saknas i den h\xE4r appversionen.",
+          couchTvPairHint: "Visar en kod och en QR-kod i tv\xE5 minuter",
+          couchTvEyebrow: "TELEFONER",
+          couchTvSubAndroid: "Android-app \xB7 Profil {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profil {profile}",
+          couchTvNoProfile: "ingen profil",
+          couchTvDetailSub: "{kind} \xB7 Senast ansluten: {when}",
+          couchTvKindAndroid: "Android-app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "KOD",
+          couchTvCodeInstr: "iPhone: skanna QR-koden. Android: ange koden i appen.",
+          couchTvWaiting: "V\xE4ntar p\xE5 telefonen",
+          couchTvClosesIn: "St\xE4ngs om {time}",
+          couchTvClose: "St\xE4ng",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "Ingen Trakt",
+          couchTvRemovePhone: "Ta bort telefonen",
+          couchTvRemoveTitle: "Ta bort {name}?",
+          couchTvRemoveBody: "Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod. Betyg som redan skickats till Trakt finns kvar.",
+          couchTvEmptyHint: "Inga telefoner kopplade \xE4n",
           ppWeatherGroup: "V\xE4der i dagboken",
           ppWeatherToggle: "Spara v\xE4dret",
           ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
@@ -8080,7 +9298,7 @@
       };
       LangContext = createContext(detachedLangContextValue);
       LANG_CHANGED_EVENT = "lumio-app-lang-changed";
-      STORAGE_KEY = "app_lang";
+      STORAGE_KEY2 = "app_lang";
       DEFAULT_LANG = "en";
     }
   });
@@ -8088,6 +9306,136 @@
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts
   var init_tv_focus_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts"() {
+    }
+  });
+
+  // lib/subtitle-legibility.ts
+  var HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
+  // lib/playback-settings.ts
+  var init_playback_settings = __esm({
+    "lib/playback-settings.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+      init_subtitle_legibility();
+    }
+  });
+
+  // lib/android-direct-stream.ts
+  var FINAL_URL_TTL_MS;
+  var init_android_direct_stream = __esm({
+    "lib/android-direct-stream.ts"() {
+      FINAL_URL_TTL_MS = 30 * 60 * 1e3;
+    }
+  });
+
+  // lib/tauri-native-player.ts
+  var isAndroidTauriEnv;
+  var init_tauri_native_player = __esm({
+    "lib/tauri-native-player.ts"() {
+      "use strict";
+      init_timing();
+      init_react_shim();
+      init_tauri_mpv();
+      init_playback_settings();
+      init_android_source_cache();
+      init_android_direct_stream();
+      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
+  // lib/player-layout.ts
+  var DESKTOP_CHROME_QUERY;
+  var init_player_layout = __esm({
+    "lib/player-layout.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
+    }
+  });
+
+  // lib/pip.ts
+  function notify() {
+    for (const fn of listeners) fn();
+  }
+  function isTvDocument() {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function backend() {
+    if (backendOverride) return backendOverride;
+    if (typeof window === "undefined" || isTvDocument()) return "none";
+    if (isAndroidTauriEnv) return "droid";
+    if (!isClientSession()) return "none";
+    if (typeof window.matchMedia === "function" && window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "none";
+    return "web";
+  }
+  function setActive(next) {
+    if (active === next) return;
+    active = next;
+    if (typeof document !== "undefined" && backend() === "droid") {
+      if (next) document.documentElement.setAttribute("data-pip", "on");
+      else document.documentElement.removeAttribute("data-pip");
+    }
+    notify();
+  }
+  function onNative(msg) {
+    const reg = current;
+    if (!reg) return false;
+    if (msg.mode === "on") {
+      setActive(true);
+      return true;
+    }
+    if (msg.mode === "off") {
+      setActive(false);
+      return true;
+    }
+    if (msg.mode === "closed") {
+      setActive(false);
+      reg.actions.onClosed();
+      return true;
+    }
+    switch (msg.action) {
+      case "prev":
+        reg.actions.onPrev();
+        return true;
+      case "next":
+        reg.actions.onNext();
+        return true;
+      case "playPause":
+        reg.actions.onPlayPause();
+        return true;
+    }
+    return false;
+  }
+  var backendOverride, current, active, listeners;
+  var init_pip = __esm({
+    "lib/pip.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tauri_native_player();
+      init_session_host();
+      init_player_layout();
+      backendOverride = null;
+      current = null;
+      active = false;
+      listeners = /* @__PURE__ */ new Set();
+      if (typeof window !== "undefined") {
+        ;
+        window.__lumioPip = onNative;
+      }
     }
   });
 
@@ -8193,10 +9541,18 @@
     }
   });
 
+  // lib/key-hold.ts
+  var init_key_hold = __esm({
+    "lib/key-hold.ts"() {
+      "use strict";
+    }
+  });
+
   // lib/tv-hold.ts
   var init_tv_hold = __esm({
     "lib/tv-hold.ts"() {
       "use strict";
+      init_key_hold();
     }
   });
 
@@ -8236,6 +9592,15 @@
     }
   });
 
+  // lib/home-background-settings.ts
+  var init_home_background_settings = __esm({
+    "lib/home-background-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
   // lib/home-override-settings.ts
   var init_home_override_settings = __esm({
     "lib/home-override-settings.ts"() {
@@ -8265,6 +9630,7 @@
   // lib/movie-watchlist.ts
   var init_movie_watchlist = __esm({
     "lib/movie-watchlist.ts"() {
+      "use strict";
       init_profile_storage_shim();
     }
   });
@@ -8327,14 +9693,26 @@
     }
   });
 
-  // lib/watchlist-auto-remove.ts
-  var init_watchlist_auto_remove = __esm({
-    "lib/watchlist-auto-remove.ts"() {
+  // lib/watchlist-merge.ts
+  var init_watchlist_merge = __esm({
+    "lib/watchlist-merge.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/mutation-source.ts
+  var init_mutation_source = __esm({
+    "lib/mutation-source.ts"() {
       "use strict";
       "use client";
-      init_watchlist();
-      init_watched_movies();
-      init_watched_episodes();
+    }
+  });
+
+  // lib/rating-sources.ts
+  var init_rating_sources = __esm({
+    "lib/rating-sources.ts"() {
+      "use strict";
+      "use client";
       init_profile_storage_shim();
     }
   });
@@ -8343,9 +9721,1137 @@
   var isAndroidTauri;
   var init_open_external = __esm({
     "lib/open-external.ts"() {
+      "use strict";
       "use client";
       init_tauri_mpv();
       isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
+  // ../../node_modules/qrcode.react/lib/esm/index.js
+  function generatePath(modules, margin = 0) {
+    const ops = [];
+    modules.forEach(function(row, y) {
+      let start = null;
+      row.forEach(function(cell, x) {
+        if (!cell && start !== null) {
+          ops.push(
+            `M${start + margin} ${y + margin}h${x - start}v1H${start + margin}z`
+          );
+          start = null;
+          return;
+        }
+        if (x === row.length - 1) {
+          if (!cell) {
+            return;
+          }
+          if (start === null) {
+            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
+          } else {
+            ops.push(
+              `M${start + margin},${y + margin} h${x + 1 - start}v1H${start + margin}z`
+            );
+          }
+          return;
+        }
+        if (cell && start === null) {
+          start = x;
+        }
+      });
+    });
+    return ops.join("");
+  }
+  function excavateModules(modules, excavation) {
+    return modules.slice().map((row, y) => {
+      if (y < excavation.y || y >= excavation.y + excavation.h) {
+        return row;
+      }
+      return row.map((cell, x) => {
+        if (x < excavation.x || x >= excavation.x + excavation.w) {
+          return cell;
+        }
+        return false;
+      });
+    });
+  }
+  function getImageSettings(cells, size, margin, imageSettings) {
+    if (imageSettings == null) {
+      return null;
+    }
+    const numCells = cells.length + margin * 2;
+    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
+    const scale = numCells / size;
+    const w = (imageSettings.width || defaultSize) * scale;
+    const h = (imageSettings.height || defaultSize) * scale;
+    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
+    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
+    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
+    let excavation = null;
+    if (imageSettings.excavate) {
+      let floorX = Math.floor(x);
+      let floorY = Math.floor(y);
+      let ceilW = Math.ceil(w + x - floorX);
+      let ceilH = Math.ceil(h + y - floorY);
+      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
+    }
+    const crossOrigin = imageSettings.crossOrigin;
+    return { x, y, h, w, excavation, opacity, crossOrigin };
+  }
+  function getMarginSize(includeMargin, marginSize) {
+    if (marginSize != null) {
+      return Math.max(Math.floor(marginSize), 0);
+    }
+    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
+  }
+  function useQRCode({
+    value,
+    level,
+    minVersion,
+    includeMargin,
+    marginSize,
+    imageSettings,
+    size,
+    boostLevel
+  }) {
+    let qrcode = react_shim_default.useMemo(() => {
+      const values = Array.isArray(value) ? value : [value];
+      const segments = values.reduce((accum, v) => {
+        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
+        return accum;
+      }, []);
+      return qrcodegen_default.QrCode.encodeSegments(
+        segments,
+        ERROR_LEVEL_MAP[level],
+        minVersion,
+        void 0,
+        void 0,
+        boostLevel
+      );
+    }, [value, level, minVersion, boostLevel]);
+    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
+      let cells2 = qrcode.getModules();
+      const margin2 = getMarginSize(includeMargin, marginSize);
+      const numCells2 = cells2.length + margin2 * 2;
+      const calculatedImageSettings2 = getImageSettings(
+        cells2,
+        size,
+        margin2,
+        imageSettings
+      );
+      return {
+        cells: cells2,
+        margin: margin2,
+        numCells: numCells2,
+        calculatedImageSettings: calculatedImageSettings2
+      };
+    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
+    return {
+      qrcode,
+      margin,
+      cells,
+      numCells,
+      calculatedImageSettings
+    };
+  }
+  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
+  var init_esm = __esm({
+    "../../node_modules/qrcode.react/lib/esm/index.js"() {
+      init_react_shim();
+      __defProp2 = Object.defineProperty;
+      __getOwnPropSymbols = Object.getOwnPropertySymbols;
+      __hasOwnProp2 = Object.prototype.hasOwnProperty;
+      __propIsEnum = Object.prototype.propertyIsEnumerable;
+      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+      __spreadValues = (a, b) => {
+        for (var prop in b || (b = {}))
+          if (__hasOwnProp2.call(b, prop))
+            __defNormalProp2(a, prop, b[prop]);
+        if (__getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(b)) {
+            if (__propIsEnum.call(b, prop))
+              __defNormalProp2(a, prop, b[prop]);
+          }
+        return a;
+      };
+      __objRest = (source, exclude) => {
+        var target = {};
+        for (var prop in source)
+          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
+            target[prop] = source[prop];
+        if (source != null && __getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(source)) {
+            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
+              target[prop] = source[prop];
+          }
+        return target;
+      };
+      ((qrcodegen2) => {
+        const _QrCode = class _QrCode2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code with the given version number,
+          // error correction level, data codeword bytes, and mask number.
+          // This is a low-level API that most users should not use directly.
+          // A mid-level API is the encodeSegments() function.
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
+            this.errorCorrectionLevel = errorCorrectionLevel;
+            this.modules = [];
+            this.isFunction = [];
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version value out of range");
+            if (msk < -1 || msk > 7)
+              throw new RangeError("Mask value out of range");
+            this.size = version3 * 4 + 17;
+            let row = [];
+            for (let i = 0; i < this.size; i++)
+              row.push(false);
+            for (let i = 0; i < this.size; i++) {
+              this.modules.push(row.slice());
+              this.isFunction.push(row.slice());
+            }
+            this.drawFunctionPatterns();
+            const allCodewords = this.addEccAndInterleave(dataCodewords);
+            this.drawCodewords(allCodewords);
+            if (msk == -1) {
+              let minPenalty = 1e9;
+              for (let i = 0; i < 8; i++) {
+                this.applyMask(i);
+                this.drawFormatBits(i);
+                const penalty = this.getPenaltyScore();
+                if (penalty < minPenalty) {
+                  msk = i;
+                  minPenalty = penalty;
+                }
+                this.applyMask(i);
+              }
+            }
+            assert(0 <= msk && msk <= 7);
+            this.mask = msk;
+            this.applyMask(msk);
+            this.drawFormatBits(msk);
+            this.isFunction = [];
+          }
+          /*-- Static factory functions (high level) --*/
+          // Returns a QR Code representing the given Unicode text string at the given error correction level.
+          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
+          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
+          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
+          // ecl argument if it can be done without increasing the version.
+          static encodeText(text, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text);
+            return _QrCode2.encodeSegments(segs, ecl);
+          }
+          // Returns a QR Code representing the given binary data at the given error correction level.
+          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
+          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
+          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
+          static encodeBinary(data, ecl) {
+            const seg = qrcodegen2.QrSegment.makeBytes(data);
+            return _QrCode2.encodeSegments([seg], ecl);
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a QR Code representing the given segments with the given encoding parameters.
+          // The smallest possible QR Code version within the given range is automatically
+          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
+          // may be higher than the ecl argument if it can be done without increasing the
+          // version. The mask number is either between 0 to 7 (inclusive) to force that
+          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
+          // This function allows the user to create a custom sequence of segments that switches
+          // between modes (such as alphanumeric and byte) to encode text in less space.
+          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
+          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
+            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
+              throw new RangeError("Invalid value");
+            let version3;
+            let dataUsedBits;
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
+              if (usedBits <= dataCapacityBits2) {
+                dataUsedBits = usedBits;
+                break;
+              }
+              if (version3 >= maxVersion)
+                throw new RangeError("Data too long");
+            }
+            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
+                ecl = newEcl;
+            }
+            let bb = [];
+            for (const seg of segs) {
+              appendBits(seg.mode.modeBits, 4, bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
+              for (const b of seg.getData())
+                bb.push(b);
+            }
+            assert(bb.length == dataUsedBits);
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+            assert(bb.length <= dataCapacityBits);
+            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
+            appendBits(0, (8 - bb.length % 8) % 8, bb);
+            assert(bb.length % 8 == 0);
+            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
+              appendBits(padByte, 8, bb);
+            let dataCodewords = [];
+            while (dataCodewords.length * 8 < bb.length)
+              dataCodewords.push(0);
+            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
+          }
+          /*-- Accessor methods --*/
+          // Returns the color of the module (pixel) at the given coordinates, which is false
+          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
+          // If the given coordinates are out of bounds, then false (light) is returned.
+          getModule(x, y) {
+            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
+          }
+          // Modified to expose modules for easy access
+          getModules() {
+            return this.modules;
+          }
+          /*-- Private helper methods for constructor: Drawing function modules --*/
+          // Reads this object's version field, and draws and marks all function modules.
+          drawFunctionPatterns() {
+            for (let i = 0; i < this.size; i++) {
+              this.setFunctionModule(6, i, i % 2 == 0);
+              this.setFunctionModule(i, 6, i % 2 == 0);
+            }
+            this.drawFinderPattern(3, 3);
+            this.drawFinderPattern(this.size - 4, 3);
+            this.drawFinderPattern(3, this.size - 4);
+            const alignPatPos = this.getAlignmentPatternPositions();
+            const numAlign = alignPatPos.length;
+            for (let i = 0; i < numAlign; i++) {
+              for (let j = 0; j < numAlign; j++) {
+                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
+                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
+              }
+            }
+            this.drawFormatBits(0);
+            this.drawVersion();
+          }
+          // Draws two copies of the format bits (with its own error correction code)
+          // based on the given mask and this object's error correction level field.
+          drawFormatBits(mask) {
+            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
+            let rem = data;
+            for (let i = 0; i < 10; i++)
+              rem = rem << 1 ^ (rem >>> 9) * 1335;
+            const bits = (data << 10 | rem) ^ 21522;
+            assert(bits >>> 15 == 0);
+            for (let i = 0; i <= 5; i++)
+              this.setFunctionModule(8, i, getBit(bits, i));
+            this.setFunctionModule(8, 7, getBit(bits, 6));
+            this.setFunctionModule(8, 8, getBit(bits, 7));
+            this.setFunctionModule(7, 8, getBit(bits, 8));
+            for (let i = 9; i < 15; i++)
+              this.setFunctionModule(14 - i, 8, getBit(bits, i));
+            for (let i = 0; i < 8; i++)
+              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
+            for (let i = 8; i < 15; i++)
+              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
+            this.setFunctionModule(8, this.size - 8, true);
+          }
+          // Draws two copies of the version bits (with its own error correction code),
+          // based on this object's version field, iff 7 <= version <= 40.
+          drawVersion() {
+            if (this.version < 7)
+              return;
+            let rem = this.version;
+            for (let i = 0; i < 12; i++)
+              rem = rem << 1 ^ (rem >>> 11) * 7973;
+            const bits = this.version << 12 | rem;
+            assert(bits >>> 18 == 0);
+            for (let i = 0; i < 18; i++) {
+              const color = getBit(bits, i);
+              const a = this.size - 11 + i % 3;
+              const b = Math.floor(i / 3);
+              this.setFunctionModule(a, b, color);
+              this.setFunctionModule(b, a, color);
+            }
+          }
+          // Draws a 9*9 finder pattern including the border separator,
+          // with the center module at (x, y). Modules can be out of bounds.
+          drawFinderPattern(x, y) {
+            for (let dy = -4; dy <= 4; dy++) {
+              for (let dx = -4; dx <= 4; dx++) {
+                const dist = Math.max(Math.abs(dx), Math.abs(dy));
+                const xx = x + dx;
+                const yy = y + dy;
+                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
+                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
+              }
+            }
+          }
+          // Draws a 5*5 alignment pattern, with the center module
+          // at (x, y). All modules must be in bounds.
+          drawAlignmentPattern(x, y) {
+            for (let dy = -2; dy <= 2; dy++) {
+              for (let dx = -2; dx <= 2; dx++)
+                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
+            }
+          }
+          // Sets the color of a module and marks it as a function module.
+          // Only used by the constructor. Coordinates must be in bounds.
+          setFunctionModule(x, y, isDark) {
+            this.modules[y][x] = isDark;
+            this.isFunction[y][x] = true;
+          }
+          /*-- Private helper methods for constructor: Codewords and masking --*/
+          // Returns a new byte string representing the given data with the appropriate error correction
+          // codewords appended to it, based on this object's version and error correction level.
+          addEccAndInterleave(data) {
+            const ver = this.version;
+            const ecl = this.errorCorrectionLevel;
+            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
+              throw new RangeError("Invalid argument");
+            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
+            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
+            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
+            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
+            let blocks = [];
+            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
+            for (let i = 0, k = 0; i < numBlocks; i++) {
+              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
+              k += dat.length;
+              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
+              if (i < numShortBlocks)
+                dat.push(0);
+              blocks.push(dat.concat(ecc));
+            }
+            let result = [];
+            for (let i = 0; i < blocks[0].length; i++) {
+              blocks.forEach((block, j) => {
+                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
+                  result.push(block[i]);
+              });
+            }
+            assert(result.length == rawCodewords);
+            return result;
+          }
+          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
+          // data area of this QR Code. Function modules need to be marked off before this is called.
+          drawCodewords(data) {
+            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
+              throw new RangeError("Invalid argument");
+            let i = 0;
+            for (let right = this.size - 1; right >= 1; right -= 2) {
+              if (right == 6)
+                right = 5;
+              for (let vert = 0; vert < this.size; vert++) {
+                for (let j = 0; j < 2; j++) {
+                  const x = right - j;
+                  const upward = (right + 1 & 2) == 0;
+                  const y = upward ? this.size - 1 - vert : vert;
+                  if (!this.isFunction[y][x] && i < data.length * 8) {
+                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
+                    i++;
+                  }
+                }
+              }
+            }
+            assert(i == data.length * 8);
+          }
+          // XORs the codeword modules in this QR Code with the given mask pattern.
+          // The function modules must be marked and the codeword bits must be drawn
+          // before masking. Due to the arithmetic of XOR, calling applyMask() with
+          // the same mask value a second time will undo the mask. A final well-formed
+          // QR Code needs exactly one (not zero, two, etc.) mask applied.
+          applyMask(mask) {
+            if (mask < 0 || mask > 7)
+              throw new RangeError("Mask value out of range");
+            for (let y = 0; y < this.size; y++) {
+              for (let x = 0; x < this.size; x++) {
+                let invert;
+                switch (mask) {
+                  case 0:
+                    invert = (x + y) % 2 == 0;
+                    break;
+                  case 1:
+                    invert = y % 2 == 0;
+                    break;
+                  case 2:
+                    invert = x % 3 == 0;
+                    break;
+                  case 3:
+                    invert = (x + y) % 3 == 0;
+                    break;
+                  case 4:
+                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
+                    break;
+                  case 5:
+                    invert = x * y % 2 + x * y % 3 == 0;
+                    break;
+                  case 6:
+                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  case 7:
+                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  default:
+                    throw new Error("Unreachable");
+                }
+                if (!this.isFunction[y][x] && invert)
+                  this.modules[y][x] = !this.modules[y][x];
+              }
+            }
+          }
+          // Calculates and returns the penalty score based on state of this QR Code's current modules.
+          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
+          getPenaltyScore() {
+            let result = 0;
+            for (let y = 0; y < this.size; y++) {
+              let runColor = false;
+              let runX = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let x = 0; x < this.size; x++) {
+                if (this.modules[y][x] == runColor) {
+                  runX++;
+                  if (runX == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runX > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runX, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runX = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let x = 0; x < this.size; x++) {
+              let runColor = false;
+              let runY = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let y = 0; y < this.size; y++) {
+                if (this.modules[y][x] == runColor) {
+                  runY++;
+                  if (runY == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runY > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runY, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runY = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let y = 0; y < this.size - 1; y++) {
+              for (let x = 0; x < this.size - 1; x++) {
+                const color = this.modules[y][x];
+                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
+                  result += _QrCode2.PENALTY_N2;
+              }
+            }
+            let dark = 0;
+            for (const row of this.modules)
+              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
+            const total = this.size * this.size;
+            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
+            assert(0 <= k && k <= 9);
+            result += k * _QrCode2.PENALTY_N4;
+            assert(0 <= result && result <= 2568888);
+            return result;
+          }
+          /*-- Private helper functions --*/
+          // Returns an ascending list of positions of alignment patterns for this version number.
+          // Each position is in the range [0,177), and are used on both the x and y axes.
+          // This could be implemented as lookup table of 40 variable-length lists of integers.
+          getAlignmentPatternPositions() {
+            if (this.version == 1)
+              return [];
+            else {
+              const numAlign = Math.floor(this.version / 7) + 2;
+              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
+              let result = [6];
+              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
+                result.splice(1, 0, pos);
+              return result;
+            }
+          }
+          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
+          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
+          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
+          static getNumRawDataModules(ver) {
+            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version number out of range");
+            let result = (16 * ver + 128) * ver + 64;
+            if (ver >= 2) {
+              const numAlign = Math.floor(ver / 7) + 2;
+              result -= (25 * numAlign - 10) * numAlign - 55;
+              if (ver >= 7)
+                result -= 36;
+            }
+            assert(208 <= result && result <= 29648);
+            return result;
+          }
+          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
+          // QR Code of the given version number and error correction level, with remainder bits discarded.
+          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
+          static getNumDataCodewords(ver, ecl) {
+            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+          }
+          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
+          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
+          static reedSolomonComputeDivisor(degree) {
+            if (degree < 1 || degree > 255)
+              throw new RangeError("Degree out of range");
+            let result = [];
+            for (let i = 0; i < degree - 1; i++)
+              result.push(0);
+            result.push(1);
+            let root = 1;
+            for (let i = 0; i < degree; i++) {
+              for (let j = 0; j < result.length; j++) {
+                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
+                if (j + 1 < result.length)
+                  result[j] ^= result[j + 1];
+              }
+              root = _QrCode2.reedSolomonMultiply(root, 2);
+            }
+            return result;
+          }
+          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
+          static reedSolomonComputeRemainder(data, divisor) {
+            let result = divisor.map((_) => 0);
+            for (const b of data) {
+              const factor = b ^ result.shift();
+              result.push(0);
+              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
+            }
+            return result;
+          }
+          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
+          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
+          static reedSolomonMultiply(x, y) {
+            if (x >>> 8 != 0 || y >>> 8 != 0)
+              throw new RangeError("Byte out of range");
+            let z = 0;
+            for (let i = 7; i >= 0; i--) {
+              z = z << 1 ^ (z >>> 7) * 285;
+              z ^= (y >>> i & 1) * x;
+            }
+            assert(z >>> 8 == 0);
+            return z;
+          }
+          // Can only be called immediately after a light run is added, and
+          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
+          finderPenaltyCountPatterns(runHistory) {
+            const n = runHistory[1];
+            assert(n <= this.size * 3);
+            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
+            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
+          }
+          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
+          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
+            if (currentRunColor) {
+              this.finderPenaltyAddHistory(currentRunLength, runHistory);
+              currentRunLength = 0;
+            }
+            currentRunLength += this.size;
+            this.finderPenaltyAddHistory(currentRunLength, runHistory);
+            return this.finderPenaltyCountPatterns(runHistory);
+          }
+          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
+          finderPenaltyAddHistory(currentRunLength, runHistory) {
+            if (runHistory[0] == 0)
+              currentRunLength += this.size;
+            runHistory.pop();
+            runHistory.unshift(currentRunLength);
+          }
+        };
+        _QrCode.MIN_VERSION = 1;
+        _QrCode.MAX_VERSION = 40;
+        _QrCode.PENALTY_N1 = 3;
+        _QrCode.PENALTY_N2 = 3;
+        _QrCode.PENALTY_N3 = 40;
+        _QrCode.PENALTY_N4 = 10;
+        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Low
+          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+          // Medium
+          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Quartile
+          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
+          // High
+        ];
+        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+          // Low
+          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+          // Medium
+          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
+          // Quartile
+          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
+          // High
+        ];
+        let QrCode = _QrCode;
+        qrcodegen2.QrCode = _QrCode;
+        function appendBits(val, len, bb) {
+          if (len < 0 || len > 31 || val >>> len != 0)
+            throw new RangeError("Value out of range");
+          for (let i = len - 1; i >= 0; i--)
+            bb.push(val >>> i & 1);
+        }
+        function getBit(x, i) {
+          return (x >>> i & 1) != 0;
+        }
+        function assert(cond) {
+          if (!cond)
+            throw new Error("Assertion error");
+        }
+        const _QrSegment = class _QrSegment2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code segment with the given attributes and data.
+          // The character count (numChars) must agree with the mode and the bit buffer length,
+          // but the constraint isn't checked. The given bit buffer is cloned and stored.
+          constructor(mode, numChars, bitData) {
+            this.mode = mode;
+            this.numChars = numChars;
+            this.bitData = bitData;
+            if (numChars < 0)
+              throw new RangeError("Invalid argument");
+            this.bitData = bitData.slice();
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a segment representing the given binary data encoded in
+          // byte mode. All input byte arrays are acceptable. Any text string
+          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
+          static makeBytes(data) {
+            let bb = [];
+            for (const b of data)
+              appendBits(b, 8, bb);
+            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
+          }
+          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
+          static makeNumeric(digits) {
+            if (!_QrSegment2.isNumeric(digits))
+              throw new RangeError("String contains non-numeric characters");
+            let bb = [];
+            for (let i = 0; i < digits.length; ) {
+              const n = Math.min(digits.length - i, 3);
+              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
+              i += n;
+            }
+            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
+          }
+          // Returns a segment representing the given text string encoded in alphanumeric mode.
+          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
+          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static makeAlphanumeric(text) {
+            if (!_QrSegment2.isAlphanumeric(text))
+              throw new RangeError("String contains unencodable characters in alphanumeric mode");
+            let bb = [];
+            let i;
+            for (i = 0; i + 2 <= text.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
+              appendBits(temp, 11, bb);
+            }
+            if (i < text.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
+          }
+          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
+          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
+          static makeSegments(text) {
+            if (text == "")
+              return [];
+            else if (_QrSegment2.isNumeric(text))
+              return [_QrSegment2.makeNumeric(text)];
+            else if (_QrSegment2.isAlphanumeric(text))
+              return [_QrSegment2.makeAlphanumeric(text)];
+            else
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
+          }
+          // Returns a segment representing an Extended Channel Interpretation
+          // (ECI) designator with the given assignment value.
+          static makeEci(assignVal) {
+            let bb = [];
+            if (assignVal < 0)
+              throw new RangeError("ECI assignment value out of range");
+            else if (assignVal < 1 << 7)
+              appendBits(assignVal, 8, bb);
+            else if (assignVal < 1 << 14) {
+              appendBits(2, 2, bb);
+              appendBits(assignVal, 14, bb);
+            } else if (assignVal < 1e6) {
+              appendBits(6, 3, bb);
+              appendBits(assignVal, 21, bb);
+            } else
+              throw new RangeError("ECI assignment value out of range");
+            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
+          }
+          // Tests whether the given string can be encoded as a segment in numeric mode.
+          // A string is encodable iff each character is in the range 0 to 9.
+          static isNumeric(text) {
+            return _QrSegment2.NUMERIC_REGEX.test(text);
+          }
+          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
+          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
+          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static isAlphanumeric(text) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
+          }
+          /*-- Methods --*/
+          // Returns a new copy of the data bits of this segment.
+          getData() {
+            return this.bitData.slice();
+          }
+          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
+          // the given version. The result is infinity if a segment has too many characters to fit its length field.
+          static getTotalBits(segs, version3) {
+            let result = 0;
+            for (const seg of segs) {
+              const ccbits = seg.mode.numCharCountBits(version3);
+              if (seg.numChars >= 1 << ccbits)
+                return Infinity;
+              result += 4 + ccbits + seg.bitData.length;
+            }
+            return result;
+          }
+          // Returns a new array of bytes representing the given string encoded in UTF-8.
+          static toUtf8ByteArray(str) {
+            str = encodeURI(str);
+            let result = [];
+            for (let i = 0; i < str.length; i++) {
+              if (str.charAt(i) != "%")
+                result.push(str.charCodeAt(i));
+              else {
+                result.push(parseInt(str.substring(i + 1, i + 3), 16));
+                i += 2;
+              }
+            }
+            return result;
+          }
+        };
+        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
+        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
+        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+        let QrSegment = _QrSegment;
+        qrcodegen2.QrSegment = _QrSegment;
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrCode;
+        ((QrCode2) => {
+          const _Ecc = class _Ecc {
+            // The QR Code can tolerate about 30% erroneous codewords
+            /*-- Constructor and fields --*/
+            constructor(ordinal, formatBits) {
+              this.ordinal = ordinal;
+              this.formatBits = formatBits;
+            }
+          };
+          _Ecc.LOW = new _Ecc(0, 1);
+          _Ecc.MEDIUM = new _Ecc(1, 0);
+          _Ecc.QUARTILE = new _Ecc(2, 3);
+          _Ecc.HIGH = new _Ecc(3, 2);
+          let Ecc = _Ecc;
+          QrCode2.Ecc = _Ecc;
+        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrSegment;
+        ((QrSegment2) => {
+          const _Mode = class _Mode {
+            /*-- Constructor and fields --*/
+            constructor(modeBits, numBitsCharCount) {
+              this.modeBits = modeBits;
+              this.numBitsCharCount = numBitsCharCount;
+            }
+            /*-- Method --*/
+            // (Package-private) Returns the bit width of the character count field for a segment in
+            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
+            numCharCountBits(ver) {
+              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
+            }
+          };
+          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
+          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
+          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
+          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
+          _Mode.ECI = new _Mode(7, [0, 0, 0]);
+          let Mode = _Mode;
+          QrSegment2.Mode = _Mode;
+        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      qrcodegen_default = qrcodegen;
+      ERROR_LEVEL_MAP = {
+        L: qrcodegen_default.QrCode.Ecc.LOW,
+        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
+        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
+        H: qrcodegen_default.QrCode.Ecc.HIGH
+      };
+      DEFAULT_SIZE = 128;
+      DEFAULT_LEVEL = "L";
+      DEFAULT_BGCOLOR = "#FFFFFF";
+      DEFAULT_FGCOLOR = "#000000";
+      DEFAULT_INCLUDEMARGIN = false;
+      DEFAULT_MINVERSION = 1;
+      SPEC_MARGIN_SIZE = 4;
+      DEFAULT_MARGIN_SIZE = 0;
+      DEFAULT_IMG_SCALE = 0.1;
+      SUPPORTS_PATH2D = (function() {
+        try {
+          new Path2D().addPath(new Path2D());
+        } catch (e) {
+          return false;
+        }
+        return true;
+      })();
+      QRCodeCanvas = react_shim_default.forwardRef(
+        function QRCodeCanvas2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            marginSize,
+            imageSettings
+          } = _a, extraProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
+          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
+          const _canvas = react_shim_default.useRef(null);
+          const _image = react_shim_default.useRef(null);
+          const setCanvasRef = react_shim_default.useCallback(
+            (node) => {
+              _canvas.current = node;
+              if (typeof forwardedRef === "function") {
+                forwardedRef(node);
+              } else if (forwardedRef) {
+                forwardedRef.current = node;
+              }
+            },
+            [forwardedRef]
+          );
+          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          react_shim_default.useEffect(() => {
+            if (_canvas.current != null) {
+              const canvas = _canvas.current;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) {
+                return;
+              }
+              let cellsToDraw = cells;
+              const image = _image.current;
+              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
+              if (haveImageToRender) {
+                if (calculatedImageSettings.excavation != null) {
+                  cellsToDraw = excavateModules(
+                    cells,
+                    calculatedImageSettings.excavation
+                  );
+                }
+              }
+              const pixelRatio = window.devicePixelRatio || 1;
+              canvas.height = canvas.width = size * pixelRatio;
+              const scale = size / numCells * pixelRatio;
+              ctx.scale(scale, scale);
+              ctx.fillStyle = bgColor;
+              ctx.fillRect(0, 0, numCells, numCells);
+              ctx.fillStyle = fgColor;
+              if (SUPPORTS_PATH2D) {
+                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
+              } else {
+                cells.forEach(function(row, rdx) {
+                  row.forEach(function(cell, cdx) {
+                    if (cell) {
+                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
+                    }
+                  });
+                });
+              }
+              if (calculatedImageSettings) {
+                ctx.globalAlpha = calculatedImageSettings.opacity;
+              }
+              if (haveImageToRender) {
+                ctx.drawImage(
+                  image,
+                  calculatedImageSettings.x + margin,
+                  calculatedImageSettings.y + margin,
+                  calculatedImageSettings.w,
+                  calculatedImageSettings.h
+                );
+              }
+            }
+          });
+          react_shim_default.useEffect(() => {
+            setIsImageLoaded(false);
+          }, [imgSrc]);
+          const canvasStyle = __spreadValues({ height: size, width: size }, style);
+          let img = null;
+          if (imgSrc != null) {
+            img = /* @__PURE__ */ react_shim_default.createElement(
+              "img",
+              {
+                src: imgSrc,
+                key: imgSrc,
+                style: { display: "none" },
+                onLoad: () => {
+                  setIsImageLoaded(true);
+                },
+                ref: _image,
+                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
+            "canvas",
+            __spreadValues({
+              style: canvasStyle,
+              height: size,
+              width: size,
+              ref: setCanvasRef,
+              role: "img"
+            }, otherProps)
+          ), img);
+        }
+      );
+      QRCodeCanvas.displayName = "QRCodeCanvas";
+      QRCodeSVG = react_shim_default.forwardRef(
+        function QRCodeSVG2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            title,
+            marginSize,
+            imageSettings
+          } = _a, otherProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "title",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          let cellsToDraw = cells;
+          let image = null;
+          if (imageSettings != null && calculatedImageSettings != null) {
+            if (calculatedImageSettings.excavation != null) {
+              cellsToDraw = excavateModules(
+                cells,
+                calculatedImageSettings.excavation
+              );
+            }
+            image = /* @__PURE__ */ react_shim_default.createElement(
+              "image",
+              {
+                href: imageSettings.src,
+                height: calculatedImageSettings.h,
+                width: calculatedImageSettings.w,
+                x: calculatedImageSettings.x + margin,
+                y: calculatedImageSettings.y + margin,
+                preserveAspectRatio: "none",
+                opacity: calculatedImageSettings.opacity,
+                crossOrigin: calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          const fgPath = generatePath(cellsToDraw, margin);
+          return /* @__PURE__ */ react_shim_default.createElement(
+            "svg",
+            __spreadValues({
+              height: size,
+              width: size,
+              viewBox: `0 0 ${numCells} ${numCells}`,
+              ref: forwardedRef,
+              role: "img"
+            }, otherProps),
+            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
+            /* @__PURE__ */ react_shim_default.createElement(
+              "path",
+              {
+                fill: bgColor,
+                d: `M0,0 h${numCells}v${numCells}H0z`,
+                shapeRendering: "crispEdges"
+              }
+            ),
+            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
+            image
+          );
+        }
+      );
+      QRCodeSVG.displayName = "QRCodeSVG";
+    }
+  });
+
+  // lib/playback-start-gate.ts
+  var init_playback_start_gate = __esm({
+    "lib/playback-start-gate.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/watchlist-auto-remove.ts
+  var FULL_SWEEP_INTERVAL_MS;
+  var init_watchlist_auto_remove = __esm({
+    "lib/watchlist-auto-remove.ts"() {
+      "use strict";
+      "use client";
+      init_watchlist();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      FULL_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1e3;
     }
   });
 
@@ -8362,25 +10868,9 @@
     }
   });
 
-  // lib/playback-settings.ts
-  var init_playback_settings = __esm({
-    "lib/playback-settings.ts"() {
-      "use strict";
-      init_app_storage();
-      init_profile_storage_shim();
-    }
-  });
-
   // lib/async-utils.ts
   var init_async_utils = __esm({
     "lib/async-utils.ts"() {
-    }
-  });
-
-  // lib/plugin-state.ts
-  var init_plugin_state = __esm({
-    "lib/plugin-state.ts"() {
-      init_profile_storage_shim();
     }
   });
 
@@ -8388,12 +10878,6 @@
   var init_filters = __esm({
     "lib/media-stream/filters.ts"() {
       init_profile_storage_shim();
-    }
-  });
-
-  // lib/playback-start-gate.ts
-  var init_playback_start_gate = __esm({
-    "lib/playback-start-gate.ts"() {
     }
   });
 
@@ -8480,6 +10964,7 @@
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -8502,6 +10987,7 @@
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -8594,17 +11080,6 @@
   var init_auth_capabilities_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/auth-capabilities-shim.ts"() {
       sdk2 = globalThis.__lumioPluginRuntime?.sdk;
-    }
-  });
-
-  // lib/tauri-native-player.ts
-  var isAndroidTauriEnv;
-  var init_tauri_native_player = __esm({
-    "lib/tauri-native-player.ts"() {
-      "use strict";
-      init_react_shim();
-      init_tauri_mpv();
-      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
     }
   });
 
@@ -9252,7 +11727,7 @@
         ProgressBarStatus["Paused"] = "paused";
         ProgressBarStatus["Error"] = "error";
       })(exports.ProgressBarStatus || (exports.ProgressBarStatus = {}));
-      function getCurrentWindow2() {
+      function getCurrentWindow3() {
         return new Window(window.__TAURI_INTERNALS__.metadata.currentWindow.label, {
           // @ts-expect-error `skip` is not defined in the public API but it is handled by the constructor
           skip: true
@@ -9316,7 +11791,7 @@
          * Get an instance of `Window` for the current window.
          */
         static getCurrent() {
-          return getCurrentWindow2();
+          return getCurrentWindow3();
         }
         /**
          * Gets a list of instances of `Window` for all available windows.
@@ -9364,8 +11839,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -9394,8 +11869,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -10974,9 +13449,46 @@
       exports.currentMonitor = currentMonitor;
       exports.cursorPosition = cursorPosition;
       exports.getAllWindows = getAllWindows;
-      exports.getCurrentWindow = getCurrentWindow2;
+      exports.getCurrentWindow = getCurrentWindow3;
       exports.monitorFromPoint = monitorFromPoint;
       exports.primaryMonitor = primaryMonitor;
+    }
+  });
+
+  // lib/platform-os.ts
+  var init_platform_os = __esm({
+    "lib/platform-os.ts"() {
+    }
+  });
+
+  // components/window-controls.tsx
+  var import_react_dom, import_core3, import_window, INTERACTIVE_SELECTOR;
+  var init_window_controls = __esm({
+    "components/window-controls.tsx"() {
+      init_react_shim();
+      import_react_dom = __toESM(require_react_dom());
+      import_core3 = __toESM(require_core());
+      import_window = __toESM(require_window());
+      init_platform_os();
+      init_jsx_runtime_shim();
+      INTERACTIVE_SELECTOR = [
+        "button",
+        "a[href]",
+        "input",
+        "select",
+        "textarea",
+        "label",
+        "summary",
+        '[role="button"]',
+        '[role="link"]',
+        '[role="tab"]',
+        '[role="menuitem"]',
+        '[role="slider"]',
+        '[contenteditable=""]',
+        '[contenteditable="true"]',
+        "[data-no-window-drag]",
+        ".lumio-window-controls"
+      ].join(",");
     }
   });
 
@@ -11002,6 +13514,24 @@
     }
   });
 
+  // lib/sync/webdav-credentials.ts
+  var init_webdav_credentials = __esm({
+    "lib/sync/webdav-credentials.ts"() {
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/continue-frames.ts
+  var init_continue_frames = __esm({
+    "lib/continue-frames.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_player_frame_id();
+      init_webdav_credentials();
+    }
+  });
+
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
@@ -11010,11 +13540,90 @@
   });
 
   // lib/video-progress.ts
-  var EVENT, HISTORY_EVENT;
+  function sanitizeEntry(entry) {
+    return {
+      ...entry,
+      tmdbId: typeof entry.tmdbId === "string" && entry.tmdbId.trim().length > 0 ? entry.tmdbId.trim() : entry.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null,
+      imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
+    };
+  }
+  function read() {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(getScopedStorageItem(KEY) ?? "[]");
+    } catch {
+      return [];
+    }
+  }
+  function watchedAtMs(entry) {
+    const ts = Date.parse(entry.watchedAt ?? "");
+    return Number.isFinite(ts) ? ts : 0;
+  }
+  function sortByWatchedAtDesc(entries) {
+    return [...entries].sort((a, b) => watchedAtMs(b) - watchedAtMs(a));
+  }
+  function readHistory() {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = getScopedStorageItem(HISTORY_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (parsed.length > 0) return parsed;
+      const seed = read();
+      if (seed.length > 0) {
+        const seenKeys = /* @__PURE__ */ new Set();
+        const dedupedSeed = [];
+        for (const entry of seed) {
+          const key = entry.type === "tv" ? entry.id : `${entry.id}::${entry.season ?? ""}:${entry.episode ?? ""}`;
+          if (seenKeys.has(key)) continue;
+          seenKeys.add(key);
+          dedupedSeed.push(sanitizeEntry(entry));
+        }
+        const seededEntries = dedupedSeed.slice(0, HISTORY_MAX);
+        setScopedStorageItem(HISTORY_KEY, JSON.stringify(seededEntries));
+        return seededEntries;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+  function writeHistory(entries) {
+    setScopedStorageItem(HISTORY_KEY, JSON.stringify(entries));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
+  }
+  function historyDedupeKey(entry) {
+    return entry.type === "tv" ? entry.id : `${entry.id}::${entry.season ?? ""}:${entry.episode ?? ""}`;
+  }
+  function appendHistoryEntry(entry) {
+    const sanitized = sanitizeEntry(entry);
+    const incomingKey = historyDedupeKey(sanitized);
+    const current2 = readHistory();
+    const previous = current2.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
+      ...previous,
+      posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
+      backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
+    } : sanitized;
+    const filtered = current2.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
+    writeHistory(next);
+  }
+  function flushHistoryMirror() {
+    const mirror = historyMirror;
+    if (!mirror?.pending) return;
+    if (mirror.timer) clearTimeout(mirror.timer);
+    const entry = mirror.pending;
+    mirror.pending = null;
+    mirror.timer = null;
+    mirror.at = Date.now();
+    appendHistoryEntry(entry);
+  }
+  var EVENT, KEY, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
+      init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
       EVENT = "lumio-stream-progress-changed";
@@ -11027,7 +13636,17 @@
         }).catch(() => {
         });
       }
+      KEY = "stream_progress_list";
+      HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
+      HISTORY_MAX = 200;
+      historyMirror = null;
+      if (typeof window !== "undefined") {
+        window.addEventListener("pagehide", flushHistoryMirror);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") flushHistoryMirror();
+        });
+      }
     }
   });
 
@@ -11242,6 +13861,7 @@
   var open;
   var init_player_open = __esm({
     "lib/watch-journal/player-open.ts"() {
+      init_react_shim();
       open = false;
     }
   });
@@ -11433,7 +14053,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY);
+      const stored = getScopedStorageItem(KEY2);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -11464,14 +14084,14 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY2, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY = "barcode_settings_v1";
+      KEY2 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
-        enabled: true,
+        enabled: false,
         showStripInPlayer: true,
         columns: 160,
         scope: "movies",
@@ -11816,9 +14436,9 @@
         useEffect(() => {
           if (!state.id) return;
           const id = state.id;
-          const read = () => setBarcode(getBarcode(id));
-          read();
-          return onBarcodesChanged(read);
+          const read2 = () => setBarcode(getBarcode(id));
+          read2();
+          return onBarcodesChanged(read2);
         }, [state.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
@@ -11879,18 +14499,138 @@
     }
   });
 
+  // components/results/details-meta-row.tsx
+  var init_details_meta_row = __esm({
+    "components/results/details-meta-row.tsx"() {
+      "use client";
+      init_i18n();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/core-streams/stream-utils.ts
+  var SIZE_UNITS;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+    }
+  });
+
+  // lib/player-title-block.ts
+  var init_player_title_block = __esm({
+    "lib/player-title-block.ts"() {
+      init_stream_utils();
+      init_playback_settings();
+    }
+  });
+
+  // lib/tv-shell/hero-text.ts
+  var init_hero_text = __esm({
+    "lib/tv-shell/hero-text.ts"() {
+    }
+  });
+
+  // lib/player-title-meta.ts
+  var init_player_title_meta = __esm({
+    "lib/player-title-meta.ts"() {
+      init_api_json_cache();
+      init_rating_sources();
+      init_hero_text();
+      init_watchlist_item_cache();
+    }
+  });
+
+  // components/player/player-title-block.tsx
+  var CHIP_CLASS, FORMAT_CHIP_CLASS, LANGUAGE_CHIP_CLASS;
+  var init_player_title_block2 = __esm({
+    "components/player/player-title-block.tsx"() {
+      "use client";
+      init_react_shim();
+      init_details_meta_row();
+      init_i18n();
+      init_player_title_block();
+      init_player_title_meta();
+      init_jsx_runtime_shim();
+      CHIP_CLASS = "vp-chip inline-flex items-center gap-[0.35em] whitespace-nowrap rounded-md border px-2 py-0.5 text-xs leading-snug";
+      FORMAT_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.2] bg-black/35 font-semibold text-slate-100`;
+      LANGUAGE_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.14] bg-black/25 font-medium text-slate-300`;
+    }
+  });
+
   // lib/android-media-keys.ts
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
+      init_key_hold();
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var FRESH_SOURCE_MS;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      FRESH_SOURCE_MS = 10 * 6e4;
+    }
+  });
+
+  // lib/core-streams/prepare.ts
+  var init_prepare = __esm({
+    "lib/core-streams/prepare.ts"() {
+      "use strict";
+      init_filters();
+      init_stream_utils();
+    }
+  });
+
+  // lib/core-streams/playback.ts
+  var SLATE_MIN_BYTES, DIRECT_START_MAX_AGE_MS;
+  var init_playback = __esm({
+    "lib/core-streams/playback.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_session_host();
+      init_lookup();
+      init_prepare();
+      init_stream_utils();
+      SLATE_MIN_BYTES = 256 * 1024;
+      DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
     }
   });
 
   // lib/resume-playback.ts
   var init_resume_playback = __esm({
     "lib/resume-playback.ts"() {
+      init_timing();
       init_plugin_registry();
+      init_android_direct_stream();
       init_session_host();
+      init_playback_settings();
+      init_stream_utils();
+      init_playback();
+    }
+  });
+
+  // lib/subtitle-autopick.ts
+  var init_subtitle_autopick = __esm({
+    "lib/subtitle-autopick.ts"() {
     }
   });
 
@@ -11902,11 +14642,13 @@
     }
   });
 
-  // lib/player-layout.ts
-  var init_player_layout = __esm({
-    "lib/player-layout.ts"() {
+  // lib/scrobble-fanout.ts
+  var init_scrobble_fanout = __esm({
+    "lib/scrobble-fanout.ts"() {
       "use client";
-      init_profile_storage_shim();
+      init_plugin_registry();
+      init_plugin_state();
+      init_trakt_scrobble();
     }
   });
 
@@ -11935,6 +14677,7 @@
       init_tv_focus_shim();
       init_video_tuning();
       init_audio_tuning();
+      init_tauri_native_player();
       init_jsx_runtime_shim();
     }
   });
@@ -11954,11 +14697,17 @@
     }
   });
 
+  // lib/player-menu-anchor.ts
+  var init_player_menu_anchor = __esm({
+    "lib/player-menu-anchor.ts"() {
+    }
+  });
+
   // lib/download-target.ts
-  var import_core3;
+  var import_core4;
   var init_download_target = __esm({
     "lib/download-target.ts"() {
-      import_core3 = __toESM(require_core());
+      import_core4 = __toESM(require_core());
       init_tauri_mpv();
       init_tauri_native_player();
       init_playback_settings();
@@ -12060,6 +14809,7 @@
     "components/player/player-soundtrack-panel.tsx"() {
       "use client";
       init_react_shim();
+      init_tv_scene();
       init_i18n();
       init_tv_focus_shim();
       init_fetch_client();
@@ -12079,25 +14829,6 @@
     }
   });
 
-  // lib/core-streams/stream-utils.ts
-  var SIZE_UNITS;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
-    }
-  });
-
   // components/player/player-streams-panel.tsx
   var init_player_streams_panel = __esm({
     "components/player/player-streams-panel.tsx"() {
@@ -12110,10 +14841,63 @@
     }
   });
 
+  // lib/couch/host-trakt.ts
+  var init_host_trakt = __esm({
+    "lib/couch/host-trakt.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/couch/sport-protocol.ts
+  var init_sport_protocol = __esm({
+    "lib/couch/sport-protocol.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/couch/host-bridge.ts
+  var init_host_bridge = __esm({
+    "lib/couch/host-bridge.ts"() {
+      init_host_trakt();
+      init_sport_protocol();
+    }
+  });
+
+  // lib/couch/player-snapshot.ts
+  var init_player_snapshot = __esm({
+    "lib/couch/player-snapshot.ts"() {
+      init_stream_utils();
+      init_sleep_timer();
+    }
+  });
+
   // lib/homekit-client.ts
   var init_homekit_client = __esm({
     "lib/homekit-client.ts"() {
       "use client";
+    }
+  });
+
+  // lib/continue-frame-capture.ts
+  var init_continue_frame_capture = __esm({
+    "lib/continue-frame-capture.ts"() {
+      "use client";
+      init_continue_frames();
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/use-continue-frame-capture.ts
+  var init_use_continue_frame_capture = __esm({
+    "lib/use-continue-frame-capture.ts"() {
+      "use client";
+      init_react_shim();
+      init_continue_frames();
+      init_continue_frame_capture();
+      init_tauri_native_player();
     }
   });
 
@@ -12135,6 +14919,8 @@
         { id: "seekForward", category: "player", defaultKey: "ArrowRight", labelKey: "shortcutsSeekForward" },
         { id: "mute", category: "player", defaultKey: "m", labelKey: "shortcutsMute" },
         { id: "fullscreen", category: "player", defaultKey: "f", labelKey: "shortcutsToggleFullscreen" },
+        { id: "saveMoment", category: "player", defaultKey: "b", labelKey: "shortcutsSaveMoment" },
+        { id: "clip", category: "player", defaultKey: "c", labelKey: "shortcutsClip" },
         { id: "subtitleCycle", category: "tracks", defaultKey: "s", labelKey: "shortcutsSubtitleCycle" },
         { id: "secondarySubtitleCycle", category: "tracks", defaultKey: "d", labelKey: "shortcutsSecondarySubtitleCycle" },
         { id: "subtitleDelayBack", category: "tracks", defaultKey: "z", labelKey: "shortcutsSubtitleDelayBack" },
@@ -12153,6 +14939,22 @@
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+    }
+  });
+
+  // lib/player-silent-start.ts
+  var init_player_silent_start = __esm({
+    "lib/player-silent-start.ts"() {
+      init_start_watchdog();
     }
   });
 
@@ -12203,12 +15005,121 @@
     }
   });
 
+  // lib/subtitle-sync/client.ts
+  var init_client2 = __esm({
+    "lib/subtitle-sync/client.ts"() {
+    }
+  });
+
+  // lib/subtitle-sync/health.ts
+  var init_health = __esm({
+    "lib/subtitle-sync/health.ts"() {
+    }
+  });
+
+  // lib/subtitle-sync/plan.ts
+  var init_plan = __esm({
+    "lib/subtitle-sync/plan.ts"() {
+      "use strict";
+      init_playback_settings();
+    }
+  });
+
+  // lib/subtitle-sync/loop.ts
+  var init_loop = __esm({
+    "lib/subtitle-sync/loop.ts"() {
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/opt-out.ts
+  var init_opt_out = __esm({
+    "lib/subtitle-sync/opt-out.ts"() {
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/subtitle-sync/user-delay.ts
+  var init_user_delay = __esm({
+    "lib/subtitle-sync/user-delay.ts"() {
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/diag.ts
+  var init_diag = __esm({
+    "lib/subtitle-sync/diag.ts"() {
+      init_plan();
+      init_user_delay();
+    }
+  });
+
+  // components/player/use-subtitle-auto-sync.ts
+  var init_use_subtitle_auto_sync = __esm({
+    "components/player/use-subtitle-auto-sync.ts"() {
+      "use strict";
+      init_react_shim();
+      init_android_source_cache();
+      init_subtitle_delay_store();
+      init_playback_settings();
+      init_client2();
+      init_health();
+      init_loop();
+      init_plan();
+      init_opt_out();
+      init_user_delay();
+      init_diag();
+    }
+  });
+
+  // lib/subtitle-sync/other-edit.ts
+  function createOwnTrackOffers() {
+    const offered = /* @__PURE__ */ new Set();
+    const choices = /* @__PURE__ */ new Map();
+    const key = (file, subId) => `${file}|${subId}`;
+    return {
+      shouldOffer: (file, subId) => !offered.has(key(file, subId)),
+      markOffered: (file, subId) => {
+        offered.add(key(file, subId));
+      },
+      decide: (file, subId, choice) => {
+        offered.add(key(file, subId));
+        choices.set(key(file, subId), choice);
+      },
+      choice: (file, subId) => choices.get(key(file, subId)) ?? null
+    };
+  }
+  var ownTrackOffers;
+  var init_other_edit = __esm({
+    "lib/subtitle-sync/other-edit.ts"() {
+      init_plan();
+      ownTrackOffers = createOwnTrackOffers();
+    }
+  });
+
+  // components/player/use-embedded-track-languages.ts
+  var init_use_embedded_track_languages = __esm({
+    "components/player/use-embedded-track-languages.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_client2();
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/mpv-swap.ts
+  var init_mpv_swap = __esm({
+    "lib/subtitle-sync/mpv-swap.ts"() {
+    }
+  });
+
   // lib/tauri-avplayer.ts
-  var import_core4;
+  var import_core5;
   var init_tauri_avplayer = __esm({
     "lib/tauri-avplayer.ts"() {
       "use client";
-      import_core4 = __toESM(require_core());
+      import_core5 = __toESM(require_core());
       init_tauri_mpv();
     }
   });
@@ -12268,7 +15179,10 @@
         // Stjärna — bevakningslistan HETER stjärnlistan, så formen är dess egen och
         // inte en tillfällighet. Den ligger här i stället för att falla igenom till
         // reservformen nedan, som numera aldrig ger en stjärna.
-        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z"
+        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z",
+        // Boll — Sport som eget menyval (Live TV-pluginets sida `live-tv-sport`):
+        // ring, femhörning i mitten och fem sömmar ut mot kanten.
+        "live-tv-sport": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 8l3.8 2.76-1.45 4.47h-4.7L8.2 10.76zM12 8V3M15.8 10.76l4.75-1.54M14.35 15.23l2.94 4.04M9.65 15.23l-2.94 4.04M8.2 10.76 3.45 9.22"
       };
     }
   });
@@ -12286,8 +15200,158 @@
     }
   });
 
+  // lib/series-locks.ts
+  var init_series_locks = __esm({
+    "lib/series-locks.ts"() {
+      "use client";
+      init_app_storage();
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/series-lock-gate.ts
+  var init_series_lock_gate = __esm({
+    "lib/series-lock-gate.ts"() {
+    }
+  });
+
+  // lib/series-lock-runtime.ts
+  var init_series_lock_runtime = __esm({
+    "lib/series-lock-runtime.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_profile_storage_shim();
+      init_watched_episodes();
+      init_series_locks();
+      init_series_lock_gate();
+    }
+  });
+
+  // lib/player-status-line.ts
+  var init_player_status_line = __esm({
+    "lib/player-status-line.ts"() {
+    }
+  });
+
+  // lib/moment-link.ts
+  var init_moment_link = __esm({
+    "lib/moment-link.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-share-button.tsx
+  var init_clip_share_button = __esm({
+    "components/player/clip/clip-share-button.tsx"() {
+      "use client";
+      init_react_shim();
+      init_player_control_icons();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-state.ts
+  var init_clip_state = __esm({
+    "lib/clip/clip-state.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-panel.tsx
+  var init_clip_panel = __esm({
+    "components/player/clip/clip-panel.tsx"() {
+      "use client";
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // components/player/clip/clip-trimmer.tsx
+  var init_clip_trimmer = __esm({
+    "components/player/clip/clip-trimmer.tsx"() {
+      "use client";
+      init_react_shim();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-loop.ts
+  var init_clip_loop = __esm({
+    "lib/clip/clip-loop.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-phone-panels.tsx
+  var init_clip_phone_panels = __esm({
+    "components/player/clip/clip-phone-panels.tsx"() {
+      "use client";
+      init_clip_panel();
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // components/player/clip/clip-tv-panel.tsx
+  var init_clip_tv_panel = __esm({
+    "components/player/clip/clip-tv-panel.tsx"() {
+      "use client";
+      init_esm();
+      init_clip_panel();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/clip/clip-offer.ts
+  var init_clip_offer = __esm({
+    "lib/clip/clip-offer.ts"() {
+      init_tauri_mpv();
+    }
+  });
+
+  // lib/couch/host-api.ts
+  var init_host_api = __esm({
+    "lib/couch/host-api.ts"() {
+    }
+  });
+
+  // lib/device-transfer.ts
+  var init_device_transfer = __esm({
+    "lib/device-transfer.ts"() {
+      "use client";
+      init_app_storage();
+    }
+  });
+
+  // lib/clip/clip-export.ts
+  var init_clip_export = __esm({
+    "lib/clip/clip-export.ts"() {
+      "use client";
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/player-chapters.ts
+  var init_player_chapters = __esm({
+    "lib/player-chapters.ts"() {
+    }
+  });
+
+  // lib/player-moments.ts
+  var init_player_moments = __esm({
+    "lib/player-moments.ts"() {
+      init_profile_storage_shim();
+    }
+  });
+
   // components/player/video-player-modal.tsx
-  var import_react_dom, import_core5, import_window;
+  var import_react_dom2, import_core6, import_window2;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
@@ -12295,14 +15359,18 @@
       init_player_control_icons();
       init_playback_settings();
       init_playback_settings();
+      init_playback_settings();
+      init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
       init_react_shim();
       init_timing();
-      import_react_dom = __toESM(require_react_dom());
-      import_core5 = __toESM(require_core());
-      import_window = __toESM(require_window());
+      import_react_dom2 = __toESM(require_react_dom());
+      import_core6 = __toESM(require_core());
+      import_window2 = __toESM(require_window());
       init_transparent_webview();
+      init_platform_os();
+      init_window_controls();
       init_video_progress();
       init_recorder();
       init_profile_storage_shim();
@@ -12312,13 +15380,16 @@
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
+      init_player_title_block2();
+      init_player_title_block();
       init_tauri_native_player();
       init_playback_settings();
       init_android_media_keys();
       init_resume_playback();
+      init_subtitle_autopick();
       init_watched_episodes();
       init_watched_movies();
-      init_trakt_scrobble();
+      init_scrobble_fanout();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -12329,8 +15400,11 @@
       init_scroll_lock();
       init_i18n();
       init_tv_focus_shim();
+      init_tv_scene();
+      init_player_menu_anchor();
       init_download_target();
       init_session_host();
+      init_pip();
       init_vlc_deep_link();
       init_fetch_client();
       init_wiki_request_cache();
@@ -12340,14 +15414,18 @@
       init_player_soundtrack_panel();
       init_player_episodes_panel();
       init_player_streams_panel();
+      init_host_bridge();
+      init_player_snapshot();
       init_homekit_client();
       init_plugin_sdk();
+      init_use_continue_frame_capture();
       init_playback_session_client();
       init_playback_settings();
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
       init_player_reveal_hold();
+      init_player_silent_start();
       init_credits_recommendations();
       init_ids();
       init_title_logo_cache();
@@ -12356,12 +15434,35 @@
       init_tauri_native_player();
       init_playback_settings();
       init_lan_streaming_settings();
+      init_use_subtitle_auto_sync();
+      init_other_edit();
+      init_use_embedded_track_languages();
       init_subtitle_delay_store();
+      init_user_delay();
+      init_diag();
+      init_mpv_swap();
       init_tauri_mpv();
       init_tauri_native_player();
       init_tauri_avplayer();
       init_app_storage();
       init_binge_zap_button();
+      init_series_lock_runtime();
+      init_player_status_line();
+      init_moment_link();
+      init_clip_panel();
+      init_clip_trimmer();
+      init_clip_state();
+      init_key_hold();
+      init_clip_loop();
+      init_clip_phone_panels();
+      init_clip_tv_panel();
+      init_clip_offer();
+      init_host_api();
+      init_device_transfer();
+      init_tauri_native_player();
+      init_clip_export();
+      init_player_chapters();
+      init_player_moments();
       init_jsx_runtime_shim();
     }
   });
@@ -12371,1112 +15472,6 @@
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
-    }
-  });
-
-  // ../../node_modules/qrcode.react/lib/esm/index.js
-  function generatePath(modules, margin = 0) {
-    const ops = [];
-    modules.forEach(function(row, y) {
-      let start = null;
-      row.forEach(function(cell, x) {
-        if (!cell && start !== null) {
-          ops.push(
-            `M${start + margin} ${y + margin}h${x - start}v1H${start + margin}z`
-          );
-          start = null;
-          return;
-        }
-        if (x === row.length - 1) {
-          if (!cell) {
-            return;
-          }
-          if (start === null) {
-            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
-          } else {
-            ops.push(
-              `M${start + margin},${y + margin} h${x + 1 - start}v1H${start + margin}z`
-            );
-          }
-          return;
-        }
-        if (cell && start === null) {
-          start = x;
-        }
-      });
-    });
-    return ops.join("");
-  }
-  function excavateModules(modules, excavation) {
-    return modules.slice().map((row, y) => {
-      if (y < excavation.y || y >= excavation.y + excavation.h) {
-        return row;
-      }
-      return row.map((cell, x) => {
-        if (x < excavation.x || x >= excavation.x + excavation.w) {
-          return cell;
-        }
-        return false;
-      });
-    });
-  }
-  function getImageSettings(cells, size, margin, imageSettings) {
-    if (imageSettings == null) {
-      return null;
-    }
-    const numCells = cells.length + margin * 2;
-    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
-    const scale = numCells / size;
-    const w = (imageSettings.width || defaultSize) * scale;
-    const h = (imageSettings.height || defaultSize) * scale;
-    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
-    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
-    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
-    let excavation = null;
-    if (imageSettings.excavate) {
-      let floorX = Math.floor(x);
-      let floorY = Math.floor(y);
-      let ceilW = Math.ceil(w + x - floorX);
-      let ceilH = Math.ceil(h + y - floorY);
-      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
-    }
-    const crossOrigin = imageSettings.crossOrigin;
-    return { x, y, h, w, excavation, opacity, crossOrigin };
-  }
-  function getMarginSize(includeMargin, marginSize) {
-    if (marginSize != null) {
-      return Math.max(Math.floor(marginSize), 0);
-    }
-    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
-  }
-  function useQRCode({
-    value,
-    level,
-    minVersion,
-    includeMargin,
-    marginSize,
-    imageSettings,
-    size,
-    boostLevel
-  }) {
-    let qrcode = react_shim_default.useMemo(() => {
-      const values = Array.isArray(value) ? value : [value];
-      const segments = values.reduce((accum, v) => {
-        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
-        return accum;
-      }, []);
-      return qrcodegen_default.QrCode.encodeSegments(
-        segments,
-        ERROR_LEVEL_MAP[level],
-        minVersion,
-        void 0,
-        void 0,
-        boostLevel
-      );
-    }, [value, level, minVersion, boostLevel]);
-    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
-      let cells2 = qrcode.getModules();
-      const margin2 = getMarginSize(includeMargin, marginSize);
-      const numCells2 = cells2.length + margin2 * 2;
-      const calculatedImageSettings2 = getImageSettings(
-        cells2,
-        size,
-        margin2,
-        imageSettings
-      );
-      return {
-        cells: cells2,
-        margin: margin2,
-        numCells: numCells2,
-        calculatedImageSettings: calculatedImageSettings2
-      };
-    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
-    return {
-      qrcode,
-      margin,
-      cells,
-      numCells,
-      calculatedImageSettings
-    };
-  }
-  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
-  var init_esm = __esm({
-    "../../node_modules/qrcode.react/lib/esm/index.js"() {
-      init_react_shim();
-      __defProp2 = Object.defineProperty;
-      __getOwnPropSymbols = Object.getOwnPropertySymbols;
-      __hasOwnProp2 = Object.prototype.hasOwnProperty;
-      __propIsEnum = Object.prototype.propertyIsEnumerable;
-      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-      __spreadValues = (a, b) => {
-        for (var prop in b || (b = {}))
-          if (__hasOwnProp2.call(b, prop))
-            __defNormalProp2(a, prop, b[prop]);
-        if (__getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(b)) {
-            if (__propIsEnum.call(b, prop))
-              __defNormalProp2(a, prop, b[prop]);
-          }
-        return a;
-      };
-      __objRest = (source, exclude) => {
-        var target = {};
-        for (var prop in source)
-          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
-            target[prop] = source[prop];
-        if (source != null && __getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(source)) {
-            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-              target[prop] = source[prop];
-          }
-        return target;
-      };
-      ((qrcodegen2) => {
-        const _QrCode = class _QrCode2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code with the given version number,
-          // error correction level, data codeword bytes, and mask number.
-          // This is a low-level API that most users should not use directly.
-          // A mid-level API is the encodeSegments() function.
-          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version3;
-            this.errorCorrectionLevel = errorCorrectionLevel;
-            this.modules = [];
-            this.isFunction = [];
-            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version value out of range");
-            if (msk < -1 || msk > 7)
-              throw new RangeError("Mask value out of range");
-            this.size = version3 * 4 + 17;
-            let row = [];
-            for (let i = 0; i < this.size; i++)
-              row.push(false);
-            for (let i = 0; i < this.size; i++) {
-              this.modules.push(row.slice());
-              this.isFunction.push(row.slice());
-            }
-            this.drawFunctionPatterns();
-            const allCodewords = this.addEccAndInterleave(dataCodewords);
-            this.drawCodewords(allCodewords);
-            if (msk == -1) {
-              let minPenalty = 1e9;
-              for (let i = 0; i < 8; i++) {
-                this.applyMask(i);
-                this.drawFormatBits(i);
-                const penalty = this.getPenaltyScore();
-                if (penalty < minPenalty) {
-                  msk = i;
-                  minPenalty = penalty;
-                }
-                this.applyMask(i);
-              }
-            }
-            assert(0 <= msk && msk <= 7);
-            this.mask = msk;
-            this.applyMask(msk);
-            this.drawFormatBits(msk);
-            this.isFunction = [];
-          }
-          /*-- Static factory functions (high level) --*/
-          // Returns a QR Code representing the given Unicode text string at the given error correction level.
-          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
-          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
-          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
-          // ecl argument if it can be done without increasing the version.
-          static encodeText(text, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text);
-            return _QrCode2.encodeSegments(segs, ecl);
-          }
-          // Returns a QR Code representing the given binary data at the given error correction level.
-          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
-          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
-          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
-          static encodeBinary(data, ecl) {
-            const seg = qrcodegen2.QrSegment.makeBytes(data);
-            return _QrCode2.encodeSegments([seg], ecl);
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a QR Code representing the given segments with the given encoding parameters.
-          // The smallest possible QR Code version within the given range is automatically
-          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
-          // may be higher than the ecl argument if it can be done without increasing the
-          // version. The mask number is either between 0 to 7 (inclusive) to force that
-          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
-          // This function allows the user to create a custom sequence of segments that switches
-          // between modes (such as alphanumeric and byte) to encode text in less space.
-          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
-          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
-            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
-              throw new RangeError("Invalid value");
-            let version3;
-            let dataUsedBits;
-            for (version3 = minVersion; ; version3++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version3);
-              if (usedBits <= dataCapacityBits2) {
-                dataUsedBits = usedBits;
-                break;
-              }
-              if (version3 >= maxVersion)
-                throw new RangeError("Data too long");
-            }
-            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
-                ecl = newEcl;
-            }
-            let bb = [];
-            for (const seg of segs) {
-              appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
-              for (const b of seg.getData())
-                bb.push(b);
-            }
-            assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-            assert(bb.length <= dataCapacityBits);
-            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
-            appendBits(0, (8 - bb.length % 8) % 8, bb);
-            assert(bb.length % 8 == 0);
-            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
-              appendBits(padByte, 8, bb);
-            let dataCodewords = [];
-            while (dataCodewords.length * 8 < bb.length)
-              dataCodewords.push(0);
-            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version3, ecl, dataCodewords, mask);
-          }
-          /*-- Accessor methods --*/
-          // Returns the color of the module (pixel) at the given coordinates, which is false
-          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
-          // If the given coordinates are out of bounds, then false (light) is returned.
-          getModule(x, y) {
-            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
-          }
-          // Modified to expose modules for easy access
-          getModules() {
-            return this.modules;
-          }
-          /*-- Private helper methods for constructor: Drawing function modules --*/
-          // Reads this object's version field, and draws and marks all function modules.
-          drawFunctionPatterns() {
-            for (let i = 0; i < this.size; i++) {
-              this.setFunctionModule(6, i, i % 2 == 0);
-              this.setFunctionModule(i, 6, i % 2 == 0);
-            }
-            this.drawFinderPattern(3, 3);
-            this.drawFinderPattern(this.size - 4, 3);
-            this.drawFinderPattern(3, this.size - 4);
-            const alignPatPos = this.getAlignmentPatternPositions();
-            const numAlign = alignPatPos.length;
-            for (let i = 0; i < numAlign; i++) {
-              for (let j = 0; j < numAlign; j++) {
-                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
-                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
-              }
-            }
-            this.drawFormatBits(0);
-            this.drawVersion();
-          }
-          // Draws two copies of the format bits (with its own error correction code)
-          // based on the given mask and this object's error correction level field.
-          drawFormatBits(mask) {
-            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
-            let rem = data;
-            for (let i = 0; i < 10; i++)
-              rem = rem << 1 ^ (rem >>> 9) * 1335;
-            const bits = (data << 10 | rem) ^ 21522;
-            assert(bits >>> 15 == 0);
-            for (let i = 0; i <= 5; i++)
-              this.setFunctionModule(8, i, getBit(bits, i));
-            this.setFunctionModule(8, 7, getBit(bits, 6));
-            this.setFunctionModule(8, 8, getBit(bits, 7));
-            this.setFunctionModule(7, 8, getBit(bits, 8));
-            for (let i = 9; i < 15; i++)
-              this.setFunctionModule(14 - i, 8, getBit(bits, i));
-            for (let i = 0; i < 8; i++)
-              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
-            for (let i = 8; i < 15; i++)
-              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
-            this.setFunctionModule(8, this.size - 8, true);
-          }
-          // Draws two copies of the version bits (with its own error correction code),
-          // based on this object's version field, iff 7 <= version <= 40.
-          drawVersion() {
-            if (this.version < 7)
-              return;
-            let rem = this.version;
-            for (let i = 0; i < 12; i++)
-              rem = rem << 1 ^ (rem >>> 11) * 7973;
-            const bits = this.version << 12 | rem;
-            assert(bits >>> 18 == 0);
-            for (let i = 0; i < 18; i++) {
-              const color = getBit(bits, i);
-              const a = this.size - 11 + i % 3;
-              const b = Math.floor(i / 3);
-              this.setFunctionModule(a, b, color);
-              this.setFunctionModule(b, a, color);
-            }
-          }
-          // Draws a 9*9 finder pattern including the border separator,
-          // with the center module at (x, y). Modules can be out of bounds.
-          drawFinderPattern(x, y) {
-            for (let dy = -4; dy <= 4; dy++) {
-              for (let dx = -4; dx <= 4; dx++) {
-                const dist = Math.max(Math.abs(dx), Math.abs(dy));
-                const xx = x + dx;
-                const yy = y + dy;
-                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
-                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
-              }
-            }
-          }
-          // Draws a 5*5 alignment pattern, with the center module
-          // at (x, y). All modules must be in bounds.
-          drawAlignmentPattern(x, y) {
-            for (let dy = -2; dy <= 2; dy++) {
-              for (let dx = -2; dx <= 2; dx++)
-                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
-            }
-          }
-          // Sets the color of a module and marks it as a function module.
-          // Only used by the constructor. Coordinates must be in bounds.
-          setFunctionModule(x, y, isDark) {
-            this.modules[y][x] = isDark;
-            this.isFunction[y][x] = true;
-          }
-          /*-- Private helper methods for constructor: Codewords and masking --*/
-          // Returns a new byte string representing the given data with the appropriate error correction
-          // codewords appended to it, based on this object's version and error correction level.
-          addEccAndInterleave(data) {
-            const ver = this.version;
-            const ecl = this.errorCorrectionLevel;
-            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
-              throw new RangeError("Invalid argument");
-            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
-            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
-            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
-            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
-            let blocks = [];
-            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
-            for (let i = 0, k = 0; i < numBlocks; i++) {
-              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
-              k += dat.length;
-              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
-              if (i < numShortBlocks)
-                dat.push(0);
-              blocks.push(dat.concat(ecc));
-            }
-            let result = [];
-            for (let i = 0; i < blocks[0].length; i++) {
-              blocks.forEach((block, j) => {
-                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
-                  result.push(block[i]);
-              });
-            }
-            assert(result.length == rawCodewords);
-            return result;
-          }
-          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
-          // data area of this QR Code. Function modules need to be marked off before this is called.
-          drawCodewords(data) {
-            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
-              throw new RangeError("Invalid argument");
-            let i = 0;
-            for (let right = this.size - 1; right >= 1; right -= 2) {
-              if (right == 6)
-                right = 5;
-              for (let vert = 0; vert < this.size; vert++) {
-                for (let j = 0; j < 2; j++) {
-                  const x = right - j;
-                  const upward = (right + 1 & 2) == 0;
-                  const y = upward ? this.size - 1 - vert : vert;
-                  if (!this.isFunction[y][x] && i < data.length * 8) {
-                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
-                    i++;
-                  }
-                }
-              }
-            }
-            assert(i == data.length * 8);
-          }
-          // XORs the codeword modules in this QR Code with the given mask pattern.
-          // The function modules must be marked and the codeword bits must be drawn
-          // before masking. Due to the arithmetic of XOR, calling applyMask() with
-          // the same mask value a second time will undo the mask. A final well-formed
-          // QR Code needs exactly one (not zero, two, etc.) mask applied.
-          applyMask(mask) {
-            if (mask < 0 || mask > 7)
-              throw new RangeError("Mask value out of range");
-            for (let y = 0; y < this.size; y++) {
-              for (let x = 0; x < this.size; x++) {
-                let invert;
-                switch (mask) {
-                  case 0:
-                    invert = (x + y) % 2 == 0;
-                    break;
-                  case 1:
-                    invert = y % 2 == 0;
-                    break;
-                  case 2:
-                    invert = x % 3 == 0;
-                    break;
-                  case 3:
-                    invert = (x + y) % 3 == 0;
-                    break;
-                  case 4:
-                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
-                    break;
-                  case 5:
-                    invert = x * y % 2 + x * y % 3 == 0;
-                    break;
-                  case 6:
-                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  case 7:
-                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  default:
-                    throw new Error("Unreachable");
-                }
-                if (!this.isFunction[y][x] && invert)
-                  this.modules[y][x] = !this.modules[y][x];
-              }
-            }
-          }
-          // Calculates and returns the penalty score based on state of this QR Code's current modules.
-          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
-          getPenaltyScore() {
-            let result = 0;
-            for (let y = 0; y < this.size; y++) {
-              let runColor = false;
-              let runX = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let x = 0; x < this.size; x++) {
-                if (this.modules[y][x] == runColor) {
-                  runX++;
-                  if (runX == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runX > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runX, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runX = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let x = 0; x < this.size; x++) {
-              let runColor = false;
-              let runY = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let y = 0; y < this.size; y++) {
-                if (this.modules[y][x] == runColor) {
-                  runY++;
-                  if (runY == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runY > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runY, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runY = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let y = 0; y < this.size - 1; y++) {
-              for (let x = 0; x < this.size - 1; x++) {
-                const color = this.modules[y][x];
-                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
-                  result += _QrCode2.PENALTY_N2;
-              }
-            }
-            let dark = 0;
-            for (const row of this.modules)
-              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
-            const total = this.size * this.size;
-            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
-            assert(0 <= k && k <= 9);
-            result += k * _QrCode2.PENALTY_N4;
-            assert(0 <= result && result <= 2568888);
-            return result;
-          }
-          /*-- Private helper functions --*/
-          // Returns an ascending list of positions of alignment patterns for this version number.
-          // Each position is in the range [0,177), and are used on both the x and y axes.
-          // This could be implemented as lookup table of 40 variable-length lists of integers.
-          getAlignmentPatternPositions() {
-            if (this.version == 1)
-              return [];
-            else {
-              const numAlign = Math.floor(this.version / 7) + 2;
-              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
-              let result = [6];
-              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
-                result.splice(1, 0, pos);
-              return result;
-            }
-          }
-          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
-          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
-          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
-          static getNumRawDataModules(ver) {
-            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version number out of range");
-            let result = (16 * ver + 128) * ver + 64;
-            if (ver >= 2) {
-              const numAlign = Math.floor(ver / 7) + 2;
-              result -= (25 * numAlign - 10) * numAlign - 55;
-              if (ver >= 7)
-                result -= 36;
-            }
-            assert(208 <= result && result <= 29648);
-            return result;
-          }
-          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
-          // QR Code of the given version number and error correction level, with remainder bits discarded.
-          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
-          static getNumDataCodewords(ver, ecl) {
-            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-          }
-          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
-          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
-          static reedSolomonComputeDivisor(degree) {
-            if (degree < 1 || degree > 255)
-              throw new RangeError("Degree out of range");
-            let result = [];
-            for (let i = 0; i < degree - 1; i++)
-              result.push(0);
-            result.push(1);
-            let root = 1;
-            for (let i = 0; i < degree; i++) {
-              for (let j = 0; j < result.length; j++) {
-                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
-                if (j + 1 < result.length)
-                  result[j] ^= result[j + 1];
-              }
-              root = _QrCode2.reedSolomonMultiply(root, 2);
-            }
-            return result;
-          }
-          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
-          static reedSolomonComputeRemainder(data, divisor) {
-            let result = divisor.map((_) => 0);
-            for (const b of data) {
-              const factor = b ^ result.shift();
-              result.push(0);
-              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
-            }
-            return result;
-          }
-          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
-          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
-          static reedSolomonMultiply(x, y) {
-            if (x >>> 8 != 0 || y >>> 8 != 0)
-              throw new RangeError("Byte out of range");
-            let z = 0;
-            for (let i = 7; i >= 0; i--) {
-              z = z << 1 ^ (z >>> 7) * 285;
-              z ^= (y >>> i & 1) * x;
-            }
-            assert(z >>> 8 == 0);
-            return z;
-          }
-          // Can only be called immediately after a light run is added, and
-          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
-          finderPenaltyCountPatterns(runHistory) {
-            const n = runHistory[1];
-            assert(n <= this.size * 3);
-            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
-            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
-          }
-          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
-          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
-            if (currentRunColor) {
-              this.finderPenaltyAddHistory(currentRunLength, runHistory);
-              currentRunLength = 0;
-            }
-            currentRunLength += this.size;
-            this.finderPenaltyAddHistory(currentRunLength, runHistory);
-            return this.finderPenaltyCountPatterns(runHistory);
-          }
-          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
-          finderPenaltyAddHistory(currentRunLength, runHistory) {
-            if (runHistory[0] == 0)
-              currentRunLength += this.size;
-            runHistory.pop();
-            runHistory.unshift(currentRunLength);
-          }
-        };
-        _QrCode.MIN_VERSION = 1;
-        _QrCode.MAX_VERSION = 40;
-        _QrCode.PENALTY_N1 = 3;
-        _QrCode.PENALTY_N2 = 3;
-        _QrCode.PENALTY_N3 = 40;
-        _QrCode.PENALTY_N4 = 10;
-        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Low
-          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
-          // Medium
-          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Quartile
-          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
-          // High
-        ];
-        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
-          // Low
-          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
-          // Medium
-          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
-          // Quartile
-          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
-          // High
-        ];
-        let QrCode = _QrCode;
-        qrcodegen2.QrCode = _QrCode;
-        function appendBits(val, len, bb) {
-          if (len < 0 || len > 31 || val >>> len != 0)
-            throw new RangeError("Value out of range");
-          for (let i = len - 1; i >= 0; i--)
-            bb.push(val >>> i & 1);
-        }
-        function getBit(x, i) {
-          return (x >>> i & 1) != 0;
-        }
-        function assert(cond) {
-          if (!cond)
-            throw new Error("Assertion error");
-        }
-        const _QrSegment = class _QrSegment2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code segment with the given attributes and data.
-          // The character count (numChars) must agree with the mode and the bit buffer length,
-          // but the constraint isn't checked. The given bit buffer is cloned and stored.
-          constructor(mode, numChars, bitData) {
-            this.mode = mode;
-            this.numChars = numChars;
-            this.bitData = bitData;
-            if (numChars < 0)
-              throw new RangeError("Invalid argument");
-            this.bitData = bitData.slice();
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a segment representing the given binary data encoded in
-          // byte mode. All input byte arrays are acceptable. Any text string
-          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
-          static makeBytes(data) {
-            let bb = [];
-            for (const b of data)
-              appendBits(b, 8, bb);
-            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
-          }
-          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
-          static makeNumeric(digits) {
-            if (!_QrSegment2.isNumeric(digits))
-              throw new RangeError("String contains non-numeric characters");
-            let bb = [];
-            for (let i = 0; i < digits.length; ) {
-              const n = Math.min(digits.length - i, 3);
-              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
-              i += n;
-            }
-            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
-          }
-          // Returns a segment representing the given text string encoded in alphanumeric mode.
-          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
-          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text) {
-            if (!_QrSegment2.isAlphanumeric(text))
-              throw new RangeError("String contains unencodable characters in alphanumeric mode");
-            let bb = [];
-            let i;
-            for (i = 0; i + 2 <= text.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
-              appendBits(temp, 11, bb);
-            }
-            if (i < text.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
-          }
-          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
-          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text) {
-            if (text == "")
-              return [];
-            else if (_QrSegment2.isNumeric(text))
-              return [_QrSegment2.makeNumeric(text)];
-            else if (_QrSegment2.isAlphanumeric(text))
-              return [_QrSegment2.makeAlphanumeric(text)];
-            else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
-          }
-          // Returns a segment representing an Extended Channel Interpretation
-          // (ECI) designator with the given assignment value.
-          static makeEci(assignVal) {
-            let bb = [];
-            if (assignVal < 0)
-              throw new RangeError("ECI assignment value out of range");
-            else if (assignVal < 1 << 7)
-              appendBits(assignVal, 8, bb);
-            else if (assignVal < 1 << 14) {
-              appendBits(2, 2, bb);
-              appendBits(assignVal, 14, bb);
-            } else if (assignVal < 1e6) {
-              appendBits(6, 3, bb);
-              appendBits(assignVal, 21, bb);
-            } else
-              throw new RangeError("ECI assignment value out of range");
-            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
-          }
-          // Tests whether the given string can be encoded as a segment in numeric mode.
-          // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text) {
-            return _QrSegment2.NUMERIC_REGEX.test(text);
-          }
-          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
-          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
-          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
-          }
-          /*-- Methods --*/
-          // Returns a new copy of the data bits of this segment.
-          getData() {
-            return this.bitData.slice();
-          }
-          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
-          // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version3) {
-            let result = 0;
-            for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version3);
-              if (seg.numChars >= 1 << ccbits)
-                return Infinity;
-              result += 4 + ccbits + seg.bitData.length;
-            }
-            return result;
-          }
-          // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str) {
-            str = encodeURI(str);
-            let result = [];
-            for (let i = 0; i < str.length; i++) {
-              if (str.charAt(i) != "%")
-                result.push(str.charCodeAt(i));
-              else {
-                result.push(parseInt(str.substring(i + 1, i + 3), 16));
-                i += 2;
-              }
-            }
-            return result;
-          }
-        };
-        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
-        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
-        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
-        let QrSegment = _QrSegment;
-        qrcodegen2.QrSegment = _QrSegment;
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrCode;
-        ((QrCode2) => {
-          const _Ecc = class _Ecc {
-            // The QR Code can tolerate about 30% erroneous codewords
-            /*-- Constructor and fields --*/
-            constructor(ordinal, formatBits) {
-              this.ordinal = ordinal;
-              this.formatBits = formatBits;
-            }
-          };
-          _Ecc.LOW = new _Ecc(0, 1);
-          _Ecc.MEDIUM = new _Ecc(1, 0);
-          _Ecc.QUARTILE = new _Ecc(2, 3);
-          _Ecc.HIGH = new _Ecc(3, 2);
-          let Ecc = _Ecc;
-          QrCode2.Ecc = _Ecc;
-        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrSegment;
-        ((QrSegment2) => {
-          const _Mode = class _Mode {
-            /*-- Constructor and fields --*/
-            constructor(modeBits, numBitsCharCount) {
-              this.modeBits = modeBits;
-              this.numBitsCharCount = numBitsCharCount;
-            }
-            /*-- Method --*/
-            // (Package-private) Returns the bit width of the character count field for a segment in
-            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
-            numCharCountBits(ver) {
-              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
-            }
-          };
-          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
-          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
-          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
-          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
-          _Mode.ECI = new _Mode(7, [0, 0, 0]);
-          let Mode = _Mode;
-          QrSegment2.Mode = _Mode;
-        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      qrcodegen_default = qrcodegen;
-      ERROR_LEVEL_MAP = {
-        L: qrcodegen_default.QrCode.Ecc.LOW,
-        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
-        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
-        H: qrcodegen_default.QrCode.Ecc.HIGH
-      };
-      DEFAULT_SIZE = 128;
-      DEFAULT_LEVEL = "L";
-      DEFAULT_BGCOLOR = "#FFFFFF";
-      DEFAULT_FGCOLOR = "#000000";
-      DEFAULT_INCLUDEMARGIN = false;
-      DEFAULT_MINVERSION = 1;
-      SPEC_MARGIN_SIZE = 4;
-      DEFAULT_MARGIN_SIZE = 0;
-      DEFAULT_IMG_SCALE = 0.1;
-      SUPPORTS_PATH2D = (function() {
-        try {
-          new Path2D().addPath(new Path2D());
-        } catch (e) {
-          return false;
-        }
-        return true;
-      })();
-      QRCodeCanvas = react_shim_default.forwardRef(
-        function QRCodeCanvas2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            marginSize,
-            imageSettings
-          } = _a, extraProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
-          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
-          const _canvas = react_shim_default.useRef(null);
-          const _image = react_shim_default.useRef(null);
-          const setCanvasRef = react_shim_default.useCallback(
-            (node) => {
-              _canvas.current = node;
-              if (typeof forwardedRef === "function") {
-                forwardedRef(node);
-              } else if (forwardedRef) {
-                forwardedRef.current = node;
-              }
-            },
-            [forwardedRef]
-          );
-          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          react_shim_default.useEffect(() => {
-            if (_canvas.current != null) {
-              const canvas = _canvas.current;
-              const ctx = canvas.getContext("2d");
-              if (!ctx) {
-                return;
-              }
-              let cellsToDraw = cells;
-              const image = _image.current;
-              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
-              if (haveImageToRender) {
-                if (calculatedImageSettings.excavation != null) {
-                  cellsToDraw = excavateModules(
-                    cells,
-                    calculatedImageSettings.excavation
-                  );
-                }
-              }
-              const pixelRatio = window.devicePixelRatio || 1;
-              canvas.height = canvas.width = size * pixelRatio;
-              const scale = size / numCells * pixelRatio;
-              ctx.scale(scale, scale);
-              ctx.fillStyle = bgColor;
-              ctx.fillRect(0, 0, numCells, numCells);
-              ctx.fillStyle = fgColor;
-              if (SUPPORTS_PATH2D) {
-                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
-              } else {
-                cells.forEach(function(row, rdx) {
-                  row.forEach(function(cell, cdx) {
-                    if (cell) {
-                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
-                    }
-                  });
-                });
-              }
-              if (calculatedImageSettings) {
-                ctx.globalAlpha = calculatedImageSettings.opacity;
-              }
-              if (haveImageToRender) {
-                ctx.drawImage(
-                  image,
-                  calculatedImageSettings.x + margin,
-                  calculatedImageSettings.y + margin,
-                  calculatedImageSettings.w,
-                  calculatedImageSettings.h
-                );
-              }
-            }
-          });
-          react_shim_default.useEffect(() => {
-            setIsImageLoaded(false);
-          }, [imgSrc]);
-          const canvasStyle = __spreadValues({ height: size, width: size }, style);
-          let img = null;
-          if (imgSrc != null) {
-            img = /* @__PURE__ */ react_shim_default.createElement(
-              "img",
-              {
-                src: imgSrc,
-                key: imgSrc,
-                style: { display: "none" },
-                onLoad: () => {
-                  setIsImageLoaded(true);
-                },
-                ref: _image,
-                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
-            "canvas",
-            __spreadValues({
-              style: canvasStyle,
-              height: size,
-              width: size,
-              ref: setCanvasRef,
-              role: "img"
-            }, otherProps)
-          ), img);
-        }
-      );
-      QRCodeCanvas.displayName = "QRCodeCanvas";
-      QRCodeSVG = react_shim_default.forwardRef(
-        function QRCodeSVG2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            title,
-            marginSize,
-            imageSettings
-          } = _a, otherProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "title",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          let cellsToDraw = cells;
-          let image = null;
-          if (imageSettings != null && calculatedImageSettings != null) {
-            if (calculatedImageSettings.excavation != null) {
-              cellsToDraw = excavateModules(
-                cells,
-                calculatedImageSettings.excavation
-              );
-            }
-            image = /* @__PURE__ */ react_shim_default.createElement(
-              "image",
-              {
-                href: imageSettings.src,
-                height: calculatedImageSettings.h,
-                width: calculatedImageSettings.w,
-                x: calculatedImageSettings.x + margin,
-                y: calculatedImageSettings.y + margin,
-                preserveAspectRatio: "none",
-                opacity: calculatedImageSettings.opacity,
-                crossOrigin: calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          const fgPath = generatePath(cellsToDraw, margin);
-          return /* @__PURE__ */ react_shim_default.createElement(
-            "svg",
-            __spreadValues({
-              height: size,
-              width: size,
-              viewBox: `0 0 ${numCells} ${numCells}`,
-              ref: forwardedRef,
-              role: "img"
-            }, otherProps),
-            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
-            /* @__PURE__ */ react_shim_default.createElement(
-              "path",
-              {
-                fill: bgColor,
-                d: `M0,0 h${numCells}v${numCells}H0z`,
-                shapeRendering: "crispEdges"
-              }
-            ),
-            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
-            image
-          );
-        }
-      );
-      QRCodeSVG.displayName = "QRCodeSVG";
     }
   });
 
@@ -13551,7 +15546,7 @@
     size = 18,
     color,
     style,
-    fill
+    fill: fill2
   }) {
     const path = ICON_PATHS[name];
     if (!path) return null;
@@ -13561,7 +15556,7 @@
         width: size,
         height: size,
         viewBox: "0 0 24 24",
-        fill: fill || "none",
+        fill: fill2 || "none",
         stroke: color || "currentColor",
         strokeWidth: "1.6",
         strokeLinecap: "round",
@@ -13670,14 +15665,14 @@
       }
     );
   }
-  var import_react_dom2, TOKENS, TYPE, inputStyle, eyebrowStyle, ICON_PATHS;
+  var import_react_dom3, TOKENS, TYPE, inputStyle, eyebrowStyle, ICON_PATHS;
   var init_primitives = __esm({
     "components/settings/redesigned/primitives.tsx"() {
       "use client";
       init_react_shim();
       init_tv_tab_heading();
       init_settings_heading();
-      import_react_dom2 = __toESM(require_react_dom());
+      import_react_dom3 = __toESM(require_react_dom());
       init_jsx_runtime_shim();
       TOKENS = {
         bg: "var(--tk-bg)",
@@ -13977,6 +15972,15 @@
     }
   });
 
+  // components/series-lock/copy.ts
+  var init_copy = __esm({
+    "components/series-lock/copy.ts"() {
+      "use client";
+      init_react_shim();
+      init_profile_storage_shim();
+    }
+  });
+
   // components/player/next-episode-card.tsx
   var init_next_episode_card = __esm({
     "components/player/next-episode-card.tsx"() {
@@ -13988,6 +15992,9 @@
       init_autoplay_settings();
       init_spoiler_settings();
       init_spoilers();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_copy();
       init_jsx_runtime_shim();
     }
   });
@@ -14037,9 +16044,9 @@
       const candidate = args[0]?.trim() ?? "";
       return /^https?:\/\//i.test(candidate) ? candidate : null;
     };
-    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+    const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
     try {
-      return await invoke6("launch_program", { program, args });
+      return await invoke7("launch_program", { program, args });
     } catch (error) {
       const url = inferUrlFromLaunchArgs();
       if (url && typeof window !== "undefined") {
@@ -14057,6 +16064,7 @@
       init_profile_storage_shim();
       init_i18n();
       init_tv_focus_shim();
+      init_pip();
       init_plugin_registry();
       init_client();
       init_mode();
@@ -14072,11 +16080,19 @@
       init_appearance_settings();
       init_plugin_storage();
       init_plugin_assets();
+      init_home_background_settings();
       init_home_override_settings();
       init_trakt_storage();
       init_trakt_sync();
       init_trakt_watchlist_limit();
       init_watchlist();
+      init_movie_watchlist();
+      init_watchlist_merge();
+      init_mutation_source();
+      init_rating_sources();
+      init_open_external();
+      init_esm();
+      init_playback_start_gate();
       init_watchlist_auto_remove();
       init_trakt_device_login();
       init_playback_settings();
@@ -14110,17 +16126,17 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/index.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/index.tsx
   var runtime_exports = {};
   __export(runtime_exports, {
     TwitchPlugin: () => TwitchPlugin,
     default: () => runtime_default
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-auth.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-auth.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-app-credentials.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-app-credentials.ts
   init_plugin_sdk();
   var CLIENT_ID_KEY = "twitch_client_id_v1";
   function getTwitchClientId() {
@@ -14134,7 +16150,7 @@
     return getTwitchClientId().length > 0;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-storage.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-storage.ts
   init_plugin_sdk();
   var SESSION_KEY = "twitch_session_v1";
   var EVENT2 = "lumio-twitch-plugin-changed";
@@ -14209,7 +16225,7 @@
     return () => window.removeEventListener(EVENT2, listener);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-client.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-client.ts
   var HELIX_BASE = "https://api.twitch.tv/helix";
   function helixUrl(path, params = {}) {
     const qs = Object.entries(params).filter(([, v]) => v !== void 0 && v !== "").map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`).join("&");
@@ -14307,7 +16323,7 @@
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-auth.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-auth.ts
   var TwitchAuthError = class extends Error {
     constructor(text) {
       super(typeof text === "string" ? text : text.en ?? "Twitch login failed.");
@@ -14508,7 +16524,7 @@
     return inflightSessionRefresh;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-auth-capability-provider.ts
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-auth-capability-provider.ts
   function getStatus() {
     const session = getTwitchSession();
     if (isTwitchSessionValid(session)) {
@@ -14557,7 +16573,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_plugin_sdk();
@@ -14794,14 +16810,14 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-browser.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-browser.tsx
   init_react_shim();
-  var import_react_dom4 = __toESM(require_react_dom(), 1);
+  var import_react_dom5 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-player.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-player.tsx
   init_react_shim();
-  var import_react_dom3 = __toESM(require_react_dom(), 1);
+  var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function embedUrl(kind, id, parents) {
@@ -14829,7 +16845,7 @@
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }, [onClose]);
-    return (0, import_react_dom3.createPortal)(
+    return (0, import_react_dom4.createPortal)(
       /* @__PURE__ */ jsxs("div", { className: "fixed inset-0 z-[300] flex flex-col bg-black", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between px-4 py-2 text-white", children: [
           /* @__PURE__ */ jsx("span", { className: "truncate text-sm", children: title }),
@@ -14859,7 +16875,7 @@
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/twitch-browser.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/twitch-browser.tsx
   init_jsx_runtime_shim();
   var isTvDom = () => typeof document !== "undefined" && document.documentElement.getAttribute("data-tv") === "1";
   var tvf = () => isTvDom() ? { "data-f": "" } : {};
@@ -14958,6 +16974,7 @@
       en: "Twitch needs your own application registration. Open Settings \u2192 Twitch, follow the five steps there, and paste your Client ID.",
       sv: "Twitch beh\xF6ver din egen applikationsregistrering. \xD6ppna Inst\xE4llningar \u2192 Twitch, f\xF6lj de fem stegen d\xE4r och klistra in ditt Client ID."
     },
+    setupOpenSettings: { en: "Open Twitch settings", sv: "\xD6ppna Twitch-inst\xE4llningar" },
     setupSignInTitle: { en: "Sign in to Twitch", sv: "Logga in p\xE5 Twitch" },
     setupSignInBody: {
       en: "Your application is registered. Open Settings \u2192 Twitch and press Connect Twitch to finish signing in.",
@@ -14975,28 +16992,28 @@
     return String(count);
   }
   function useDeferredActivation() {
-    const [active, setActive] = useState(false);
+    const [active2, setActive2] = useState(false);
     const [node, setNode] = useState(null);
     useEffect(() => {
-      if (active || !node) return;
+      if (active2 || !node) return;
       const observer = new IntersectionObserver(
         (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) setActive(true);
+          if (entries.some((entry) => entry.isIntersecting)) setActive2(true);
         },
         { rootMargin: "240px 0px" }
       );
       observer.observe(node);
       return () => observer.disconnect();
-    }, [active, node]);
-    return { active, setNode };
+    }, [active2, node]);
+    return { active: active2, setNode };
   }
-  function useTwitchTopStreams(active, language = "") {
+  function useTwitchTopStreams(active2, language = "") {
     const [streams, setStreams] = useState([]);
     const [cursor, setCursor] = useState(null);
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(null);
     useEffect(() => {
-      if (!active) return;
+      if (!active2) return;
       let cancelled = false;
       setLoading(true);
       setError(null);
@@ -15013,12 +17030,12 @@
       return () => {
         cancelled = true;
       };
-    }, [active, language]);
+    }, [active2, language]);
     async function loadMore() {
       if (!cursor) return;
       try {
         const result = await getTopStreams(cursor, language);
-        setStreams((current) => [...current, ...result.streams]);
+        setStreams((current2) => [...current2, ...result.streams]);
         setCursor(result.cursor ?? null);
       } catch {
       }
@@ -15052,7 +17069,7 @@
       if (!cursor) return;
       try {
         const result = await getTopCategories(cursor);
-        setCategories((current) => [...current, ...result.categories]);
+        setCategories((current2) => [...current2, ...result.categories]);
         setCursor(result.cursor ?? null);
       } catch {
       }
@@ -15089,7 +17106,7 @@
       if (!gameId || !cursor) return;
       try {
         const result = await getStreamsByGame(gameId, cursor);
-        setStreams((current) => [...current, ...result.streams]);
+        setStreams((current2) => [...current2, ...result.streams]);
         setCursor(result.cursor ?? null);
       } catch {
       }
@@ -15106,13 +17123,13 @@
     }, []);
     return session;
   }
-  function useTwitchFollowedStreams(active, userId, userToken) {
+  function useTwitchFollowedStreams(active2, userId, userToken) {
     const [streams, setStreams] = useState([]);
     const [cursor, setCursor] = useState(null);
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(null);
     useEffect(() => {
-      if (!active || !userId || !userToken) return;
+      if (!active2 || !userId || !userToken) return;
       let cancelled = false;
       setLoading(true);
       setError(null);
@@ -15129,25 +17146,25 @@
       return () => {
         cancelled = true;
       };
-    }, [active, userId, userToken]);
+    }, [active2, userId, userToken]);
     async function loadMore() {
       if (!cursor || !userId || !userToken) return;
       try {
         const result = await getFollowedStreams(userId, userToken, cursor);
-        setStreams((current) => [...current, ...result.streams]);
+        setStreams((current2) => [...current2, ...result.streams]);
         setCursor(result.cursor ?? null);
       } catch {
       }
     }
     return { streams, loading: loading2, error, hasMore: Boolean(cursor), loadMore };
   }
-  function useFollowedChannels(active, userId, userToken, liveById) {
+  function useFollowedChannels(active2, userId, userToken, liveById) {
     const [rawChannels, setRawChannels] = useState([]);
     const [profileById, setProfileById] = useState(/* @__PURE__ */ new Map());
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(null);
     useEffect(() => {
-      if (!active || !userId || !userToken) return;
+      if (!active2 || !userId || !userToken) return;
       let cancelled = false;
       setLoading(true);
       setError(null);
@@ -15171,7 +17188,7 @@
       return () => {
         cancelled = true;
       };
-    }, [active, userId, userToken]);
+    }, [active2, userId, userToken]);
     const channels = rawChannels.map((channel) => {
       const live = liveById.get(channel.id);
       return {
@@ -15190,13 +17207,13 @@
     });
     return { channels, loading: loading2, error };
   }
-  function useFollowedVideos(active, channelIds) {
+  function useFollowedVideos(active2, channelIds) {
     const [videos, setVideos] = useState([]);
     const [loading2, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const key = channelIds.slice(0, FOLLOWED_VIDEO_CHANNEL_CAP).join(",");
     useEffect(() => {
-      if (!active || !key) {
+      if (!active2 || !key) {
         setLoading(false);
         return;
       }
@@ -15217,7 +17234,7 @@
       return () => {
         cancelled = true;
       };
-    }, [active, key]);
+    }, [active2, key]);
     return { videos, loading: loading2, error };
   }
   function SegmentedControl({
@@ -15263,7 +17280,7 @@
     return value;
   }
   function TwitchPageNav({
-    current,
+    current: current2,
     onNavigate
   }) {
     const { lang } = useLang();
@@ -15279,7 +17296,7 @@
         const rect = chip ? chip.getBoundingClientRect() : null;
         const hasChip = Boolean(rect && rect.width > 0 && rect.height > 0);
         const next = hasChip ? Math.max(0, Math.round(rect.right + 12 - el.getBoundingClientRect().left)) : 0;
-        setChipClear((current2) => Math.abs(current2 - next) >= 1 ? next : current2);
+        setChipClear((current3) => Math.abs(current3 - next) >= 1 ? next : current3);
       };
       measure();
       const settle = window.setTimeout(measure, 300);
@@ -15307,9 +17324,9 @@
         {
           type: "button",
           onClick: () => {
-            if (page.id !== current) onNavigate({ pageId: page.id });
+            if (page.id !== current2) onNavigate({ pageId: page.id });
           },
-          className: `flex h-8 flex-none items-center whitespace-nowrap rounded-full border px-3.5 text-[0.65rem] font-normal uppercase tracking-[0.2em] transition-all ${page.id === current ? "border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md" : "border-transparent bg-transparent text-slate-200 hover:bg-[#fcfcff1a] hover:text-white"}`,
+          className: `flex h-8 flex-none items-center whitespace-nowrap rounded-full border px-3.5 text-[0.65rem] font-normal uppercase tracking-[0.2em] transition-all ${page.id === current2 ? "border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md" : "border-transparent bg-transparent text-slate-200 hover:bg-[#fcfcff1a] hover:text-white"}`,
           children: page.label[lang] ?? page.label.en
         },
         page.id
@@ -15327,7 +17344,7 @@
             onChange: (event) => {
               const value = event.target.value;
               setTwitchNavQuery(value);
-              if (value.trim() && current !== "twitch-search") onNavigate({ pageId: "twitch-search" });
+              if (value.trim() && current2 !== "twitch-search") onNavigate({ pageId: "twitch-search" });
             },
             onKeyDown: (event) => {
               if (event.key === "Escape") setTwitchNavQuery("");
@@ -15342,7 +17359,7 @@
       if (!desktopWide) {
         return /* @__PURE__ */ jsx("div", { "data-filter-row": "", "data-twitch-nav": "", className: "-mx-1 flex min-w-max items-center gap-1.5 overflow-x-auto px-1 pb-1", children: navContent });
       }
-      return (0, import_react_dom4.createPortal)(/* @__PURE__ */ jsx("div", { "data-filter-row": "", "data-twitch-nav": "", style: { position: "fixed", top: 20, left: 0, right: 0, zIndex: 25 }, children: /* @__PURE__ */ jsx("div", { className: "mx-auto flex min-w-max items-center justify-center gap-1.5 px-1", children: navContent }) }), document.body);
+      return (0, import_react_dom5.createPortal)(/* @__PURE__ */ jsx("div", { "data-filter-row": "", "data-twitch-nav": "", style: { position: "fixed", top: 20, left: 0, right: 0, zIndex: 25 }, children: /* @__PURE__ */ jsx("div", { className: "mx-auto flex min-w-max items-center justify-center gap-1.5 px-1", children: navContent }) }), document.body);
     }
     return (
       /* EN rad som scrollar i sidled, aldrig radbrytning (Jerry 2026-09-03).
@@ -15390,12 +17407,12 @@
               {
                 type: "button",
                 ...tvf(),
-                ...isTvDom() && page.id === current ? { "data-init": "" } : {},
+                ...isTvDom() && page.id === current2 ? { "data-init": "" } : {},
                 ...isTvDom() && page.id === TWITCH_PAGES[TWITCH_PAGES.length - 1].id ? { "data-f-right": "[data-twitch-sort] [data-f]" } : {},
                 onClick: () => {
-                  if (page.id !== current) onNavigate({ pageId: page.id });
+                  if (page.id !== current2) onNavigate({ pageId: page.id });
                 },
-                className: `h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${page.id === current ? "border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md" : "border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white"}`,
+                className: `h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-[0.62rem] font-normal uppercase tracking-[0.2em] transition-all ${page.id === current2 ? "border-transparent bg-[#fcfcff2e] text-white backdrop-blur-md" : "border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white"}`,
                 children: page.label[lang] ?? page.label.en
               },
               page.id
@@ -15473,7 +17490,7 @@
       /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm text-slate-400", children: text })
     ] });
   }
-  function sortStreams(streams, sort) {
+  function sortStreams2(streams, sort) {
     const factor = sort === "viewers-asc" ? 1 : -1;
     return [...streams].sort((a, b) => factor * ((a.viewer_count ?? 0) - (b.viewer_count ?? 0)));
   }
@@ -15524,6 +17541,12 @@
         stopAuth();
       };
     }, []);
+    useEffect(() => {
+      if (ready) return;
+      const leave = () => requestBrowseBack();
+      window.addEventListener("lumio-tv-open-menu", leave);
+      return () => window.removeEventListener("lumio-tv-open-menu", leave);
+    }, [ready]);
     if (ready) return /* @__PURE__ */ jsx(Fragment2, { children });
     const missingApp = !hasTwitchClientId();
     return /* @__PURE__ */ jsxs(
@@ -15541,7 +17564,30 @@
         },
         children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: "var(--st-h2)", fontWeight: 600, color: "var(--tk-text, #f8fafc)" }, children: missingApp ? text("setupTitle") : text("setupSignInTitle") }),
-          /* @__PURE__ */ jsx("p", { style: { margin: 0, maxWidth: "34em", fontSize: "var(--st-small)", lineHeight: 1.55, color: "var(--tk-text-mute, #94a3b8)" }, children: missingApp ? text("setupBody") : text("setupSignInBody") })
+          /* @__PURE__ */ jsx("p", { style: { margin: 0, maxWidth: "34em", fontSize: "var(--st-small)", lineHeight: 1.55, color: "var(--tk-text-mute, #94a3b8)" }, children: missingApp ? text("setupBody") : text("setupSignInBody") }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "0.75em", marginTop: "0.75em" }, children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...tvf(),
+                ...isTvDom() ? { "data-init": "" } : {},
+                onClick: () => window.dispatchEvent(new CustomEvent("lumio-open-settings", { detail: { section: "plugin:twitch" } })),
+                className: "h-10 rounded-full bg-white px-5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200",
+                children: text("setupOpenSettings")
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...tvf(),
+                onClick: () => requestBrowseBack(),
+                className: "h-10 rounded-full bg-[#fcfcff14] px-5 text-sm text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white",
+                children: text("backToApp")
+              }
+            )
+          ] })
         ]
       }
     );
@@ -15564,7 +17610,7 @@
       );
     }
     const filterBar = /* @__PURE__ */ jsx(StreamFilterBar, { sort, onSortChange: setSort });
-    const sorted = sortStreams(streams, sort);
+    const sorted = sortStreams2(streams, sort);
     const body = loading2 && streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loading") }) : error && streams.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("loadError") }) : sorted.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: text("empty") }) : /* @__PURE__ */ jsx("div", { className: "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", children: sorted.map((stream) => /* @__PURE__ */ jsx(StreamCard, { stream, onPlay: (s) => setSelectedChannel(channelFromStream(s, true)) }, stream.id)) });
     return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
       isTvDom() ? null : /* @__PURE__ */ jsx(TwitchPageNav, { current: pageId, onNavigate }),
@@ -16310,8 +18356,8 @@
     sliderCardWidth = "calc((100% - 3 * 0.75rem) / 4)"
   }) {
     const text = useTwitchText();
-    const { active, setNode } = useDeferredActivation();
-    const { streams, error } = useTwitchTopStreams(active);
+    const { active: active2, setNode } = useDeferredActivation();
+    const { streams, error } = useTwitchTopStreams(active2);
     const [playerStream, setPlayerStream] = useState(null);
     if (error) return null;
     return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
@@ -16326,7 +18372,7 @@
             {
               className: layout === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
               style: layout === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
-              children: active ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+              children: active2 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
                 "div",
                 {
                   className: layout === "slider" ? "flex-none" : "w-full",
@@ -16366,9 +18412,9 @@
     const text = useTwitchText();
     const session = useTwitchSessionState();
     const valid = isTwitchSessionValid(session);
-    const { active, setNode } = useDeferredActivation();
+    const { active: active2, setNode } = useDeferredActivation();
     const { streams, error } = useTwitchFollowedStreams(
-      active && valid,
+      active2 && valid,
       valid ? session.userId : null,
       valid ? session.accessToken : null
     );
@@ -16387,7 +18433,7 @@
             {
               className: layout === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
               style: layout === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
-              children: active ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+              children: active2 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
                 "div",
                 {
                   className: layout === "slider" ? "flex-none" : "w-full",
@@ -16418,10 +18464,10 @@
       ) : null
     ] });
   }
-  function useTwitchHomeRowPref(read) {
-    const [value, setValue] = useState(read);
+  function useTwitchHomeRowPref(read2) {
+    const [value, setValue] = useState(read2);
     useEffect(() => {
-      const sync = () => setValue(read());
+      const sync = () => setValue(read2());
       sync();
       return onTwitchPluginChanged(sync);
     }, []);
@@ -16435,13 +18481,13 @@
   }) {
     const text = useTwitchText();
     const categoryName = useTwitchHomeRowPref(getTwitchHomeCategory);
-    const { active, setNode } = useDeferredActivation();
+    const { active: active2, setNode } = useDeferredActivation();
     const [resolved, setResolved] = useState(null);
     const [streams, setStreams] = useState([]);
     const [failed, setFailed] = useState(false);
     const [playerStream, setPlayerStream] = useState(null);
     useEffect(() => {
-      if (!active || !categoryName) return;
+      if (!active2 || !categoryName) return;
       let cancelled = false;
       setFailed(false);
       void (async () => {
@@ -16463,7 +18509,7 @@
       return () => {
         cancelled = true;
       };
-    }, [active, categoryName]);
+    }, [active2, categoryName]);
     if (!categoryName || failed) return null;
     return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
       /* @__PURE__ */ jsx(
@@ -16477,7 +18523,7 @@
             {
               className: layout === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
               style: layout === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
-              children: active && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+              children: active2 && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
                 "div",
                 {
                   className: layout === "slider" ? "flex-none" : "w-full",
@@ -16517,13 +18563,13 @@
     const text = useTwitchText();
     const channels = useTwitchHomeRowPref(() => parseTwitchHomeChannels());
     const channelsKey = channels.join(",");
-    const { active, setNode } = useDeferredActivation();
+    const { active: active2, setNode } = useDeferredActivation();
     const [streams, setStreams] = useState([]);
     const [loaded, setLoaded] = useState(false);
     const [failed, setFailed] = useState(false);
     const [playerStream, setPlayerStream] = useState(null);
     useEffect(() => {
-      if (!active || channels.length === 0) return;
+      if (!active2 || channels.length === 0) return;
       let cancelled = false;
       setFailed(false);
       setLoaded(false);
@@ -16542,7 +18588,7 @@
       return () => {
         cancelled = true;
       };
-    }, [active, channelsKey]);
+    }, [active2, channelsKey]);
     if (channels.length === 0 || failed) return null;
     return /* @__PURE__ */ jsxs("div", { ref: setNode, children: [
       /* @__PURE__ */ jsx(
@@ -16556,7 +18602,7 @@
             {
               className: layout === "slider" ? "flex gap-3 overflow-x-auto pb-3" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4",
               style: layout === "slider" ? { scrollbarWidth: "none", msOverflowStyle: "none" } : void 0,
-              children: active && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
+              children: active2 && streams.length > 0 ? streams.slice(0, count).map((stream) => /* @__PURE__ */ jsx(
                 "div",
                 {
                   className: layout === "slider" ? "flex-none" : "w-full",
@@ -16588,7 +18634,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/twitch/runtime/index.tsx
+  // ../../../lumio-official-plugins/plugins/twitch/runtime/index.tsx
   init_jsx_runtime_shim();
   var twitchHidesHero = true;
   var TwitchPlugin = {
@@ -16676,17 +18722,6 @@
 })();
 /*! Bundled license information:
 
-react-dom/cjs/react-dom.production.js:
-  (**
-   * @license React
-   * react-dom.production.js
-   *
-   * Copyright (c) Meta Platforms, Inc. and affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   *)
-
 qrcode.react/lib/esm/index.js:
   (**
    * @license QR Code generator library (TypeScript)
@@ -16697,5 +18732,16 @@ qrcode.react/lib/esm/index.js:
    * @license qrcode.react
    * Copyright (c) Paul O'Shannessy
    * SPDX-License-Identifier: ISC
+   *)
+
+react-dom/cjs/react-dom.production.js:
+  (**
+   * @license React
+   * react-dom.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
    *)
 */
