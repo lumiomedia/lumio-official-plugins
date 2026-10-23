@@ -14,7 +14,7 @@ import { curationSummary, formatFetchedAt } from './playlist-card'
 import { playlistTitle } from './playlist-title'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
-import { TvVodCategoriesPanel } from './vod-categories-picker'
+import { TvVodCategoriesPanel, useSourceHasVod } from './vod-categories-picker'
 import { useTvText } from './tv/tv-strings'
 import { nextFallbackAfter, setTvSettings, useTvSettings } from './tv/tv-settings-store'
 import { nextStartView, startViewLabelKey } from './tv/start-view'
@@ -448,6 +448,7 @@ type Group = { name: string; count: number }
  */
 export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNullable<CurationTarget>; crumb?: string; onClose: () => void }) {
   const { list, mode } = target
+  const { tt } = useTvText()
   const { h, locale } = useHubText()
   const toast = useToast()
   const keyboardAvailable = getTvKeyboardPanel() !== null
@@ -542,6 +543,8 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
   }
 
   const namingMembers = naming ? (naming.edit === null ? marked : (draft.merges[naming.edit]?.groups ?? [])) : []
+  const hasVod = useSourceHasVod(list.source)
+  const [vodOpen, setVodOpen] = useState(false)
 
   return (
     <TvPanel title={h('categoriesTitle', { host: titleOf(list) })} hint={h('categoriesBody')} crumb={crumb} onBack={dismiss} testId="tv-categories-panel">
@@ -559,6 +562,11 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
           { label: h('tvMergeCategories'), style: 'accent', onOk: () => { setMarking(true); setMarked([]) } },
         ]} />
       )}
+      {/* Film och serier: egen väljare, nådd härifrån (vod-categories-picker.tsx). */}
+      {hasVod && list.source && !marking ? (
+        <TvRow size="panel" label={tt('vodCategoriesTitle')} hint={tt('vodCategoriesHint')} value={tt('vodCategoriesButton')} caret onOk={() => setVodOpen(true)} />
+      ) : null}
+      {vodOpen && list.source ? <TvVodCategoriesPanel source={list.source} name={titleOf(list)} onClose={() => setVodOpen(false)} /> : null}
       {merges.length > 0 ? (
         <>
           <TvEyebrow size="panel">{h('merged')}</TvEyebrow>

@@ -8,6 +8,7 @@ import { listGroups } from '../index-client'
 import { rawGroupOrderFor, sortGroups, withRawOrder } from '../group-order'
 import { useTvSettings } from './tv-settings-store'
 import { curatedGroupCounts, mergeNameConflict, normalizeCuration } from '../list-curation'
+import { TvVodCategoryPicker, useSourceHasVod } from '../vod-categories-picker'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from '../live-tv-data'
 
 const rowStyle = {
@@ -98,11 +99,16 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
       setError(null)
     })
   }
+  // Film- och seriekategorierna bor i en egen väljare (vod-categories-picker.tsx)
+  // men nås härifrån — det är här man letar efter "kategorierna".
+  const hasVod = useSourceHasVod(list.source)
+  const [vodOpen, setVodOpen] = useState(false)
   const save = () => { updateLiveTvListCuration(list.id, normalizeCuration(draft)); onClose() }
   const skip = () => { markListCurationSeen(list.id); onClose() }
   const dismiss = mode === 'after-import' ? skip : onClose
 
   return (
+    <>
     <PickerPanel
       nav={nav}
       title={`${tt('categories')} · ${list.name}`}
@@ -126,6 +132,9 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
             <div data-testid="curation-merge-done" {...station(finishMerge)} style={{ ...rowStyle, color: marked.size >= 2 ? TV.acc : TV.dim }}>
               {tt('mergeSelected', { n: marked.size })}
             </div>
+          ) : null}
+          {hasVod && list.source ? (
+            <div data-testid="curation-vod-categories" {...station(() => setVodOpen(true))} style={rowStyle}>{tt('vodCategoriesTitle')} ›</div>
           ) : null}
           {error ? <div role="alert" style={{ padding: dp(12), fontSize: dp(16), color: '#fca5a5' }}>{error}</div> : null}
           {groups === null ? <div style={{ padding: dp(12), fontSize: dp(17), color: TV.dim }}>{tt('loadingChannels')}</div> : null}
@@ -162,5 +171,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
         </>
       )}
     />
+    {vodOpen && list.source ? <TvVodCategoryPicker nav={nav} source={list.source} onClose={() => setVodOpen(false)} /> : null}
+    </>
   )
 }

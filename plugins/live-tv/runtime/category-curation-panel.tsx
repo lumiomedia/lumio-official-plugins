@@ -9,6 +9,8 @@ import { useTvSettings } from './tv/tv-settings-store'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from './live-tv-data'
 import { playlistHost } from './playlist-card'
+import { VodCategoriesDialog, useSourceHasVod } from './vod-categories-picker'
+import { useTvText } from './tv/tv-strings'
 
 type Group = { name: string; count: number }
 
@@ -48,6 +50,9 @@ export const CategoryCurationPanel = CategoriesDialog
 
 function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings' | 'after-import'; onClose: () => void }) {
   const { h, locale } = useHubText()
+  const { tt } = useTvText()
+  const hasVod = useSourceHasVod(list.source)
+  const [vodOpen, setVodOpen] = useState(false)
   const toast = useToast()
   const [groups, setGroups] = useState<Group[] | null>(null)
   const [draft, setDraft] = useState<ListCuration>(() => cloneCuration(list.curation))
@@ -147,6 +152,7 @@ function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings
               <LtInput title={h('searchCategories')} placeholder={h('searchCategories')} value={query} onChange={setQuery} style={{ flex: '1 1 180px' }} />
               <LtBtn style={smallBtn} onClick={() => setDraft((d) => ({ ...d, hidden: [] }))}>{h('showAll')}</LtBtn>
               <LtBtn style={smallBtn} onClick={() => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) }))}>{h('hideAll')}</LtBtn>
+              {hasVod && list.source ? <LtBtn style={smallBtn} testId="categories-vod" onClick={() => setVodOpen(true)}>{tt('vodCategoriesTitle')} ›</LtBtn> : null}
             </div>
             {merges.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -216,6 +222,7 @@ function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings
           <LtBtn size="md" variant="accent" onClick={save} disabled={groups === null}>{h('save')}</LtBtn>
         </div>
       </div>
+      {vodOpen && list.source ? <VodCategoriesDialog source={list.source} name={playlistHost(list)} onClose={() => setVodOpen(false)} /> : null}
     </LtDialog>
   )
 }

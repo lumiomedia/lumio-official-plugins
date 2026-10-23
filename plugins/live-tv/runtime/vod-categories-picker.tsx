@@ -237,3 +237,17 @@ export function usePendingVodSources(): VodSourceStatus[] {
   if (!isVodChoiceMigrated()) return []
   return sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id))
 }
+
+/** Har källan film eller serier i indexet? Styr om kategoridialogerna visar vägen hit. */
+export function useSourceHasVod(source: string | null | undefined): boolean {
+  const [has, setHas] = useState(false)
+  useEffect(() => {
+    if (!source) { setHas(false); return }
+    let live = true
+    listVodCategories(source)
+      .then((result) => { if (live) setHas(result.total > 0) })
+      .catch(() => { if (live) setHas(false) })
+    return () => { live = false }
+  }, [source])
+  return has
+}
