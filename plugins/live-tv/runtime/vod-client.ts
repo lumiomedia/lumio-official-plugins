@@ -154,6 +154,15 @@ export async function vodStatus(): Promise<VodSourceStatus[]> {
   return data.sources ?? []
 }
 
+/**
+ * Kan värden hämta katalogen med ett kategorival (`vodExcludedKeys`)? Appar
+ * från 0.1.634 säger det i statussvaret; äldre hämtar alltid allt.
+ */
+export async function vodSupportsCategoryFilter(): Promise<boolean> {
+  const data = await requestJson<{ categoryFilter?: boolean }>('/api/live-tv/vod/status').catch(() => null)
+  return data?.categoryFilter === true
+}
+
 export async function lookupVod(source: string | null, keys: string[]): Promise<VodItem[]> {
   if (keys.length === 0) return []
   const data = await requestJson<{ items?: VodItem[] }>('/api/live-tv/vod/lookup', {
@@ -169,6 +178,8 @@ export interface XtreamVodImportSource {
   username: string
   password: string
   format: string
+  /** Bortvalda kategorier (`vodCategoryKey`) — appar från 0.1.634 hämtar aldrig dem. */
+  vodExcludedKeys?: string[]
 }
 
 /**

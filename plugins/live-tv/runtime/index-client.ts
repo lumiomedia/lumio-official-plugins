@@ -38,6 +38,10 @@ export interface XtreamImportSource {
   password: string
   format: string
   categoryIds?: string[]
+  /** Film/serier som inte ska hämtas, se `vodImportFilter`. */
+  vodExcludedKeys?: string[]
+  /** Kanalerna nu, biblioteket först när kategorierna är valda. */
+  vodDefer?: boolean
 }
 
 /** En kanal redo att batchas till indexet — samma nyckel/nummer som appen härleder vid en jobbimport. */

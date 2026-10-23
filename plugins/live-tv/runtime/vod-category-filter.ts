@@ -20,9 +20,12 @@
 
 import { useEffect, useState } from 'react'
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
 import type { VodItem } from './vod-client'
 
+// Samma id som LIVE_TV_PLUGIN_ID i live-tv-data.ts, men utan importen:
+// live-tv-data läser valet när en lista importeras, och ett importvarv mellan
+// två moduler med toppnivåkonstanter kraschar vid start (TDZ).
+const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
 const FILTER_KEY = 'vod_category_filter_v1'
 const MIGRATED_KEY = 'vod_category_filter_migrated_v1'
 
@@ -193,4 +196,15 @@ export function isVodChoiceMigrated(): boolean {
 export function resetVodCategoryChoiceForTests(): void {
   writePluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY, {}, { emitChange: false })
   writePluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, false, { emitChange: false })
+}
+
+/**
+ * Fälten importen skickar till värden (appar från 0.1.634; äldre ignorerar
+ * dem och hämtar allt som förut): de bortvalda kategorierna, och om
+ * biblioteket ska vänta — en källa som inte fått sitt val än.
+ */
+export function vodImportFilter(source: string): { vodExcludedKeys?: string[]; vodDefer?: boolean } {
+  const choice = getVodCategoryChoice(source)
+  if (!choice.decided) return isVodChoiceMigrated() ? { vodDefer: true } : {}
+  return choice.excluded.length > 0 ? { vodExcludedKeys: choice.excluded } : {}
 }

@@ -9,6 +9,7 @@ import { rawGroupOrderFor, sortGroups, withRawOrder } from '../group-order'
 import { useTvSettings } from './tv-settings-store'
 import { curatedGroupCounts, mergeNameConflict, normalizeCuration } from '../list-curation'
 import { TvVodCategoryPicker, useSourceHasVod } from '../vod-categories-picker'
+import { useVodChoiceMade } from '../vod-category-filter'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from '../live-tv-data'
 
 const rowStyle = {
@@ -102,6 +103,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
   // Film- och seriekategorierna bor i en egen väljare (vod-categories-picker.tsx)
   // men nås härifrån — det är här man letar efter "kategorierna".
   const hasVod = useSourceHasVod(list.source)
+  const vodChoiceMade = useVodChoiceMade(list.source ?? null)
   const [vodOpen, setVodOpen] = useState(false)
   const save = () => { updateLiveTvListCuration(list.id, normalizeCuration(draft)); onClose() }
   const skip = () => { markListCurationSeen(list.id); onClose() }
@@ -135,7 +137,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
             </div>
           ) : null}
           {hasVod && list.source ? (
-            <div data-testid="curation-vod-categories" {...station(() => setVodOpen(true))} style={rowStyle}>{tt('vodCategoriesTitle')} ›</div>
+            <div data-testid="curation-vod-categories" {...station(() => setVodOpen(true))} style={{ ...rowStyle, ...(vodChoiceMade ? null : { color: TV.acc, fontWeight: 600 }) }}>{vodChoiceMade ? tt('vodCategoriesTitle') : tt('vodChoicePendingTitle')} ›</div>
           ) : null}
           {error ? <div role="alert" style={{ padding: dp(12), fontSize: dp(16), color: '#fca5a5' }}>{error}</div> : null}
           {groups === null ? <div style={{ padding: dp(12), fontSize: dp(17), color: TV.dim }}>{tt('loadingChannels')}</div> : null}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LtBtn, LtCheckMark, LtDialog, LtInput, LtNote, UI, fmtInt } from './settings-ui'
 import { getTvKeyboardPanel } from '@/lib/plugin-sdk'
+import { fetchXtreamVodCategories, findXtreamLoginByPseudoUrl, getLiveTvLists } from './live-tv-data'
 import { useTextPrompt } from './tv/tv-text-entry'
 import { TvBtns, TvNote, TvPanel, TvRow } from './tv-settings-ui'
 import { useTvText } from './tv/tv-strings'
@@ -36,8 +37,21 @@ export function useVodCategoryDraft(source: string) {
     const choice = getVodCategoryChoice(source)
     setExcluded(new Set(choice.excluded))
     setMerges(choice.merges)
+    // Ur värdens index när katalogen är hämtad; annars (en ny spellista som
+    // väntar på valet) direkt ur panelen, utan antal.
+    const fromPanel = async (): Promise<VodCategory[]> => {
+      const login = findXtreamLoginByPseudoUrl(source)
+      if (!login) return []
+      const panel = await fetchXtreamVodCategories(login)
+      return [
+        ...panel.movie.map((c) => ({ id: c.id, name: c.name, kind: 'movie' as const, count: 0 })),
+        ...panel.series.map((c) => ({ id: c.id, name: c.name, kind: 'series' as const, count: 0 })),
+      ]
+    }
     listVodCategories(source)
-      .then((result) => { if (live) setCategories(result.categories) })
+      .then((result) => (result.known && result.categories.length > 0 ? result.categories : fromPanel()))
+      .catch(() => fromPanel())
+      .then((list) => { if (live) setCategories(list) })
       .catch(() => { if (live) setCategories([]) })
     return () => { live = false }
   }, [source])
@@ -189,7 +203,7 @@ export function VodCategoriesDialog({ source, name, onClose }: { source: string;
                 {m.name}
                 <span style={{ color: UI.muted, fontSize: 12.5 }}> · {tt('mergeContains', { groups: m.members.map((c) => c.name).join(', ') })}</span>
               </span>
-              <span style={{ fontSize: 12.5, color: UI.muted }}>{fmtInt(m.count, locale)}</span>
+              {m.count > 0 ? <span style={{ fontSize: 12.5, color: UI.muted }}>{fmtInt(m.count, locale)}</span> : null}
               <LtBtn onClick={() => draft.split(m.name)} testId={`vod-categories-split-${m.name}`}>{tt('splitMerge')}</LtBtn>
             </div>
           ))}
@@ -199,7 +213,7 @@ export function VodCategoriesDialog({ source, name, onClose }: { source: string;
               <button key={c.id} type="button" role="checkbox" aria-checked={on} aria-label={c.name} onClick={() => (draft.marking ? draft.toggleMark(c) : draft.toggle(c))} style={{ ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }}>
                 <LtCheckMark on={on} />
                 <span style={{ fontSize: 13.5, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                <span style={{ fontSize: 12.5, color: UI.muted }}>{fmtInt(c.count, locale)}</span>
+                {c.count > 0 ? <span style={{ fontSize: 12.5, color: UI.muted }}>{fmtInt(c.count, locale)}</span> : null}
               </button>
             )
           })}
@@ -285,14 +299,14 @@ export function TvVodCategoryPicker({ nav, source, onClose }: { nav: TvNav; sour
                 {m.name}
                 <span style={{ color: TV.dim, fontSize: dp(15) }}> · {tt('mergeContains', { groups: m.members.map((c) => c.name).join(', ') })} · {tt('splitMerge')}</span>
               </span>
-              <span style={{ fontSize: dp(16), color: TV.dim }}>{fmtInt(m.count, locale)}</span>
+              {m.count > 0 ? <span style={{ fontSize: dp(16), color: TV.dim }}>{fmtInt(m.count, locale)}</span> : null}
             </div>
           ))}
           {rows.map((c) => (
             <div key={c.id} data-testid={`vod-picker-row-${c.name}`} {...station(() => (draft.marking ? draft.toggleMark(c) : draft.toggle(c)))} style={rowStyle}>
               <Check on={draft.marking ? draft.isMarked(c) : draft.isIn(c)} label={c.name} />
               <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-              <span style={{ fontSize: dp(16), color: TV.dim }}>{fmtInt(c.count, locale)}</span>
+              {c.count > 0 ? <span style={{ fontSize: dp(16), color: TV.dim }}>{fmtInt(c.count, locale)}</span> : null}
             </div>
           ))}
         </>
@@ -342,7 +356,7 @@ export function TvVodCategoriesPanel({ source, name, onClose }: { source: string
         <TvRow key={`m:${m.name}`} size="panel" label={m.name} hint={tt('mergeContains', { groups: m.members.map((c) => c.name).join(', ') })} value={tt('splitMerge')} onOk={() => draft.split(m.name)} />
       ))}
       {rows.map((c) => (
-        <TvRow key={c.id} size="panel" label={c.name} hint={fmtInt(c.count, locale)} toggle={draft.marking ? draft.isMarked(c) : draft.isIn(c)} onToggle={() => (draft.marking ? draft.toggleMark(c) : draft.toggle(c))} />
+        <TvRow key={c.id} size="panel" label={c.name} hint={c.count > 0 ? fmtInt(c.count, locale) : undefined} toggle={draft.marking ? draft.isMarked(c) : draft.isIn(c)} onToggle={() => (draft.marking ? draft.toggleMark(c) : draft.toggle(c))} />
       ))}
       <TvBtns buttons={[
         { label: tt('vodCategoriesCancel'), style: 'ghost', onOk: onClose },
@@ -390,7 +404,16 @@ export function usePendingVodSources(): VodSourceStatus[] {
     return () => { live = false; off() }
   }, [nonce])
   if (!isVodChoiceMigrated()) return []
-  return sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id))
+  const pending = sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id))
+  // En ny Xtream-spellista vars bibliotek väntar på valet (appar från 0.1.634
+  // hämtar då ingenting förrän valet är gjort) finns inte i VOD-indexet än.
+  const known = new Set(sources.map((s) => s.id))
+  for (const list of getLiveTvLists()) {
+    const id = list.source
+    if (list.kind !== 'xtream' || !id || known.has(id) || isVodChoiceMade(id)) continue
+    pending.push({ id, total: 0, movies: 0, series: 0, updatedAt: 0, importing: false })
+  }
+  return pending
 }
 
 /** Har källan film eller serier i indexet? Styr om kategoridialogerna visar vägen hit. */
@@ -398,6 +421,9 @@ export function useSourceHasVod(source: string | null | undefined): boolean {
   const [has, setHas] = useState(false)
   useEffect(() => {
     if (!source) { setHas(false); return }
+    // Xtream: alltid — väljaren hämtar kategorierna ur panelen om biblioteket
+    // inte hämtats än (det är just då valet görs).
+    if (findXtreamLoginByPseudoUrl(source)) { setHas(true); return }
     let live = true
     listVodCategories(source)
       .then((result) => { if (live) setHas(result.total > 0) })

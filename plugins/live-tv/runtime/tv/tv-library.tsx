@@ -322,7 +322,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   const pendingBox = pending ? (
     <div data-testid="library-choice-pending" style={{ display: 'flex', flexDirection: 'column', gap: dp(10), padding: dp(16), margin: narrow ? `0 ${dp(20)}px ${dp(12)}px` : `0 0 ${dp(20)}px`, borderRadius: dp(14), background: TV.accMix(14) }}>
       <div style={{ fontSize: dp(isTv ? 21 : 18), fontWeight: 600 }}>{tt('vodChoicePendingTitle')}</div>
-      <div style={{ fontSize: dp(isTv ? 17 : 15), color: 'rgba(243,244,248,0.7)' }}>{tt('vodChoicePendingBody', { count: pending.total.toLocaleString(), name: playlistName })}</div>
+      <div style={{ fontSize: dp(isTv ? 17 : 15), color: 'rgba(243,244,248,0.7)' }}>{pending.total > 0 ? tt('vodChoicePendingBody', { count: pending.total.toLocaleString(), name: playlistName }) : tt('vodChoicePendingBefore', { name: playlistName })}</div>
       <div data-row="" style={{ display: 'flex', gap: dp(8), flexWrap: 'wrap' }}>
         <div data-testid="library-choice-choose" {...station(() => setPickerOpen(true), undefined, { 'data-init': '' })} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), fontWeight: 600, cursor: 'pointer', background: TV.acc, color: TV.onAcc }}>{tt('vodChoiceChoose')}</div>
         <div data-testid="library-choice-all" {...station(() => { void applyVodCategoryChoice(pending.id, []) })} style={{ height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), cursor: 'pointer', background: TV.s06 }}>{tt('vodChoiceIncludeAll')}</div>

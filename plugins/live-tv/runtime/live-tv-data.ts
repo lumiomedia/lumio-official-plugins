@@ -1,5 +1,6 @@
 'use client'
 
+import { vodImportFilter } from './vod-category-filter'
 import {
   clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
@@ -958,6 +959,7 @@ export async function importList(list: LiveTvList, onProgress?: (status: ImportS
       password: login.password,
       format: login.format,
       ...(login.categoryIds.length > 0 ? { categoryIds: login.categoryIds } : {}),
+      ...vodImportFilter(list.source),
     }
   } else if (list.kind === 'm3u') {
     if (!list.url) throw new Error(`m3u url missing for list "${list.name}"`)
@@ -1149,6 +1151,24 @@ async function fetchXtreamAccountUncached(login: Pick<XtreamLogin, 'base' | 'use
 export interface XtreamCategory {
   id: string
   name: string
+}
+
+/**
+ * Panelens film- och seriekategorier, direkt ur panelen — för kategorivalet
+ * innan biblioteket har hämtats (vod-categories-picker.tsx). Namnen trimmas
+ * som i värdens import, så nycklarna (`vodCategoryKey`) blir desamma.
+ */
+export async function fetchXtreamVodCategories(login: XtreamLogin): Promise<{ movie: XtreamCategory[]; series: XtreamCategory[] }> {
+  const read = async (action: string): Promise<XtreamCategory[]> => {
+    const payload = await fetchXtreamJson(xtreamApiUrl(login, { action })).catch(() => null)
+    if (!Array.isArray(payload)) return []
+    return payload
+      .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
+      .map((entry) => ({ id: String(entry.category_id ?? '').trim(), name: String(entry.category_name ?? '').trim() }))
+      .filter((entry) => entry.id && entry.name)
+  }
+  const [movie, series] = await Promise.all([read('get_vod_categories'), read('get_series_categories')])
+  return { movie, series }
 }
 
 export async function fetchXtreamCategories(login: XtreamLogin): Promise<XtreamCategory[]> {
