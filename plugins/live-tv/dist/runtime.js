@@ -45091,6 +45091,7 @@ ${cue.text}`).join("\n\n")}
         vodChoicePendingBody: "{count} titles arrived from {name}. Choose which categories to include before they are added to your library.",
         vodChoiceChoose: "Choose categories",
         vodChoiceIncludeAll: "Include all",
+        vodMergeNeedTwo: "Mark at least two categories of the same kind.",
         vodLibraryBuilding: "Building\u2026 {count} titles",
         vodLibraryNotBuilt: "{count} titles ready to index",
         vodLibraryBuilt: "{count} titles in the library",
@@ -45837,6 +45838,7 @@ ${cue.text}`).join("\n\n")}
         vodChoicePendingBody: "{count} titlar har kommit in fr\xE5n {name}. V\xE4lj vilka kategorier som ska tas med innan de l\xE4ggs i ditt bibliotek.",
         vodChoiceChoose: "V\xE4lj kategorier",
         vodChoiceIncludeAll: "Ta med alla",
+        vodMergeNeedTwo: "Markera minst tv\xE5 kategorier av samma sort.",
         vodLibraryBuilding: "Bygger\u2026 {count} titlar",
         vodLibraryNotBuilt: "{count} titlar redo att indexeras",
         vodLibraryBuilt: "{count} titlar i biblioteket",
@@ -46254,6 +46256,194 @@ ${cue.text}`).join("\n\n")}
         sportRowHideScores: "D\xF6lj st\xE4llning",
         sportRowFollowNote: "Du f\xF6ljer {name}"
       };
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  function TvKeyboard({ value, onChange, onDone, initFocus }) {
+    const { tt } = useTvText();
+    const [symbols, setSymbols] = useState(false);
+    const rows = symbols ? SYMBOLS : LETTERS;
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
+        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
+        children: label
+      },
+      label
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
+        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
+        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
+        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
+        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
+      ] })
+    ] });
+  }
+  var LETTERS, SYMBOLS;
+  var init_tv_keyboard = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+      LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
+      SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  function isComposing(event2) {
+    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
+  }
+  function useTextPrompt(options) {
+    const tvMode = useTvMode();
+    const Panel = getTvKeyboardPanel();
+    const [prompt, setPrompt] = useState(null);
+    const promptId = useRef(0);
+    const open2 = prompt !== null;
+    const openerRef = useRef(null);
+    useEffect(() => {
+      if (!open2) return;
+      openerRef.current = document.activeElement;
+      return () => {
+        const opener = openerRef.current;
+        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
+      };
+    }, [open2]);
+    const ask = (title, initial, onDone, kind = "text") => {
+      promptId.current += 1;
+      setPrompt({ id: promptId.current, title, initial, kind, onDone });
+    };
+    let node = null;
+    if (tvMode) {
+      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
+        Panel,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onClose: () => setPrompt((current4) => current4 === prompt ? null : current4)
+        },
+        prompt.id
+      ) }) : null;
+    } else if (prompt) {
+      node = /* @__PURE__ */ jsx(
+        TextPromptDialog,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          kind: prompt.kind,
+          pushLayer: options?.pushLayer,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onCancel: () => setPrompt((current4) => current4 === prompt ? null : current4)
+        },
+        prompt.id
+      );
+    }
+    return { available: tvMode ? Panel !== null : true, ask, node };
+  }
+  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
+    const { tt } = useTvText();
+    const [value, setValue] = useState(initial);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      inputRef.current?.focus();
+    }, []);
+    const cancelRef = useRef(onCancel);
+    useEffect(() => {
+      cancelRef.current = onCancel;
+    });
+    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
+    const submit = () => onDone(value);
+    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "text-prompt-dialog",
+        "data-panel-root": "",
+        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
+        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              "data-testid": "text-prompt-input",
+              ...field,
+              value,
+              onChange: (event2) => setValue(event2.target.value),
+              onKeyDown: (event2) => {
+                if (event2.key === "Enter") {
+                  if (isComposing(event2)) return;
+                  event2.preventDefault();
+                  submit();
+                } else if (event2.key === "Escape") {
+                  event2.preventDefault();
+                  onCancel();
+                }
+              },
+              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
+            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
+          ] })
+        ] })
+      }
+    );
+  }
+  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
+    const tvMode = useTvMode();
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!tvMode && autoFocus) inputRef.current?.focus();
+    }, [tvMode, autoFocus]);
+    if (tvMode) {
+      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
+      }), initFocus: !!autoFocus });
+    }
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        ref: inputRef,
+        "data-f": "",
+        value,
+        placeholder,
+        onChange: (event2) => onChange(event2.target.value),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter") {
+            if (isComposing(event2)) return;
+            event2.preventDefault();
+            onSubmit?.();
+          }
+        },
+        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
+      }
+    );
+  }
+  var init_tv_text_entry = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_tv_keyboard();
+      init_jsx_runtime_shim();
     }
   });
 
@@ -47348,194 +47538,6 @@ ${cue.text}`).join("\n\n")}
       logoFallbackSwitchSubscription = null;
       curationSubscription = null;
       curationBySource = null;
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
-  function TvKeyboard({ value, onChange, onDone, initFocus }) {
-    const { tt } = useTvText();
-    const [symbols, setSymbols] = useState(false);
-    const rows = symbols ? SYMBOLS : LETTERS;
-    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
-        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
-        children: label
-      },
-      label
-    );
-    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
-      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
-        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
-        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
-        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
-        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
-      ] })
-    ] });
-  }
-  var LETTERS, SYMBOLS;
-  var init_tv_keyboard = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_tv_ui();
-      init_tv_strings();
-      init_jsx_runtime_shim();
-      LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
-      SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  function isComposing(event2) {
-    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
-  }
-  function useTextPrompt(options) {
-    const tvMode = useTvMode();
-    const Panel = getTvKeyboardPanel();
-    const [prompt, setPrompt] = useState(null);
-    const promptId = useRef(0);
-    const open2 = prompt !== null;
-    const openerRef = useRef(null);
-    useEffect(() => {
-      if (!open2) return;
-      openerRef.current = document.activeElement;
-      return () => {
-        const opener = openerRef.current;
-        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
-      };
-    }, [open2]);
-    const ask = (title, initial, onDone, kind = "text") => {
-      promptId.current += 1;
-      setPrompt({ id: promptId.current, title, initial, kind, onDone });
-    };
-    let node = null;
-    if (tvMode) {
-      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
-        Panel,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onClose: () => setPrompt((current4) => current4 === prompt ? null : current4)
-        },
-        prompt.id
-      ) }) : null;
-    } else if (prompt) {
-      node = /* @__PURE__ */ jsx(
-        TextPromptDialog,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          kind: prompt.kind,
-          pushLayer: options?.pushLayer,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onCancel: () => setPrompt((current4) => current4 === prompt ? null : current4)
-        },
-        prompt.id
-      );
-    }
-    return { available: tvMode ? Panel !== null : true, ask, node };
-  }
-  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
-    const { tt } = useTvText();
-    const [value, setValue] = useState(initial);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      inputRef.current?.focus();
-    }, []);
-    const cancelRef = useRef(onCancel);
-    useEffect(() => {
-      cancelRef.current = onCancel;
-    });
-    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
-    const submit = () => onDone(value);
-    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "text-prompt-dialog",
-        "data-panel-root": "",
-        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
-        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              "data-testid": "text-prompt-input",
-              ...field,
-              value,
-              onChange: (event2) => setValue(event2.target.value),
-              onKeyDown: (event2) => {
-                if (event2.key === "Enter") {
-                  if (isComposing(event2)) return;
-                  event2.preventDefault();
-                  submit();
-                } else if (event2.key === "Escape") {
-                  event2.preventDefault();
-                  onCancel();
-                }
-              },
-              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
-            }
-          ),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
-            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
-            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
-          ] })
-        ] })
-      }
-    );
-  }
-  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
-    const tvMode = useTvMode();
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!tvMode && autoFocus) inputRef.current?.focus();
-    }, [tvMode, autoFocus]);
-    if (tvMode) {
-      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
-      }), initFocus: !!autoFocus });
-    }
-    return /* @__PURE__ */ jsx(
-      "input",
-      {
-        ref: inputRef,
-        "data-f": "",
-        value,
-        placeholder,
-        onChange: (event2) => onChange(event2.target.value),
-        onKeyDown: (event2) => {
-          if (event2.key === "Enter") {
-            if (isComposing(event2)) return;
-            event2.preventDefault();
-            onSubmit?.();
-          }
-        },
-        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
-      }
-    );
-  }
-  var init_tv_text_entry = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_tv_ui();
-      init_tv_strings();
-      init_tv_keyboard();
-      init_jsx_runtime_shim();
     }
   });
 
@@ -57839,7 +57841,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const entry = value;
       out[source] = {
         excluded: Array.isArray(entry.excluded) ? entry.excluded.filter((id) => typeof id === "string" && id !== "") : [],
-        decided: entry.decided === true
+        decided: entry.decided === true,
+        merges: Array.isArray(entry.merges) ? entry.merges.filter((m) => Boolean(m) && typeof m === "object").map((m) => ({ name: String(m.name ?? "").trim(), keys: Array.isArray(m.keys) ? m.keys.filter((k) => typeof k === "string") : [] })).filter((m) => m.name && m.keys.length > 0) : []
       };
     }
     return out;
@@ -57848,7 +57851,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     writePluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, map);
   }
   function getVodCategoryChoice(source) {
-    return readMap()[source] ?? { excluded: [], decided: false };
+    return readMap()[source] ?? { excluded: [], decided: false, merges: [] };
   }
   function isVodChoiceMade(source) {
     return getVodCategoryChoice(source).decided;
@@ -57858,10 +57861,34 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (source) return new Set(map[source]?.excluded ?? []);
     return new Set(Object.values(map).flatMap((entry) => entry.excluded));
   }
-  function setVodCategoryChoice(source, excluded) {
+  function setVodCategoryChoice(source, excluded, merges) {
     const map = readMap();
-    map[source] = { excluded: [...new Set(excluded)], decided: true };
+    map[source] = {
+      excluded: [...new Set(excluded)],
+      decided: true,
+      merges: merges ? merges.map((m) => ({ name: m.name, keys: [...m.keys] })) : map[source]?.merges ?? []
+    };
     writeMap(map);
+  }
+  function getVodMerges(source) {
+    const map = readMap();
+    if (source) return map[source]?.merges ?? [];
+    return Object.values(map).flatMap((entry) => entry.merges);
+  }
+  function useVodMerges(source) {
+    const [merges, setMerges] = useState(() => getVodMerges(source));
+    useEffect(() => {
+      setMerges(getVodMerges(source));
+      return onVodCategoryChoiceChanged(() => setMerges(getVodMerges(source)));
+    }, [source]);
+    return merges;
+  }
+  var VOD_MERGE_PREFIX = "merge:";
+  function vodMergeId(name) {
+    return `${VOD_MERGE_PREFIX}${name}`;
+  }
+  function vodIdFromKey(key) {
+    return key.split("")[0] ?? key;
   }
   function onVodCategoryChoiceChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, FILTER_KEY2, listener);
@@ -57885,7 +57912,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const sources = await listSources2();
     const map = readMap();
     for (const source of sources) {
-      if (!map[source.id]) map[source.id] = { excluded: [], decided: true };
+      if (!map[source.id]) map[source.id] = { excluded: [], decided: true, merges: [] };
     }
     writeMap(map);
     writePluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, true);
@@ -57961,12 +57988,48 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       };
     }, [source, nonce]);
     const excluded = useVodExcluded(source);
+    const merges = useVodMerges(source);
     return useMemo(() => {
-      if (excluded.size === 0) return { ...state2, reload };
-      const categories = state2.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)));
+      if (excluded.size === 0 && merges.length === 0) return { ...state2, reload };
+      const kept = state2.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)));
+      const categories = applyVodMerges(kept, merges);
       const total = categories.reduce((sum, c) => sum + (c.count ?? 0), 0);
       return { ...state2, categories, total, reload };
-    }, [state2, reload, excluded]);
+    }, [state2, reload, excluded, merges]);
+  }
+  function applyVodMerges(categories, merges) {
+    if (merges.length === 0) return categories;
+    const owner2 = /* @__PURE__ */ new Map();
+    for (const merge of merges) for (const key of merge.keys) if (!owner2.has(key)) owner2.set(key, merge);
+    const out = [];
+    const placed = /* @__PURE__ */ new Map();
+    for (const category of categories) {
+      const merge = owner2.get(vodCategoryKey(category.id, category.name));
+      if (!merge) {
+        out.push(category);
+        continue;
+      }
+      const existing = placed.get(merge);
+      if (existing) {
+        existing.count += category.count ?? 0;
+        continue;
+      }
+      const row = { id: vodMergeId(merge.name), name: merge.name, kind: category.kind, count: category.count ?? 0 };
+      placed.set(merge, row);
+      out.push(row);
+    }
+    return out;
+  }
+  function vodMergeMemberIds(categoryId, source) {
+    if (!categoryId || !categoryId.startsWith(VOD_MERGE_PREFIX)) return null;
+    const name = categoryId.slice(VOD_MERGE_PREFIX.length);
+    const merge = getVodMerges(source).find((m) => m.name === name);
+    return merge ? merge.keys.map(vodIdFromKey) : [];
+  }
+  function compareVod(sort) {
+    if (sort === "az") return (a, b) => a.title.localeCompare(b.title);
+    if (sort === "rating") return (a, b) => (b.rating ?? 0) - (a.rating ?? 0);
+    return (a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0);
   }
   function useVodPage(opts) {
     const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
@@ -57983,7 +58046,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const excludedRef = useRef(excluded);
     excludedRef.current = excluded;
     const excludedKey = [...excluded].sort().join(",");
-    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}|${excludedKey}`;
+    const mergesKey = JSON.stringify(useVodMerges(source));
+    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}|${excludedKey}|${mergesKey}`;
     const lastFilter = useRef(filterKey);
     if (lastFilter.current !== filterKey) {
       lastFilter.current = filterKey;
@@ -58004,9 +58068,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       else setLoadingMore(true);
       void (async () => {
         try {
-          const page = await queryVod({
+          const members = vodMergeMemberIds(categoryId, source);
+          const ask = (id) => queryVod({
             source: source ?? void 0,
-            categoryId: categoryId ?? void 0,
+            categoryId: id,
             kind: kind ?? void 0,
             q: q?.trim() || void 0,
             sort,
@@ -58014,6 +58079,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             limit: limit * wanted,
             signal: controller2.signal
           });
+          const page = members ? await Promise.all(members.map((id) => ask(id))).then((pages) => ({
+            items: pages.flatMap((p) => p.items).sort(compareVod(sort)).slice(0, limit * wanted),
+            total: pages.reduce((sum, p) => sum + p.total, 0),
+            known: pages.some((p) => p.known)
+          })) : await ask(categoryId ?? void 0);
           if (cancelled) return;
           const kept = uniqueByKey(page.items).filter((item) => isVodItemIncluded(item, excludedRef.current));
           setItems(kept);
@@ -58395,6 +58465,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_react_shim();
+  init_plugin_sdk();
+  init_tv_text_entry();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
@@ -58637,8 +58709,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     setTimeout(resolve, ms2);
   });
   var generation = /* @__PURE__ */ new Map();
-  async function applyVodCategoryChoice(source, excluded) {
-    setVodCategoryChoice(source, excluded);
+  async function applyVodCategoryChoice(source, excluded, merges) {
+    const before = getVodCategoryChoice(source);
+    setVodCategoryChoice(source, excluded, merges);
+    const sameExcluded = before.excluded.length === excluded.length && excluded.every((key) => before.excluded.includes(key));
+    if (before.decided && sameExcluded) return;
     const mine = (generation.get(source) ?? 0) + 1;
     generation.set(source, mine);
     try {
@@ -58679,7 +58754,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     onClose,
     testId = "list-picker",
     opener,
-    surface
+    surface,
+    backButton
   }) {
     const rootRef = useRef(null);
     const openerRef = useRef(null);
@@ -58711,7 +58787,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         "data-live-tv-layer": "",
         style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: "flex", flexDirection: "column", gap: dp(18), boxSizing: "border-box", ...surface },
         children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
+          backButton ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                ...station(() => closeRef.current?.()),
+                "data-testid": `${testId}-back`,
+                "aria-label": backButton,
+                style: { width: dp(44), height: dp(44), flexShrink: 0, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.s06, cursor: "pointer" },
+                children: /* @__PURE__ */ jsx("svg", { width: dp(22), height: dp(22), viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.4", "aria-hidden": "true", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M15 18l-6-6 6-6" }) })
+              }
+            ),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600, minWidth: 0 }, children: title })
+          ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
           chips,
           /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
         ]
@@ -58729,10 +58817,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function useVodCategoryDraft(source) {
     const [categories, setCategories] = useState(null);
     const [excluded, setExcluded] = useState(() => new Set(getVodCategoryChoice(source).excluded));
+    const [merges, setMerges] = useState(() => getVodCategoryChoice(source).merges);
+    const [marking, setMarking] = useState(false);
+    const [marked, setMarked] = useState(() => /* @__PURE__ */ new Set());
     useEffect(() => {
       let live2 = true;
       setCategories(null);
-      setExcluded(new Set(getVodCategoryChoice(source).excluded));
+      const choice = getVodCategoryChoice(source);
+      setExcluded(new Set(choice.excluded));
+      setMerges(choice.merges);
       listVodCategories(source).then((result2) => {
         if (live2) setCategories(result2.categories);
       }).catch(() => {
@@ -58742,11 +58835,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         live2 = false;
       };
     }, [source]);
+    const keyOf2 = (c) => vodCategoryKey(c.id, c.name);
     const byKind = useMemo(() => ({
       movie: (categories ?? []).filter((c) => c.kind === "movie"),
       series: (categories ?? []).filter((c) => c.kind === "series")
     }), [categories]);
-    const keyOf2 = (c) => vodCategoryKey(c.id, c.name);
+    const claimed = useMemo(() => new Set(merges.flatMap((m) => m.keys)), [merges]);
+    const mergesOf = (kind) => merges.map((m) => {
+      const members = byKind[kind].filter((c) => m.keys.includes(keyOf2(c)));
+      return { name: m.name, members, count: members.reduce((sum, c) => sum + c.count, 0) };
+    }).filter((m) => m.members.length > 0);
+    const plainOf = (kind) => byKind[kind].filter((c) => !claimed.has(keyOf2(c)));
     const isIn = (c) => !excluded.has(keyOf2(c));
     const toggle = (c) => setExcluded((cur) => {
       const next = new Set(cur);
@@ -58766,37 +58865,135 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return next;
     });
     const allIn = (kind) => byKind[kind].every(isIn);
+    const startMarking = () => {
+      setMarking(true);
+      setMarked(/* @__PURE__ */ new Set());
+    };
+    const stopMarking = () => {
+      setMarking(false);
+      setMarked(/* @__PURE__ */ new Set());
+    };
+    const isMarked = (c) => marked.has(keyOf2(c));
+    const toggleMark = (c) => setMarked((cur) => {
+      const next = new Set(cur);
+      const key = keyOf2(c);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    const commitMerge = (raw) => {
+      const name = raw.trim();
+      const kinds = new Set((categories ?? []).filter((c) => marked.has(keyOf2(c))).map((c) => c.kind));
+      if (marked.size < 2 || kinds.size > 1) return "few";
+      if (!name) return "empty";
+      const lower = name.toLowerCase();
+      if (merges.some((m) => m.name.toLowerCase() === lower) || (categories ?? []).some((c) => c.name.toLowerCase() === lower && !marked.has(keyOf2(c)))) return "taken";
+      const keys2 = [...marked];
+      setMerges((cur) => [...cur.map((m) => ({ ...m, keys: m.keys.filter((k) => !marked.has(k)) })).filter((m) => m.keys.length > 0), { name, keys: keys2 }]);
+      stopMarking();
+      return null;
+    };
+    const split2 = (name) => setMerges((cur) => cur.filter((m) => m.name !== name));
     const save = () => {
       const known = new Set((categories ?? []).map(keyOf2));
       const kept = categories && categories.length > 0 ? [...excluded].filter((id) => known.has(id)) : [...excluded];
-      return applyVodCategoryChoice(source, kept);
+      return applyVodCategoryChoice(source, kept, merges);
     };
     const includedCount = (categories ?? []).filter(isIn).length;
-    return { categories, byKind, isIn, toggle, toggleAll, allIn, save, includedCount };
+    return {
+      categories,
+      byKind,
+      isIn,
+      toggle,
+      toggleAll,
+      allIn,
+      save,
+      includedCount,
+      mergesOf,
+      plainOf,
+      marking,
+      startMarking,
+      stopMarking,
+      isMarked,
+      toggleMark,
+      markedCount: marked.size,
+      commitMerge,
+      split: split2
+    };
+  }
+  function mergeErrorText(tt, code) {
+    return code === "few" ? tt("vodMergeNeedTwo") : code === "empty" ? tt("mergeNameEmpty") : tt("mergeNameTaken");
   }
   function VodCategoriesDialog({ source, name, onClose }) {
     const { tt, locale } = useTvText();
     const draft = useVodCategoryDraft(source);
     const [kind, setKind] = useState("movie");
-    const rows = draft.byKind[kind];
+    const [mergeName, setMergeName] = useState("");
+    const [error, setError] = useState(null);
+    const merges = draft.mergesOf(kind);
+    const rows = draft.plainOf(kind);
+    const any = draft.byKind[kind].length > 0;
     const rowBase = { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", width: "100%", background: "transparent", border: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit" };
+    const chooseKind = (k) => {
+      setKind(k);
+      draft.stopMarking();
+      setError(null);
+    };
+    const merge = () => {
+      const code = draft.commitMerge(mergeName);
+      if (code) {
+        setError(mergeErrorText(tt, code));
+        return;
+      }
+      setMergeName("");
+      setError(null);
+    };
     return /* @__PURE__ */ jsx(LtDialog, { title: `${tt("vodCategoriesTitle")} \xB7 ${name}`, body: tt("vodCategoriesHint"), width: 620, onClose, testId: "vod-categories-dialog", children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8 }, children: ["movie", "series"].map((k) => /* @__PURE__ */ jsxs(LtBtn, { active: kind === k, onClick: () => setKind(k), testId: `vod-categories-kind-${k}`, children: [
-        k === "movie" ? tt("vodCategoriesMovies") : tt("vodCategoriesSeries"),
-        " (",
-        draft.byKind[k].length,
-        ")"
-      ] }, k)) }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxs(LtBtn, { onClick: onClose, testId: "vod-categories-back", title: tt("back"), children: [
+          "\u2039 ",
+          tt("back")
+        ] }),
+        ["movie", "series"].map((k) => /* @__PURE__ */ jsxs(LtBtn, { active: kind === k, onClick: () => chooseKind(k), testId: `vod-categories-kind-${k}`, children: [
+          k === "movie" ? tt("vodCategoriesMovies") : tt("vodCategoriesSeries"),
+          " (",
+          draft.byKind[k].length,
+          ")"
+        ] }, k)),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+        any ? /* @__PURE__ */ jsx(LtBtn, { active: draft.marking, onClick: () => {
+          if (draft.marking) draft.stopMarking();
+          else draft.startMarking();
+          setError(null);
+        }, testId: "vod-categories-merge-mode", children: draft.marking ? tt("cancel") : tt("mergeInto") }) : null
+      ] }),
+      draft.marking ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx(LtInput, { title: tt("mergeNameLabel"), placeholder: tt("mergeNameLabel"), value: mergeName, onChange: setMergeName, style: { flex: "1 1 200px" } }),
+        /* @__PURE__ */ jsx(LtBtn, { variant: "accent", onClick: merge, disabled: draft.markedCount < 2, testId: "vod-categories-merge", children: tt("mergeSelected", { n: draft.markedCount }) })
+      ] }) : null,
+      error ? /* @__PURE__ */ jsx("p", { role: "alert", style: { margin: 0, fontSize: 12.5, color: UI.danger }, children: error }) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 340, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
         draft.categories === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: tt("vodCategoriesLoading") }) : null,
-        draft.categories !== null && rows.length === 0 ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: tt("vodCategoriesNone") }) : null,
-        rows.length > 0 ? /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": draft.allIn(kind), onClick: () => draft.toggleAll(kind), style: { ...rowBase, color: UI.text }, children: [
+        draft.categories !== null && !any ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: tt("vodCategoriesNone") }) : null,
+        any && !draft.marking ? /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": draft.allIn(kind), onClick: () => draft.toggleAll(kind), style: { ...rowBase, color: UI.text }, children: [
           /* @__PURE__ */ jsx(LtCheckMark, { on: draft.allIn(kind) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5 }, children: kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries") })
         ] }) : null,
+        merges.map((m) => /* @__PURE__ */ jsxs("div", { style: { ...rowBase, cursor: "default", borderTop: `1px solid ${UI.lineSoft}`, color: UI.text }, children: [
+          /* @__PURE__ */ jsx(LtCheckMark, { on: true }),
+          /* @__PURE__ */ jsxs("span", { style: { fontSize: 13.5, minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+            m.name,
+            /* @__PURE__ */ jsxs("span", { style: { color: UI.muted, fontSize: 12.5 }, children: [
+              " \xB7 ",
+              tt("mergeContains", { groups: m.members.map((c) => c.name).join(", ") })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(m.count, locale) }),
+          /* @__PURE__ */ jsx(LtBtn, { onClick: () => draft.split(m.name), testId: `vod-categories-split-${m.name}`, children: tt("splitMerge") })
+        ] }, `m:${m.name}`)),
         rows.map((c) => {
-          const on = draft.isIn(c);
-          return /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": on, "aria-label": c.name, onClick: () => draft.toggle(c), style: { ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }, children: [
+          const on = draft.marking ? draft.isMarked(c) : draft.isIn(c);
+          return /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": on, "aria-label": c.name, onClick: () => draft.marking ? draft.toggleMark(c) : draft.toggle(c), style: { ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }, children: [
             /* @__PURE__ */ jsx(LtCheckMark, { on }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5, minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(c.count, locale) })
@@ -58815,46 +59012,95 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function TvVodCategoryPicker({ nav, source, onClose }) {
     const { tt, locale } = useTvText();
     const draft = useVodCategoryDraft(source);
+    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
     const [kind, setKind] = useState("movie");
-    const rows = draft.byKind[kind];
+    const [error, setError] = useState(null);
+    const merges = draft.mergesOf(kind);
+    const rows = draft.plainOf(kind);
+    const any = draft.byKind[kind].length > 0;
     const rowStyle3 = { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" };
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title: tt("vodCategoriesTitle"),
-        testId: "vod-categories-picker",
-        onClose: () => {
-          if (draft.categories !== null) void draft.save();
-          onClose();
-        },
-        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8) }, children: ["movie", "series"].map((k) => /* @__PURE__ */ jsxs(Chip, { active: kind === k, ...station(() => setKind(k)), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: [
-          k === "movie" ? tt("vodCategoriesMovies") : tt("vodCategoriesSeries"),
-          " (",
-          draft.byKind[k].length,
-          ")"
-        ] }, k)) }),
-        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
-          draft.categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("vodCategoriesLoading") }) : null,
-          draft.categories !== null && rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("vodCategoriesNone") }) : null,
-          rows.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "vod-picker-all", ...station(() => draft.toggleAll(kind), void 0, { "data-init": "" }), style: rowStyle3, children: [
-            /* @__PURE__ */ jsx(Check, { on: draft.allIn(kind), label: "all" }),
-            kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries")
-          ] }) : null,
-          rows.map((c) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-picker-row-${c.name}`, ...station(() => draft.toggle(c)), style: rowStyle3, children: [
-            /* @__PURE__ */ jsx(Check, { on: draft.isIn(c), label: c.name }),
-            /* @__PURE__ */ jsx("span", { style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(c.count, locale) })
-          ] }, c.id))
-        ] })
+    const finishMerge = () => {
+      if (draft.markedCount < 2) {
+        setError(tt("vodMergeNeedTwo"));
+        return;
       }
-    );
+      keyboard.ask(tt("mergeNameLabel"), "", (value) => {
+        const code = draft.commitMerge(value);
+        setError(code ? mergeErrorText(tt, code) : null);
+      });
+    };
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(
+        PickerPanel,
+        {
+          nav,
+          title: tt("vodCategoriesTitle"),
+          testId: "vod-categories-picker",
+          backButton: tt("back"),
+          onClose,
+          chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8) }, children: ["movie", "series"].map((k) => /* @__PURE__ */ jsxs(Chip, { active: kind === k, ...station(() => {
+            setKind(k);
+            draft.stopMarking();
+            setError(null);
+          }), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: [
+            k === "movie" ? tt("vodCategoriesMovies") : tt("vodCategoriesSeries"),
+            " (",
+            draft.byKind[k].length,
+            ")"
+          ] }, k)) }),
+          rows: (close) => /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-save", ...station(() => {
+              if (draft.categories !== null) void draft.save();
+              close();
+            }, void 0, { "data-init": "" }), style: { ...rowStyle3, color: TV2.acc }, children: tt("vodCategoriesSave") }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-cancel", ...station(close), style: rowStyle3, children: tt("vodCategoriesCancel") }),
+            any ? /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-merge-mode", ...station(() => {
+              if (draft.marking) draft.stopMarking();
+              else draft.startMarking();
+              setError(null);
+            }), style: { ...rowStyle3, color: draft.marking ? TV2.acc : void 0 }, children: tt("mergeInto") }) : null,
+            draft.marking ? /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-merge-done", ...station(finishMerge), style: { ...rowStyle3, color: draft.markedCount >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: draft.markedCount }) }) : null,
+            error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
+            draft.categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("vodCategoriesLoading") }) : null,
+            draft.categories !== null && !any ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("vodCategoriesNone") }) : null,
+            any && !draft.marking ? /* @__PURE__ */ jsxs("div", { "data-testid": "vod-picker-all", ...station(() => draft.toggleAll(kind)), style: rowStyle3, children: [
+              /* @__PURE__ */ jsx(Check, { on: draft.allIn(kind), label: "all" }),
+              kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries")
+            ] }) : null,
+            merges.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-picker-merge-${m.name}`, ...station(() => draft.split(m.name)), style: rowStyle3, children: [
+              /* @__PURE__ */ jsx(Check, { on: true, label: m.name }),
+              /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                m.name,
+                /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
+                  " \xB7 ",
+                  tt("mergeContains", { groups: m.members.map((c) => c.name).join(", ") }),
+                  " \xB7 ",
+                  tt("splitMerge")
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(m.count, locale) })
+            ] }, `m:${m.name}`)),
+            rows.map((c) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-picker-row-${c.name}`, ...station(() => draft.marking ? draft.toggleMark(c) : draft.toggle(c)), style: rowStyle3, children: [
+              /* @__PURE__ */ jsx(Check, { on: draft.marking ? draft.isMarked(c) : draft.isIn(c), label: c.name }),
+              /* @__PURE__ */ jsx("span", { style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(c.count, locale) })
+            ] }, c.id))
+          ] })
+        }
+      ),
+      keyboard.node
+    ] });
   }
   function TvVodCategoriesPanel({ source, name, onClose }) {
     const { tt, locale } = useTvText();
     const draft = useVodCategoryDraft(source);
     const [kind, setKind] = useState("movie");
-    const rows = draft.byKind[kind];
+    const [naming, setNaming] = useState(false);
+    const [error, setError] = useState(null);
+    const Keyboard = getTvKeyboardPanel();
+    const merges = draft.mergesOf(kind);
+    const rows = draft.plainOf(kind);
+    const any = draft.byKind[kind].length > 0;
     return /* @__PURE__ */ jsxs(TvPanel, { title: tt("vodCategoriesTitle"), hint: tt("vodCategoriesHint"), crumb: name, onBack: onClose, testId: "tv-vod-categories-panel", children: [
       /* @__PURE__ */ jsx(
         TvRow,
@@ -58863,20 +59109,54 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           init: true,
           label: kind === "movie" ? tt("vodCategoriesMovies") : tt("vodCategoriesSeries"),
           value: `${kind === "movie" ? tt("vodCategoriesSeries") : tt("vodCategoriesMovies")} \u203A`,
-          onOk: () => setKind(kind === "movie" ? "series" : "movie")
+          onOk: () => {
+            setKind(kind === "movie" ? "series" : "movie");
+            draft.stopMarking();
+            setError(null);
+          }
         }
       ),
+      draft.marking ? /* @__PURE__ */ jsx(TvBtns, { buttons: [
+        { label: tt("cancel"), style: "ghost", onOk: () => {
+          draft.stopMarking();
+          setError(null);
+        } },
+        { label: tt("mergeSelected", { n: draft.markedCount }), style: "accent", onOk: () => {
+          if (draft.markedCount < 2) setError(tt("vodMergeNeedTwo"));
+          else if (Keyboard) setNaming(true);
+        } }
+      ] }) : any && Keyboard ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: tt("mergeInto"), onOk: () => {
+        draft.startMarking();
+        setError(null);
+      } }) : null,
+      error ? /* @__PURE__ */ jsx(TvNote, { size: "panel", tone: "danger", children: error }) : null,
       draft.categories === null ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: tt("vodCategoriesLoading") }) : null,
-      draft.categories !== null && rows.length === 0 ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: tt("vodCategoriesNone") }) : null,
-      rows.length > 0 ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries"), toggle: draft.allIn(kind), onToggle: () => draft.toggleAll(kind) }) : null,
-      rows.map((c) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: c.name, hint: fmtInt(c.count, locale), toggle: draft.isIn(c), onToggle: () => draft.toggle(c) }, c.id)),
+      draft.categories !== null && !any ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: tt("vodCategoriesNone") }) : null,
+      any && !draft.marking ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries"), toggle: draft.allIn(kind), onToggle: () => draft.toggleAll(kind) }) : null,
+      merges.map((m) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: m.name, hint: tt("mergeContains", { groups: m.members.map((c) => c.name).join(", ") }), value: tt("splitMerge"), onOk: () => draft.split(m.name) }, `m:${m.name}`)),
+      rows.map((c) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: c.name, hint: fmtInt(c.count, locale), toggle: draft.marking ? draft.isMarked(c) : draft.isIn(c), onToggle: () => draft.marking ? draft.toggleMark(c) : draft.toggle(c) }, c.id)),
       /* @__PURE__ */ jsx(TvBtns, { buttons: [
         { label: tt("vodCategoriesCancel"), style: "ghost", onOk: onClose },
         { label: tt("vodCategoriesSave"), style: "accent", onOk: () => {
           void draft.save();
           onClose();
         } }
-      ] })
+      ] }),
+      naming && Keyboard ? /* @__PURE__ */ jsx(
+        Keyboard,
+        {
+          title: tt("mergeNameLabel"),
+          hint: tt("mergeNameLabel"),
+          placeholder: "",
+          initial: "",
+          onDone: (value) => {
+            const code = draft.commitMerge(value);
+            setError(code ? mergeErrorText(tt, code) : null);
+            setNaming(false);
+          },
+          onClose: () => setNaming(false)
+        }
+      ) : null
     ] });
   }
   function usePendingVodSources() {
@@ -59457,6 +59737,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           nav,
           title: `${tt("categories")} \xB7 ${list.name}`,
           testId: "curation-picker",
+          backButton: tt("back"),
           onClose: dismiss,
           chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
           rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -77053,7 +77334,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.17.1"
+      version: "0.17.2"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -77067,7 +77348,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.17.1",
+    version: "0.17.2",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.2
+
+- Movie and series categories can be merged like the live categories: Merge into…, mark two or more categories of the same kind, and name them. The Library shows them as one category with all their titles. A merged category is split again with OK.
+- The category panels have a back arrow before the title, so there is a visible way back to the previous panel.
+
 ## 0.17.1
 
 - The movie and series categories can now be reached from the playlist's Categories dialog, where the live categories are, through a new Movie and series categories entry.
