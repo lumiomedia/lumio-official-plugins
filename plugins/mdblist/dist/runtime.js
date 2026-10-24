@@ -5,7 +5,7 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __defNormalProp = (obj2, key, value) => key in obj2 ? __defProp(obj2, key, { enumerable: true, configurable: true, writable: true, value }) : obj2[key] = value;
   var __esm = (fn, res) => function __init() {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
@@ -33,7 +33,7 @@
     mod
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  var __publicField = (obj2, key, value) => __defNormalProp(obj2, typeof key !== "symbol" ? key + "" : key, value);
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/react-shim.ts
   var react_shim_exports = {};
@@ -231,7 +231,7 @@
           this.channelId = channelId;
         }
         async unregister() {
-          return invoke6(`plugin:${this.plugin}|remove_listener`, {
+          return invoke7(`plugin:${this.plugin}|remove_listener`, {
             event: this.event,
             channelId: this.channelId
           });
@@ -240,23 +240,23 @@
       async function addPluginListener(plugin2, event, cb) {
         const handler = new Channel(cb);
         try {
-          await invoke6(`plugin:${plugin2}|register_listener`, {
+          await invoke7(`plugin:${plugin2}|register_listener`, {
             event,
             handler
           });
           return new PluginListener(plugin2, event, handler.id);
         } catch {
-          await invoke6(`plugin:${plugin2}|registerListener`, { event, handler });
+          await invoke7(`plugin:${plugin2}|registerListener`, { event, handler });
           return new PluginListener(plugin2, event, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|check_permissions`);
+        return invoke7(`plugin:${plugin2}|check_permissions`);
       }
       async function requestPermissions(plugin2) {
-        return invoke6(`plugin:${plugin2}|request_permissions`);
+        return invoke7(`plugin:${plugin2}|request_permissions`);
       }
-      async function invoke6(cmd, args = {}, options) {
+      async function invoke7(cmd, args = {}, options) {
         return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
       }
       function convertFileSrc(filePath, protocol = "asset") {
@@ -275,7 +275,7 @@
          * **You should not call any method on this object anymore and should drop any reference to it.**
          */
         async close() {
-          return invoke6("plugin:resources|close", {
+          return invoke7("plugin:resources|close", {
             rid: this.rid
           });
         }
@@ -291,7 +291,7 @@
       exports.addPluginListener = addPluginListener;
       exports.checkPermissions = checkPermissions;
       exports.convertFileSrc = convertFileSrc;
-      exports.invoke = invoke6;
+      exports.invoke = invoke7;
       exports.isTauri = isTauri;
       exports.requestPermissions = requestPermissions;
       exports.transformCallback = transformCallback;
@@ -1005,6 +1005,10 @@
           releases: "Releases",
           settings: "Settings",
           lastWatched: "Continue watching",
+          nextEpisodesTitle: "Next episode",
+          nextEpisodesTab: "Next episode",
+          nextEpisodesEmpty: "Nothing new to watch next. Finish an episode of a series and the next one shows up here.",
+          homeSourceNextEpisodes: "Next episode",
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
           startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
@@ -1463,7 +1467,7 @@
           appUpdatePromptInstall: "Update now",
           appUpdatePromptInstalling: "Updating\u2026",
           appUpdateDownloading: "Downloading update",
-          appUpdateInstallingStep: "Installing\u2026",
+          appUpdateInstallingStep: "Installing the update \u2013 Lumio will restart",
           appUpdatePromptLater: "Not now",
           appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
           appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -1640,6 +1644,7 @@
           audio: "Audio",
           audioLanguage: "Audio language",
           currentAudioOutput: "Current audio output",
+          audioTrackCommentary: "Commentary",
           info: "Info",
           actor: "Actor",
           readMore: "Read more",
@@ -2028,7 +2033,7 @@
           langAppLanguageDesc: "The interface language of Lumio itself.",
           langMetadataLanguage: "Metadata language",
           langRegion: "Region",
-          langRegionDesc: "Country code for availability \u2014 which streaming services and release dates apply.",
+          langRegionDesc: "The country that sets availability \u2014 which streaming services and release dates apply.",
           langMetadataLanguageDesc: "Titles, overviews and taglines from TMDb display in this language when a translation exists.",
           langBehaviorGroup: "AUTO-SELECTION",
           subtitlesOffByDefault: "Start with subtitles off",
@@ -2060,6 +2065,11 @@
           rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
           allowSoftwareDecoding: "Allow software decoding",
           allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+          dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
+          dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "On",
+          dv7AsHdr10Off: "Off",
           androidSourceCache: "Cache streams",
           androidSourceCacheDesc: "Downloads the film ahead to storage through the app. Can help on unstable connections, but costs processing power and can make weak TV boxes stutter. Off: the player streams directly, like most players.",
           rtEngineNote: "Requires the built-in desktop engine (mpv).",
@@ -3267,6 +3277,16 @@
           rememberAspectRatioDesc: "Uses your chosen aspect ratio as the default for new movies and episodes.",
           matchFrameRate: "Match frame rate",
           matchFrameRateDesc: "Switches the TV to the frame rate of what you watch, so motion stops juddering. The screen goes black for a moment when it switches.",
+          scrubPreviews: "Seek bar previews (experimental)",
+          scrubPreviewsDesc: "Show a picture of the scene while you scrub. For streams without library thumbnails the picture is decoded from the stream itself, so it uses some data. Off by default.",
+          scrubPreviewsPrepare: "Prepare previews before the film starts",
+          scrubPreviewsPrepareDesc: "The film waits at the start while the timeline previews are made, then starts by itself (at most three minutes). Start now skips the wait.",
+          scrubPrepareTitle: "Preparing previews",
+          scrubPrepareStart: "Start now",
+          scrubPreviewsFast: "Fast previews (powerful box)",
+          scrubPreviewsFastDesc: "Builds the previews faster while the film plays, using a second hardware decoder. For powerful boxes: if playback drops a frame, the film switches back to the safe mode by itself.",
+          matchResolution: "Match resolution too",
+          matchResolutionDesc: "Switches the TV to the resolution of the film (a 1080p film plays in 1080p mode) instead of letting the TV upscale it. Films and episodes only. Most TVs upscale well on their own.",
           matchFrameRateOff: "Off",
           matchFrameRateVod: "Films and series",
           matchFrameRateAll: "Live TV too",
@@ -3786,12 +3806,16 @@
           subtitleSyncFastReadAhead: "Faster sync (uses more data)",
           subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
           subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
-          subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
           subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
           subtitleAutoSyncOtherEdit: "These subtitles seem to be from a different version of the film. Switch to the file\u2019s own {lang} subtitles?",
           subtitleAutoSyncOtherEditSwitch: "Switch",
           subtitleAutoSyncOtherEditKeep: "Keep",
+          playerStarvedLighter: "The connection can\u2019t keep up with this version. Lighter: {stream}",
+          playerStarvedSwitch: "Switch",
           subtitleLanguageDetected: "language detected",
+          subtitleForced: "Forced",
+          subtitleSdh: "SDH",
           subtitleAutoSyncUndo: "Undo",
           subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
           subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
@@ -4166,7 +4190,7 @@
           coreStreamsSource: "Source",
           streamSourceAllSources: "All sources",
           streamSourceVod: "VOD",
-          streamSourceDebrid: "Debrid",
+          streamSourceCloud: "Cloud",
           streamSourceEpisodeCount: "{n}/{total} ep",
           streamSourceSeriesHint: "Applies to every episode in this series",
           streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
@@ -4254,6 +4278,11 @@
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Scanning your library: {name}",
+          libraryScanIndicatorProgress: "{done} of {total} titles",
+          libraryScanIndicatorSoFar: "{done} titles so far",
+          libraryScanIndicatorHint: "Sorting, filters and library rows appear when it is done.",
+          libraryScanUnreachable: "{name} is not responding \u2013 will try again later",
           plexIndexTitle: "Library index",
           plexIndexDesc: "Lumio indexes your Plex libraries locally so the home page, recommendations and Zapp can run entirely on what you own.",
           plexIndexEmpty: "No index yet.",
@@ -4463,6 +4492,26 @@
           hpEnableHero: "Enable hero banner",
           hpEnableHeroDisabledHint: "Disabled \u2013 turn off custom background first",
           hpEnableHeroHint: "Show a random movie at the top of the home page",
+          cpHeroLabel: "Hero",
+          cpHeroMix: "Mixed from the page\u2019s rows",
+          cpHeroFixed: "A fixed title",
+          cpHeroOnly: "Only: {row}",
+          cpHeroRowN: "Row {n}",
+          heroPageTitle: "Hero per page",
+          heroPageHint: "Choose where the hero on Home, Movies and Series takes its titles from: Discover with its own category and minimum rating, or one of the page\u2019s rows or a collection \u2014 then the whole hero comes from there.",
+          heroPagePageLabel: "Page",
+          heroPageHome: "Home",
+          heroPageMovies: "Movies",
+          heroPageSeries: "Series",
+          heroPageSourceLabel: "Source",
+          heroPageSourceDiscover: "Discover",
+          heroPageSourceRow: "A row or collection",
+          heroPageAppSetting: "As the hero setting above",
+          heroPageMinRatingApp: "Minimum rating (IMDb) \u2014 as above",
+          heroPageRowLabel: "Row or collection",
+          heroPageRowNone: "Choose\u2026",
+          heroPageRowsHeader: "Rows on the page",
+          heroPageCollectionsHeader: "Collections",
           hpCategoryLabel: "Category",
           hpMinRatingImdb: "Minimum rating (IMDb) \u2014 {value}",
           hpPersistentHero: "Persistent hero",
@@ -4582,6 +4631,7 @@
           sssMoreSeasons: "More seasons",
           sssSeasonN: "Season {num}",
           sssEpisodesWord: "episodes",
+          sssEpisodesShort: "ep",
           sssMarkSeasonUnwatchedTitle: "Mark whole season unwatched",
           sssMarkSeasonWatchedTitle: "Mark whole season watched",
           sssSeasonWatched: "Season watched",
@@ -5144,6 +5194,10 @@
           releases: "Releases",
           settings: "Inst\xE4llningar",
           lastWatched: "Forts\xE4tt titta",
+          nextEpisodesTitle: "N\xE4sta avsnitt",
+          nextEpisodesTab: "N\xE4sta avsnitt",
+          nextEpisodesEmpty: "Inget nytt att se h\xE4rn\xE4st. Se klart ett avsnitt av en serie s\xE5 hamnar n\xE4sta h\xE4r.",
+          homeSourceNextEpisodes: "N\xE4sta avsnitt",
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
           startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
@@ -5599,7 +5653,7 @@
           appUpdatePromptInstall: "Uppdatera nu",
           appUpdatePromptInstalling: "Uppdaterar\u2026",
           appUpdateDownloading: "Laddar ner uppdateringen",
-          appUpdateInstallingStep: "Installerar\u2026",
+          appUpdateInstallingStep: "Installerar uppdateringen \u2013 Lumio startar om",
           appUpdatePromptLater: "Inte nu",
           appUpdateRestarting: "Uppdateringen installerad \u2014 Lumio startar om\u2026",
           appUpdateDmgOpened: "Installeraren laddades ner och \xF6ppnades \u2014 dra Lumio till Program.",
@@ -5776,6 +5830,7 @@
           audio: "Ljud",
           audioLanguage: "Ljudspr\xE5k",
           currentAudioOutput: "Aktuellt ljudl\xE4ge",
+          audioTrackCommentary: "Kommentar",
           info: "Info",
           actor: "Sk\xE5dis",
           readMore: "L\xE4s mer",
@@ -6162,7 +6217,7 @@
           langAppLanguageDesc: "Spr\xE5ket i sj\xE4lva Lumio-gr\xE4nssnittet.",
           langMetadataLanguage: "Metadataspr\xE5k",
           langRegion: "Region",
-          langRegionDesc: "Landskod f\xF6r tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
+          langRegionDesc: "Landet som styr tillg\xE4nglighet \u2014 vilka streamingtj\xE4nster och releasedatum som g\xE4ller.",
           langMetadataLanguageDesc: "Titlar, beskrivningar och taglines fr\xE5n TMDb visas p\xE5 detta spr\xE5k n\xE4r \xF6vers\xE4ttning finns.",
           langBehaviorGroup: "AUTOVAL",
           subtitlesOffByDefault: "Starta med undertexter av",
@@ -6194,6 +6249,11 @@
           rtHwdecDesc: "GPU-avkodning \u2014 sn\xE4llare mot batteri och CPU. St\xE4ng bara av vid fels\xF6kning.",
           allowSoftwareDecoding: "Till\xE5t mjukvaruavkodning",
           allowSoftwareDecodingDesc: "L\xE5ter telefonen eller TV-boxen avkoda video i mjukvara n\xE4r h\xE5rdvaran inte klarar filen. Fler filer g\xE5r att spela, men svaga enheter kan hacka.",
+          dv7AsHdr10: "Dolby Vision profil 7: spela som HDR10",
+          dv7AsHdr10Desc: "Spelar HDR10-basen i Dolby Vision profil 7 (UHD Blu-ray-remuxar) i st\xE4llet f\xF6r Dolby Vision. Undviker fel f\xE4rger (gr\xF6nt eller lila stick, \xF6versaturerad hud) p\xE5 enheter som avkodar profil 7 d\xE5ligt. Auto sl\xE5r p\xE5 det f\xF6r Nvidia Shield.",
+          dv7AsHdr10Auto: "Auto",
+          dv7AsHdr10On: "P\xE5",
+          dv7AsHdr10Off: "Av",
           androidSourceCache: "Mellanlagra str\xF6mmar",
           androidSourceCacheDesc: "Laddar ner filmen i f\xF6rv\xE4g till lagringen genom appen. Kan hj\xE4lpa p\xE5 ostadiga anslutningar, men kostar processorkraft och kan f\xE5 svaga TV-boxar att hacka. Av: spelaren streamar direkt, som de flesta spelare.",
           rtEngineNote: "Kr\xE4ver den inbyggda desktop-motorn (mpv).",
@@ -7389,6 +7449,16 @@
           rememberAspectRatioDesc: "Anv\xE4nder ditt valda bildformat som standard f\xF6r nya filmer och avsnitt.",
           matchFrameRate: "Matcha bildfrekvens",
           matchFrameRateDesc: "Byter TV:n till bildfrekvensen i det du tittar p\xE5, s\xE5 att r\xF6relser inte hackar. Sk\xE4rmen blir svart en kort stund n\xE4r den byter.",
+          scrubPreviews: "F\xF6rhandsbilder i tidslinjen (experimentellt)",
+          scrubPreviewsDesc: "Visa en bild av scenen medan du drar i tidslinjen. F\xF6r str\xF6mmar utan bibliotekets bilder avkodas bilden ur sj\xE4lva str\xF6mmen, s\xE5 det anv\xE4nder lite data. Av som standard.",
+          scrubPreviewsPrepare: "F\xF6rbered f\xF6rhandsbilder innan filmen startar",
+          scrubPreviewsPrepareDesc: "Filmen v\xE4ntar i b\xF6rjan medan f\xF6rhandsbilderna i tidslinjen tas fram och startar sedan sj\xE4lv (h\xF6gst tre minuter). Starta nu hoppar \xF6ver v\xE4ntan.",
+          scrubPrepareTitle: "F\xF6rbereder f\xF6rhandsbilder",
+          scrubPrepareStart: "Starta nu",
+          scrubPreviewsFast: "Snabba f\xF6rhandsbilder (stark box)",
+          scrubPreviewsFastDesc: "Bygger f\xF6rhandsbilderna snabbare medan filmen spelar, med en andra h\xE5rdvaruavkodare. F\xF6r starka boxar: tappar uppspelningen en bildruta g\xE5r filmen sj\xE4lv tillbaka till det s\xE4kra l\xE4get.",
+          matchResolution: "Matcha \xE4ven uppl\xF6sning",
+          matchResolutionDesc: "Byter TV:n till filmens uppl\xF6sning (en 1080p-film spelas i 1080p-l\xE4ge) i st\xE4llet f\xF6r att TV:n skalar upp den. Bara filmer och avsnitt. De flesta TV-apparater skalar upp bra sj\xE4lva.",
           matchFrameRateOff: "Av",
           matchFrameRateVod: "Filmer och serier",
           matchFrameRateAll: "\xC4ven live-TV",
@@ -7901,12 +7971,16 @@
           subtitleSyncFastReadAhead: "Snabbare synk (anv\xE4nder mer data)",
           subtitleSyncFastReadAheadHint: "L\xE4ser upp till 6 minuter ljud i f\xF6rv\xE4g i st\xE4llet f\xF6r 3, s\xE5 att undertexterna synkas tidigare i sv\xE5ra partier som s\xE5ng och musik. Anv\xE4nder mer mobildata. P\xE5verkar aldrig uppspelningen.",
           subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
-          subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncSwapped: "Bytte till en b\xE4ttre synkad version av samma undertext",
           subtitleAutoSyncSwappedEmbedded: "Bytte till filens inbyggda undertext",
           subtitleAutoSyncOtherEdit: "Undertexten verkar vara fr\xE5n en annan version av filmen. Byt till filens egen {lang} undertext?",
           subtitleAutoSyncOtherEditSwitch: "Byt",
           subtitleAutoSyncOtherEditKeep: "Beh\xE5ll",
+          playerStarvedLighter: "Anslutningen hinner inte med den h\xE4r versionen. L\xE4ttare: {stream}",
+          playerStarvedSwitch: "Byt",
           subtitleLanguageDetected: "spr\xE5ket uppt\xE4ckt",
+          subtitleForced: "Tvingad",
+          subtitleSdh: "H\xF6rselskadade",
           subtitleAutoSyncUndo: "\xC5ngra",
           subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
           subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
@@ -8279,7 +8353,7 @@
           coreStreamsSource: "K\xE4lla",
           streamSourceAllSources: "Alla k\xE4llor",
           streamSourceVod: "VOD",
-          streamSourceDebrid: "Debrid",
+          streamSourceCloud: "Molnet",
           streamSourceEpisodeCount: "{n}/{total} avs",
           streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
           streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
@@ -8366,6 +8440,11 @@
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
+          libraryScanIndicatorTitle: "Biblioteket skannas: {name}",
+          libraryScanIndicatorProgress: "{done} av {total} titlar",
+          libraryScanIndicatorSoFar: "{done} titlar hittills",
+          libraryScanIndicatorHint: "Sortering, filter och bibliotekets rader kommer n\xE4r den \xE4r klar.",
+          libraryScanUnreachable: "{name} svarar inte \u2013 f\xF6rs\xF6ker igen senare",
           plexIndexTitle: "Biblioteksindex",
           plexIndexDesc: "Lumio indexerar dina Plex-bibliotek lokalt s\xE5 att startsidan, rekommendationerna och Zapp kan bygga helt p\xE5 det du \xE4ger.",
           plexIndexEmpty: "Inget index \xE4nnu.",
@@ -8575,6 +8654,26 @@
           hpEnableHero: "Aktivera hero-banner",
           hpEnableHeroDisabledHint: "Inaktiverat \u2013 st\xE4ng av egen bakgrund f\xF6rst",
           hpEnableHeroHint: "Visa en slumpm\xE4ssig film h\xF6gst upp p\xE5 startsidan",
+          cpHeroLabel: "Hero",
+          cpHeroMix: "Blandat ur sidans rader",
+          cpHeroFixed: "En fast titel",
+          cpHeroOnly: "Bara: {row}",
+          cpHeroRowN: "Rad {n}",
+          heroPageTitle: "Hero per sida",
+          heroPageHint: "V\xE4lj var heron p\xE5 Hem, Filmer och Serier h\xE4mtar sina titlar: Uppt\xE4ck med egen kategori och l\xE4gsta betyg, eller en av sidans rader eller en samling \u2014 d\xE5 kommer hela heron d\xE4rifr\xE5n.",
+          heroPagePageLabel: "Sida",
+          heroPageHome: "Hem",
+          heroPageMovies: "Filmer",
+          heroPageSeries: "Serier",
+          heroPageSourceLabel: "K\xE4lla",
+          heroPageSourceDiscover: "Uppt\xE4ck",
+          heroPageSourceRow: "En rad eller samling",
+          heroPageAppSetting: "Som hero-inst\xE4llningen ovan",
+          heroPageMinRatingApp: "Minimumbetyg (IMDb) \u2014 som ovan",
+          heroPageRowLabel: "Rad eller samling",
+          heroPageRowNone: "V\xE4lj\u2026",
+          heroPageRowsHeader: "Sidans rader",
+          heroPageCollectionsHeader: "Samlingar",
           hpCategoryLabel: "Kategori",
           hpMinRatingImdb: "Minimumbetyg (IMDb) \u2014 {value}",
           hpPersistentHero: "Persistent hero",
@@ -8694,6 +8793,7 @@
           sssMoreSeasons: "Fler s\xE4songer",
           sssSeasonN: "S\xE4song {num}",
           sssEpisodesWord: "avsnitt",
+          sssEpisodesShort: "avs.",
           sssMarkSeasonUnwatchedTitle: "Markera hela s\xE4songen som osedd",
           sssMarkSeasonWatchedTitle: "Markera hela s\xE4songen som sedd",
           sssSeasonWatched: "S\xE4songen sedd",
@@ -9270,6 +9370,13 @@
     }
   });
 
+  // lib/parallel-ranges.ts
+  var init_parallel_ranges = __esm({
+    "lib/parallel-ranges.ts"() {
+      init_app_storage();
+    }
+  });
+
   // lib/subtitle-legibility.ts
   var HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
   var init_subtitle_legibility = __esm({
@@ -9306,6 +9413,7 @@
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
+      init_parallel_ranges();
       init_timing();
       init_react_shim();
       init_tauri_mpv();
@@ -10150,8 +10258,8 @@
     }
     if (isTauriEnv) {
       try {
-        const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-        await invoke6("open_external_url", { url });
+        const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
+        await invoke7("open_external_url", { url });
         return;
       } catch {
       }
@@ -10303,7 +10411,7 @@
       __getOwnPropSymbols = Object.getOwnPropertySymbols;
       __hasOwnProp2 = Object.prototype.hasOwnProperty;
       __propIsEnum = Object.prototype.propertyIsEnumerable;
-      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+      __defNormalProp2 = (obj2, key, value) => key in obj2 ? __defProp2(obj2, key, { enumerable: true, configurable: true, writable: true, value }) : obj2[key] = value;
       __spreadValues = (a, b) => {
         for (var prop in b || (b = {}))
           if (__hasOwnProp2.call(b, prop))
@@ -10966,14 +11074,14 @@
             return result;
           }
           // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str3) {
-            str3 = encodeURI(str3);
+          static toUtf8ByteArray(str4) {
+            str4 = encodeURI(str4);
             let result = [];
-            for (let i = 0; i < str3.length; i++) {
-              if (str3.charAt(i) != "%")
-                result.push(str3.charCodeAt(i));
+            for (let i = 0; i < str4.length; i++) {
+              if (str4.charAt(i) != "%")
+                result.push(str4.charCodeAt(i));
               else {
-                result.push(parseInt(str3.substring(i + 1, i + 3), 16));
+                result.push(parseInt(str4.substring(i + 1, i + 3), 16));
                 i += 2;
               }
             }
@@ -11278,17 +11386,18 @@
 
   // lib/playback-start-gate.ts
   function waitForStartIdle() {
-    if (holders === 0) return Promise.resolve();
+    if (holders === 0 && !launchHeld) return Promise.resolve();
     return new Promise((resolve) => {
       waiters.push(resolve);
     });
   }
-  var holders, waiters;
+  var holders, waiters, launchHeld;
   var init_playback_start_gate = __esm({
     "lib/playback-start-gate.ts"() {
       "use strict";
       holders = 0;
       waiters = [];
+      launchHeld = false;
     }
   });
 
@@ -11641,6 +11750,12 @@
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/trickplay-identity.ts
+  var init_trickplay_identity = __esm({
+    "lib/trickplay-identity.ts"() {
     }
   });
 
@@ -12172,7 +12287,7 @@
         ProgressBarStatus["Paused"] = "paused";
         ProgressBarStatus["Error"] = "error";
       })(exports.ProgressBarStatus || (exports.ProgressBarStatus = {}));
-      function getCurrentWindow2() {
+      function getCurrentWindow3() {
         return new Window(window.__TAURI_INTERNALS__.metadata.currentWindow.label, {
           // @ts-expect-error `skip` is not defined in the public API but it is handled by the constructor
           skip: true
@@ -12236,7 +12351,7 @@
          * Get an instance of `Window` for the current window.
          */
         static getCurrent() {
-          return getCurrentWindow2();
+          return getCurrentWindow3();
         }
         /**
          * Gets a list of instances of `Window` for all available windows.
@@ -13894,9 +14009,46 @@
       exports.currentMonitor = currentMonitor;
       exports.cursorPosition = cursorPosition;
       exports.getAllWindows = getAllWindows;
-      exports.getCurrentWindow = getCurrentWindow2;
+      exports.getCurrentWindow = getCurrentWindow3;
       exports.monitorFromPoint = monitorFromPoint;
       exports.primaryMonitor = primaryMonitor;
+    }
+  });
+
+  // lib/platform-os.ts
+  var init_platform_os = __esm({
+    "lib/platform-os.ts"() {
+    }
+  });
+
+  // components/window-controls.tsx
+  var import_react_dom, import_core3, import_window, INTERACTIVE_SELECTOR;
+  var init_window_controls = __esm({
+    "components/window-controls.tsx"() {
+      init_react_shim();
+      import_react_dom = __toESM(require_react_dom());
+      import_core3 = __toESM(require_core());
+      import_window = __toESM(require_window());
+      init_platform_os();
+      init_jsx_runtime_shim();
+      INTERACTIVE_SELECTOR = [
+        "button",
+        "a[href]",
+        "input",
+        "select",
+        "textarea",
+        "label",
+        "summary",
+        '[role="button"]',
+        '[role="link"]',
+        '[role="tab"]',
+        '[role="menuitem"]',
+        '[role="slider"]',
+        '[contenteditable=""]',
+        '[contenteditable="true"]',
+        "[data-no-window-drag]",
+        ".lumio-window-controls"
+      ].join(",");
     }
   });
 
@@ -14157,9 +14309,9 @@
         deps.persist({ ...open2 }, false);
       }
     }
-    function setCoViewers(ids) {
+    function setCoViewers(ids2) {
       const nowMs = deps.now();
-      chosen = [...new Set(ids)];
+      chosen = [...new Set(ids2)];
       chosenAtMs = nowMs;
       if (open2) {
         open2.coViewers = [...chosen];
@@ -14907,11 +15059,12 @@
     }
   });
 
-  // lib/android-media-keys.ts
-  var init_android_media_keys = __esm({
-    "lib/android-media-keys.ts"() {
+  // components/results/details-meta-row.tsx
+  var init_details_meta_row = __esm({
+    "components/results/details-meta-row.tsx"() {
       "use client";
-      init_key_hold();
+      init_i18n();
+      init_jsx_runtime_shim();
     }
   });
 
@@ -14931,6 +15084,55 @@
         gib: 1024 ** 3,
         tib: 1024 ** 4
       };
+    }
+  });
+
+  // lib/player-title-block.ts
+  var init_player_title_block = __esm({
+    "lib/player-title-block.ts"() {
+      init_stream_utils();
+      init_playback_settings();
+    }
+  });
+
+  // lib/tv-shell/hero-text.ts
+  var init_hero_text = __esm({
+    "lib/tv-shell/hero-text.ts"() {
+    }
+  });
+
+  // lib/player-title-meta.ts
+  var init_player_title_meta = __esm({
+    "lib/player-title-meta.ts"() {
+      init_api_json_cache();
+      init_rating_sources();
+      init_hero_text();
+      init_watchlist_item_cache();
+    }
+  });
+
+  // components/player/player-title-block.tsx
+  var CHIP_CLASS, FORMAT_CHIP_CLASS, LANGUAGE_CHIP_CLASS;
+  var init_player_title_block2 = __esm({
+    "components/player/player-title-block.tsx"() {
+      "use client";
+      init_react_shim();
+      init_details_meta_row();
+      init_i18n();
+      init_player_title_block();
+      init_player_title_meta();
+      init_jsx_runtime_shim();
+      CHIP_CLASS = "vp-chip inline-flex items-center gap-[0.35em] whitespace-nowrap rounded-md border px-2 py-0.5 text-xs leading-snug";
+      FORMAT_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.2] bg-black/35 font-semibold text-slate-100`;
+      LANGUAGE_CHIP_CLASS = `${CHIP_CLASS} border-white/[0.14] bg-black/25 font-medium text-slate-300`;
+    }
+  });
+
+  // lib/android-media-keys.ts
+  var init_android_media_keys = __esm({
+    "lib/android-media-keys.ts"() {
+      "use client";
+      init_key_hold();
     }
   });
 
@@ -15055,6 +15257,21 @@
     }
   });
 
+  // lib/core-streams/source-groups.ts
+  var init_source_groups = __esm({
+    "lib/core-streams/source-groups.ts"() {
+      init_stream_utils();
+    }
+  });
+
+  // lib/core-streams/lighter-stream.ts
+  var init_lighter_stream = __esm({
+    "lib/core-streams/lighter-stream.ts"() {
+      init_source_groups();
+      init_stream_utils();
+    }
+  });
+
   // lib/player-menu-anchor.ts
   var init_player_menu_anchor = __esm({
     "lib/player-menu-anchor.ts"() {
@@ -15062,10 +15279,10 @@
   });
 
   // lib/download-target.ts
-  var import_core3;
+  var import_core4;
   var init_download_target = __esm({
     "lib/download-target.ts"() {
-      import_core3 = __toESM(require_core());
+      import_core4 = __toESM(require_core());
       init_tauri_mpv();
       init_tauri_native_player();
       init_playback_settings();
@@ -15473,11 +15690,11 @@
   });
 
   // lib/tauri-avplayer.ts
-  var import_core4;
+  var import_core5;
   var init_tauri_avplayer = __esm({
     "lib/tauri-avplayer.ts"() {
       "use client";
-      import_core4 = __toESM(require_core());
+      import_core5 = __toESM(require_core());
       init_tauri_mpv();
     }
   });
@@ -15709,12 +15926,13 @@
   });
 
   // components/player/video-player-modal.tsx
-  var import_react_dom, import_core5, import_window;
+  var import_react_dom2, import_core6, import_window2;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
       "use client";
       init_player_control_icons();
+      init_trickplay_identity();
       init_playback_settings();
       init_playback_settings();
       init_playback_settings();
@@ -15723,10 +15941,12 @@
       init_playback_speed_store();
       init_react_shim();
       init_timing();
-      import_react_dom = __toESM(require_react_dom());
-      import_core5 = __toESM(require_core());
-      import_window = __toESM(require_window());
+      import_react_dom2 = __toESM(require_react_dom());
+      import_core6 = __toESM(require_core());
+      import_window2 = __toESM(require_window());
       init_transparent_webview();
+      init_platform_os();
+      init_window_controls();
       init_video_progress();
       init_recorder();
       init_profile_storage_shim();
@@ -15736,6 +15956,8 @@
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
+      init_player_title_block2();
+      init_player_title_block();
       init_tauri_native_player();
       init_playback_settings();
       init_android_media_keys();
@@ -15753,6 +15975,8 @@
       init_playback_settings();
       init_scroll_lock();
       init_i18n();
+      init_lighter_stream();
+      init_stream_utils();
       init_tv_focus_shim();
       init_tv_scene();
       init_player_menu_anchor();
@@ -16060,14 +16284,14 @@
       }
     );
   }
-  var import_react_dom2, TOKENS, TYPE, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
+  var import_react_dom3, TOKENS, TYPE, inputStyle, monoFont, eyebrowStyle, ICON_PATHS;
   var init_primitives = __esm({
     "components/settings/redesigned/primitives.tsx"() {
       "use client";
       init_react_shim();
       init_tv_tab_heading();
       init_settings_heading();
-      import_react_dom2 = __toESM(require_react_dom());
+      import_react_dom3 = __toESM(require_react_dom());
       init_jsx_runtime_shim();
       TOKENS = {
         bg: "var(--tk-bg)",
@@ -16408,6 +16632,13 @@
     const host = typeof window !== "undefined" ? window.__lumioPluginRuntime?.sdk?.waitForStartIdle : void 0;
     return host ? host() : waitForStartIdle();
   }
+  function canImportPlaybackPositions() {
+    return typeof window !== "undefined" && typeof window.__lumioPluginRuntime?.sdk?.importPlaybackPositions === "function";
+  }
+  function importPlaybackPositions(source, items2) {
+    const host = typeof window !== "undefined" ? window.__lumioPluginRuntime?.sdk?.importPlaybackPositions : void 0;
+    return host ? host(source, items2) : null;
+  }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
     return text[lang] ?? text.en ?? text.sv ?? "";
@@ -16480,7 +16711,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     MdblistPlugin: () => MdblistPlugin
@@ -16488,10 +16719,10 @@
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/host.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/api.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/api.ts
   var PROXY = "/api/plugins/mdblist/call";
   var DEFAULT_PAUSE_S = 60;
   var MAX_PAGES = 50;
@@ -16581,21 +16812,21 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/payloads.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/payloads.ts
   function toIds(tmdbId, imdbId) {
-    const ids = {};
+    const ids2 = {};
     const tmdb = tmdbId != null && /^\d+$/.test(tmdbId) ? Number(tmdbId) : null;
-    if (tmdb != null) ids.tmdb = tmdb;
-    if (imdbId && /^tt\d+$/.test(imdbId)) ids.imdb = imdbId;
-    return ids.tmdb != null || ids.imdb != null ? ids : null;
+    if (tmdb != null) ids2.tmdb = tmdb;
+    if (imdbId && /^tt\d+$/.test(imdbId)) ids2.imdb = imdbId;
+    return ids2.tmdb != null || ids2.imdb != null ? ids2 : null;
   }
   function buildScrobblePayload(event) {
-    const ids = toIds(event.tmdbId, event.imdbId);
-    if (!ids) return null;
-    if (event.mediaType === "movie") return { movie: { ids }, progress: event.progress };
+    const ids2 = toIds(event.tmdbId, event.imdbId);
+    if (!ids2) return null;
+    if (event.mediaType === "movie") return { movie: { ids: ids2 }, progress: event.progress };
     if (event.season == null || event.episode == null) return null;
     return {
-      show: { ids, season: { number: event.season, episode: { number: event.episode } } },
+      show: { ids: ids2, season: { number: event.season, episode: { number: event.episode } } },
       progress: event.progress
     };
   }
@@ -16604,8 +16835,8 @@
     const shows = /* @__PURE__ */ new Map();
     for (const item of items2) {
       if (item.kind === "movie") {
-        const ids = toIds(item.tmdbId, item.imdbId);
-        if (ids) movies.push({ ids, watched_at: item.watchedAt });
+        const ids2 = toIds(item.tmdbId, item.imdbId);
+        if (ids2) movies.push({ ids: ids2, watched_at: item.watchedAt });
         continue;
       }
       if (!toIds(item.tmdbId, null)) continue;
@@ -16624,11 +16855,11 @@
     };
   }
   function buildWatchlistPayload(entries, mediaType) {
-    const ids = entries.map((entry) => toIds(entry.tmdbId, entry.imdbId)).filter((x) => x != null);
-    return mediaType === "show" ? { shows: ids } : { movies: ids };
+    const ids2 = entries.map((entry) => toIds(entry.tmdbId, entry.imdbId)).filter((x) => x != null);
+    return mediaType === "show" ? { shows: ids2 } : { movies: ids2 };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/bridge.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/bridge.ts
   var FLUSH_MS = 3e3;
   var RETRY_MS2 = 6e4;
   function startBridge(deps) {
@@ -16725,7 +16956,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/device-auth.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/device-auth.ts
   var DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   var REFRESH_MARGIN_MS = 24 * 60 * 6e4;
   var REFRESH_BACKOFF_MS = 5 * 6e4;
@@ -16922,7 +17153,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/list-ref.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/list-ref.ts
   function parseListRef(input) {
     const text = input.trim();
     if (/^\d+$/.test(text)) return { kind: "id", id: text };
@@ -16930,7 +17161,7 @@
     return match ? { kind: "slug", user: match[1], slug: match[2] } : null;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/parse.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/parse.ts
   var isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
   var str2 = (v) => typeof v === "string" && v.trim() ? v : null;
   var idStr = (v) => typeof v === "number" && Number.isFinite(v) ? String(v) : typeof v === "string" && /^\d+$/.test(v) ? v : null;
@@ -16957,9 +17188,9 @@
     const movies = [];
     for (const entry of pages.movies ?? []) {
       if (!isObj(entry)) continue;
-      const ids = isObj(entry.movie) && isObj(entry.movie.ids) ? entry.movie.ids : {};
-      const tmdbId = idStr(ids.tmdb);
-      const imdbId = str2(ids.imdb);
+      const ids2 = isObj(entry.movie) && isObj(entry.movie.ids) ? entry.movie.ids : {};
+      const tmdbId = idStr(ids2.tmdb);
+      const imdbId = str2(ids2.imdb);
       if (!tmdbId && !imdbId) continue;
       movies.push({ tmdbId, imdbId, watchedAt: watchedAtOf(entry) });
     }
@@ -16980,14 +17211,14 @@
     const ranked = raw.filter(isObj).map((entry, index) => ({ entry, index, rank: typeof entry.rank === "number" ? entry.rank : Number.MAX_SAFE_INTEGER })).sort((a, b) => a.rank - b.rank || a.index - b.index);
     const out = [];
     for (const { entry } of ranked) {
-      const ids = isObj(entry.ids) ? entry.ids : {};
-      const tmdbId = idStr(entry.id) ?? idStr(entry.tmdb_id) ?? idStr(ids.tmdb);
+      const ids2 = isObj(entry.ids) ? entry.ids : {};
+      const tmdbId = idStr(entry.id) ?? idStr(entry.tmdb_id) ?? idStr(ids2.tmdb);
       if (!tmdbId) continue;
       const kind = str2(entry.mediatype) ?? str2(entry.media_type) ?? str2(entry.type);
       out.push({
         mediaType: kind === "show" || kind === "tv" || kind === "series" ? "tv" : "movie",
         tmdbId,
-        imdbId: str2(entry.imdb_id) ?? str2(ids.imdb),
+        imdbId: str2(entry.imdb_id) ?? str2(ids2.imdb),
         title: str2(entry.title) ?? tmdbId
       });
     }
@@ -17020,7 +17251,7 @@
     });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/strings.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/strings.ts
   var S = {
     pluginName: { en: "MDBList", sv: "MDBList" },
     listSourceLabel: { en: "MDBList list", sv: "MDBList-lista" },
@@ -17156,7 +17387,7 @@
     return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/list-source.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/list-source.ts
   var FRESH_MS = 6 * 60 * 6e4;
   var WATCHLIST_ID = "watchlist";
   function itemsPath(id) {
@@ -17254,7 +17485,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/prefs.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/prefs.ts
   function prefKeys(prefix) {
     return {
       scrobble: `${prefix}_scrobble_enabled`,
@@ -17273,7 +17504,76 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/scheduler.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/playback.ts
+  var obj = (v) => v && typeof v === "object" && !Array.isArray(v) ? v : null;
+  var num2 = (v) => {
+    const n = typeof v === "string" ? Number(v) : v;
+    return typeof n === "number" && Number.isFinite(n) ? n : null;
+  };
+  var str3 = (v) => typeof v === "string" && v.trim() ? v : null;
+  var ids = (v) => {
+    const o = obj(v);
+    if (!o) return null;
+    return { tmdb: num2(o.tmdb) ?? null, imdb: str3(o.imdb) };
+  };
+  function playbackRows(payload) {
+    if (Array.isArray(payload)) return payload.map(obj).filter((r) => r !== null);
+    const o = obj(payload);
+    if (!o) return [];
+    const out = [];
+    for (const key of ["playback", "items", "movies", "episodes", "shows", "tv_shows"]) {
+      const bucket = o[key];
+      if (Array.isArray(bucket)) out.push(...bucket.map(obj).filter((r) => r !== null));
+    }
+    return out;
+  }
+  function normalizePlaybackRow(row) {
+    const progress = num2(row.progress);
+    if (progress == null) return null;
+    const movie = obj(row.movie);
+    const pausedAt = str3(row.paused_at) ?? str3(row.watched_at) ?? str3(row.progress_at);
+    if (movie || row.type === "movie") {
+      const m = movie ?? row;
+      return {
+        id: num2(row.id),
+        progress,
+        paused_at: pausedAt,
+        type: "movie",
+        movie: { title: str3(m.title), year: num2(m.year), runtime: num2(m.runtime), ids: ids(m.ids) }
+      };
+    }
+    const show = obj(row.show);
+    if (!show) return null;
+    const episode = obj(row.episode) ?? {};
+    return {
+      id: num2(row.id),
+      progress,
+      paused_at: pausedAt,
+      type: "episode",
+      show: { title: str3(show.title), year: num2(show.year), runtime: num2(show.runtime), ids: ids(show.ids) },
+      episode: {
+        season: num2(episode.season) ?? num2(row.season),
+        number: num2(episode.number) ?? num2(episode.episode) ?? num2(row.episode),
+        runtime: num2(episode.runtime)
+      }
+    };
+  }
+  async function pullPlayback(deps) {
+    if (!deps.enabled || !deps.importer) return 0;
+    const result = await deps.fetch();
+    if (!result.ok) {
+      deps.log(`forts\xE4tt titta: h\xE4mtningen misslyckades (${result.error})`);
+      return 0;
+    }
+    const rows = playbackRows(result.data).map(normalizePlaybackRow).filter((r) => r !== null);
+    const pending3 = deps.importer(rows);
+    if (!pending3) return 0;
+    const { applied } = await pending3;
+    deps.log(`forts\xE4tt titta: ${rows.length} pausade hos tj\xE4nsten, ${applied} inlagda`);
+    return applied;
+  }
+
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/scheduler.ts
   var INITIAL_DELAY_MS = 5e4;
   var FIRST_SYNC_DELAY_MS = 5e3;
   var INTERVAL_MS = 15 * 6e4;
@@ -17305,7 +17605,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/_shared/tracker-kit/status.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/status.ts
   function createStatus(initial) {
     let state = {
       connection: "none",
@@ -17334,7 +17634,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/sync-engine.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/sync-engine.ts
   var SNAPSHOT_KEY = "mdblist_sync_snapshot";
   var SNAPSHOT_VERSION = 2;
   var WATCHED_PUSH_LIMIT_PER_RUN = 100;
@@ -17550,7 +17850,7 @@
     }
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/tracker.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/tracker.ts
   var DUPLICATE_WINDOW_MS = 5e3;
   function createScrobbler(deps) {
     let lastKey = "";
@@ -17569,7 +17869,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/host.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/host.ts
   var MDBLIST_CLIENT_ID = "COMQozk02g5TQOKSNLV3Xwccb675R0c1SycYHM0j";
   var PREFS_EVENT = "lumio-mdblist-prefs-changed";
   var AUTH_EVENT = "lumio-mdblist-auth-changed";
@@ -17718,6 +18018,17 @@
     }
     if (out.status === "failed" && out.authFailed) patch.connection = "bad-key";
     status.set(patch);
+    if (out.status === "done" || out.status === "unchanged") {
+      await pullPlayback({
+        enabled: prefs.isOn("watched") && api.hasAuth() && api.pausedUntil() <= Date.now(),
+        importer: canImportPlaybackPositions() ? (items2) => importPlaybackPositions("mdblist", items2) : null,
+        fetch: async () => {
+          const result = await api.call("GET", "/sync/playback");
+          return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+        },
+        log
+      }).catch((error) => log(`forts\xE4tt titta: ${error instanceof Error ? error.message : String(error)}`));
+    }
   }
   var tickListeners = /* @__PURE__ */ new Set();
   var ticker = null;
@@ -17785,7 +18096,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/rows.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/rows.ts
   var clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   function countdown(msLeft) {
     const s = Math.max(0, Math.ceil(msLeft / 1e3));
@@ -17879,11 +18190,11 @@
     return rows;
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/onboarding-card.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -18050,7 +18361,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/onboarding-card.tsx
   init_jsx_runtime_shim();
   function MdblistOnboardingCard({ init }) {
     const { lang } = useLang();
@@ -18113,7 +18424,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins-largelists/plugins/mdblist/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/mdblist/runtime/index.ts
   function getStatus() {
     const state = status.get();
     const base = { canConnect: true, requiresUserGesture: true, supportsSilentReconnect: false };
