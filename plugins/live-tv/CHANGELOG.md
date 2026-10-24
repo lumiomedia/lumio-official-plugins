@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Home no longer gets stuck on "Film & series are being prepared". The film and series library is built per playlist and tried again if a build was interrupted (app closed, TV box asleep, network error), a newly added playlist gets its own build, and choosing categories starts it right away. Home now says what it is waiting for: categories to choose, a playlist without films or series, the catalogue still downloading, or a retry.
+
 ## 0.17.3
 
 - Choose movie and series categories before anything is downloaded: a new playlist waits for the choice, and with Lumio 0.1.635 or later only the chosen categories are fetched from the provider.

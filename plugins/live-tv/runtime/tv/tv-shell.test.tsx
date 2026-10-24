@@ -60,6 +60,13 @@ describe('Hem i rälsen (VOD)', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Film & series are being prepared')
     expect(onNavigate).not.toHaveBeenCalled()
   })
+  it('spellista utan filmer och serier: säger det, i stället för "förbereds"', async () => {
+    setSources([])
+    const { onNavigate } = mount()
+    fireEvent.click(screen.getByTestId('rail-home'))
+    expect(await screen.findByRole('status')).toHaveTextContent('This playlist has no films or series')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
 })
 
 describe('LiveTvTvShell', () => {

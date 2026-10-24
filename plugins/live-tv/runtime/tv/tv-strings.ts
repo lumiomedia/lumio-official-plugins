@@ -373,6 +373,10 @@ const EN = {
   // Hubben
   vodHomeIndexing: 'Film & series are being prepared — showing channels meanwhile',
   vodHomeHidden: 'Film & series are hidden in the Live TV settings',
+  vodHomeNoVod: 'This playlist has no films or series — showing channels',
+  vodHomeChoose: 'Choose film and series categories in Library first',
+  vodHomeImporting: 'Films and series are still downloading from the playlist — Home opens when they are in',
+  vodHomeRetrying: 'The film and series library did not finish — trying again now',
   // Sökets omfång
   scopeAll: 'All',
   scopeChannels: 'Channels',
@@ -1119,6 +1123,10 @@ const SV: Record<keyof typeof EN, string> = {
   vodLibraryFailed: 'Kunde inte bygga biblioteket: {error}',
   vodHomeIndexing: 'Film och serier förbereds — kanalerna visas så länge',
   vodHomeHidden: 'Film och serier är dolda i Live TV-inställningarna',
+  vodHomeNoVod: 'Spellistan har inga filmer eller serier — kanalerna visas',
+  vodHomeChoose: 'Välj kategorier för film och serier i Bibliotek först',
+  vodHomeImporting: 'Filmer och serier hämtas fortfarande från spellistan — Hem öppnas när de är klara',
+  vodHomeRetrying: 'Biblioteket med film och serier blev inte klart — försöker igen nu',
   scopeAll: 'Allt',
   scopeChannels: 'Kanaler',
   scopeVod: 'Film & serier',

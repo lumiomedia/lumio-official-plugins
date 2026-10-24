@@ -11,7 +11,7 @@ import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pi
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { usePhoneSurface } from '../hooks/usePhoneSurface'
 import { useSwipeBack } from '../hooks/useSwipeBack'
-import { useTvText } from './tv-strings'
+import { useTvText, type TvStringKey } from './tv-strings'
 import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvRail, shellRailActive } from './tv-rail'
@@ -29,7 +29,8 @@ import { resolveStartView, startRootView } from './start-view'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
-import { maybeAutoScanVod } from '../vod-autoscan'
+import { maybeAutoScanVod, vodHomeState, type VodHomeState } from '../vod-autoscan'
+import { onVodCategoryChoiceChanged } from '../vod-category-filter'
 import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHiddenForActivePlaylist, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
 import { shellToastStyle } from './shell-toast'
@@ -150,6 +151,12 @@ type PlayerComponent = ComponentType<{
   onSwitchChannel?: (channel: M3uChannel) => void
   tv?: LiveTvPlayerTvProps
 }>
+
+/** Hem-knappens besked när biblioteket inte finns, per orsak (vod-autoscan.ts `vodHomeState`). */
+const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
+  hidden: 'vodHomeHidden', 'no-vod': 'vodHomeNoVod', choose: 'vodHomeChoose', importing: 'vodHomeImporting',
+  indexing: 'vodHomeIndexing', failed: 'vodHomeRetrying', waiting: 'vodHomeIndexing',
+}
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 const ZAP_TIMEOUT_MS = 1500
@@ -371,16 +378,37 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const toast = useCallback((text: string) => {
+  const toast = useCallback((text: string, ms = 1800) => {
     setToastText(text)
-    window.setTimeout(() => setToastText((current) => (current === text ? null : current)), 1800)
+    window.setTimeout(() => setToastText((current) => (current === text ? null : current)), ms)
   }, [])
 
-  /** Hem = VOD-startsidan i kärnan när indexet finns, annars ett besked och kanalerna kvar. */
+  /**
+   * Hem = VOD-startsidan i kärnan när indexet finns, annars ett besked som
+   * säger vad Hem väntar på — och kanalerna kvar. Ett misslyckat eller aldrig
+   * startat bibliotek får ett nytt försök direkt (användaren bad om det).
+   */
   const goVodHome = useCallback(() => {
     if (vodHiddenForActivePlaylist()) { toast(tt('vodHomeHidden')); return }
-    void hasVodIndex().then((ok) => { if (ok) onNavigate(vodHomeTarget()); else toast(tt('vodHomeIndexing')) })
+    void hasVodIndex().then(async (ok) => {
+      if (ok) { onNavigate(vodHomeTarget()); return }
+      const state = await vodHomeState()
+      if (state === 'ready') { onNavigate(vodHomeTarget()); return }
+      // Beskeden säger vad användaren kan göra: de får stå kvar längre än ett kvitto.
+      toast(tt(VOD_HOME_TEXT[state]), 4000)
+      if (state === 'failed' || state === 'waiting') void maybeAutoScanVod({ force: true })
+    })
   }, [onNavigate, toast, tt])
+
+  // Ett kategorival startar indexeringen direkt, och medan skalet är öppet prövas
+  // biblioteket igen var femte minut (katalogen kan ha hämtats klart, eller ett
+  // misslyckat försök ha väntat färdigt). Kostar två lokala anrop.
+  useEffect(() => {
+    if (sportOnly) return
+    const off = onVodCategoryChoiceChanged(() => { void maybeAutoScanVod({ force: true }) })
+    const timer = window.setInterval(() => { void maybeAutoScanVod() }, 5 * 60_000)
+    return () => { off(); window.clearInterval(timer) }
+  }, [sportOnly])
 
   /**
    * Färskaste modellen i en ref.
