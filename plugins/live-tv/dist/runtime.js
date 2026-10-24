@@ -42485,6 +42485,122 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-category-filter.ts
+  function readMap() {
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, {});
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out = {};
+    for (const [source, value] of Object.entries(parsed)) {
+      if (!value || typeof value !== "object") continue;
+      const entry = value;
+      out[source] = {
+        excluded: Array.isArray(entry.excluded) ? entry.excluded.filter((id) => typeof id === "string" && id !== "") : [],
+        decided: entry.decided === true,
+        merges: Array.isArray(entry.merges) ? entry.merges.filter((m) => Boolean(m) && typeof m === "object").map((m) => ({ name: String(m.name ?? "").trim(), keys: Array.isArray(m.keys) ? m.keys.filter((k) => typeof k === "string") : [] })).filter((m) => m.name && m.keys.length > 0) : []
+      };
+    }
+    return out;
+  }
+  function writeMap(map) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, map);
+  }
+  function getVodCategoryChoice(source) {
+    return readMap()[source] ?? { excluded: [], decided: false, merges: [] };
+  }
+  function isVodChoiceMade(source) {
+    return getVodCategoryChoice(source).decided;
+  }
+  function getVodExcluded(source) {
+    const map = readMap();
+    if (source) return new Set(map[source]?.excluded ?? []);
+    return new Set(Object.values(map).flatMap((entry) => entry.excluded));
+  }
+  function setVodCategoryChoice(source, excluded, merges) {
+    const map = readMap();
+    map[source] = {
+      excluded: [...new Set(excluded)],
+      decided: true,
+      merges: merges ? merges.map((m) => ({ name: m.name, keys: [...m.keys] })) : map[source]?.merges ?? []
+    };
+    writeMap(map);
+  }
+  function getVodMerges(source) {
+    const map = readMap();
+    if (source) return map[source]?.merges ?? [];
+    return Object.values(map).flatMap((entry) => entry.merges);
+  }
+  function useVodMerges(source) {
+    const [merges, setMerges] = useState(() => getVodMerges(source));
+    useEffect(() => {
+      setMerges(getVodMerges(source));
+      return onVodCategoryChoiceChanged(() => setMerges(getVodMerges(source)));
+    }, [source]);
+    return merges;
+  }
+  function vodMergeId(name) {
+    return `${VOD_MERGE_PREFIX}${name}`;
+  }
+  function vodIdFromKey(key) {
+    return key.split("")[0] ?? key;
+  }
+  function onVodCategoryChoiceChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, FILTER_KEY2, listener);
+  }
+  function useVodExcluded(source) {
+    const [excluded, setExcluded] = useState(() => getVodExcluded(source));
+    useEffect(() => {
+      setExcluded(getVodExcluded(source));
+      return onVodCategoryChoiceChanged(() => setExcluded(getVodExcluded(source)));
+    }, [source]);
+    return excluded;
+  }
+  function useVodChoiceMade(source) {
+    const read11 = () => source ? !isVodChoiceMigrated() || isVodChoiceMade(source) : true;
+    const [made, setMade] = useState(read11);
+    useEffect(() => {
+      setMade(read11());
+      return onVodCategoryChoiceChanged(() => setMade(read11()));
+    }, [source]);
+    return made;
+  }
+  function vodCategoryKey(id, name) {
+    return `${id}${name}`;
+  }
+  function isVodItemIncluded(item, excluded) {
+    return excluded.size === 0 || !excluded.has(vodCategoryKey(item.categoryId, item.categoryName));
+  }
+  async function ensureVodChoiceMigrated(listSources2) {
+    if (readPluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, false)) return;
+    const sources = await listSources2();
+    const map = readMap();
+    for (const source of sources) {
+      if (!map[source.id]) map[source.id] = { excluded: [], decided: true, merges: [] };
+    }
+    writeMap(map);
+    writePluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, true);
+  }
+  function isVodChoiceMigrated() {
+    return readPluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, false);
+  }
+  function vodImportFilter(source) {
+    const choice = getVodCategoryChoice(source);
+    if (!choice.decided) return isVodChoiceMigrated() ? { vodDefer: true } : {};
+    return choice.excluded.length > 0 ? { vodExcludedKeys: choice.excluded } : {};
+  }
+  var LIVE_TV_PLUGIN_ID, FILTER_KEY2, MIGRATED_KEY, VOD_MERGE_PREFIX;
+  var init_vod_category_filter = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/vod-category-filter.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      LIVE_TV_PLUGIN_ID = "com.lumio.live-tv";
+      FILTER_KEY2 = "vod_category_filter_v1";
+      MIGRATED_KEY = "vod_category_filter_migrated_v1";
+      VOD_MERGE_PREFIX = "merge:";
+    }
+  });
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
@@ -42729,6 +42845,10 @@ ${cue.text}`).join("\n\n")}
     const data = await requestJson2("/api/live-tv/vod/status");
     return data.sources ?? [];
   }
+  async function vodSupportsCategoryFilter() {
+    const data = await requestJson2("/api/live-tv/vod/status").catch(() => null);
+    return data?.categoryFilter === true;
+  }
   async function lookupVod(source, keys2) {
     if (keys2.length === 0) return [];
     const data = await requestJson2("/api/live-tv/vod/lookup", {
@@ -42737,6 +42857,14 @@ ${cue.text}`).join("\n\n")}
       body: JSON.stringify({ source: source ?? void 0, keys: keys2 })
     });
     return data.items ?? [];
+  }
+  async function startVodImport(source, xtream) {
+    const data = await requestJson2("/api/live-tv/vod/import", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ source, xtream })
+    });
+    return { started: Boolean(data.started) };
   }
   async function fetchVodEpisodes(source, seriesId, xtream) {
     const data = await requestJson2("/api/live-tv/vod/series", {
@@ -43023,7 +43151,7 @@ ${cue.text}`).join("\n\n")}
     return `${String(channel.name ?? "").trim()}::${String(channel.url ?? "").trim()}`;
   }
   function writeLists(lists) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, lists);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, LIVE_TV_LISTS_KEY, lists);
   }
   function replaceLiveTvLists(lists) {
     writeLists(lists);
@@ -43101,7 +43229,7 @@ ${cue.text}`).join("\n\n")}
     return normalizeCuration({ hidden: hidden2, merges });
   }
   function readLists() {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, []);
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID2, LIVE_TV_LISTS_KEY, []);
     if (!Array.isArray(parsed)) return [];
     const xtreamLogins = getXtreamLogins();
     const m3uUrls = getM3uUrls();
@@ -43128,20 +43256,20 @@ ${cue.text}`).join("\n\n")}
     return preloadPluginImage(LIVE_TV_LOGO_BUCKET, src);
   }
   function getM3uUrls() {
-    return sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID, M3U_URLS_KEY, []));
+    return sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID2, M3U_URLS_KEY, []));
   }
   function getM3uDraftUrls() {
-    const draftUrls = sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID, M3U_DRAFT_URLS_KEY, []));
+    const draftUrls = sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID2, M3U_DRAFT_URLS_KEY, []));
     return draftUrls.length > 0 ? draftUrls : getM3uUrls();
   }
   function onM3uUrlsChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, M3U_URLS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, M3U_URLS_KEY, listener);
   }
   function setM3uDraftUrls(urls) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, M3U_DRAFT_URLS_KEY, urls.filter(Boolean));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, M3U_DRAFT_URLS_KEY, urls.filter(Boolean));
   }
   function applyM3uUrls(urls) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, M3U_URLS_KEY, urls.filter(Boolean));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, M3U_URLS_KEY, urls.filter(Boolean));
     setM3uDraftUrls(urls);
   }
   function getLiveTvUrlsKey(urls) {
@@ -43152,17 +43280,17 @@ ${cue.text}`).join("\n\n")}
   }
   function clearLiveTvMemoryCache(urlsKey) {
     if (!urlsKey) {
-      clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
+      clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID2, LIVE_TV_CHANNELS_PREFIX);
       return;
     }
-    clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey));
+    clearPluginMemoryCache(LIVE_TV_PLUGIN_ID2, getLiveTvChannelsStorageKey(urlsKey));
   }
   function clearStoredLiveTvChannels(urlsKey) {
     if (!urlsKey) {
-      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
+      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID2, LIVE_TV_CHANNELS_PREFIX);
       return;
     }
-    removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, getLiveTvChannelsStorageKey(urlsKey));
+    removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID2, getLiveTvChannelsStorageKey(urlsKey));
   }
   function getLiveTvLists() {
     return readLists();
@@ -43176,7 +43304,7 @@ ${cue.text}`).join("\n\n")}
     return [...urls];
   }
   function onLiveTvListsChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, LIVE_TV_LISTS_KEY, listener);
   }
   function createLiveTvList(name, options) {
     const trimmed = name.trim();
@@ -43317,10 +43445,10 @@ ${cue.text}`).join("\n\n")}
     return (list.channels ?? []).some((entry) => channelKey(entry) === key);
   }
   function getPinnedLiveTvKeys() {
-    return sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, []));
+    return sanitizeStringArray(readPluginJson(LIVE_TV_PLUGIN_ID2, LIVE_TV_PINS_KEY, []));
   }
   function setPinnedLiveTvKeys(keys2) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, keys2);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, LIVE_TV_PINS_KEY, keys2);
   }
   function togglePinnedLiveTvChannel(channel) {
     const key = channelKey(channel);
@@ -43367,7 +43495,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
   function getXtreamLogins() {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, []);
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID2, XTREAM_LOGINS_KEY, []);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({
       id: String(entry.id ?? ""),
@@ -43381,11 +43509,11 @@ ${cue.text}`).join("\n\n")}
   }
   function saveXtreamLogin(login) {
     const rest = getXtreamLogins().filter((entry) => entry.id !== login.id);
-    writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, [...rest, login]);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, XTREAM_LOGINS_KEY, [...rest, login]);
     invalidateXtreamAccount(login);
   }
   function deleteXtreamLogin(id) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, getXtreamLogins().filter((entry) => entry.id !== id));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, XTREAM_LOGINS_KEY, getXtreamLogins().filter((entry) => entry.id !== id));
   }
   function getOrphanXtreamLogins() {
     const lists = readLists();
@@ -43407,7 +43535,7 @@ ${cue.text}`).join("\n\n")}
     }).finally(() => emitIndexChanged());
   }
   function onXtreamLoginsChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, XTREAM_LOGINS_KEY, listener);
   }
   function xtreamPseudoUrl(login) {
     let host2 = login.base;
@@ -43493,7 +43621,8 @@ ${cue.text}`).join("\n\n")}
         username: login.username,
         password: login.password,
         format: login.format,
-        ...login.categoryIds.length > 0 ? { categoryIds: login.categoryIds } : {}
+        ...login.categoryIds.length > 0 ? { categoryIds: login.categoryIds } : {},
+        ...vodImportFilter(list.source)
       };
     } else if (list.kind === "m3u") {
       if (!list.url) throw new Error(`m3u url missing for list "${list.name}"`);
@@ -43588,7 +43717,7 @@ ${cue.text}`).join("\n\n")}
       changed = true;
       return { ...entry, allowedFormats: [...formats] };
     });
-    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, XTREAM_LOGINS_KEY, next);
+    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID2, XTREAM_LOGINS_KEY, next);
   }
   async function fetchXtreamAccountUncached(login) {
     const payload = await fetchXtreamJson(xtreamApiUrl(login));
@@ -43603,34 +43732,44 @@ ${cue.text}`).join("\n\n")}
       allowedFormats: Array.isArray(info?.allowed_output_formats) ? info.allowed_output_formats.filter((f) => typeof f === "string") : []
     };
   }
+  async function fetchXtreamVodCategories(login) {
+    const read11 = async (action) => {
+      const payload = await fetchXtreamJson(xtreamApiUrl(login, { action })).catch(() => null);
+      if (!Array.isArray(payload)) return [];
+      return payload.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({ id: String(entry.category_id ?? "").trim(), name: String(entry.category_name ?? "").trim() })).filter((entry) => entry.id && entry.name);
+    };
+    const [movie, series] = await Promise.all([read11("get_vod_categories"), read11("get_series_categories")]);
+    return { movie, series };
+  }
   async function fetchXtreamCategories(login) {
     const payload = await fetchXtreamJson(xtreamApiUrl(login, { action: "get_live_categories" }));
     if (!Array.isArray(payload)) return [];
     return payload.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({ id: String(entry.category_id ?? ""), name: String(entry.category_name ?? "").trim() })).filter((entry) => entry.id && entry.name);
   }
   function onPinnedLiveTvKeysChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LIVE_TV_PINS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, LIVE_TV_PINS_KEY, listener);
   }
   function getLiveTvHideHero() {
-    return readPluginJson(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, true) !== false;
+    return readPluginJson(LIVE_TV_PLUGIN_ID2, HIDE_HERO_KEY, true) !== false;
   }
   function setLiveTvHideHero(hide) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, hide);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, HIDE_HERO_KEY, hide);
   }
   function onLiveTvHideHeroChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, HIDE_HERO_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, HIDE_HERO_KEY, listener);
   }
-  var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
+  var LIVE_TV_PLUGIN_ID2, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
+      init_vod_category_filter();
       init_plugin_sdk();
       init_index_client();
       init_vod_client();
       init_list_curation();
       init_live_format();
-      LIVE_TV_PLUGIN_ID = "com.lumio.live-tv";
+      LIVE_TV_PLUGIN_ID2 = "com.lumio.live-tv";
       LIVE_TV_GLOBAL_EPG_ID = "global";
       M3U_URLS_KEY = "m3u_urls";
       M3U_DRAFT_URLS_KEY = "m3u_urls_draft";
@@ -43864,17 +44003,17 @@ ${cue.text}`).join("\n\n")}
     return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
   }
   function getLockedChannelKeys() {
-    return sanitize(readPluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, []));
+    return sanitize(readPluginJson(LIVE_TV_PLUGIN_ID2, LOCKED_CHANNELS_KEY, []));
   }
   function toggleChannelLock(channel) {
     const key = channelKey(channel);
     const current4 = getLockedChannelKeys();
     const next = current4.includes(key) ? current4.filter((entry) => entry !== key) : [...current4, key];
-    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, LOCKED_CHANNELS_KEY, next);
     return next;
   }
   function onChannelLocksChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, LOCKED_CHANNELS_KEY, listener);
   }
   function useLockedChannelKeys() {
     const [keys2, setKeys] = useState(() => getLockedChannelKeys());
@@ -45092,6 +45231,7 @@ ${cue.text}`).join("\n\n")}
         vodChoiceChoose: "Choose categories",
         vodChoiceIncludeAll: "Include all",
         vodMergeNeedTwo: "Mark at least two categories of the same kind.",
+        vodChoicePendingBefore: "Choose which movie and series categories to download from {name}. Nothing is downloaded until you choose.",
         vodLibraryBuilding: "Building\u2026 {count} titles",
         vodLibraryNotBuilt: "{count} titles ready to index",
         vodLibraryBuilt: "{count} titles in the library",
@@ -45839,6 +45979,7 @@ ${cue.text}`).join("\n\n")}
         vodChoiceChoose: "V\xE4lj kategorier",
         vodChoiceIncludeAll: "Ta med alla",
         vodMergeNeedTwo: "Markera minst tv\xE5 kategorier av samma sort.",
+        vodChoicePendingBefore: "V\xE4lj vilka film- och seriekategorier som ska h\xE4mtas fr\xE5n {name}. Inget h\xE4mtas f\xF6rr\xE4n du har valt.",
         vodLibraryBuilding: "Bygger\u2026 {count} titlar",
         vodLibraryNotBuilt: "{count} titlar redo att indexeras",
         vodLibraryBuilt: "{count} titlar i biblioteket",
@@ -46532,39 +46673,39 @@ ${cue.text}`).join("\n\n")}
     };
   }
   function getTvSettings() {
-    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, DEFAULTS2));
+    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, DEFAULTS2));
   }
   function setTvSettings(patch) {
     const next = sanitize2({ ...getTvSettings(), ...patch });
-    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, next);
     return next;
   }
   function useTvSettings() {
     const [value, setValue] = useState(getTvSettings);
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, () => setValue(getTvSettings())), []);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, () => setValue(getTvSettings())), []);
     return value;
   }
   function getGuideMode() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, "now");
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, GUIDE_MODE_KEY, "now");
     return GUIDE_MODES.includes(raw) ? raw : "now";
   }
   function setGuideMode(mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, mode);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, GUIDE_MODE_KEY, mode);
   }
   function useGuideMode() {
     const [value, setValue] = useState(getGuideMode);
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, () => setValue(getGuideMode())), []);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, GUIDE_MODE_KEY, () => setValue(getGuideMode())), []);
     return value;
   }
   function getActivePlaylistId() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, null);
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, ACTIVE_PLAYLIST_KEY, null);
     return typeof raw === "string" && raw ? raw : null;
   }
   function setActivePlaylistId(id) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, id);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, ACTIVE_PLAYLIST_KEY, id);
   }
   function onActivePlaylistChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, ACTIVE_PLAYLIST_KEY, listener);
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
@@ -46797,7 +46938,7 @@ ${cue.text}`).join("\n\n")}
     return channels.map((channel, index) => ({ ...channel, key: channelKey(channel), number: index + 1 }));
   }
   function isStorageV2Migrated() {
-    return readPluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, false) === true;
+    return readPluginJson(LIVE_TV_PLUGIN_ID2, STORAGE_V2_MIGRATED_KEY, false) === true;
   }
   async function migrateStorageV2() {
     if (isStorageV2Migrated()) return { migrated: 0 };
@@ -46833,8 +46974,8 @@ ${cue.text}`).join("\n\n")}
         replaceLiveTvLists(merged);
         emitIndexChanged();
       }
-      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
-      if (!lastError) writePluginJson(LIVE_TV_PLUGIN_ID, STORAGE_V2_MIGRATED_KEY, true);
+      removePluginStorageByPrefix(LIVE_TV_PLUGIN_ID2, LIVE_TV_CHANNELS_PREFIX);
+      if (!lastError) writePluginJson(LIVE_TV_PLUGIN_ID2, STORAGE_V2_MIGRATED_KEY, true);
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
@@ -46875,7 +47016,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function getChannelHistory() {
-    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, []));
+    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_HISTORY_KEY, []));
   }
   function recordChannelWatch(channel, listId = null, now2 = Date.now()) {
     if (!channel.url?.trim() || !channel.name?.trim()) return getChannelHistory();
@@ -46891,11 +47032,11 @@ ${cue.text}`).join("\n\n")}
       watchedAt: now2
     };
     const next = [entry, ...getChannelHistory().filter((item) => item.key !== key)].slice(0, CHANNEL_HISTORY_LIMIT);
-    writePluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_HISTORY_KEY, next);
     return next;
   }
   function onChannelHistoryChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, CHANNEL_HISTORY_KEY, listener);
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
@@ -46940,10 +47081,10 @@ ${cue.text}`).join("\n\n")}
     return out.sort((left, right) => left.start - right.start);
   }
   function getReminders(now2 = Date.now()) {
-    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now2);
+    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now2);
   }
   function write6(list) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, list);
   }
   function isReminded(channel, programme) {
     const id = reminderId(channel, programme);
@@ -46985,7 +47126,7 @@ ${cue.text}`).join("\n\n")}
     write6(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
   }
   function onRemindersChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, listener);
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, listener);
   }
   function dueReminders(now2 = Date.now(), leadMs = REMINDER_LEAD_MS) {
     return getReminders(now2).filter((r) => r.notifiedAt === void 0 && r.start - (r.leadMs ?? leadMs) <= now2);
@@ -47096,7 +47237,7 @@ ${cue.text}`).join("\n\n")}
     return `${LIVE_TV_CHANNELS_PREFIX}${source ?? "all"}`;
   }
   function getCachedChannels(source) {
-    return getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source)) ?? null;
+    return getPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(source)) ?? null;
   }
   function ensureIndexSubscription() {
     if (indexSubscription || typeof window === "undefined") return;
@@ -47109,7 +47250,7 @@ ${cue.text}`).join("\n\n")}
     for (const controller2 of channelAborts.values()) controller2.abort();
     channelAborts.clear();
     channelLoads.clear();
-    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
+    clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID2, LIVE_TV_CHANNELS_PREFIX);
     clearResolvedChannels();
   }
   function logoFallbackStateSnapshot() {
@@ -47131,8 +47272,8 @@ ${cue.text}`).join("\n\n")}
       logoFallbackStateBySource = next;
       for (const [source, enabled] of next) {
         if (previous?.get(source) === enabled) continue;
-        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source));
-        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(source));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(null));
       }
     });
   }
@@ -47160,12 +47301,12 @@ ${cue.text}`).join("\n\n")}
         changed = true;
         channelAborts.get(channelsCacheKey(source))?.abort();
         channelLoads.delete(channelsCacheKey(source));
-        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(source));
       }
       if (changed) {
         channelAborts.get(channelsCacheKey(null))?.abort();
         channelLoads.delete(channelsCacheKey(null));
-        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(null));
         for (const listener of [...generationListeners]) listener();
       }
     });
@@ -47207,7 +47348,7 @@ ${cue.text}`).join("\n\n")}
     ensureLogoFallbackSwitchSubscription();
     ensureCurationSubscription();
     const cacheKey3 = channelsCacheKey(source);
-    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey3);
+    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID2, cacheKey3);
     if (cached) return Promise.resolve(cached);
     const existing = channelLoads.get(cacheKey3);
     if (existing) return existing;
@@ -47219,7 +47360,7 @@ ${cue.text}`).join("\n\n")}
       if (source !== null) applyLogoFallbackSwitch(source, items2);
       if (source !== null) recordRawGroupOrder(source, items2);
       const curated = source !== null ? applyCuration(items2, curationForSource(source)) : items2;
-      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey3, curated);
+      setPluginMemoryCache(LIVE_TV_PLUGIN_ID2, cacheKey3, curated);
       return curated;
     })().finally(() => {
       if (channelLoads.get(cacheKey3) === request) channelLoads.delete(cacheKey3);
@@ -47264,7 +47405,7 @@ ${cue.text}`).join("\n\n")}
     const [extras, setExtras] = useState({});
     useEffect(() => {
       let live2 = true;
-      const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(activeSource));
+      const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID2, channelsCacheKey(activeSource));
       if (cached) {
         setLoaded(cached);
         setChannelsLoading(false);
@@ -49270,12 +49411,12 @@ ${cue.text}`).join("\n\n")}
     return { [id]: { key: r.apiKey, plan: typeof r.keyPlan === "string" ? r.keyPlan : null } };
   }
   function readKeysStore() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, null);
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, SPORT_KEYS_KEY, null);
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
     return sanitizeKeys(raw.keys);
   }
   function writeKeysStore(keys2) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, { keys: keys2 });
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_KEYS_KEY, { keys: keys2 });
   }
   function keysFromSettings(r) {
     return r.keys && typeof r.keys === "object" ? sanitizeKeys(r.keys) : legacyKeys(r);
@@ -49321,7 +49462,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
   function getSportSettings() {
-    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS), readKeysStore());
+    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS), readKeysStore());
   }
   function storedSettings(s) {
     const id = LEGACY_PROVIDERS.find((p) => s.keys[p]) ?? null;
@@ -49339,7 +49480,7 @@ ${cue.text}`).join("\n\n")}
     const stored = readKeysStore();
     const next = sanitizeSettings({ ...current4, ...patch, keys: keys2 }, sanitizeKeys(keys2));
     if (!stored || JSON.stringify(stored) !== JSON.stringify(next.keys)) writeKeysStore(next.keys);
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, storedSettings(next));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, storedSettings(next));
     return next;
   }
   function migrateSportKeys() {
@@ -49361,7 +49502,7 @@ ${cue.text}`).join("\n\n")}
     const [value, setValue] = useState(read11);
     useEffect(() => {
       setValue(read11());
-      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, () => setValue(read11()));
+      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, () => setValue(read11()));
     }, [key]);
     return value;
   }
@@ -49371,8 +49512,8 @@ ${cue.text}`).join("\n\n")}
       migrateSportKeys();
       const refresh2 = () => setValue(getSportSettings());
       refresh2();
-      const offSettings = onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, refresh2);
-      const offKeys = onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, refresh2);
+      const offSettings = onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, refresh2);
+      const offKeys = onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_KEYS_KEY, refresh2);
       return () => {
         offSettings();
         offKeys();
@@ -49410,7 +49551,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function getFollows() {
-    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, []));
+    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, []));
   }
   function isFollowing(follows, f) {
     return follows.some((x) => x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key));
@@ -49418,12 +49559,12 @@ ${cue.text}`).join("\n\n")}
   function toggleFollow(f) {
     const current4 = getFollows();
     const next = isFollowing(current4, f) ? current4.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key))) : [...current4, f];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, next);
     return next;
   }
   function setFollowAlert(f, alert) {
     const next = getFollows().map((x) => isFollowing([x], f) ? { ...x, alert } : x);
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, next);
     return next;
   }
   function setFollowProviderId(f, provider, id) {
@@ -49434,7 +49575,7 @@ ${cue.text}`).join("\n\n")}
       changed = true;
       return { ...x, providerIds: { ...x.providerIds ?? {}, [provider]: id } };
     });
-    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, next);
     return changed;
   }
   function useFollows() {
@@ -49451,20 +49592,20 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function getOverrides() {
-    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, {}));
+    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID2, SPORT_OVERRIDES_KEY, {}));
   }
   function setOverride(matchId, channel) {
     const next = { ...getOverrides() };
     if (channel) next[matchId] = channel;
     else delete next[matchId];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_OVERRIDES_KEY, next);
     return next;
   }
   function useOverrides() {
     return useStored(SPORT_OVERRIDES_KEY, getOverrides);
   }
   function getAlertSkips() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, SPORT_ALERT_SKIP_KEY, {});
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
     const out = {};
     for (const [id, start3] of Object.entries(raw)) if (typeof start3 === "number") out[id] = start3;
@@ -49476,7 +49617,7 @@ ${cue.text}`).join("\n\n")}
     const next = {};
     for (const [id, s] of Object.entries(current4)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
     if (skip) next[matchId] = start3;
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_ALERT_SKIP_KEY, next);
   }
   var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_KEYS_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, ownImageDefaults, BACKDROPS_REV, CARD_OPACITY_DEFAULT, CARDS_REV, isMode, pct2, DEFAULT_CARDS, ALL_PROVIDERS, DEFAULT_SETTINGS, isProvider, KEY_RE, LEGACY_PROVIDERS, followAlert, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
@@ -50907,13 +51048,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (added) emit3();
   }
   function readTvReveals() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPOILER_TV_KEY, {});
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, {});
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
     return Object.fromEntries(Object.entries(raw).filter((e) => typeof e[1] === "number"));
   }
   function revealTv(key, now2) {
     const fresh = Object.fromEntries(Object.entries(readTvReveals()).filter(([, at]) => at > now2));
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPOILER_TV_KEY, { ...fresh, [key]: now2 + REVEAL_TV_MS });
+    writePluginJson(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, { ...fresh, [key]: now2 + REVEAL_TV_MS });
     emit3();
   }
   function revealPhone(key, phoneId) {
@@ -50958,8 +51099,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const bump = () => setV((n) => n + 1);
       const offs = [
         onSpoilerChanged(bump),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPOILER_TV_KEY, bump),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, bump)
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, bump),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, bump)
       ];
       return () => {
         for (const off of offs) off();
@@ -51004,7 +51145,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function useResultsController() {
     const [, bump] = useReducer((n) => n + 1, 0);
     const [controller2, setController] = useState(() => currentResults());
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => setController(currentResults())), []);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, () => setController(currentResults())), []);
     useEffect(() => controller2 ? controller2.subscribe(bump) : void 0, [controller2]);
     return controller2;
   }
@@ -54932,12 +55073,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     controller = null;
     bindController();
     unsubs.push(
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, () => {
         bindController();
         recompute();
       }),
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, recompute),
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, recompute)
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, recompute),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_OVERRIDES_KEY, recompute)
     );
     timer3 = setInterval(() => {
       void refresh();
@@ -57825,103 +57966,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-category-filter.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_live_tv_data();
-  var FILTER_KEY2 = "vod_category_filter_v1";
-  var MIGRATED_KEY = "vod_category_filter_migrated_v1";
-  function readMap() {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, {});
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out = {};
-    for (const [source, value] of Object.entries(parsed)) {
-      if (!value || typeof value !== "object") continue;
-      const entry = value;
-      out[source] = {
-        excluded: Array.isArray(entry.excluded) ? entry.excluded.filter((id) => typeof id === "string" && id !== "") : [],
-        decided: entry.decided === true,
-        merges: Array.isArray(entry.merges) ? entry.merges.filter((m) => Boolean(m) && typeof m === "object").map((m) => ({ name: String(m.name ?? "").trim(), keys: Array.isArray(m.keys) ? m.keys.filter((k) => typeof k === "string") : [] })).filter((m) => m.name && m.keys.length > 0) : []
-      };
-    }
-    return out;
-  }
-  function writeMap(map) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, map);
-  }
-  function getVodCategoryChoice(source) {
-    return readMap()[source] ?? { excluded: [], decided: false, merges: [] };
-  }
-  function isVodChoiceMade(source) {
-    return getVodCategoryChoice(source).decided;
-  }
-  function getVodExcluded(source) {
-    const map = readMap();
-    if (source) return new Set(map[source]?.excluded ?? []);
-    return new Set(Object.values(map).flatMap((entry) => entry.excluded));
-  }
-  function setVodCategoryChoice(source, excluded, merges) {
-    const map = readMap();
-    map[source] = {
-      excluded: [...new Set(excluded)],
-      decided: true,
-      merges: merges ? merges.map((m) => ({ name: m.name, keys: [...m.keys] })) : map[source]?.merges ?? []
-    };
-    writeMap(map);
-  }
-  function getVodMerges(source) {
-    const map = readMap();
-    if (source) return map[source]?.merges ?? [];
-    return Object.values(map).flatMap((entry) => entry.merges);
-  }
-  function useVodMerges(source) {
-    const [merges, setMerges] = useState(() => getVodMerges(source));
-    useEffect(() => {
-      setMerges(getVodMerges(source));
-      return onVodCategoryChoiceChanged(() => setMerges(getVodMerges(source)));
-    }, [source]);
-    return merges;
-  }
-  var VOD_MERGE_PREFIX = "merge:";
-  function vodMergeId(name) {
-    return `${VOD_MERGE_PREFIX}${name}`;
-  }
-  function vodIdFromKey(key) {
-    return key.split("")[0] ?? key;
-  }
-  function onVodCategoryChoiceChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, FILTER_KEY2, listener);
-  }
-  function useVodExcluded(source) {
-    const [excluded, setExcluded] = useState(() => getVodExcluded(source));
-    useEffect(() => {
-      setExcluded(getVodExcluded(source));
-      return onVodCategoryChoiceChanged(() => setExcluded(getVodExcluded(source)));
-    }, [source]);
-    return excluded;
-  }
-  function vodCategoryKey(id, name) {
-    return `${id}${name}`;
-  }
-  function isVodItemIncluded(item, excluded) {
-    return excluded.size === 0 || !excluded.has(vodCategoryKey(item.categoryId, item.categoryName));
-  }
-  async function ensureVodChoiceMigrated(listSources2) {
-    if (readPluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, false)) return;
-    const sources = await listSources2();
-    const map = readMap();
-    for (const source of sources) {
-      if (!map[source.id]) map[source.id] = { excluded: [], decided: true, merges: [] };
-    }
-    writeMap(map);
-    writePluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, true);
-  }
-  function isVodChoiceMigrated() {
-    return readPluginJson(LIVE_TV_PLUGIN_ID, MIGRATED_KEY, false);
-  }
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  init_vod_category_filter();
   var PAGE_SIZE = 120;
   var IMPORT_POLL_MS = 2e3;
   function resolveVodSource(source) {
@@ -58129,7 +58174,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return value === "link" || value === "rows" || value === "off";
   }
   function readRecord(key) {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, key, {});
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID2, key, {});
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
     const out = {};
     for (const [id, value] of Object.entries(parsed)) {
@@ -58146,20 +58191,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return isVodMode(value) ? value : VOD_MODE_DEFAULT;
   }
   function setVodMode(playlistId, mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey2(playlistId)]: mode });
+    writePluginJson(LIVE_TV_PLUGIN_ID2, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey2(playlistId)]: mode });
   }
   function getVodSort() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, VOD_SORT_KEY, VOD_SORT_DEFAULT);
     return raw === "az" || raw === "rating" ? raw : VOD_SORT_DEFAULT;
   }
   function setVodSort(sort) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
+    writePluginJson(LIVE_TV_PLUGIN_ID2, VOD_SORT_KEY, sort);
   }
   function getVodCategory(playlistId) {
     return readRecord(VOD_CATEGORY_KEY)[modeKey2(playlistId)] ?? null;
   }
   function setVodCategory(playlistId, categoryId) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
+    writePluginJson(LIVE_TV_PLUGIN_ID2, VOD_CATEGORY_KEY, {
       ...readRecord(VOD_CATEGORY_KEY),
       [modeKey2(playlistId)]: categoryId
     });
@@ -58308,6 +58353,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
+  init_vod_category_filter();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
   function vodSourceFromLibraryId(libraryId) {
@@ -58466,6 +58512,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_live_tv_data();
   init_tv_text_entry();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
@@ -58658,10 +58705,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_tv_strings();
   init_vod_client();
+  init_vod_category_filter();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-category-apply.ts
   init_plugin_sdk();
+  init_vod_category_filter();
   init_vod_client();
+  init_live_tv_data();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
@@ -58717,6 +58767,26 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const mine = (generation.get(source) ?? 0) + 1;
     generation.set(source, mine);
     try {
+      const login = findXtreamLoginByPseudoUrl(source);
+      const inIndex = (await vodStatus().catch(() => [])).some((entry) => entry.id === source && entry.total > 0);
+      if (login && (!inIndex || await vodSupportsCategoryFilter())) {
+        const started2 = await startVodImport(source, {
+          base: login.base,
+          username: login.username,
+          password: login.password,
+          format: login.format,
+          ...excluded.length > 0 ? { vodExcludedKeys: [...excluded] } : {}
+        }).catch(() => ({ started: false }));
+        if (started2.started) {
+          const t0 = Date.now();
+          while (Date.now() - t0 < 1e4) {
+            if (generation.get(source) !== mine) return;
+            const sources = await vodStatus().catch(() => []);
+            if (sources.some((entry) => entry.id === source && entry.importing)) break;
+            await sleep3(500);
+          }
+        }
+      }
       const libraryId = vodLibrarySourceId(source);
       const library = await fetchLibraryStatus();
       const built = library?.sources?.find((entry) => entry.id === libraryId && entry.lastFullSync) ?? null;
@@ -58826,8 +58896,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const choice = getVodCategoryChoice(source);
       setExcluded(new Set(choice.excluded));
       setMerges(choice.merges);
-      listVodCategories(source).then((result2) => {
-        if (live2) setCategories(result2.categories);
+      const fromPanel = async () => {
+        const login = findXtreamLoginByPseudoUrl(source);
+        if (!login) return [];
+        const panel = await fetchXtreamVodCategories(login);
+        return [
+          ...panel.movie.map((c) => ({ id: c.id, name: c.name, kind: "movie", count: 0 })),
+          ...panel.series.map((c) => ({ id: c.id, name: c.name, kind: "series", count: 0 }))
+        ];
+      };
+      listVodCategories(source).then((result2) => result2.known && result2.categories.length > 0 ? result2.categories : fromPanel()).catch(() => fromPanel()).then((list) => {
+        if (live2) setCategories(list);
       }).catch(() => {
         if (live2) setCategories([]);
       });
@@ -58988,7 +59067,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               tt("mergeContains", { groups: m.members.map((c) => c.name).join(", ") })
             ] })
           ] }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(m.count, locale) }),
+          m.count > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(m.count, locale) }) : null,
           /* @__PURE__ */ jsx(LtBtn, { onClick: () => draft.split(m.name), testId: `vod-categories-split-${m.name}`, children: tt("splitMerge") })
         ] }, `m:${m.name}`)),
         rows.map((c) => {
@@ -58996,7 +59075,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           return /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": on, "aria-label": c.name, onClick: () => draft.marking ? draft.toggleMark(c) : draft.toggle(c), style: { ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, color: on ? UI.text : UI.muted }, children: [
             /* @__PURE__ */ jsx(LtCheckMark, { on }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5, minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(c.count, locale) })
+            c.count > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.muted }, children: fmtInt(c.count, locale) }) : null
           ] }, c.id);
         })
       ] }),
@@ -59078,12 +59157,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                   tt("splitMerge")
                 ] })
               ] }),
-              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(m.count, locale) })
+              m.count > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(m.count, locale) }) : null
             ] }, `m:${m.name}`)),
             rows.map((c) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-picker-row-${c.name}`, ...station(() => draft.marking ? draft.toggleMark(c) : draft.toggle(c)), style: rowStyle3, children: [
               /* @__PURE__ */ jsx(Check, { on: draft.marking ? draft.isMarked(c) : draft.isIn(c), label: c.name }),
               /* @__PURE__ */ jsx("span", { style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name }),
-              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(c.count, locale) })
+              c.count > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: fmtInt(c.count, locale) }) : null
             ] }, c.id))
           ] })
         }
@@ -59134,7 +59213,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       draft.categories !== null && !any ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: tt("vodCategoriesNone") }) : null,
       any && !draft.marking ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: kind === "movie" ? tt("vodCategoriesAllMovies") : tt("vodCategoriesAllSeries"), toggle: draft.allIn(kind), onToggle: () => draft.toggleAll(kind) }) : null,
       merges.map((m) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: m.name, hint: tt("mergeContains", { groups: m.members.map((c) => c.name).join(", ") }), value: tt("splitMerge"), onOk: () => draft.split(m.name) }, `m:${m.name}`)),
-      rows.map((c) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: c.name, hint: fmtInt(c.count, locale), toggle: draft.marking ? draft.isMarked(c) : draft.isIn(c), onToggle: () => draft.marking ? draft.toggleMark(c) : draft.toggle(c) }, c.id)),
+      rows.map((c) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: c.name, hint: c.count > 0 ? fmtInt(c.count, locale) : void 0, toggle: draft.marking ? draft.isMarked(c) : draft.isIn(c), onToggle: () => draft.marking ? draft.toggleMark(c) : draft.toggle(c) }, c.id)),
       /* @__PURE__ */ jsx(TvBtns, { buttons: [
         { label: tt("vodCategoriesCancel"), style: "ghost", onOk: onClose },
         { label: tt("vodCategoriesSave"), style: "accent", onOk: () => {
@@ -59184,13 +59263,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       };
     }, [nonce]);
     if (!isVodChoiceMigrated()) return [];
-    return sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id));
+    const pending5 = sources.filter((s) => s.total > 0 && !s.importing && !isVodChoiceMade(s.id));
+    const known = new Set(sources.map((s) => s.id));
+    for (const list of getLiveTvLists()) {
+      const id = list.source;
+      if (list.kind !== "xtream" || !id || known.has(id) || isVodChoiceMade(id)) continue;
+      pending5.push({ id, total: 0, movies: 0, series: 0, updatedAt: 0, importing: false });
+    }
+    return pending5;
   }
   function useSourceHasVod(source) {
     const [has, setHas] = useState(false);
     useEffect(() => {
       if (!source) {
         setHas(false);
+        return;
+      }
+      if (findXtreamLoginByPseudoUrl(source)) {
+        setHas(true);
         return;
       }
       let live2 = true;
@@ -59649,6 +59739,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_group_order();
   init_tv_settings_store();
   init_list_curation();
+  init_vod_category_filter();
   init_live_tv_data();
   init_jsx_runtime_shim();
   var rowStyle = {
@@ -59720,6 +59811,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       });
     };
     const hasVod = useSourceHasVod(list.source);
+    const vodChoiceMade = useVodChoiceMade(list.source ?? null);
     const [vodOpen, setVodOpen] = useState(false);
     const save = () => {
       updateLiveTvListCuration(list.id, normalizeCuration(draft));
@@ -59759,8 +59851,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               }
             ),
             mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
-            hasVod && list.source ? /* @__PURE__ */ jsxs("div", { "data-testid": "curation-vod-categories", ...station(() => setVodOpen(true)), style: rowStyle, children: [
-              tt("vodCategoriesTitle"),
+            hasVod && list.source ? /* @__PURE__ */ jsxs("div", { "data-testid": "curation-vod-categories", ...station(() => setVodOpen(true)), style: { ...rowStyle, ...vodChoiceMade ? null : { color: TV2.acc, fontWeight: 600 } }, children: [
+              vodChoiceMade ? tt("vodCategoriesTitle") : tt("vodChoicePendingTitle"),
               " \u203A"
             ] }) : null,
             error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
@@ -63161,14 +63253,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return normalize4({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
   }
   function getMultiviewState() {
-    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, DEFAULT_STATE));
+    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, DEFAULT_STATE));
   }
   function setMultiviewState(next) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize4(next));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, normalize4(next));
   }
   function useMultiviewState() {
     const [value, setValue] = useState(getMultiviewState);
-    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, () => setValue(getMultiviewState())), []);
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, () => setValue(getMultiviewState())), []);
     return value;
   }
   function assignTile(state2, index, key) {
@@ -65297,7 +65389,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (!hidden()) run2();
     };
     document.addEventListener("visibilitychange", onVisibility);
-    const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY, SPORT_ALERT_SKIP_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run2));
+    const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY, SPORT_ALERT_SKIP_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, run2));
     return () => {
       stopped = true;
       window.clearTimeout(startTimer);
@@ -66385,10 +66477,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           setPresent(hasCouchPresence());
           notify2();
         }),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, notify2),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, notify2),
         // Följda lag ändrar "följt" i bilden (och Följer-listan på telefonen).
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, notify2),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, notify2),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, () => {
           watchController();
           notify2();
         }),
@@ -66396,7 +66488,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         onGoalsChanged(notify2),
         // Spoilerskyddet: ny repris, Visa resultat (telefon eller TV) eller utgånget visat på TV:n.
         onSpoilerChanged(notify2),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPOILER_TV_KEY, notify2)
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, notify2)
       ];
       const goalSweep = setInterval(() => {
         openGoals(Date.now());
@@ -71143,7 +71235,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) : null;
     const pendingBox = pending5 ? /* @__PURE__ */ jsxs("div", { "data-testid": "library-choice-pending", style: { display: "flex", flexDirection: "column", gap: dp(10), padding: dp(16), margin: narrow ? `0 ${dp(20)}px ${dp(12)}px` : `0 0 ${dp(20)}px`, borderRadius: dp(14), background: TV2.accMix(14) }, children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 21 : 18), fontWeight: 600 }, children: tt("vodChoicePendingTitle") }),
-      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 17 : 15), color: "rgba(243,244,248,0.7)" }, children: tt("vodChoicePendingBody", { count: pending5.total.toLocaleString(), name: playlistName }) }),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 17 : 15), color: "rgba(243,244,248,0.7)" }, children: pending5.total > 0 ? tt("vodChoicePendingBody", { count: pending5.total.toLocaleString(), name: playlistName }) : tt("vodChoicePendingBefore", { name: playlistName }) }),
       /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(8), flexWrap: "wrap" }, children: [
         /* @__PURE__ */ jsx("div", { "data-testid": "library-choice-choose", ...station(() => setPickerOpen(true), void 0, { "data-init": "" }), style: { height: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), fontWeight: 600, cursor: "pointer", background: TV2.acc, color: TV2.onAcc }, children: tt("vodChoiceChoose") }),
         /* @__PURE__ */ jsx("div", { "data-testid": "library-choice-all", ...station(() => {
@@ -73546,7 +73638,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       changed = true;
       return { ...f, crest };
     });
-    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, next);
     return changed;
   }
   function useBackfillFollowCrests(matches) {
@@ -76258,12 +76350,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
+  init_vod_category_filter();
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
     if (inFlight2) return "skipped";
     if (vodHiddenForActivePlaylist()) return "skipped";
-    if (readPluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, false)) return "skipped";
+    if (readPluginJson(LIVE_TV_PLUGIN_ID2, AUTOSCAN_KEY, false)) return "skipped";
     if (isLibraryScanRunning2()) return "skipped";
     inFlight2 = true;
     try {
@@ -76275,7 +76368,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (rows.length === 0) return "skipped";
       if (rows.some((row) => row.importing)) return "skipped";
       if (isLibraryScanRunning2()) return "skipped";
-      writePluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, true);
+      writePluginJson(LIVE_TV_PLUGIN_ID2, AUTOSCAN_KEY, true);
       for (const row of rows) {
         try {
           await runLibraryScan2(vodLibraryProvider, { id: row.libraryId, name: row.label, cursor: null }, { mode: "full" });
@@ -77328,13 +77421,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
   init_hls_playlist_proxy();
+  init_vod_category_filter();
   init_vod_client();
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.17.2"
+      version: "0.17.3"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -77348,7 +77442,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.17.2",
+    version: "0.17.3",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

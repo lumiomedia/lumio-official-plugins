@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.3
+
+- Choose movie and series categories before anything is downloaded: a new playlist waits for the choice, and with Lumio 0.1.635 or later only the chosen categories are fetched from the provider.
+
 ## 0.17.2
 
 - Movie and series categories can be merged like the live categories: Merge into…, mark two or more categories of the same kind, and name them. The Library shows them as one category with all their titles. A merged category is split again with OK.
