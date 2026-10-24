@@ -8,6 +8,7 @@ import {
   onWatchedEpisodeMutation, onWatchedMovieMutation, onWatchlistMutation, planWatchlistSync,
   removeFromMovieWatchlist, removeFromWatchlist, removeScopedStorageItem,
   setScopedStorageItem, waitForStartIdle,
+  canImportPlaybackPositions, importPlaybackPositions,
 } from '@/lib/plugin-sdk'
 import { createMdblistApi, type ApiAuth } from './api'
 import { startBridge } from './bridge'
@@ -15,6 +16,7 @@ import { createDeviceAuth, type OauthToken } from '../../_shared/tracker-kit/dev
 import { createListSource } from './list-source'
 import { parseUser } from './parse'
 import { createPrefs, type PrefKind } from '../../_shared/tracker-kit/prefs'
+import { pullPlayback } from '../../_shared/tracker-kit/playback'
 import { startScheduler } from '../../_shared/tracker-kit/scheduler'
 import { createStatus } from '../../_shared/tracker-kit/status'
 import { runMdblistSync, SNAPSHOT_KEY, type SyncHost } from './sync-engine'
@@ -181,6 +183,19 @@ export async function syncNow(opts: { pushWatched: boolean; reason: string }): P
   }
   if (out.status === 'failed' && out.authFailed) patch.connection = 'bad-key'
   status.set(patch)
+  // Fortsätt titta: det som pausats i andra appar (_shared/tracker-kit/playback).
+  // Ett anrop per synk, bara med "sedda" påslaget och utan väntande 429.
+  if (out.status === 'done' || out.status === 'unchanged') {
+    await pullPlayback({
+      enabled: prefs.isOn('watched') && api.hasAuth() && api.pausedUntil() <= Date.now(),
+      importer: canImportPlaybackPositions() ? (items) => importPlaybackPositions('mdblist', items) : null,
+      fetch: async () => {
+        const result = await api.call<unknown>('GET', '/sync/playback')
+        return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error }
+      },
+      log,
+    }).catch((error: unknown) => log(`fortsätt titta: ${error instanceof Error ? error.message : String(error)}`))
+  }
 }
 
 /**
