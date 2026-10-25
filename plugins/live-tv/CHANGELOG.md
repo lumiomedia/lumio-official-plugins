@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.17.7
 
 - Guide time shift: if the whole programme guide is hours off (common when an IPTV provider labels its times with the wrong time zone), Settings → Programme guide → Guide time shift moves every programme by up to ±12 hours in half-hour steps. It applies to the guide, Now & Next, search, reminders, catch-up and Sport. Works with the current Lumio app.
 
