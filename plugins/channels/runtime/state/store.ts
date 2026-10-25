@@ -26,7 +26,7 @@ export function saveChannel(def: ChannelDef): void {
  * tar man bort dem kommer de bara tillbaka via "Återställ standardkanaler".
  * Returnerar antalet tillagda.
  */
-export function seedDefaultChannels(lang: 'en' | 'sv'): number {
+export function seedDefaultChannels(lang: string): number {
   if (readDefaultsSeeded()) return 0
   const added = restoreDefaultChannels(lang)
   writeDefaultsSeeded()
@@ -34,7 +34,7 @@ export function seedDefaultChannels(lang: 'en' | 'sv'): number {
 }
 
 /** Lägger till de standardkanaler som saknas (oavsett flaggan). */
-export function restoreDefaultChannels(lang: 'en' | 'sv'): number {
+export function restoreDefaultChannels(lang: string): number {
   const all = readChannels()
   const added = buildDefaultChannels(all, lang)
   if (added.length > 0) writeChannels([...all, ...added])

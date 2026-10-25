@@ -2,6 +2,14 @@
 
 import { useLang, type BrowsePageProps } from '@/lib/plugin-sdk'
 
+const FALLBACK: Record<string, string> = {
+  en: 'No index yet. Connect the server and build the index under Settings → Emby.',
+  sv: 'Inget index ännu. Anslut servern och bygg indexet under Inställningar → Emby.',
+  de: 'Noch kein Index. Verbinde den Server und erstelle den Index unter Einstellungen → Emby.',
+  fr: 'Pas encore d’index. Connectez le serveur et créez l’index sous Paramètres → Emby.',
+  es: 'Aún no hay índice. Conecta el servidor y crea el índice en Ajustes → Emby.',
+}
+
 /** Visas bara när menyvalet öppnas utan ett byggt index — säger var man bygger det. */
 export function EmbyFallbackPage(_props: BrowsePageProps) {
   const { lang } = useLang()
@@ -12,9 +20,7 @@ export function EmbyFallbackPage(_props: BrowsePageProps) {
     <div className="rounded-3xl border border-white/10 bg-slate-950/45 px-6 py-10 text-center text-slate-300" style={{ marginBottom: 'max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))' }}>
       <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Emby</p>
       <p className="mt-3 text-sm text-slate-200">
-        {lang === 'sv'
-          ? 'Inget index ännu. Anslut servern och bygg indexet under Inställningar → Emby.'
-          : 'No index yet. Connect the server and build the index under Settings → Emby.'}
+        {FALLBACK[lang] ?? FALLBACK.en}
       </p>
     </div>
   )

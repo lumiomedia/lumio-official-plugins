@@ -37,7 +37,7 @@ import { useEpgMatches, useTeamPageData } from './use-team-page'
 export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx: SportCtx; target: TeamTarget; matches: SportMatch[]; depth: number; phone: boolean; onClose: () => void }) {
   const u = scaleFor(phone, useTvMode())
   // Ordningstalet följer sidans språk (samma som texterna).
-  const lang = ctx.locale.startsWith('sv') ? 'sv' : 'en'
+  const lang = ctx.locale.slice(0, 2)
   const data = useTeamPageData(target)
   const [fullTable, setFullTable] = useState(false)
   const [competition, setCompetition] = useState<string | null>(null)

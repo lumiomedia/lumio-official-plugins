@@ -1,5 +1,6 @@
 import { createElement, type ComponentType } from 'react'
 import type { HomeRowProps, HomeSourceContribution, PluginContext } from '@/lib/plugin-sdk'
+import type { LocalizedText } from '../../lang'
 import { tvText, type TvStringKey } from '../../tv/tv-strings'
 import { KIND_KEYS } from '../sport-ctx'
 import { SPORT_CHIPS } from '../sport-model'
@@ -21,7 +22,9 @@ import { SportHomeRow } from './sport-home-row'
 
 type Option = NonNullable<HomeSourceContribution['option']>
 
-const both = (key: TvStringKey, vars?: Record<string, string>) => ({ en: tvText('en', key, vars), sv: tvText('sv', key, vars) })
+const LANGS = ['en', 'sv', 'de', 'fr', 'es'] as const
+const both = (key: TvStringKey, vars?: Record<string, string>): LocalizedText =>
+  Object.fromEntries(LANGS.map((l) => [l, tvText(l, key, vars)])) as unknown as LocalizedText
 
 const sportOption: Option = {
   label: both('sportRowOptionSport'),
@@ -67,7 +70,7 @@ export function registerSportHomeRows(ctx: PluginContext): void {
     host.registerHomeRow.call(ctx, { id: rowId, title: both(def.title), showOnHome: false, Row: ROWS[def.kind] })
     host.registerHomeSource.call(ctx, {
       id: def.id,
-      label: { en: tvText('en', 'sportRowSource', { name: tvText('en', def.title) }), sv: tvText('sv', 'sportRowSource', { name: tvText('sv', def.title) }) },
+      label: Object.fromEntries(LANGS.map((l) => [l, tvText(l, 'sportRowSource', { name: tvText(l, def.title) })])) as unknown as LocalizedText,
       rowId,
       ...(def.option ? { option: def.option } : {}),
     })

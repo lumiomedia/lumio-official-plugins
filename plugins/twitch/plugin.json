@@ -3,13 +3,19 @@
   "slug": "twitch",
   "name": {
     "en": "Twitch",
-    "sv": "Twitch"
+    "sv": "Twitch",
+    "de": "Twitch",
+    "fr": "Twitch",
+    "es": "Twitch"
   },
   "version": "1.4.3",
   "minAppVersion": "0.1.603",
   "description": {
     "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
-    "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
+    "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch.",
+    "de": "Stöbere in Live-Kanälen, Kategorien, gefolgten Streams, VODs und Clips von Twitch.",
+    "fr": "Parcourez les chaînes en direct, catégories, streams suivis, VOD et clips de Twitch.",
+    "es": "Explora canales en directo, categorías, streams que sigues, VODs y clips de Twitch."
   },
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,

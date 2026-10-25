@@ -41,54 +41,69 @@ const TYPE = {
 } as const
 
 const TEXT = {
-  appTitle: { en: 'Twitch application', sv: 'Twitch-applikation' },
+  appTitle: { en: 'Twitch application', sv: 'Twitch-applikation', de: 'Twitch-Anwendung', fr: 'Application Twitch', es: 'Aplicación de Twitch' },
   appNote: {
     en: 'Twitch limits each application to 800 requests per minute. Lumio therefore uses your own registration instead of a shared one, so your limit is yours alone.',
     sv: 'Twitch begränsar varje applikation till 800 anrop per minut. Därför använder Lumio din egen registrering i stället för en delad — din kvot är då bara din.',
+    de: 'Twitch begrenzt jede Anwendung auf 800 Anfragen pro Minute. Deshalb nutzt Lumio deine eigene Registrierung statt einer gemeinsamen – dein Limit gehört dir allein.',
+    fr: 'Twitch limite chaque application à 800 requêtes par minute. Lumio utilise donc votre propre enregistrement plutôt qu’un enregistrement partagé : votre quota n’est qu’à vous.',
+    es: 'Twitch limita cada aplicación a 800 solicitudes por minuto. Por eso Lumio usa tu propio registro en lugar de uno compartido, así el límite es solo tuyo.',
   },
-  appRegistered: { en: 'Client ID saved', sv: 'Client ID sparat' },
-  appMissing: { en: 'No application registered yet', sv: 'Ingen applikation registrerad än' },
-  clientIdLabel: { en: 'Client ID', sv: 'Client ID' },
-  clientIdPlaceholder: { en: 'Paste the Client ID from dev.twitch.tv', sv: 'Klistra in Client ID från dev.twitch.tv' },
-  openConsole: { en: 'Open dev.twitch.tv', sv: 'Öppna dev.twitch.tv' },
-  stepsTitle: { en: 'How to register', sv: 'Så registrerar du' },
-  step1: { en: 'Open the Twitch developer console and click Register Your Application.', sv: 'Öppna Twitchs utvecklarkonsol och klicka Register Your Application.' },
-  step2: { en: 'Name it anything (for example "Lumio").', sv: 'Döp den till vad du vill (till exempel "Lumio").' },
-  step3: { en: 'Set OAuth Redirect URL to http://localhost — the device login never uses it, but Twitch requires a value.', sv: 'Sätt OAuth Redirect URL till http://localhost — enhetsinloggningen använder den aldrig, men Twitch kräver ett värde.' },
-  step4: { en: 'Set Client Type to Public. Then no secret is needed, and none is ever stored here.', sv: 'Sätt Client Type till Public. Då behövs ingen hemlighet, och ingen lagras heller här.' },
-  step5: { en: 'Copy the Client ID and paste it above.', sv: 'Kopiera Client ID och klistra in det ovan.' },
+  appRegistered: { en: 'Client ID saved', sv: 'Client ID sparat', de: 'Client-ID gespeichert', fr: 'Client ID enregistré', es: 'Client ID guardado' },
+  appMissing: { en: 'No application registered yet', sv: 'Ingen applikation registrerad än', de: 'Noch keine Anwendung registriert', fr: 'Aucune application enregistrée', es: 'Aún no hay ninguna aplicación registrada' },
+  clientIdLabel: { en: 'Client ID', sv: 'Client ID', de: 'Client-ID', fr: 'Client ID', es: 'Client ID' },
+  clientIdPlaceholder: { en: 'Paste the Client ID from dev.twitch.tv', sv: 'Klistra in Client ID från dev.twitch.tv', de: 'Client-ID von dev.twitch.tv einfügen', fr: 'Collez le Client ID de dev.twitch.tv', es: 'Pega el Client ID de dev.twitch.tv' },
+  openConsole: { en: 'Open dev.twitch.tv', sv: 'Öppna dev.twitch.tv', de: 'dev.twitch.tv öffnen', fr: 'Ouvrir dev.twitch.tv', es: 'Abrir dev.twitch.tv' },
+  stepsTitle: { en: 'How to register', sv: 'Så registrerar du', de: 'So registrierst du dich', fr: 'Comment l’enregistrer', es: 'Cómo registrarla' },
+  step1: { en: 'Open the Twitch developer console and click Register Your Application.', sv: 'Öppna Twitchs utvecklarkonsol och klicka Register Your Application.', de: 'Öffne die Twitch-Entwicklerkonsole und klicke auf Register Your Application.', fr: 'Ouvrez la console développeur Twitch et cliquez sur Register Your Application.', es: 'Abre la consola de desarrolladores de Twitch y haz clic en Register Your Application.' },
+  step2: { en: 'Name it anything (for example "Lumio").', sv: 'Döp den till vad du vill (till exempel "Lumio").', de: 'Gib ihr einen beliebigen Namen (zum Beispiel „Lumio“).', fr: 'Donnez-lui le nom de votre choix (par exemple « Lumio »).', es: 'Ponle el nombre que quieras (por ejemplo, «Lumio»).' },
+  step3: { en: 'Set OAuth Redirect URL to http://localhost — the device login never uses it, but Twitch requires a value.', sv: 'Sätt OAuth Redirect URL till http://localhost — enhetsinloggningen använder den aldrig, men Twitch kräver ett värde.', de: 'Setze die OAuth Redirect URL auf http://localhost – die Geräteanmeldung nutzt sie nie, aber Twitch verlangt einen Wert.', fr: 'Définissez l’OAuth Redirect URL sur http://localhost : la connexion par code appareil ne l’utilise jamais, mais Twitch exige une valeur.', es: 'Establece la OAuth Redirect URL en http://localhost: el inicio de sesión con código de dispositivo nunca la usa, pero Twitch exige un valor.' },
+  step4: { en: 'Set Client Type to Public. Then no secret is needed, and none is ever stored here.', sv: 'Sätt Client Type till Public. Då behövs ingen hemlighet, och ingen lagras heller här.', de: 'Setze Client Type auf Public. Dann ist kein Secret nötig, und hier wird nie eines gespeichert.', fr: 'Définissez Client Type sur Public. Aucun secret n’est alors nécessaire, et aucun n’est jamais stocké ici.', es: 'Establece Client Type en Public. Así no hace falta ningún secreto y aquí nunca se guarda ninguno.' },
+  step5: { en: 'Copy the Client ID and paste it above.', sv: 'Kopiera Client ID och klistra in det ovan.', de: 'Kopiere die Client-ID und füge sie oben ein.', fr: 'Copiez le Client ID et collez-le ci-dessus.', es: 'Copia el Client ID y pégalo arriba.' },
   connectNeedsApp: {
     en: 'Save a Client ID above before signing in.',
     sv: 'Spara ett Client ID ovan innan du loggar in.',
+    de: 'Speichere oben eine Client-ID, bevor du dich anmeldest.',
+    fr: 'Enregistrez un Client ID ci-dessus avant de vous connecter.',
+    es: 'Guarda un Client ID arriba antes de iniciar sesión.',
   },
-  connection: { en: 'Connection', sv: 'Anslutning' },
-  notConnected: { en: 'Not connected', sv: 'Inte ansluten' },
-  connectedAs: { en: 'Connected as', sv: 'Ansluten som' },
-  connect: { en: 'Connect Twitch', sv: 'Anslut Twitch' },
-  connecting: { en: 'Connecting…', sv: 'Ansluter…' },
-  disconnect: { en: 'Disconnect', sv: 'Koppla från' },
-  disconnecting: { en: 'Disconnecting…', sv: 'Kopplar från…' },
-  connectError: { en: 'Could not connect Twitch.', sv: 'Kunde inte ansluta Twitch.' },
-  disconnectError: { en: 'Could not disconnect Twitch.', sv: 'Kunde inte koppla från Twitch.' },
+  connection: { en: 'Connection', sv: 'Anslutning', de: 'Verbindung', fr: 'Connexion', es: 'Conexión' },
+  notConnected: { en: 'Not connected', sv: 'Inte ansluten', de: 'Nicht verbunden', fr: 'Non connecté', es: 'No conectado' },
+  connectedAs: { en: 'Connected as', sv: 'Ansluten som', de: 'Verbunden als', fr: 'Connecté en tant que', es: 'Conectado como' },
+  connect: { en: 'Connect Twitch', sv: 'Anslut Twitch', de: 'Twitch verbinden', fr: 'Connecter Twitch', es: 'Conectar Twitch' },
+  connecting: { en: 'Connecting…', sv: 'Ansluter…', de: 'Verbinde …', fr: 'Connexion…', es: 'Conectando…' },
+  disconnect: { en: 'Disconnect', sv: 'Koppla från', de: 'Trennen', fr: 'Déconnecter', es: 'Desconectar' },
+  disconnecting: { en: 'Disconnecting…', sv: 'Kopplar från…', de: 'Trenne …', fr: 'Déconnexion…', es: 'Desconectando…' },
+  connectError: { en: 'Could not connect Twitch.', sv: 'Kunde inte ansluta Twitch.', de: 'Twitch konnte nicht verbunden werden.', fr: 'Impossible de connecter Twitch.', es: 'No se pudo conectar Twitch.' },
+  disconnectError: { en: 'Could not disconnect Twitch.', sv: 'Kunde inte koppla från Twitch.', de: 'Twitch konnte nicht getrennt werden.', fr: 'Impossible de déconnecter Twitch.', es: 'No se pudo desconectar Twitch.' },
   connectionNote: {
     en: 'Sign in with your Twitch account to browse followed channels and access your streams.',
     sv: 'Logga in med ditt Twitch-konto för att bläddra bland kanaler du följer och dina streams.',
+    de: 'Melde dich mit deinem Twitch-Konto an, um gefolgte Kanäle und deine Streams zu durchsuchen.',
+    fr: 'Connectez-vous avec votre compte Twitch pour parcourir les chaînes suivies et accéder à vos streams.',
+    es: 'Inicia sesión con tu cuenta de Twitch para explorar los canales que sigues y acceder a tus streams.',
   },
   deviceCodeIntro: {
     en: 'Open the Twitch activation page and enter this code:',
     sv: 'Öppna Twitchs aktiveringssida och ange denna kod:',
+    de: 'Öffne die Twitch-Aktivierungsseite und gib diesen Code ein:',
+    fr: 'Ouvrez la page d’activation de Twitch et saisissez ce code :',
+    es: 'Abre la página de activación de Twitch e introduce este código:',
   },
-  openVerificationUrl: { en: 'Open twitch.tv/activate', sv: 'Öppna twitch.tv/activate' },
-  waitingForApproval: { en: 'Waiting for approval on twitch.tv…', sv: 'Väntar på godkännande på twitch.tv…' },
-  homeRows: { en: 'Home rows', sv: 'Hemmarader' },
+  openVerificationUrl: { en: 'Open twitch.tv/activate', sv: 'Öppna twitch.tv/activate', de: 'twitch.tv/activate öffnen', fr: 'Ouvrir twitch.tv/activate', es: 'Abrir twitch.tv/activate' },
+  waitingForApproval: { en: 'Waiting for approval on twitch.tv…', sv: 'Väntar på godkännande på twitch.tv…', de: 'Warte auf Bestätigung auf twitch.tv …', fr: 'En attente d’approbation sur twitch.tv…', es: 'Esperando la aprobación en twitch.tv…' },
+  homeRows: { en: 'Home rows', sv: 'Hemmarader', de: 'Startseiten-Reihen', fr: 'Rangées d’accueil', es: 'Filas de inicio' },
   homeRowsNote: {
     en: 'Used by the "Twitch: Category" and "Twitch: Channels" home rows (Settings → Home → row source).',
     sv: 'Används av hemmaraderna "Twitch: Kategori" och "Twitch: Kanaler" (Inställningar → Hem → radkälla).',
+    de: 'Wird von den Startseiten-Reihen „Twitch: Kategorie“ und „Twitch: Kanäle“ verwendet (Einstellungen → Start → Reihenquelle).',
+    fr: 'Utilisé par les rangées d’accueil « Twitch : Catégorie » et « Twitch : Chaînes » (Paramètres → Accueil → source de la rangée).',
+    es: 'Lo usan las filas de inicio «Twitch: Categoría» y «Twitch: Canales» (Ajustes → Inicio → fuente de la fila).',
   },
-  homeCategoryLabel: { en: 'Category row: category', sv: 'Kategorirad: kategori' },
-  homeCategoryPlaceholder: { en: 'e.g. Counter-Strike', sv: 't.ex. Counter-Strike' },
-  homeChannelsLabel: { en: 'Channels row: channels (comma-separated)', sv: 'Kanalrad: kanaler (kommaseparerade)' },
-  homeChannelsPlaceholder: { en: 'e.g. shroud, cohhcarnage', sv: 't.ex. shroud, cohhcarnage' },
+  homeCategoryLabel: { en: 'Category row: category', sv: 'Kategorirad: kategori', de: 'Kategorie-Reihe: Kategorie', fr: 'Rangée catégorie : catégorie', es: 'Fila de categoría: categoría' },
+  homeCategoryPlaceholder: { en: 'e.g. Counter-Strike', sv: 't.ex. Counter-Strike', de: 'z. B. Counter-Strike', fr: 'p. ex. Counter-Strike', es: 'p. ej. Counter-Strike' },
+  homeChannelsLabel: { en: 'Channels row: channels (comma-separated)', sv: 'Kanalrad: kanaler (kommaseparerade)', de: 'Kanäle-Reihe: Kanäle (durch Komma getrennt)', fr: 'Rangée chaînes : chaînes (séparées par des virgules)', es: 'Fila de canales: canales (separados por comas)' },
+  homeChannelsPlaceholder: { en: 'e.g. shroud, cohhcarnage', sv: 't.ex. shroud, cohhcarnage', de: 'z. B. shroud, cohhcarnage', fr: 'p. ex. shroud, cohhcarnage', es: 'p. ej. shroud, cohhcarnage' },
 } as const
 
 const settingsTextInputClass =
@@ -107,7 +122,7 @@ export function TwitchSettingsSection() {
   const [clientId, setClientId] = useState('')
 
   function text(key: keyof typeof TEXT): string {
-    return TEXT[key][lang] ?? TEXT[key].en
+    return (TEXT[key] as { en: string } & Record<string, string | undefined>)[lang] ?? TEXT[key].en
   }
 
   // TwitchAuthError carries its own {en, sv} copy; anything else is either a

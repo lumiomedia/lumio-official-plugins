@@ -38,7 +38,17 @@ import {
 } from './twitch-storage'
 import type { TwitchStream, TwitchCategory, TwitchVideo, TwitchClip, EnrichedFollowedChannel } from './twitch-types'
 
-type StreamLanguage = '' | 'sv' | 'en'
+type StreamLanguage = '' | 'sv' | 'en' | 'de' | 'fr' | 'es'
+
+/** Pick the text for the active UI language (any custom `x-…` code falls back to English). */
+function pickLang(table: { en: string } & Record<string, string | undefined>, lang: string): string {
+  return table[lang] ?? table.en
+}
+
+/** Helix `/streams` language filter: only the built-in UI languages map to an ISO code. */
+function streamLanguageFor(lang: string): StreamLanguage {
+  return lang === 'sv' || lang === 'en' || lang === 'de' || lang === 'fr' || lang === 'es' ? lang : ''
+}
 type StreamSort = 'viewers-desc' | 'viewers-asc'
 type FollowingTab = 'overview' | 'live' | 'channels' | 'videos'
 
@@ -56,104 +66,131 @@ const tvf = () => (isTvDom() ? { 'data-f': '' } : {})
 const FOLLOWED_VIDEO_CHANNEL_CAP = 12
 
 const TEXT = {
-  liveNowTitle: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
+  liveNowTitle: { en: 'Twitch: Live now', sv: 'Twitch: Live nu', de: 'Twitch: Jetzt live', fr: 'Twitch : en direct', es: 'Twitch: en directo' },
   liveNowSubtitle: {
     en: 'Top live channels on Twitch right now.',
     sv: 'Toppkanaler som är live på Twitch just nu.',
+    de: 'Top-Kanäle, die gerade live auf Twitch sind.',
+    fr: 'Les chaînes les plus regardées en direct sur Twitch en ce moment.',
+    es: 'Los canales más vistos en directo en Twitch ahora mismo.',
   },
-  live: { en: 'LIVE', sv: 'LIVE' },
-  loading: { en: 'Loading live channels…', sv: 'Laddar live-kanaler…' },
-  loadError: { en: 'Could not load Twitch live channels.', sv: 'Kunde inte läsa in live-kanaler från Twitch.' },
-  empty: { en: 'No live channels right now.', sv: 'Inga live-kanaler just nu.' },
-  watchNow: { en: 'Watch now', sv: 'Titta nu' },
-  browseLive: { en: 'Browse live', sv: 'Bläddra live' },
-  categoriesTitle: { en: 'Twitch: Categories', sv: 'Twitch: Kategorier' },
-  categoriesSubtitle: { en: 'Browse categories on Twitch.', sv: 'Bläddra bland kategorier på Twitch.' },
-  loadingCategories: { en: 'Loading categories…', sv: 'Laddar kategorier…' },
-  categoriesLoadError: { en: 'Could not load Twitch categories.', sv: 'Kunde inte läsa in kategorier från Twitch.' },
-  categoriesEmpty: { en: 'No categories found.', sv: 'Inga kategorier hittades.' },
+  live: { en: 'LIVE', sv: 'LIVE', de: 'LIVE', fr: 'EN DIRECT', es: 'EN DIRECTO' },
+  loading: { en: 'Loading live channels…', sv: 'Laddar live-kanaler…', de: 'Lade Live-Kanäle …', fr: 'Chargement des chaînes en direct…', es: 'Cargando canales en directo…' },
+  loadError: { en: 'Could not load Twitch live channels.', sv: 'Kunde inte läsa in live-kanaler från Twitch.', de: 'Twitch-Live-Kanäle konnten nicht geladen werden.', fr: 'Impossible de charger les chaînes en direct de Twitch.', es: 'No se pudieron cargar los canales en directo de Twitch.' },
+  empty: { en: 'No live channels right now.', sv: 'Inga live-kanaler just nu.', de: 'Gerade keine Live-Kanäle.', fr: 'Aucune chaîne en direct pour le moment.', es: 'No hay canales en directo ahora mismo.' },
+  watchNow: { en: 'Watch now', sv: 'Titta nu', de: 'Jetzt ansehen', fr: 'Regarder', es: 'Ver ahora' },
+  browseLive: { en: 'Browse live', sv: 'Bläddra live', de: 'Live durchsuchen', fr: 'Parcourir le direct', es: 'Explorar en directo' },
+  categoriesTitle: { en: 'Twitch: Categories', sv: 'Twitch: Kategorier', de: 'Twitch: Kategorien', fr: 'Twitch : catégories', es: 'Twitch: categorías' },
+  categoriesSubtitle: { en: 'Browse categories on Twitch.', sv: 'Bläddra bland kategorier på Twitch.', de: 'Stöbere in Kategorien auf Twitch.', fr: 'Parcourez les catégories sur Twitch.', es: 'Explora categorías en Twitch.' },
+  loadingCategories: { en: 'Loading categories…', sv: 'Laddar kategorier…', de: 'Lade Kategorien …', fr: 'Chargement des catégories…', es: 'Cargando categorías…' },
+  categoriesLoadError: { en: 'Could not load Twitch categories.', sv: 'Kunde inte läsa in kategorier från Twitch.', de: 'Twitch-Kategorien konnten nicht geladen werden.', fr: 'Impossible de charger les catégories Twitch.', es: 'No se pudieron cargar las categorías de Twitch.' },
+  categoriesEmpty: { en: 'No categories found.', sv: 'Inga kategorier hittades.', de: 'Keine Kategorien gefunden.', fr: 'Aucune catégorie trouvée.', es: 'No se encontraron categorías.' },
   streamsEmpty: {
     en: 'No live channels in this category right now.',
     sv: 'Inga live-kanaler i denna kategori just nu.',
+    de: 'Gerade keine Live-Kanäle in dieser Kategorie.',
+    fr: 'Aucune chaîne en direct dans cette catégorie pour le moment.',
+    es: 'No hay canales en directo en esta categoría ahora mismo.',
   },
-  back: { en: 'Back to categories', sv: 'Tillbaka till kategorier' },
-  categoryRowSubtitle: { en: 'Top live channels in the category.', sv: 'Toppkanaler som är live i kategorin.' },
-  channelsRowTitle: { en: 'Twitch: Channels', sv: 'Twitch: Kanaler' },
-  channelsRowSubtitle: { en: 'Your picked channels, live now.', sv: 'Dina valda kanaler som är live nu.' },
+  back: { en: 'Back to categories', sv: 'Tillbaka till kategorier', de: 'Zurück zu Kategorien', fr: 'Retour aux catégories', es: 'Volver a categorías' },
+  categoryRowSubtitle: { en: 'Top live channels in the category.', sv: 'Toppkanaler som är live i kategorin.', de: 'Top-Kanäle, die in der Kategorie live sind.', fr: 'Les chaînes les plus regardées en direct dans la catégorie.', es: 'Los canales más vistos en directo de la categoría.' },
+  channelsRowTitle: { en: 'Twitch: Channels', sv: 'Twitch: Kanaler', de: 'Twitch: Kanäle', fr: 'Twitch : chaînes', es: 'Twitch: canales' },
+  channelsRowSubtitle: { en: 'Your picked channels, live now.', sv: 'Dina valda kanaler som är live nu.', de: 'Deine ausgewählten Kanäle, jetzt live.', fr: 'Vos chaînes choisies, en direct maintenant.', es: 'Tus canales elegidos, en directo ahora.' },
   channelsRowEmpty: {
     en: 'None of your picked channels are live right now.',
     sv: 'Ingen av dina valda kanaler är live just nu.',
+    de: 'Keiner deiner ausgewählten Kanäle ist gerade live.',
+    fr: 'Aucune de vos chaînes choisies n’est en direct pour le moment.',
+    es: 'Ninguno de tus canales elegidos está en directo ahora mismo.',
   },
-  loadMore: { en: 'Load more', sv: 'Ladda fler' },
-  searchTitle: { en: 'Twitch: Search', sv: 'Twitch: Sök' },
-  searchSubtitle: { en: 'Find channels and categories on Twitch.', sv: 'Hitta kanaler och kategorier på Twitch.' },
-  searchPlaceholder: { en: 'Search channels and categories…', sv: 'Sök kanaler och kategorier…' },
-  searchPrompt: { en: 'Start typing to search Twitch.', sv: 'Börja skriva för att söka på Twitch.' },
-  searching: { en: 'Searching…', sv: 'Söker…' },
-  searchError: { en: 'Could not search Twitch.', sv: 'Kunde inte söka på Twitch.' },
-  searchNoResults: { en: 'No channels or categories found.', sv: 'Inga kanaler eller kategorier hittades.' },
-  channelsHeading: { en: 'Channels', sv: 'Kanaler' },
-  categoriesHeading: { en: 'Categories', sv: 'Kategorier' },
-  backToResults: { en: 'Back to search results', sv: 'Tillbaka till sökresultat' },
-  vodsTab: { en: 'VODs', sv: 'VOD:er' },
-  clipsTab: { en: 'Clips', sv: 'Klipp' },
-  loadingVods: { en: 'Loading VODs…', sv: 'Laddar VOD:er…' },
-  loadingClips: { en: 'Loading clips…', sv: 'Laddar klipp…' },
-  vodsLoadError: { en: 'Could not load VODs.', sv: 'Kunde inte läsa in VOD:er.' },
-  clipsLoadError: { en: 'Could not load clips.', sv: 'Kunde inte läsa in klipp.' },
-  vodsEmpty: { en: 'No VODs found for this channel.', sv: 'Inga VOD:er hittades för denna kanal.' },
-  clipsEmpty: { en: 'No clips found for this channel.', sv: 'Inga klipp hittades för denna kanal.' },
-  followingTitle: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
+  loadMore: { en: 'Load more', sv: 'Ladda fler', de: 'Mehr laden', fr: 'Charger plus', es: 'Cargar más' },
+  searchTitle: { en: 'Twitch: Search', sv: 'Twitch: Sök', de: 'Twitch: Suche', fr: 'Twitch : recherche', es: 'Twitch: búsqueda' },
+  searchSubtitle: { en: 'Find channels and categories on Twitch.', sv: 'Hitta kanaler och kategorier på Twitch.', de: 'Finde Kanäle und Kategorien auf Twitch.', fr: 'Trouvez des chaînes et des catégories sur Twitch.', es: 'Encuentra canales y categorías en Twitch.' },
+  searchPlaceholder: { en: 'Search channels and categories…', sv: 'Sök kanaler och kategorier…', de: 'Kanäle und Kategorien suchen …', fr: 'Rechercher des chaînes et des catégories…', es: 'Buscar canales y categorías…' },
+  searchPrompt: { en: 'Start typing to search Twitch.', sv: 'Börja skriva för att söka på Twitch.', de: 'Tippe, um Twitch zu durchsuchen.', fr: 'Commencez à saisir pour rechercher sur Twitch.', es: 'Empieza a escribir para buscar en Twitch.' },
+  searching: { en: 'Searching…', sv: 'Söker…', de: 'Suche läuft …', fr: 'Recherche…', es: 'Buscando…' },
+  searchError: { en: 'Could not search Twitch.', sv: 'Kunde inte söka på Twitch.', de: 'Twitch konnte nicht durchsucht werden.', fr: 'Impossible de rechercher sur Twitch.', es: 'No se pudo buscar en Twitch.' },
+  searchNoResults: { en: 'No channels or categories found.', sv: 'Inga kanaler eller kategorier hittades.', de: 'Keine Kanäle oder Kategorien gefunden.', fr: 'Aucune chaîne ni catégorie trouvée.', es: 'No se encontraron canales ni categorías.' },
+  channelsHeading: { en: 'Channels', sv: 'Kanaler', de: 'Kanäle', fr: 'Chaînes', es: 'Canales' },
+  categoriesHeading: { en: 'Categories', sv: 'Kategorier', de: 'Kategorien', fr: 'Catégories', es: 'Categorías' },
+  backToResults: { en: 'Back to search results', sv: 'Tillbaka till sökresultat', de: 'Zurück zu den Suchergebnissen', fr: 'Retour aux résultats', es: 'Volver a los resultados' },
+  vodsTab: { en: 'VODs', sv: 'VOD:er', de: 'VODs', fr: 'VOD', es: 'VODs' },
+  clipsTab: { en: 'Clips', sv: 'Klipp', de: 'Clips', fr: 'Clips', es: 'Clips' },
+  loadingVods: { en: 'Loading VODs…', sv: 'Laddar VOD:er…', de: 'Lade VODs …', fr: 'Chargement des VOD…', es: 'Cargando VODs…' },
+  loadingClips: { en: 'Loading clips…', sv: 'Laddar klipp…', de: 'Lade Clips …', fr: 'Chargement des clips…', es: 'Cargando clips…' },
+  vodsLoadError: { en: 'Could not load VODs.', sv: 'Kunde inte läsa in VOD:er.', de: 'VODs konnten nicht geladen werden.', fr: 'Impossible de charger les VOD.', es: 'No se pudieron cargar los VODs.' },
+  clipsLoadError: { en: 'Could not load clips.', sv: 'Kunde inte läsa in klipp.', de: 'Clips konnten nicht geladen werden.', fr: 'Impossible de charger les clips.', es: 'No se pudieron cargar los clips.' },
+  vodsEmpty: { en: 'No VODs found for this channel.', sv: 'Inga VOD:er hittades för denna kanal.', de: 'Keine VODs für diesen Kanal gefunden.', fr: 'Aucune VOD trouvée pour cette chaîne.', es: 'No se encontraron VODs de este canal.' },
+  clipsEmpty: { en: 'No clips found for this channel.', sv: 'Inga klipp hittades för denna kanal.', de: 'Keine Clips für diesen Kanal gefunden.', fr: 'Aucun clip trouvé pour cette chaîne.', es: 'No se encontraron clips de este canal.' },
+  followingTitle: { en: 'Twitch: Following', sv: 'Twitch: Följer', de: 'Twitch: Gefolgt', fr: 'Twitch : suivis', es: 'Twitch: siguiendo' },
   followingSubtitle: {
     en: 'Live channels you follow on Twitch.',
     sv: 'Live-kanaler du följer på Twitch.',
+    de: 'Live-Kanäle, denen du auf Twitch folgst.',
+    fr: 'Les chaînes en direct que vous suivez sur Twitch.',
+    es: 'Canales en directo que sigues en Twitch.',
   },
   followingConnectPrompt: {
     en: 'Connect Twitch in Settings to see who you follow.',
     sv: 'Anslut Twitch i Inställningar för att se vilka du följer.',
+    de: 'Verbinde Twitch in den Einstellungen, um zu sehen, wem du folgst.',
+    fr: 'Connectez Twitch dans les Paramètres pour voir qui vous suivez.',
+    es: 'Conecta Twitch en Ajustes para ver a quién sigues.',
   },
   followingEmpty: {
     en: 'None of the channels you follow are live right now.',
     sv: 'Inga av kanalerna du följer är live just nu.',
+    de: 'Keiner der Kanäle, denen du folgst, ist gerade live.',
+    fr: 'Aucune des chaînes que vous suivez n’est en direct pour le moment.',
+    es: 'Ninguno de los canales que sigues está en directo ahora mismo.',
   },
   // Filter bar (Live browse page). Stream language follows the app's own
   // language selector (useLang), so there is no Twitch-specific language chip.
-  filterSort: { en: 'Sort by', sv: 'Sortera' },
-  sortViewersDesc: { en: 'Most viewers', sv: 'Flest tittare' },
-  sortViewersAsc: { en: 'Fewest viewers', sv: 'Minst tittare' },
+  filterSort: { en: 'Sort by', sv: 'Sortera', de: 'Sortieren', fr: 'Trier par', es: 'Ordenar' },
+  sortViewersDesc: { en: 'Most viewers', sv: 'Flest tittare', de: 'Meiste Zuschauer', fr: 'Plus de spectateurs', es: 'Más espectadores' },
+  sortViewersAsc: { en: 'Fewest viewers', sv: 'Minst tittare', de: 'Wenigste Zuschauer', fr: 'Moins de spectateurs', es: 'Menos espectadores' },
   // Following tabs
-  tabOverview: { en: 'Overview', sv: 'Översikt' },
-  tabLive: { en: 'Live', sv: 'Live' },
-  tabChannels: { en: 'Channels', sv: 'Kanaler' },
-  tabVideos: { en: 'Videos', sv: 'Videor' },
-  overviewLiveHeading: { en: 'Live now', sv: 'Live nu' },
-  overviewChannelsHeading: { en: 'Channels you follow', sv: 'Kanaler du följer' },
-  channelsLoading: { en: 'Loading channels…', sv: 'Laddar kanaler…' },
-  channelsLoadError: { en: 'Could not load followed channels.', sv: 'Kunde inte läsa in följda kanaler.' },
-  channelsEmpty: { en: "You don't follow any channels yet.", sv: 'Du följer inga kanaler ännu.' },
-  followingVideosLoading: { en: 'Loading videos…', sv: 'Laddar videor…' },
-  followingVideosError: { en: 'Could not load videos.', sv: 'Kunde inte läsa in videor.' },
+  tabOverview: { en: 'Overview', sv: 'Översikt', de: 'Übersicht', fr: 'Aperçu', es: 'Resumen' },
+  tabLive: { en: 'Live', sv: 'Live', de: 'Live', fr: 'En direct', es: 'En directo' },
+  tabChannels: { en: 'Channels', sv: 'Kanaler', de: 'Kanäle', fr: 'Chaînes', es: 'Canales' },
+  tabVideos: { en: 'Videos', sv: 'Videor', de: 'Videos', fr: 'Vidéos', es: 'Vídeos' },
+  overviewLiveHeading: { en: 'Live now', sv: 'Live nu', de: 'Jetzt live', fr: 'En direct', es: 'En directo' },
+  overviewChannelsHeading: { en: 'Channels you follow', sv: 'Kanaler du följer', de: 'Kanäle, denen du folgst', fr: 'Chaînes que vous suivez', es: 'Canales que sigues' },
+  channelsLoading: { en: 'Loading channels…', sv: 'Laddar kanaler…', de: 'Lade Kanäle …', fr: 'Chargement des chaînes…', es: 'Cargando canales…' },
+  channelsLoadError: { en: 'Could not load followed channels.', sv: 'Kunde inte läsa in följda kanaler.', de: 'Gefolgte Kanäle konnten nicht geladen werden.', fr: 'Impossible de charger les chaînes suivies.', es: 'No se pudieron cargar los canales que sigues.' },
+  channelsEmpty: { en: "You don't follow any channels yet.", sv: 'Du följer inga kanaler ännu.', de: 'Du folgst noch keinen Kanälen.', fr: 'Vous ne suivez encore aucune chaîne.', es: 'Todavía no sigues ningún canal.' },
+  followingVideosLoading: { en: 'Loading videos…', sv: 'Laddar videor…', de: 'Lade Videos …', fr: 'Chargement des vidéos…', es: 'Cargando vídeos…' },
+  followingVideosError: { en: 'Could not load videos.', sv: 'Kunde inte läsa in videor.', de: 'Videos konnten nicht geladen werden.', fr: 'Impossible de charger les vidéos.', es: 'No se pudieron cargar los vídeos.' },
   followingVideosEmpty: {
     en: 'No recent videos from channels you follow.',
     sv: 'Inga nya videor från kanaler du följer.',
+    de: 'Keine neuen Videos von Kanälen, denen du folgst.',
+    fr: 'Aucune vidéo récente des chaînes que vous suivez.',
+    es: 'No hay vídeos recientes de los canales que sigues.',
   },
-  liveBadge: { en: 'Live', sv: 'Live' },
-  offlineBadge: { en: 'Offline', sv: 'Offline' },
+  liveBadge: { en: 'Live', sv: 'Live', de: 'Live', fr: 'En direct', es: 'En directo' },
+  offlineBadge: { en: 'Offline', sv: 'Offline', de: 'Offline', fr: 'Hors ligne', es: 'Sin conexión' },
   // Channel page
-  watchLive: { en: 'Watch live', sv: 'Titta live' },
-  openOnTwitch: { en: 'Open on Twitch', sv: 'Öppna på Twitch' },
-  backToChannel: { en: 'Back', sv: 'Tillbaka' },
-  backToApp: { en: 'Back', sv: 'Tillbaka' },
-  setupTitle: { en: 'Twitch is not set up yet', sv: 'Twitch är inte uppsatt än' },
+  watchLive: { en: 'Watch live', sv: 'Titta live', de: 'Live ansehen', fr: 'Regarder en direct', es: 'Ver en directo' },
+  openOnTwitch: { en: 'Open on Twitch', sv: 'Öppna på Twitch', de: 'Auf Twitch öffnen', fr: 'Ouvrir sur Twitch', es: 'Abrir en Twitch' },
+  backToChannel: { en: 'Back', sv: 'Tillbaka', de: 'Zurück', fr: 'Retour', es: 'Atrás' },
+  backToApp: { en: 'Back', sv: 'Tillbaka', de: 'Zurück', fr: 'Retour', es: 'Atrás' },
+  setupTitle: { en: 'Twitch is not set up yet', sv: 'Twitch är inte uppsatt än', de: 'Twitch ist noch nicht eingerichtet', fr: 'Twitch n’est pas encore configuré', es: 'Twitch aún no está configurado' },
   setupBody: {
     en: 'Twitch needs your own application registration. Open Settings → Twitch, follow the five steps there, and paste your Client ID.',
     sv: 'Twitch behöver din egen applikationsregistrering. Öppna Inställningar → Twitch, följ de fem stegen där och klistra in ditt Client ID.',
+    de: 'Twitch braucht deine eigene Anwendungsregistrierung. Öffne Einstellungen → Twitch, folge den fünf Schritten dort und füge deine Client-ID ein.',
+    fr: 'Twitch nécessite votre propre enregistrement d’application. Ouvrez Paramètres → Twitch, suivez les cinq étapes et collez votre Client ID.',
+    es: 'Twitch necesita tu propio registro de aplicación. Abre Ajustes → Twitch, sigue los cinco pasos y pega tu Client ID.',
   },
-  setupOpenSettings: { en: 'Open Twitch settings', sv: 'Öppna Twitch-inställningar' },
-  setupSignInTitle: { en: 'Sign in to Twitch', sv: 'Logga in på Twitch' },
+  setupOpenSettings: { en: 'Open Twitch settings', sv: 'Öppna Twitch-inställningar', de: 'Twitch-Einstellungen öffnen', fr: 'Ouvrir les paramètres Twitch', es: 'Abrir ajustes de Twitch' },
+  setupSignInTitle: { en: 'Sign in to Twitch', sv: 'Logga in på Twitch', de: 'Bei Twitch anmelden', fr: 'Se connecter à Twitch', es: 'Iniciar sesión en Twitch' },
   setupSignInBody: {
     en: 'Your application is registered. Open Settings → Twitch and press Connect Twitch to finish signing in.',
     sv: 'Din applikation är registrerad. Öppna Inställningar → Twitch och tryck Anslut Twitch för att logga in.',
+    de: 'Deine Anwendung ist registriert. Öffne Einstellungen → Twitch und tippe auf Twitch verbinden, um die Anmeldung abzuschließen.',
+    fr: 'Votre application est enregistrée. Ouvrez Paramètres → Twitch et appuyez sur Connecter Twitch pour terminer la connexion.',
+    es: 'Tu aplicación está registrada. Abre Ajustes → Twitch y pulsa Conectar Twitch para terminar de iniciar sesión.',
   },
 } as const
 
@@ -161,7 +198,7 @@ type TextKey = keyof typeof TEXT
 
 function useTwitchText() {
   const { lang } = useLang()
-  return (key: TextKey) => TEXT[key][lang] ?? TEXT[key].en
+  return (key: TextKey) => pickLang(TEXT[key], lang)
 }
 
 function formatViewerCount(count: number): string {
@@ -531,11 +568,11 @@ function SegmentedControl<T extends string>({
 // so — like the YouTube plugin — each page draws its own top tab bar and uses
 // the passed `onNavigate` to switch between them. Without this, Categories /
 // Search / Following are unreachable from the UI.
-const TWITCH_PAGES: { id: string; label: { en: string; sv: string } }[] = [
-  { id: 'twitch-live', label: { en: 'Live', sv: 'Live' } },
-  { id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' } },
-  { id: 'twitch-following', label: { en: 'Following', sv: 'Följer' } },
-  { id: 'twitch-search', label: { en: 'Search', sv: 'Sök' } },
+const TWITCH_PAGES: { id: string; label: { en: string } & Record<string, string | undefined> }[] = [
+  { id: 'twitch-live', label: { en: 'Live', sv: 'Live', de: 'Live', fr: 'En direct', es: 'En directo' } },
+  { id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier', de: 'Kategorien', fr: 'Catégories', es: 'Categorías' } },
+  { id: 'twitch-following', label: { en: 'Following', sv: 'Följer', de: 'Gefolgt', fr: 'Suivis', es: 'Siguiendo' } },
+  { id: 'twitch-search', label: { en: 'Search', sv: 'Sök', de: 'Suche', fr: 'Recherche', es: 'Buscar' } },
 ]
 
 /*
@@ -650,7 +687,7 @@ function TwitchPageNav({
               : 'border-transparent bg-transparent text-slate-200 hover:bg-[#fcfcff1a] hover:text-white'
           }`}
         >
-          {page.label[lang] ?? page.label.en}
+          {pickLang(page.label, lang)}
         </button>
       ))}
       {/*
@@ -673,7 +710,7 @@ function TwitchPageNav({
             if (value.trim() && current !== 'twitch-search') onNavigate({ pageId: 'twitch-search' })
           }}
           onKeyDown={(event) => { if (event.key === 'Escape') setTwitchNavQuery('') }}
-          placeholder={TEXT.searchPlaceholder[lang] ?? TEXT.searchPlaceholder.en}
+          placeholder={pickLang(TEXT.searchPlaceholder, lang)}
           className="w-full bg-transparent text-white outline-none placeholder:text-white/75"
         />
       </label>
@@ -725,11 +762,11 @@ function TwitchPageNav({
         // Tillbaka på mobil och TV (Jerry 2026-09-07): värdens menypill visas
         // inte på Twitch-sidorna där, den här knappen är vägen ut.
         onClick={() => requestBrowseBack()}
-        aria-label={TEXT.backToApp[lang]}
+        aria-label={pickLang(TEXT.backToApp, lang)}
         className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#fcfcff14] pl-3 pr-4 text-xs text-slate-200 backdrop-blur-md transition hover:bg-[#fcfcff22] hover:text-white sm:text-sm"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
-        {TEXT.backToApp[lang]}
+        {pickLang(TEXT.backToApp, lang)}
       </button>}
       {TWITCH_PAGES.map((page) => (
         <button
@@ -749,7 +786,7 @@ function TwitchPageNav({
               : 'border-transparent bg-[#fcfcff14] text-slate-300 backdrop-blur-md hover:bg-[#fcfcff22] hover:text-white'
           }`}
         >
-          {page.label[lang] ?? page.label.en}
+          {pickLang(page.label, lang)}
         </button>
       ))}
     </div>
@@ -989,7 +1026,7 @@ export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {
   const { lang } = useLang()
   const [sort, setSort] = useState<StreamSort>('viewers-desc')
   // Stream language follows the app-wide language selector, not a local chip.
-  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, lang)
+  const { streams, loading, error, hasMore, loadMore } = useTwitchTopStreams(true, streamLanguageFor(lang))
   const [selectedChannel, setSelectedChannel] = useState<SelectedChannel | null>(null)
 
   if (selectedChannel) {

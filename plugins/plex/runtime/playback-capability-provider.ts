@@ -4,7 +4,7 @@ import { findBestPlexMatch, isPlexItemPlayable } from './playback-utils'
 export const plexPlaybackCapabilityProvider: PlaybackCapabilityProvider = {
   id: 'plex-playback',
   pluginId: 'com.lumio.plex',
-  label: { en: 'Plex', sv: 'Plex' },
+  label: { en: 'Plex', sv: 'Plex', de: 'Plex', fr: 'Plex', es: 'Plex' },
   async getCapability({ item }) {
     const source = (item as { source?: string }).source
     if (item.type === 'tv' && source !== 'plex') {

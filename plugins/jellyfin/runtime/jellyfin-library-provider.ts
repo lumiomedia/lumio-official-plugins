@@ -250,7 +250,7 @@ async function attachEpisodes(settings: JellyfinSettings, titles: LibraryTitle[]
 
 export const jellyfinLibraryProvider: LibraryProvider = {
   id: JELLYFIN_LIBRARY_PROVIDER_ID,
-  label: { en: 'Jellyfin', sv: 'Jellyfin' },
+  label: { en: 'Jellyfin', sv: 'Jellyfin', de: 'Jellyfin', fr: 'Jellyfin', es: 'Jellyfin' },
   pluginId: 'com.lumio.jellyfin',
   // Kopplat (samma villkor som inställningarna): värden bygger första
   // indexet själv i appar som stöder det; äldre appar läser inte metoden.

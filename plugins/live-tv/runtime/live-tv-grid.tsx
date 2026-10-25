@@ -10,6 +10,7 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
+import { localeFor, pickText } from './lang'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { startOfLocalDay, useLiveTvModel, type LiveTvModel } from './live-tv-model'
 import { Btn, ChannelBadge, Kicker, LT, LiveTag, ProgressBar, formatClock, progressOf } from './live-tv-ui'
@@ -1683,7 +1684,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                 <h3 className="mt-1 text-xl font-semibold text-white">
                   {/* Ingen ren "Meny"-nyckel finns i värdens strängtabell —
                       ordet är kort och stabilt nog att bära lokalt. */}
-                  {tvMenuView === 'categories' ? t('ipMetricCategories') : lang === 'sv' ? 'Meny' : 'Menu'}
+                  {tvMenuView === 'categories' ? t('ipMetricCategories') : pickText(lang, { en: 'Menu', sv: 'Meny', de: 'Menü', fr: 'Menu', es: 'Menú' })}
                 </h3>
               </div>
               {/* Stängningsstation överst: UPP från första raden landar här
@@ -1965,7 +1966,7 @@ function ChannelSidePanel({
   onPlay: (channel: M3uChannel) => void
 }) {
   const { lang } = useLang()
-  const locale = lang === 'sv' ? 'sv-SE' : 'en-GB'
+  const locale = localeFor(lang)
   const nowRef = useRef<HTMLDivElement | null>(null)
   const { nowMs } = model
   // Tablån hämtas per fönster från appen (spec 4.2) i stället för ur en

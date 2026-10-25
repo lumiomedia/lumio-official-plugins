@@ -25,7 +25,10 @@ import { plexLibraryProvider, plexLibrarySourceRef } from './plex-library-provid
 const BUSY_ELSEWHERE = {
   en: 'Another library is being indexed. Try again when it is done.',
   sv: 'Ett annat bibliotek indexeras. Försök igen när det är klart.',
-}
+  de: 'Eine andere Bibliothek wird gerade indexiert. Versuche es erneut, wenn sie fertig ist.',
+  fr: 'Une autre bibliothèque est en cours d’indexation. Réessayez quand elle sera terminée.',
+  es: 'Se está indexando otra biblioteca. Inténtalo de nuevo cuando termine.',
+} as Record<string, string>
 
 /**
  * Inställningsvy: bygg/uppdatera Plex-indexet med förlopp, se status, och
@@ -122,7 +125,7 @@ export function PlexLibraryIndexPanel() {
           </div>
         </div>
       ) : null}
-      {busyElsewhere ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.textDim }}>{lang === 'sv' ? BUSY_ELSEWHERE.sv : BUSY_ELSEWHERE.en}</p> : null}
+      {busyElsewhere ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.textDim }}>{BUSY_ELSEWHERE[lang] ?? BUSY_ELSEWHERE.en}</p> : null}
       {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{error}</p> : null}
 
       <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

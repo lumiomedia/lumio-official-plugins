@@ -15,7 +15,7 @@ function getStatus(): AuthCapabilityStatus {
       canDisconnect: false,
       requiresUserGesture: true,
       supportsSilentReconnect: false,
-      detail: { en: 'Add a Google OAuth Client ID first.', sv: 'Lagg till ett Google OAuth Client ID forst.' },
+      detail: { en: 'Add a Google OAuth Client ID first.', sv: 'Lagg till ett Google OAuth Client ID forst.', de: 'Füge zuerst eine Google-OAuth-Client-ID hinzu.', fr: 'Ajoutez d’abord un identifiant client OAuth Google.', es: 'Añade primero un ID de cliente OAuth de Google.' },
     }
   }
 
@@ -38,7 +38,7 @@ function getStatus(): AuthCapabilityStatus {
       requiresUserGesture: true,
       supportsSilentReconnect: false,
       accountLabel: session.channelTitle ?? 'YouTube',
-      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gått ut. Återanslut krävs.' },
+      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gått ut. Återanslut krävs.', de: 'Sitzung abgelaufen. Bitte neu verbinden.', fr: 'Session expirée. Reconnexion requise.', es: 'La sesión ha caducado. Vuelve a conectar.' },
     }
   }
 
@@ -54,7 +54,7 @@ function getStatus(): AuthCapabilityStatus {
 export const youtubeAuthCapabilityProvider: AuthCapabilityProvider = {
   id: 'youtube-auth',
   pluginId: 'com.lumio.youtube',
-  label: { en: 'YouTube', sv: 'YouTube' },
+  label: { en: 'YouTube', sv: 'YouTube', de: 'YouTube', fr: 'YouTube', es: 'YouTube' },
   getStatus,
   async connect() {
     const settings = getYouTubeSettings()

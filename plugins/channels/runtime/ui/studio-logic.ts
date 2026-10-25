@@ -234,8 +234,9 @@ export function genreOptions(pools: SourcePools): string[] {
 }
 
 /** Visningstext för en genre: svensk för TMDb:s standardgenrer, annars som den står. */
-export function genreLabel(name: string, lang: 'en' | 'sv'): string {
-  return GENRE_TEXT[name]?.[lang] ?? name
+export function genreLabel(name: string, lang: string): string {
+  const row = GENRE_TEXT[name] as Record<string, string> | undefined
+  return row?.[lang] ?? row?.en ?? name
 }
 
 export type SearchStatus = 'idle' | 'searching' | 'done' | 'failed'

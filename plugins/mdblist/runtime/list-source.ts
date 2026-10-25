@@ -1,7 +1,7 @@
 import type { MdblistApi } from './api'
 import { parseListRef } from './list-ref'
 import { parseLists, parseMediaItems, type ListInfo as ParsedList } from './parse'
-import { S } from './strings'
+import { pick, S, type Text } from './strings'
 
 const FRESH_MS = 6 * 60 * 60_000
 const WATCHLIST_ID = 'watchlist'
@@ -25,7 +25,7 @@ export function createListSource(deps: {
   now(): number
   log(message: string): void
   /** Appens språk — för namn pluginet själv sätter (Min watchlist). */
-  lang?(): 'en' | 'sv'
+  lang?(): string
 }) {
   const remember = (lists: ListInfo[]) => {
     const known = new Map((deps.readJson<ListInfo[]>(LISTS_KEY) ?? []).map((l) => [l.id, l]))
@@ -51,7 +51,7 @@ export function createListSource(deps: {
      * när väljaren öppnas.
      */
     async listLists(): Promise<ListInfo[]> {
-      const categories: Array<{ id: string; label: { en: string; sv: string }; path: string; query?: Record<string, number> }> = [
+      const categories: Array<{ id: string; label: Text; path: string; query?: Record<string, number> }> = [
         { id: 'mine', label: S.groupMine, path: '/lists/user' },
         { id: 'liked', label: S.groupLiked, path: '/lists/liked', query: { limit: 50 } },
         { id: 'top', label: S.groupTop, path: '/lists/top', query: { limit: 30 } },
@@ -80,7 +80,7 @@ export function createListSource(deps: {
         return parseLists(result.data).map((list) => ({ ...list, group }))
       }))
       const watchlist: ListInfo = {
-        id: WATCHLIST_ID, name: S.myWatchlist[deps.lang?.() ?? 'en'], description: null, itemCount: null, owner: null, dynamic: true,
+        id: WATCHLIST_ID, name: pick(S.myWatchlist, deps.lang?.()), description: null, itemCount: null, owner: null, dynamic: true,
         group: { id: 'mine', label: S.groupMine },
       }
       const lists = [watchlist, ...results.flat()]

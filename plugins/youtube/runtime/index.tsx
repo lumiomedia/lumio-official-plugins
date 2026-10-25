@@ -5,11 +5,14 @@ import { YouTubeSettingsSection } from './youtube-settings-section'
 
 export const YouTubePlugin: LumioPlugin = {
   id: 'com.lumio.youtube',
-  name: { en: 'YouTube', sv: 'YouTube' },
+  name: { en: 'YouTube', sv: 'YouTube', de: 'YouTube', fr: 'YouTube', es: 'YouTube' },
   version: '1.0.0',
   description: {
     en: 'Browse subscriptions, playlists and channels from YouTube.',
     sv: 'Bläddra bland prenumerationer, spellistor och kanaler från YouTube.',
+    de: 'Stöbere in Abos, Playlists und Kanälen von YouTube.',
+    fr: 'Parcourez vos abonnements, playlists et chaînes YouTube.',
+    es: 'Explora suscripciones, listas de reproducción y canales de YouTube.',
   },
   preinstalled: true,
 
@@ -17,7 +20,7 @@ export const YouTubePlugin: LumioPlugin = {
     ctx.registerAuthCapabilityProvider(youtubeAuthCapabilityProvider)
     ctx.registerSettingsSection({
       id: 'youtube',
-      label: { en: 'YouTube', sv: 'YouTube' },
+      label: { en: 'YouTube', sv: 'YouTube', de: 'YouTube', fr: 'YouTube', es: 'YouTube' },
       Section: YouTubeSettingsSection,
     })
     ctx.registerBootstrap({
@@ -30,39 +33,39 @@ export const YouTubePlugin: LumioPlugin = {
     })
     ctx.registerHomeOverride({
       id: 'youtube-home',
-      label: { en: 'YouTube', sv: 'YouTube' },
+      label: { en: 'YouTube', sv: 'YouTube', de: 'YouTube', fr: 'YouTube', es: 'YouTube' },
       View: YouTubeHomeOverride,
     })
 
     ctx.registerBrowsePage({
       id: 'youtube-following',
-      label: { en: 'Following', sv: 'Följer' },
+      label: { en: 'Following', sv: 'Följer', de: 'Abos', fr: 'Abonnements', es: 'Suscripciones' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-channels',
-      label: { en: 'Channels', sv: 'Kanaler' },
+      label: { en: 'Channels', sv: 'Kanaler', de: 'Kanäle', fr: 'Chaînes', es: 'Canales' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-playlists',
-      label: { en: 'Playlists', sv: 'Spellistor' },
+      label: { en: 'Playlists', sv: 'Spellistor', de: 'Playlists', fr: 'Playlists', es: 'Listas' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-playlist',
-      label: { en: 'Playlist', sv: 'Spellista' },
+      label: { en: 'Playlist', sv: 'Spellista', de: 'Playlist', fr: 'Playlist', es: 'Lista' },
       Page: YouTubeBrowsePage,
     })
     ctx.registerBrowsePage({
       id: 'youtube-channel',
-      label: { en: 'Channel', sv: 'Kanal' },
+      label: { en: 'Channel', sv: 'Kanal', de: 'Kanal', fr: 'Chaîne', es: 'Canal' },
       Page: YouTubeBrowsePage,
     })
 
     const youtubeEntry = {
       id: 'youtube',
-      label: { en: 'YouTube', sv: 'YouTube' },
+      label: { en: 'YouTube', sv: 'YouTube', de: 'YouTube', fr: 'YouTube', es: 'YouTube' },
       defaultEnabled: true,
       target: { pageId: 'youtube-following' },
     }
@@ -71,13 +74,13 @@ export const YouTubePlugin: LumioPlugin = {
 
     ctx.registerHomeRow({
       id: 'youtube-following-row',
-      title: { en: 'YouTube following', sv: 'YouTube följer' },
+      title: { en: 'YouTube following', sv: 'YouTube följer', de: 'YouTube-Abos', fr: 'Abonnements YouTube', es: 'Suscripciones de YouTube' },
       showOnHome: false,
       Row: (props) => <YouTubeHomeRow {...props} />,
     })
     ctx.registerHomeSource({
       id: 'youtube-following',
-      label: { en: 'YouTube following', sv: 'YouTube följer' },
+      label: { en: 'YouTube following', sv: 'YouTube följer', de: 'YouTube-Abos', fr: 'Abonnements YouTube', es: 'Suscripciones de YouTube' },
       rowId: 'youtube-following-row',
     })
   },

@@ -7,6 +7,6 @@ describe('tv-strings', () => {
     expect(tvText('sv', 'minutesLeft', { min: 12 })).toBe('12 min kvar')
   })
   it('faller tillbaka på engelska för okänt språk', () => {
-    expect(tvText('de', 'railHome')).toBe('Home')
+    expect(tvText('x-tlh', 'railHome')).toBe('Home')
   })
 })

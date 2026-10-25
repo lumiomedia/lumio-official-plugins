@@ -37,9 +37,9 @@ import { jellyfinLibraryProvider, jellyfinLibrarySourceRef } from './jellyfin-li
 /**
  * Inställningar: anslut (server, användare, lösenord), välj bibliotek, bygg
  * indexet. Stapel av värdens kort — värden ritar rubrik och statuspunkt.
- * Strängarna är plugin-lokala (två språk) eftersom pluginet släpps separat.
+ * Strängarna är plugin-lokala (en/sv/de/fr/es; övriga språk faller tillbaka på en) eftersom pluginet släpps separat.
  */
-const STR = {
+const STR: Record<string, Record<string, string>> = {
   en: {
     server: 'Server address', serverPlaceholder: 'http://jellyfin.local:8096', username: 'Username', password: 'Password',
     connect: 'Connect', connecting: 'Connecting…', disconnect: 'Disconnect', connectedAs: 'Signed in as', at: 'on',
@@ -60,7 +60,37 @@ const STR = {
     indexStatus: '{titles} titlar · {unmatched} omatchade', indexLastSync: 'Senast synkat', running: '{done} titlar', cancel: 'Avbryt', busyElsewhere: 'Ett annat bibliotek indexeras. Försök igen när det är klart.',
     homeHint: 'Gör det till startsida eller öppna Jellyfin-fliken: Inställningar → Hem & utseende → Layout → Bibliotek.',
   },
-} as const
+  de: {
+    server: 'Serveradresse', serverPlaceholder: 'http://jellyfin.local:8096', username: 'Benutzername', password: 'Passwort',
+    connect: 'Verbinden', connecting: 'Verbinde…', disconnect: 'Trennen', connectedAs: 'Angemeldet als', at: 'auf',
+    libraries: 'Bibliotheken zum Indexieren', refreshLibraries: 'Bibliotheken aktualisieren', noLibraries: 'Keine Film- oder Serienbibliotheken gefunden.',
+    movies: 'Filme', series: 'Serien', authFailed: 'Anmeldung fehlgeschlagen. Prüfe Adresse, Benutzername und Passwort.',
+    indexTitle: 'Bibliotheksindex', indexDesc: 'Lumio indexiert deine Jellyfin-Bibliotheken lokal, damit Startseite, Suche und Zapp mit deinen eigenen Inhalten laufen.',
+    indexBuild: 'Index erstellen', indexRebuild: 'Neu erstellen', indexUpdate: 'Aktualisieren', indexClear: 'Index entfernen', indexEmpty: 'Noch nicht indexiert.',
+    indexStatus: '{titles} Titel · {unmatched} nicht zugeordnet', indexLastSync: 'Zuletzt synchronisiert', running: '{done} Titel', cancel: 'Abbrechen', busyElsewhere: 'Eine andere Bibliothek wird gerade indexiert. Versuche es erneut, wenn sie fertig ist.',
+    homeHint: 'Mach es zur Startseite oder öffne den Jellyfin-Tab: Einstellungen → Startseite & Aussehen → Layout → Bibliothek.',
+  },
+  fr: {
+    server: 'Adresse du serveur', serverPlaceholder: 'http://jellyfin.local:8096', username: "Nom d'utilisateur", password: 'Mot de passe',
+    connect: 'Se connecter', connecting: 'Connexion…', disconnect: 'Se déconnecter', connectedAs: 'Connecté en tant que', at: 'sur',
+    libraries: 'Bibliothèques à indexer', refreshLibraries: 'Actualiser les bibliothèques', noLibraries: 'Aucune bibliothèque de films ou de séries trouvée.',
+    movies: 'Films', series: 'Séries', authFailed: "Connexion impossible. Vérifiez l'adresse, le nom d'utilisateur et le mot de passe.",
+    indexTitle: 'Index de la bibliothèque', indexDesc: 'Lumio indexe vos bibliothèques Jellyfin en local pour que l’accueil, la recherche et Zapp fonctionnent avec ce que vous possédez.',
+    indexBuild: "Créer l'index", indexRebuild: 'Reconstruire', indexUpdate: 'Mettre à jour', indexClear: "Supprimer l'index", indexEmpty: 'Pas encore indexé.',
+    indexStatus: '{titles} titres · {unmatched} non associés', indexLastSync: 'Dernière synchro', running: '{done} titres', cancel: 'Annuler', busyElsewhere: 'Une autre bibliothèque est en cours d’indexation. Réessayez quand elle sera terminée.',
+    homeHint: 'Faites-en la page d’accueil ou ouvrez l’onglet Jellyfin : Paramètres → Accueil et apparence → Disposition → Bibliothèque.',
+  },
+  es: {
+    server: 'Dirección del servidor', serverPlaceholder: 'http://jellyfin.local:8096', username: 'Usuario', password: 'Contraseña',
+    connect: 'Conectar', connecting: 'Conectando…', disconnect: 'Desconectar', connectedAs: 'Sesión iniciada como', at: 'en',
+    libraries: 'Bibliotecas que indexar', refreshLibraries: 'Actualizar bibliotecas', noLibraries: 'No se encontraron bibliotecas de películas ni series.',
+    movies: 'Películas', series: 'Series', authFailed: 'No se pudo iniciar sesión. Comprueba la dirección, el usuario y la contraseña.',
+    indexTitle: 'Índice de la biblioteca', indexDesc: 'Lumio indexa tus bibliotecas de Jellyfin en local para que el inicio, la búsqueda y Zapp funcionen con lo que tienes.',
+    indexBuild: 'Crear índice', indexRebuild: 'Reconstruir', indexUpdate: 'Actualizar', indexClear: 'Quitar índice', indexEmpty: 'Aún sin indexar.',
+    indexStatus: '{titles} títulos · {unmatched} sin asociar', indexLastSync: 'Última sincronización', running: '{done} títulos', cancel: 'Cancelar', busyElsewhere: 'Se está indexando otra biblioteca. Inténtalo de nuevo cuando termine.',
+    homeHint: 'Ponla como inicio o abre la pestaña de Jellyfin: Ajustes → Inicio y aspecto → Diseño → Biblioteca.',
+  },
+}
 
 /** Appens TV-formel (lib/tv-metrics.ts): följer `--ui-scale` och TV-lägets textstorleksval. */
 const tvFont = (px: number) => `calc(${px}px * var(--ui-scale, 1) * var(--tv-font-scale, 1))`
@@ -83,7 +113,7 @@ function useSectionType() {
 export function JellyfinSection() {
   const { lang } = useLang()
   const type = useSectionType()
-  const s = STR[lang === 'sv' ? 'sv' : 'en']
+  const s = (STR[lang] ?? STR.en)
   const [settings, setSettings] = useState(() => getJellyfinSettings())
   useEffect(() => onJellyfinSettingsChanged(() => setSettings(getJellyfinSettings())), [])
   const [server, setServer] = useState(settings.serverUrl ?? '')
@@ -196,7 +226,7 @@ export function JellyfinSection() {
   )
 }
 
-function JellyfinIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof STR)['sv'] }) {
+function JellyfinIndexPanel({ strings: s }: { strings: Record<string, string> }) {
   const type = useSectionType()
   const [status, setStatus] = useState<LibraryStatus | null>(null)
   // Förloppet läses ur värdens delade skanning, inte ur egen state:

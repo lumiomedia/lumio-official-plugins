@@ -1,6 +1,6 @@
 import type { SimklApi } from './api'
 import { parseTrending, type ListItem } from './parse'
-import { S, type Text } from './strings'
+import { pick, S, type Text } from './strings'
 import { buildRemoteMap, type RemoteMap } from './sync-engine'
 
 const HOUR = 60 * 60_000
@@ -11,7 +11,7 @@ const LIBRARY_MAX_AGE = 6 * HOUR
 const QUOTA_FLOOR = 50
 const KIND: Record<'movies' | 'shows' | 'anime', 'm' | 's' | 'a'> = { movies: 'm', shows: 's', anime: 'a' }
 
-type Lang = 'en' | 'sv'
+type Lang = string
 type ListType = 'movies' | 'shows' | 'anime'
 type Status = 'watching' | 'plantowatch' | 'completed' | 'hold' | 'dropped'
 type Period = 'today' | 'week' | 'month'
@@ -76,15 +76,15 @@ export function createListSource(deps: {
     if (parsed.kind === 'status') {
       return {
         id,
-        name: `${STATUS_TEXT[parsed.status][l]} · ${TYPE_TEXT[parsed.type][l]}`,
-        description: S.pluginName[l],
+        name: `${pick(STATUS_TEXT[parsed.status], l)} · ${pick(TYPE_TEXT[parsed.type], l)}`,
+        description: pick(S.pluginName, l),
         itemCount: null, owner: null, dynamic: true,
         group: { id: 'mine', label: S.groupMine },
       }
     }
     return {
       id,
-      name: `${S.groupTrending[l]} · ${TYPE_TEXT[parsed.type][l]} · ${PERIOD_TEXT[parsed.period][l]}`,
+      name: `${pick(S.groupTrending, l)} · ${pick(TYPE_TEXT[parsed.type], l)} · ${pick(PERIOD_TEXT[parsed.period], l)}`,
       description: null,
       itemCount: 100, owner: null, dynamic: true,
       group: { id: 'trending', label: S.groupTrending },

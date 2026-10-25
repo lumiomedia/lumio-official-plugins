@@ -2,7 +2,7 @@ import type { PluginSettingsRow } from '@/lib/plugin-sdk'
 import type { DeviceState } from '../../_shared/tracker-kit/device-auth'
 import type { PrefKind } from '../../_shared/tracker-kit/prefs'
 import type { StatusState } from '../../_shared/tracker-kit/status'
-import { fillBoth, S, type Text } from './strings'
+import { fill, fillBoth, S, type Text } from './strings'
 
 export interface TvView {
   status: StatusState
@@ -54,10 +54,10 @@ export function syncText(status: StatusState, now: number): Text {
   if (status.syncing) return S.syncingLong
   if (!status.lastSyncAt) return S.neverSynced
   const changes = changesText(status.lastChanges)
-  return {
-    en: S.lastSync.en.replace('{time}', clock(status.lastSyncAt)).replace('{changes}', changes.en),
-    sv: S.lastSync.sv.replace('{time}', clock(status.lastSyncAt)).replace('{changes}', changes.sv),
-  }
+  const time = clock(status.lastSyncAt)
+  const out = {} as Text
+  for (const l of ['en', 'sv', 'de', 'fr', 'es'] as const) out[l] = fill(S.lastSync[l], { time, changes: changes[l] })
+  return out
 }
 
 /** Enhetsflödets rader — samma lägen som designens TV-panel, med appens radtyper. */
@@ -81,7 +81,7 @@ function deviceRows(view: TvView, actions: TvActions): PluginSettingsRow[] {
           t: 'note',
           text: device.phase === 'expired' ? S.deviceExpired
             : device.phase === 'denied' ? S.deviceDenied
-            : device.error ? { en: device.error, sv: device.error }
+            : device.error ? { en: device.error, sv: device.error, de: device.error, fr: device.error, es: device.error }
             : S.deviceError,
         },
         { t: 'action', label: S.deviceNewCode, run: actions.connect },

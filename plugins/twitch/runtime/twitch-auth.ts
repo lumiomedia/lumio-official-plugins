@@ -108,6 +108,9 @@ function requireClientId(): string {
     throw new TwitchAuthError({
       en: 'Register your own Twitch application first, then paste its Client ID above.',
       sv: 'Registrera din egen Twitch-applikation först och klistra in dess Client ID ovan.',
+      de: 'Registriere zuerst deine eigene Twitch-Anwendung und füge ihre Client-ID oben ein.',
+      fr: 'Enregistrez d’abord votre propre application Twitch, puis collez son Client ID ci-dessus.',
+      es: 'Registra primero tu propia aplicación de Twitch y pega su Client ID arriba.',
     })
   }
   return clientId
@@ -124,6 +127,9 @@ export async function requestDeviceCode(): Promise<DeviceStartResponse> {
     throw new TwitchAuthError({
       en: 'Could not start Twitch login. Check that the Client ID is correct.',
       sv: 'Kunde inte starta Twitch-inloggningen. Kontrollera att Client ID stämmer.',
+      de: 'Twitch-Anmeldung konnte nicht gestartet werden. Prüfe, ob die Client-ID stimmt.',
+      fr: 'Impossible de lancer la connexion Twitch. Vérifiez que le Client ID est correct.',
+      es: 'No se pudo iniciar el inicio de sesión de Twitch. Comprueba que el Client ID sea correcto.',
     })
   }
 
@@ -184,6 +190,9 @@ async function resolveTwitchAccount(accessToken: string): Promise<TwitchHelixUse
     throw new TwitchAuthError({
       en: `Could not resolve Twitch account (${response.status}).`,
       sv: `Kunde inte hämta Twitch-kontot (${response.status}).`,
+      de: `Twitch-Konto konnte nicht abgerufen werden (${response.status}).`,
+      fr: `Impossible de récupérer le compte Twitch (${response.status}).`,
+      es: `No se pudo obtener la cuenta de Twitch (${response.status}).`,
     })
   }
   const payload = (await response.json().catch(() => ({}))) as { data?: TwitchHelixUser[] }
@@ -192,6 +201,9 @@ async function resolveTwitchAccount(accessToken: string): Promise<TwitchHelixUse
     throw new TwitchAuthError({
       en: 'Could not resolve Twitch account.',
       sv: 'Kunde inte hämta Twitch-kontot.',
+      de: 'Twitch-Konto konnte nicht abgerufen werden.',
+      fr: 'Impossible de récupérer le compte Twitch.',
+      es: 'No se pudo obtener la cuenta de Twitch.',
     })
   }
   return user
@@ -238,12 +250,18 @@ export async function connectTwitch(onCode: (userCode: string, verificationUri: 
     throw new TwitchAuthError({
       en: 'Twitch device login failed.',
       sv: 'Twitch-inloggningen med enhetskod misslyckades.',
+      de: 'Twitch-Geräteanmeldung fehlgeschlagen.',
+      fr: 'Échec de la connexion Twitch par code appareil.',
+      es: 'Falló el inicio de sesión de Twitch con código de dispositivo.',
     })
   }
 
   throw new TwitchAuthError({
     en: 'Twitch login timed out. Try connecting again.',
     sv: 'Twitch-inloggningen tog för lång tid. Försök ansluta igen.',
+    de: 'Twitch-Anmeldung abgelaufen. Versuche, dich erneut zu verbinden.',
+    fr: 'La connexion Twitch a expiré. Essayez de vous reconnecter.',
+    es: 'El inicio de sesión de Twitch ha caducado. Inténtalo de nuevo.',
   })
 }
 

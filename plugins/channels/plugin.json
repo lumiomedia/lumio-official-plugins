@@ -1,12 +1,15 @@
 {
   "id": "com.lumio.channels",
   "slug": "channels",
-  "name": { "en": "LumioTV", "sv": "LumioTV" },
+  "name": { "en": "LumioTV", "sv": "LumioTV", "de": "LumioTV", "fr": "LumioTV", "es": "LumioTV" },
   "version": "0.1.40",
   "minAppVersion": "0.1.631",
   "description": {
     "en": "Personal linear TV channels built from your library, watchlist and debrid cloud — a real schedule that runs with the clock.",
-    "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln — en riktig tablå som rullar med klockan."
+    "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln — en riktig tablå som rullar med klockan.",
+    "de": "Persönliche lineare TV-Sender aus deiner Bibliothek, deiner Merkliste und deiner Debrid-Cloud – ein echtes Programm, das mit der Uhr läuft.",
+    "fr": "Des chaînes de télévision linéaires personnelles créées à partir de votre bibliothèque, de votre liste et de votre cloud debrid — une vraie grille qui suit l’horloge.",
+    "es": "Canales de televisión lineal personales creados con tu biblioteca, tu lista y tu nube debrid: una programación real que avanza con el reloj."
   },
   "official": true,
   "bundled": true,

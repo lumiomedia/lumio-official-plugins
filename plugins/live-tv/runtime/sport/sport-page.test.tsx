@@ -40,7 +40,7 @@ describe('Sport som egen sida: registreringen', () => {
     const page = pages.find((p) => p.id === SPORT_PAGE_ID)
     expect(SPORT_PAGE_ID).toBe('live-tv-sport')
     expect(page).toMatchObject({ label: { en: 'Sport', sv: 'Sport' }, hideHero: true, tvSceneBox: true })
-    expect(items).toEqual([expect.objectContaining({ id: SPORT_PAGE_ID, label: { en: 'Sport', sv: 'Sport' }, target: { pageId: SPORT_PAGE_ID }, defaultEnabled: false })])
+    expect(items).toEqual([expect.objectContaining({ id: SPORT_PAGE_ID, label: { en: 'Sport', sv: 'Sport', de: 'Sport', fr: 'Sport', es: 'Deportes' }, target: { pageId: SPORT_PAGE_ID }, defaultEnabled: false })])
   })
   it('en äldre värd utan menyval registrerar ändå sidan', () => {
     const pages: Array<Record<string, unknown>> = []

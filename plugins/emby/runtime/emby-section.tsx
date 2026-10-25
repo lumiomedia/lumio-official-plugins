@@ -38,9 +38,9 @@ import { embyLibraryProvider, getLastEmbyScanNotes, embyLibrarySourceRef } from 
 /**
  * Inställningar: anslut (server, användare, lösenord), välj bibliotek, bygg
  * indexet. Stapel av värdens kort — värden ritar rubrik och statuspunkt.
- * Strängarna är plugin-lokala (två språk) eftersom pluginet släpps separat.
+ * Strängarna är plugin-lokala (en/sv/de/fr/es; övriga språk faller tillbaka på en) eftersom pluginet släpps separat.
  */
-const STR = {
+const STR: Record<string, Record<string, string>> = {
   en: {
     server: 'Server address', serverPlaceholder: 'http://emby.local:8096', username: 'Username', password: 'Password',
     connect: 'Connect', connecting: 'Connecting…', disconnect: 'Disconnect', connectedAs: 'Signed in as', at: 'on',
@@ -63,7 +63,40 @@ const STR = {
     homeHint: 'Gör det till startsida eller öppna Emby-fliken: Inställningar → Hem & utseende → Layout → Bibliotek.',
     slimmed: 'För stora för att indexeras helt (nyaste avsnitten med):',
   },
-} as const
+  de: {
+    server: 'Serveradresse', serverPlaceholder: 'http://emby.local:8096', username: 'Benutzername', password: 'Passwort',
+    connect: 'Verbinden', connecting: 'Verbinde…', disconnect: 'Trennen', connectedAs: 'Angemeldet als', at: 'auf',
+    libraries: 'Bibliotheken zum Indexieren', refreshLibraries: 'Bibliotheken aktualisieren', noLibraries: 'Keine Film- oder Serienbibliotheken gefunden.',
+    movies: 'Filme', series: 'Serien', authFailed: 'Anmeldung fehlgeschlagen. Prüfe Adresse, Benutzername und Passwort.', isJellyfin: 'Das ist ein Jellyfin-Server. Verwende dafür das Jellyfin-Plugin.',
+    indexTitle: 'Bibliotheksindex', indexDesc: 'Lumio indexiert deine Emby-Bibliotheken lokal, damit Startseite, Suche und Zapp mit deinen eigenen Inhalten laufen.',
+    indexBuild: 'Index erstellen', indexRebuild: 'Neu erstellen', indexUpdate: 'Aktualisieren', indexClear: 'Index entfernen', indexEmpty: 'Noch nicht indexiert.',
+    indexStatus: '{titles} Titel · {unmatched} nicht zugeordnet', indexLastSync: 'Zuletzt synchronisiert', running: '{done} Titel', cancel: 'Abbrechen', busyElsewhere: 'Eine andere Bibliothek wird gerade indexiert. Versuche es erneut, wenn sie fertig ist.',
+    homeHint: 'Mach es zur Startseite oder öffne den Emby-Tab: Einstellungen → Startseite & Aussehen → Layout → Bibliothek.',
+    slimmed: 'Zu groß für einen vollständigen Index (neueste Folgen bleiben erhalten):',
+  },
+  fr: {
+    server: 'Adresse du serveur', serverPlaceholder: 'http://emby.local:8096', username: "Nom d'utilisateur", password: 'Mot de passe',
+    connect: 'Se connecter', connecting: 'Connexion…', disconnect: 'Se déconnecter', connectedAs: 'Connecté en tant que', at: 'sur',
+    libraries: 'Bibliothèques à indexer', refreshLibraries: 'Actualiser les bibliothèques', noLibraries: 'Aucune bibliothèque de films ou de séries trouvée.',
+    movies: 'Films', series: 'Séries', authFailed: "Connexion impossible. Vérifiez l'adresse, le nom d'utilisateur et le mot de passe.", isJellyfin: 'Ceci est un serveur Jellyfin. Utilisez le plugin Jellyfin pour celui-ci.',
+    indexTitle: 'Index de la bibliothèque', indexDesc: 'Lumio indexe vos bibliothèques Emby en local pour que l’accueil, la recherche et Zapp fonctionnent avec ce que vous possédez.',
+    indexBuild: "Créer l'index", indexRebuild: 'Reconstruire', indexUpdate: 'Mettre à jour', indexClear: "Supprimer l'index", indexEmpty: 'Pas encore indexé.',
+    indexStatus: '{titles} titres · {unmatched} non associés', indexLastSync: 'Dernière synchro', running: '{done} titres', cancel: 'Annuler', busyElsewhere: 'Une autre bibliothèque est en cours d’indexation. Réessayez quand elle sera terminée.',
+    homeHint: 'Faites-en la page d’accueil ou ouvrez l’onglet Emby : Paramètres → Accueil et apparence → Disposition → Bibliothèque.',
+    slimmed: 'Trop volumineux pour être indexé en entier (épisodes les plus récents conservés) :',
+  },
+  es: {
+    server: 'Dirección del servidor', serverPlaceholder: 'http://emby.local:8096', username: 'Usuario', password: 'Contraseña',
+    connect: 'Conectar', connecting: 'Conectando…', disconnect: 'Desconectar', connectedAs: 'Sesión iniciada como', at: 'en',
+    libraries: 'Bibliotecas que indexar', refreshLibraries: 'Actualizar bibliotecas', noLibraries: 'No se encontraron bibliotecas de películas ni series.',
+    movies: 'Películas', series: 'Series', authFailed: 'No se pudo iniciar sesión. Comprueba la dirección, el usuario y la contraseña.', isJellyfin: 'Este es un servidor Jellyfin. Usa el plugin de Jellyfin para él.',
+    indexTitle: 'Índice de la biblioteca', indexDesc: 'Lumio indexa tus bibliotecas de Emby en local para que el inicio, la búsqueda y Zapp funcionen con lo que tienes.',
+    indexBuild: 'Crear índice', indexRebuild: 'Reconstruir', indexUpdate: 'Actualizar', indexClear: 'Quitar índice', indexEmpty: 'Aún sin indexar.',
+    indexStatus: '{titles} títulos · {unmatched} sin asociar', indexLastSync: 'Última sincronización', running: '{done} títulos', cancel: 'Cancelar', busyElsewhere: 'Se está indexando otra biblioteca. Inténtalo de nuevo cuando termine.',
+    homeHint: 'Ponla como inicio o abre la pestaña de Emby: Ajustes → Inicio y aspecto → Diseño → Biblioteca.',
+    slimmed: 'Demasiado grande para indexarlo entero (se conservan los episodios más recientes):',
+  },
+}
 
 /** Appens TV-formel (lib/tv-metrics.ts): följer `--ui-scale` och TV-lägets textstorleksval. */
 const tvFont = (px: number) => `calc(${px}px * var(--ui-scale, 1) * var(--tv-font-scale, 1))`
@@ -86,7 +119,7 @@ function useSectionType() {
 export function EmbySection() {
   const { lang } = useLang()
   const type = useSectionType()
-  const s = STR[lang === 'sv' ? 'sv' : 'en']
+  const s = (STR[lang] ?? STR.en)
   const [settings, setSettings] = useState(() => getEmbySettings())
   useEffect(() => onEmbySettingsChanged(() => setSettings(getEmbySettings())), [])
   const [server, setServer] = useState(settings.serverUrl ?? '')
@@ -199,7 +232,7 @@ export function EmbySection() {
   )
 }
 
-function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof STR)['sv'] }) {
+function EmbyIndexPanel({ strings: s }: { strings: Record<string, string> }) {
   const type = useSectionType()
   const [status, setStatus] = useState<LibraryStatus | null>(null)
   // Förloppet läses ur värdens delade skanning, inte ur egen state:

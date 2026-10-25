@@ -26,7 +26,7 @@ function getStatus(): AuthCapabilityStatus {
       requiresUserGesture: true,
       supportsSilentReconnect: false,
       accountLabel: session.displayName ?? 'Twitch',
-      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gått ut. Återanslut krävs.' },
+      detail: { en: 'Session expired. Reconnect required.', sv: 'Sessionen har gått ut. Återanslut krävs.', de: 'Sitzung abgelaufen. Bitte neu verbinden.', fr: 'Session expirée. Reconnexion requise.', es: 'La sesión ha caducado. Vuelve a conectar.' },
     }
   }
 
@@ -42,7 +42,7 @@ function getStatus(): AuthCapabilityStatus {
 export const twitchAuthCapabilityProvider: AuthCapabilityProvider = {
   id: 'twitch-auth',
   pluginId: 'com.lumio.twitch',
-  label: { en: 'Twitch', sv: 'Twitch' },
+  label: { en: 'Twitch', sv: 'Twitch', de: 'Twitch', fr: 'Twitch', es: 'Twitch' },
   getStatus,
   async connect() {
     // The device-code flow needs to surface a user code + verification URL

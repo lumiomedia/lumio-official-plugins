@@ -11,7 +11,7 @@ function isPlexItem(item: MediaItem): boolean {
 
 export const plexEpisodeSidebarProvider: EpisodeSidebarProvider = {
   id: 'plex-episode-sidebar',
-  label: { en: 'Plex Episodes', sv: 'Plex-avsnitt' },
+  label: { en: 'Plex Episodes', sv: 'Plex-avsnitt', de: 'Plex-Folgen', fr: 'Épisodes Plex', es: 'Episodios de Plex' },
   canProvide(item) {
     return isPlexItem(item) && item.type === 'tv'
   },

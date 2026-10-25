@@ -13,7 +13,7 @@ import { seedDefaultChannels } from '../state/store'
 
 export function seedForActiveProfile(): void {
   try {
-    seedDefaultChannels(readStoredLang() === 'sv' ? 'sv' : 'en')
+    seedDefaultChannels(readStoredLang() || 'en')
   } catch {
     // Lagringen full eller otillgänglig: sidan försöker igen när den öppnas.
   }

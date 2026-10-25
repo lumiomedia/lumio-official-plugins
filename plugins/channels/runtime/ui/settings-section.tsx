@@ -16,12 +16,12 @@ import { S } from '../strings'
 import { CHANNELS_PAGE_ID } from './guide-layout'
 import { useText } from './use-text'
 
-type Text = { en: string; sv: string }
+type Text = Record<string, string>
 const CONFIRM_MS = 3000
 
 const fill = (text: Text, vars: Record<string, string | number>): Text => {
   const one = (s: string) => Object.entries(vars).reduce((out, [k, v]) => out.split(`{${k}}`).join(String(v)), s)
-  return { en: one(text.en), sv: one(text.sv) }
+  return Object.fromEntries(Object.entries(text).map(([l, s]) => [l, one(s)]))
 }
 
 export function openStudio(target: 'new' | string): void {
@@ -62,7 +62,7 @@ export function buildChannelRows(channels: ChannelDef[], actions: ChannelRowActi
     for (const id of accounts) {
       rows.push({
         t: 'action',
-        label: { en: CLOUD_NAMES[id], sv: CLOUD_NAMES[id] },
+        label: { en: CLOUD_NAMES[id], sv: CLOUD_NAMES[id], de: CLOUD_NAMES[id], fr: CLOUD_NAMES[id], es: CLOUD_NAMES[id] },
         danger: true,
         confirm: { title: fill(S.settingsCloudRemoveTitle, { name: CLOUD_NAMES[id] }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
         run: () => removeCloudAccount(id),

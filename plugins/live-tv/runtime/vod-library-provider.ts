@@ -148,7 +148,7 @@ export function vodPlaybackUrl(playRef: string | null | undefined): string | nul
  */
 export const vodLibraryProvider = {
   id: VOD_LIBRARY_PROVIDER_ID,
-  label: { en: 'Xtream VOD', sv: 'Xtream VOD' },
+  label: { en: 'Xtream VOD', sv: 'Xtream VOD', de: 'Xtream VOD', fr: 'Xtream VOD', es: 'Xtream VOD' },
   pluginId: 'com.lumio.live-tv',
   async scanAll(
     source: { id: string },

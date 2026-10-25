@@ -230,7 +230,7 @@ function useColumnBleed(ref: { current: HTMLElement | null }, active: boolean): 
 export function ChannelsPage({ params }: BrowsePageProps) {
   const t = useText()
   const { lang } = useLang()
-  const uiLang = lang === 'sv' ? 'sv' : 'en'
+  const uiLang: string = lang
   // Första öppningen i profilen: standardkanalerna skapas FÖRE första läsningen,
   // så sidan aldrig blinkar tomvyn. En gång per profil (flagga i lagringen).
   useState(() => seedDefaultChannels(uiLang))

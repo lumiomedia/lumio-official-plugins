@@ -42,7 +42,7 @@ function getStatus(): AuthCapabilityStatus {
 export const traktAuthCapabilityProvider: AuthCapabilityProvider = {
   id: 'trakt-auth',
   pluginId: 'com.lumio.trakt',
-  label: { en: 'Trakt', sv: 'Trakt' },
+  label: { en: 'Trakt', sv: 'Trakt', de: 'Trakt', fr: 'Trakt', es: 'Trakt' },
   getStatus,
   async disconnect() {
     clearTraktAuth()

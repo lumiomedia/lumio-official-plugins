@@ -83,7 +83,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   onDone(savedId?: string): void
 }) {
   const { lang } = useLang()
-  const genreLang: 'en' | 'sv' = lang === 'sv' ? 'sv' : 'en'
+  const genreLang: string = lang
   const fs = (px: number) => fontSize(px, isTv)
   const editing = useMemo(() => (studio === 'new' ? null : channels.find((c) => c.id === studio) ?? null), []) // eslint-disable-line react-hooks/exhaustive-deps
   const [draft, setDraft] = useState<ChannelDraft>(() => draftOf(editing))

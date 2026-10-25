@@ -53,7 +53,7 @@ async function resolvePlexSyncIdentity(item: MediaItem): Promise<{ tmdbId: strin
 export const plexSyncIdentityProvider: SyncIdentityProvider = {
   id: 'plex-sync-identity',
   pluginId: 'com.lumio.plex',
-  label: { en: 'Plex sync identity', sv: 'Plex sync-identitet' },
+  label: { en: 'Plex sync identity', sv: 'Plex sync-identitet', de: 'Plex-Sync-Identität', fr: 'Identité de synchro Plex', es: 'Identidad de sincronización de Plex' },
   priority: 100,
   canResolve(item) {
     const source = (item as { source?: string }).source

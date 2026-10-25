@@ -1,6 +1,7 @@
 import type { TvStringKey } from '../tv/tv-strings'
 import type { RateStatus } from './results-controller'
 import { PROVIDER_LABEL } from './providers'
+import { textLang } from '../lang'
 
 function svOrdinal(n: number): string {
   const last = n % 10
@@ -11,12 +12,24 @@ function svOrdinal(n: number): string {
 export function everyText(ms: number, lang: string): string {
   const minutes = ms >= 60_000
   const n = Math.max(1, Math.round(ms / (minutes ? 60_000 : 1_000)))
-  if (lang === 'sv') {
-    if (n === 1) return minutes ? 'varje minut' : 'varje sekund'
-    return `var ${n}:${svOrdinal(n)} ${minutes ? 'min' : 's'}`
+  const unit = minutes ? 'min' : 's'
+  switch (textLang(lang)) {
+    case 'sv':
+      if (n === 1) return minutes ? 'varje minut' : 'varje sekund'
+      return `var ${n}:${svOrdinal(n)} ${unit}`
+    case 'de':
+      if (n === 1) return minutes ? 'jede Minute' : 'jede Sekunde'
+      return `alle ${n} ${unit}`
+    case 'fr':
+      if (n === 1) return minutes ? 'chaque minute' : 'chaque seconde'
+      return `toutes les ${n} ${unit}`
+    case 'es':
+      if (n === 1) return minutes ? 'cada minuto' : 'cada segundo'
+      return `cada ${n} ${unit}`
+    default:
+      if (n === 1) return minutes ? 'every minute' : 'every second'
+      return `every ${n} ${unit}`
   }
-  if (n === 1) return minutes ? 'every minute' : 'every second'
-  return `every ${n} ${minutes ? 'min' : 's'}`
 }
 
 /** Den tysta raden i Sport-huvudet och matchcentret. `null` = ingen rad (ingen nyckel: kortet syns i stället). */

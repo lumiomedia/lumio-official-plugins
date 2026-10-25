@@ -96,7 +96,7 @@ export type ListInfo = {
   itemCount: number | null
   owner: string | null
   dynamic: boolean
-  group?: { id: string; label: { en: string; sv: string } }
+  group?: { id: string; label: { en: string; sv: string; de: string; fr: string; es: string } }
 }
 
 export function parseLists(data: unknown): ListInfo[] {

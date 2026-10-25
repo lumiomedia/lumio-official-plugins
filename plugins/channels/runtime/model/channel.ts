@@ -113,17 +113,17 @@ const preset = (over: Partial<ChannelDraft>): Omit<ChannelDraft, 'name'> => {
   return { ...base, sources: [...ALL_SOURCES], showOnHome: true, ...over }
 }
 
-export const DEFAULT_CHANNELS: Array<{ id: DefaultChannelId; name: { en: string; sv: string }; hue: number; draft: Omit<ChannelDraft, 'name'> }> = [
-  { id: 'movies-247', name: { en: 'Movies around the clock', sv: 'Bio dygnet runt' }, hue: 15, draft: preset({ kind: 'movie', length: 'feature', order: 'shuffle' }) },
-  { id: 'series-in-order', name: { en: 'Series in order', sv: 'Serier i följd' }, hue: 200, draft: preset({ kind: 'tv', order: 'episodes' }) },
-  { id: 'action-thrills', name: { en: 'Action & thrills', sv: 'Action & spänning' }, hue: 0, draft: preset({ genres: ['Action', 'Thriller', 'Crime'] }) },
-  { id: 'comedy', name: { en: 'Comedy', sv: 'Komedi' }, hue: 48, draft: preset({ genres: ['Comedy'] }) },
-  { id: 'eighties-nineties', name: { en: '80s & 90s', sv: '80- & 90-tal' }, hue: 300, draft: preset({ kind: 'movie', era: '80s90s' }) },
-  { id: 'evening-film', name: { en: 'Evening film', sv: 'Kvällsfilm' }, hue: 25, draft: preset({ kind: 'movie', length: 'feature', airWindow: 'evenings' }) },
-  { id: 'after-midnight', name: { en: 'After midnight', sv: 'Efter midnatt' }, hue: 250, draft: preset({ length: 'short', airWindow: 'late' }) },
-  { id: 'scifi-fantasy', name: { en: 'Sci-fi & fantasy', sv: 'Sci-fi & fantasy' }, hue: 180, draft: preset({ genres: ['Science Fiction', 'Fantasy'] }) },
-  { id: 'family-animation', name: { en: 'Family & animation', sv: 'Familj & animerat' }, hue: 120, draft: preset({ genres: ['Family', 'Animation'] }) },
-  { id: 'drama', name: { en: 'Drama', sv: 'Drama' }, hue: 220, draft: preset({ genres: ['Drama'] }) },
+export const DEFAULT_CHANNELS: Array<{ id: DefaultChannelId; name: Record<'en' | 'sv' | 'de' | 'fr' | 'es', string>; hue: number; draft: Omit<ChannelDraft, 'name'> }> = [
+  { id: 'movies-247', name: { en: 'Movies around the clock', sv: 'Bio dygnet runt', de: 'Kino rund um die Uhr', fr: 'Cinéma 24 h/24', es: 'Cine las 24 horas' }, hue: 15, draft: preset({ kind: 'movie', length: 'feature', order: 'shuffle' }) },
+  { id: 'series-in-order', name: { en: 'Series in order', sv: 'Serier i följd', de: 'Serien der Reihe nach', fr: 'Séries dans l’ordre', es: 'Series en orden' }, hue: 200, draft: preset({ kind: 'tv', order: 'episodes' }) },
+  { id: 'action-thrills', name: { en: 'Action & thrills', sv: 'Action & spänning', de: 'Action & Spannung', fr: 'Action & frissons', es: 'Acción y suspense' }, hue: 0, draft: preset({ genres: ['Action', 'Thriller', 'Crime'] }) },
+  { id: 'comedy', name: { en: 'Comedy', sv: 'Komedi', de: 'Komödie', fr: 'Comédie', es: 'Comedia' }, hue: 48, draft: preset({ genres: ['Comedy'] }) },
+  { id: 'eighties-nineties', name: { en: '80s & 90s', sv: '80- & 90-tal', de: '80er & 90er', fr: 'Années 80 & 90', es: 'Años 80 y 90' }, hue: 300, draft: preset({ kind: 'movie', era: '80s90s' }) },
+  { id: 'evening-film', name: { en: 'Evening film', sv: 'Kvällsfilm', de: 'Abendfilm', fr: 'Film du soir', es: 'Película de la noche' }, hue: 25, draft: preset({ kind: 'movie', length: 'feature', airWindow: 'evenings' }) },
+  { id: 'after-midnight', name: { en: 'After midnight', sv: 'Efter midnatt', de: 'Nach Mitternacht', fr: 'Après minuit', es: 'Tras medianoche' }, hue: 250, draft: preset({ length: 'short', airWindow: 'late' }) },
+  { id: 'scifi-fantasy', name: { en: 'Sci-fi & fantasy', sv: 'Sci-fi & fantasy', de: 'Sci-Fi & Fantasy', fr: 'Science-fiction & fantastique', es: 'Ciencia ficción y fantasía' }, hue: 180, draft: preset({ genres: ['Science Fiction', 'Fantasy'] }) },
+  { id: 'family-animation', name: { en: 'Family & animation', sv: 'Familj & animerat', de: 'Familie & Animation', fr: 'Famille & animation', es: 'Familia y animación' }, hue: 120, draft: preset({ genres: ['Family', 'Animation'] }) },
+  { id: 'drama', name: { en: 'Drama', sv: 'Drama', de: 'Drama', fr: 'Drame', es: 'Drama' }, hue: 220, draft: preset({ genres: ['Drama'] }) },
 ]
 
 /** FNV-1a: samma seed för samma förval på alla enheter. */
@@ -170,12 +170,12 @@ export function sameRules(a: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'le
  * Standardkanalerna som saknas, numrerade efter de befintliga. Ett förval
  * hoppas över när en befintlig kanal har samma id eller samma regler.
  */
-export function buildDefaultChannels(existing: ChannelDef[], lang: 'en' | 'sv', now = Date.now()): ChannelDef[] {
+export function buildDefaultChannels(existing: ChannelDef[], lang: string, now = Date.now()): ChannelDef[] {
   const all = [...existing]
   const added: ChannelDef[] = []
   for (const d of DEFAULT_CHANNELS) {
     const id = `ch-default-${d.id}`
-    const draft: ChannelDraft = { ...d.draft, name: d.name[lang] }
+    const draft: ChannelDraft = { ...d.draft, name: (d.name as Record<string, string>)[lang] ?? d.name.en }
     if (all.some((c) => c.id === id || sameRules(c, draft))) continue
     const def: ChannelDef = { ...draft, id, number: nextChannelNumber(all), hue: d.hue, seed: presetSeed(d.id), createdAt: now }
     all.push(def)

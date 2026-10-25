@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
     useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-    version: '0.17.3',
+    version: '0.17.4',
   }
   // Notify late-mounting consumers (e.g. core home-row badges that rendered
   // before the plugin runtime finished loading). The wrapper hook in core
@@ -80,11 +80,14 @@ export function LiveTvBrowsePage(props: BrowsePageProps) {
 
 export const LiveTvPlugin: LumioPlugin = {
   id: 'com.lumio.live-tv',
-  name: { en: 'Live TV', sv: 'Live TV' },
-  version: '0.17.3',
+  name: { en: 'Live TV', sv: 'Live TV', de: 'Live-TV', fr: 'TV en direct', es: 'TV en directo' },
+  version: '0.17.4',
   description: {
     en: 'Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.',
     sv: 'Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio.',
+    de: 'Verwalte M3U-Quellen, durchsuche Live-TV-Sender und sieh das Programm (jetzt/als Nächstes) in Lumio.',
+    fr: 'Gérez vos sources M3U, parcourez les chaînes de TV en direct et consultez le guide (maintenant/ensuite) dans Lumio.',
+    es: 'Gestiona fuentes M3U, explora canales de TV en directo y consulta la guía (ahora/después) en Lumio.',
   },
   preinstalled: true,
 
@@ -101,12 +104,12 @@ export const LiveTvPlugin: LumioPlugin = {
     ctx.registerBootstrap({ id: 'live-tv-sport-couch', Mount: SportCouchMount })
     ctx.registerSettingsSection({
       id: 'm3u',
-      label: { en: 'Live TV', sv: 'Live TV' },
+      label: { en: 'Live TV', sv: 'Live TV', de: 'Live-TV', fr: 'TV en direct', es: 'TV en directo' },
       Section: LiveTvSettingsSection,
     })
     ctx.registerHomeOverride({
       id: 'live-tv-home',
-      label: { en: 'Live TV', sv: 'Live TV' },
+      label: { en: 'Live TV', sv: 'Live TV', de: 'Live-TV', fr: 'TV en direct', es: 'TV en directo' },
       View: LiveTvHomeOverride,
     })
     // hideHero läses av appar från 0.1.57; typen saknas i äldre SDK, därför
@@ -114,7 +117,7 @@ export const LiveTvPlugin: LumioPlugin = {
     // uppdateras direkt (funktionen finns bara i nyare appar — valfri).
     ctx.registerBrowsePage({
       id: LIVE_TV_BROWSE_PAGE_ID,
-      label: { en: 'Live TV', sv: 'Live TV' },
+      label: { en: 'Live TV', sv: 'Live TV', de: 'Live-TV', fr: 'TV en direct', es: 'TV en directo' },
       Page: LiveTvBrowsePage,
       hideHero: () => getLiveTvHideHero(),
       // Värdens scenlåda runt sidan (app 0.1.597). Äldre appar känner inte
@@ -132,18 +135,18 @@ export const LiveTvPlugin: LumioPlugin = {
     */
     ctx.registerBrowsePage({
       id: SPORT_PAGE_ID,
-      label: { en: 'Sport', sv: 'Sport' },
+      label: { en: 'Sport', sv: 'Sport', de: 'Sport', fr: 'Sport', es: 'Deportes' },
       Page: LiveTvSportPage,
       hideHero: true,
       tvSceneBox: true,
     } as Parameters<typeof ctx.registerBrowsePage>[0])
     const registerMenuItem = (ctx as unknown as {
-      registerMainMenuItem?: (item: { id: string; label: { en: string; sv: string }; target: { pageId: string }; defaultEnabled?: boolean }) => void
+      registerMainMenuItem?: (item: { id: string; label: { en: string; sv: string; de?: string; fr?: string; es?: string }; target: { pageId: string }; defaultEnabled?: boolean }) => void
     }).registerMainMenuItem
     if (typeof registerMenuItem === 'function') {
       registerMenuItem.call(ctx, {
         id: SPORT_PAGE_ID,
-        label: { en: 'Sport', sv: 'Sport' },
+        label: { en: 'Sport', sv: 'Sport', de: 'Sport', fr: 'Sport', es: 'Deportes' },
         target: { pageId: SPORT_PAGE_ID },
         defaultEnabled: false,
       })
@@ -190,7 +193,7 @@ export const LiveTvPlugin: LumioPlugin = {
     const registerStreams = (ctx as unknown as {
       registerMediaStreamCatalogProvider?: (provider: {
         id: string
-        label: { en: string; sv: string }
+        label: { en: string; sv: string; de?: string; fr?: string; es?: string }
         pluginId?: string
         getStreams: (query: {
           mediaType: 'movie' | 'tv'
@@ -203,7 +206,7 @@ export const LiveTvPlugin: LumioPlugin = {
     if (typeof registerStreams === 'function') {
       registerStreams({
         id: 'live-tv-vod',
-        label: { en: 'Playlist library', sv: 'Spellistans bibliotek' },
+        label: { en: 'Playlist library', sv: 'Spellistans bibliotek', de: 'Playlist-Bibliothek', fr: 'Bibliothèque de la playlist', es: 'Biblioteca de la lista' },
         pluginId: 'com.lumio.live-tv',
         getStreams: (query) => getVodStreams(query),
       })

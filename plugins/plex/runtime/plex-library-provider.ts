@@ -157,7 +157,7 @@ async function scan(
 
 export const plexLibraryProvider: LibraryProvider = {
   id: PLEX_LIBRARY_PROVIDER_ID,
-  label: { en: 'Plex', sv: 'Plex' },
+  label: { en: 'Plex', sv: 'Plex', de: 'Plex', fr: 'Plex', es: 'Plex' },
   pluginId: 'com.lumio.plex',
   // Kopplat (samma villkor som indexpanelen): värden bygger första indexet
   // själv i appar som stöder det; äldre appar läser inte metoden.

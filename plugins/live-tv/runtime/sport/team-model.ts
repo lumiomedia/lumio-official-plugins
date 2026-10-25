@@ -1,4 +1,5 @@
 // runtime/sport/team-model.ts
+import { textLang } from '../lang'
 import { foldTeamKey } from './merge'
 import { positionGroup, POSITION_ORDER, type PositionGroup } from './match-info-model'
 import { teamKeysMatch, type SportFollow } from './sport-store'
@@ -211,11 +212,17 @@ export function teamTargetFromRow(sport: SportKind, row: StandingRow, league: Le
   return { sport, name: row.team.name, key: foldTeamKey(row.team.name), crest: row.team.crest, ids: row.team.id ? { [league.provider]: row.team.id } : {}, league }
 }
 
-/** "3:a" / "3rd" — svensk ordning: 1:a och 2:a (utom 11, 12), annars :e. */
+/** "3:a" / "3rd" / "3." / "3e" / "3.º" — svensk ordning: 1:a och 2:a (utom 11, 12), annars :e. */
 export function ordinal(n: number, lang: string): string {
   const last = n % 10
   const teen = n % 100 >= 11 && n % 100 <= 13
-  if (lang === 'sv') return `${n}:${!teen && (last === 1 || last === 2) ? 'a' : 'e'}`
+  switch (textLang(lang)) {
+    case 'sv': return `${n}:${!teen && (last === 1 || last === 2) ? 'a' : 'e'}`
+    case 'de': return `${n}.`
+    case 'fr': return n === 1 ? '1er' : `${n}e`
+    case 'es': return `${n}.º`
+    default: break
+  }
   return `${n}${teen ? 'th' : last === 1 ? 'st' : last === 2 ? 'nd' : last === 3 ? 'rd' : 'th'}`
 }
 

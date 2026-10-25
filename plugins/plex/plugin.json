@@ -3,13 +3,19 @@
   "slug": "plex",
   "name": {
     "en": "Plex",
-    "sv": "Plex"
+    "sv": "Plex",
+    "de": "Plex",
+    "fr": "Plex",
+    "es": "Plex"
   },
   "version": "1.0.37",
   "minAppVersion": "0.1.630",
   "description": {
     "en": "Browse and play media from your Plex Media Server.",
-    "sv": "Bläddra i och spela upp media från din Plex Media Server."
+    "sv": "Bläddra i och spela upp media från din Plex Media Server.",
+    "de": "Durchsuche und spiele Medien von deinem Plex Media Server ab.",
+    "fr": "Parcourez et lisez les médias de votre Plex Media Server.",
+    "es": "Explora y reproduce contenido de tu Plex Media Server."
   },
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,

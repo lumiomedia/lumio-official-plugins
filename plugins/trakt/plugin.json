@@ -3,12 +3,18 @@
   "slug": "trakt",
   "name": {
     "en": "Trakt",
-    "sv": "Trakt"
+    "sv": "Trakt",
+    "de": "Trakt",
+    "fr": "Trakt",
+    "es": "Trakt"
   },
   "version": "0.2.7",
   "description": {
     "en": "Sync watched history, watchlists and collection data with Trakt.",
-    "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
+    "sv": "Synka visningshistorik, listor och samlingsdata med Trakt.",
+    "de": "Synchronisiere Verlauf, Merklisten und Sammlungsdaten mit Trakt.",
+    "fr": "Synchronisez l’historique, les listes et les données de collection avec Trakt.",
+    "es": "Sincroniza el historial, las listas y los datos de colección con Trakt."
   },
   "official": true,
   "bundled": true,

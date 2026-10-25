@@ -3,12 +3,18 @@
   "slug": "youtube",
   "name": {
     "en": "YouTube",
-    "sv": "YouTube"
+    "sv": "YouTube",
+    "de": "YouTube",
+    "fr": "YouTube",
+    "es": "YouTube"
   },
   "version": "1.0.7",
   "description": {
     "en": "Browse subscriptions, watch later, playlists and channels from YouTube.",
-    "sv": "Bläddra bland prenumerationer, titta senare, spellistor och kanaler från YouTube."
+    "sv": "Bläddra bland prenumerationer, titta senare, spellistor och kanaler från YouTube.",
+    "de": "Stöbere in Abos, „Später ansehen“, Playlists und Kanälen von YouTube.",
+    "fr": "Parcourez vos abonnements, « À regarder plus tard », playlists et chaînes YouTube.",
+    "es": "Explora suscripciones, «Ver más tarde», listas de reproducción y canales de YouTube."
   },
   "runtimeBundlePath": "dist/runtime.js",
   "official": true,

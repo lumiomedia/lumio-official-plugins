@@ -12,11 +12,14 @@ import { EmbyFallbackPage } from './emby-fallback-page'
  */
 export const EmbyPlugin: LumioPlugin = {
   id: 'com.lumio.emby',
-  name: { en: 'Emby', sv: 'Emby' },
+  name: { en: 'Emby', sv: 'Emby', de: 'Emby', fr: 'Emby', es: 'Emby' },
   version: '0.1.0',
   description: {
     en: 'Index your Emby server as a library: home rows, search, details and playback straight from what you own.',
     sv: 'Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger.',
+    de: 'Indexiere deinen Emby-Server als Bibliothek: Startseite, Suche, Detailseite und Wiedergabe direkt aus deinen eigenen Inhalten.',
+    fr: 'Indexez votre serveur Emby comme bibliothèque : accueil, recherche, fiche détaillée et lecture directement depuis ce que vous possédez.',
+    es: 'Indexa tu servidor Emby como biblioteca: inicio, búsqueda, ficha de detalles y reproducción directa de lo que tienes.',
   },
   preinstalled: true,
 
@@ -24,12 +27,12 @@ export const EmbyPlugin: LumioPlugin = {
     ctx.registerLibraryProvider(embyLibraryProvider)
     ctx.registerSettingsSection({
       id: 'emby',
-      label: { en: 'Emby', sv: 'Emby' },
+      label: { en: 'Emby', sv: 'Emby', de: 'Emby', fr: 'Emby', es: 'Emby' },
       Section: EmbySection,
     })
     ctx.registerBrowsePage({
       id: 'emby-setup',
-      label: { en: 'Emby', sv: 'Emby' },
+      label: { en: 'Emby', sv: 'Emby', de: 'Emby', fr: 'Emby', es: 'Emby' },
       Page: EmbyFallbackPage,
     })
     // Menyvalet är på som standard, precis som Plex och Jellyfin: fliken
@@ -38,7 +41,7 @@ export const EmbyPlugin: LumioPlugin = {
     // aktiverad server syntes då aldrig i menyn.)
     ctx.registerMainMenuItem({
       id: 'emby',
-      label: { en: 'Emby', sv: 'Emby' },
+      label: { en: 'Emby', sv: 'Emby', de: 'Emby', fr: 'Emby', es: 'Emby' },
       defaultEnabled: true,
       /* Bara med en ANSLUTEN server. Registret är statiskt per aktivering, så
          utan det låg posten kvar efter frånkoppling och ledde bara till

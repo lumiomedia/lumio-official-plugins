@@ -12,11 +12,14 @@ import { JellyfinFallbackPage } from './jellyfin-fallback-page'
  */
 export const JellyfinPlugin: LumioPlugin = {
   id: 'com.lumio.jellyfin',
-  name: { en: 'Jellyfin', sv: 'Jellyfin' },
+  name: { en: 'Jellyfin', sv: 'Jellyfin', de: 'Jellyfin', fr: 'Jellyfin', es: 'Jellyfin' },
   version: '0.1.0',
   description: {
     en: 'Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.',
     sv: 'Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger.',
+    de: 'Indexiere deinen Jellyfin-Server als Bibliothek: Startseite, Suche, Detailseite und Wiedergabe direkt aus deinen eigenen Inhalten.',
+    fr: 'Indexez votre serveur Jellyfin comme bibliothèque : accueil, recherche, fiche détaillée et lecture directement depuis ce que vous possédez.',
+    es: 'Indexa tu servidor Jellyfin como biblioteca: inicio, búsqueda, ficha de detalles y reproducción directa de lo que tienes.',
   },
   preinstalled: true,
 
@@ -24,12 +27,12 @@ export const JellyfinPlugin: LumioPlugin = {
     ctx.registerLibraryProvider(jellyfinLibraryProvider)
     ctx.registerSettingsSection({
       id: 'jellyfin',
-      label: { en: 'Jellyfin', sv: 'Jellyfin' },
+      label: { en: 'Jellyfin', sv: 'Jellyfin', de: 'Jellyfin', fr: 'Jellyfin', es: 'Jellyfin' },
       Section: JellyfinSection,
     })
     ctx.registerBrowsePage({
       id: 'jellyfin-setup',
-      label: { en: 'Jellyfin', sv: 'Jellyfin' },
+      label: { en: 'Jellyfin', sv: 'Jellyfin', de: 'Jellyfin', fr: 'Jellyfin', es: 'Jellyfin' },
       Page: JellyfinFallbackPage,
     })
     // Menyvalet är på som standard, precis som Plex: fliken öppnar kärnans
@@ -38,7 +41,7 @@ export const JellyfinPlugin: LumioPlugin = {
     // förrän användaren hittade menyinställningen (Jerry 2026-09-06).
     ctx.registerMainMenuItem({
       id: 'jellyfin',
-      label: { en: 'Jellyfin', sv: 'Jellyfin' },
+      label: { en: 'Jellyfin', sv: 'Jellyfin', de: 'Jellyfin', fr: 'Jellyfin', es: 'Jellyfin' },
       defaultEnabled: true,
       /* Bara med en ANSLUTEN server. Registret är statiskt per aktivering, så
          posten låg kvar i menyn efter att servern kopplats bort och ledde då

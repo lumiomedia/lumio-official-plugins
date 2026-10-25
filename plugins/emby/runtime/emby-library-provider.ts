@@ -406,7 +406,7 @@ function playSessionFor(itemId: string, mediaSourceId: string): string {
 
 export const embyLibraryProvider: LibraryProvider = {
   id: EMBY_LIBRARY_PROVIDER_ID,
-  label: { en: 'Emby', sv: 'Emby' },
+  label: { en: 'Emby', sv: 'Emby', de: 'Emby', fr: 'Emby', es: 'Emby' },
   pluginId: 'com.lumio.emby',
   // Kopplat (samma villkor som inställningarna): värden bygger första
   // indexet själv i appar som stöder det; äldre appar läser inte metoden.
