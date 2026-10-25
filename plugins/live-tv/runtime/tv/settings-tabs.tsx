@@ -61,6 +61,9 @@ import { formatEpgShift, getEpgShiftMinutes, setEpgShiftMinutes, EPG_SHIFT_LIMIT
 
 /** Valen i Förskjut tablån: −12 h … +12 h i halvtimmar, 0 först i mitten. */
 const EPG_SHIFT_CHOICES: number[] = Array.from({ length: (2 * EPG_SHIFT_LIMIT_MIN) / EPG_SHIFT_STEP_MIN + 1 }, (_, i) => -EPG_SHIFT_LIMIT_MIN + i * EPG_SHIFT_STEP_MIN)
+import { PhoneAddPanel } from './phone-add-panel'
+import { phoneFormSupported, playlistFromPhone, type PhoneValues } from '../phone-form'
+import { useLang } from '@/lib/plugin-sdk'
 import { TV, Toggle, dp, station } from './tv-ui'
 import type { useTvText } from './tv-strings'
 import { MT, ellipsis, sectionLabel } from './mobile/mobile-tokens'
@@ -427,7 +430,10 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
   const askName = (list: LiveTvList) =>
     keyboard.ask(tt('renamePlaylist'), '', (value) => { if (value.trim()) renameLiveTvList(list.id, value) })
 
-  const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => {
+  const addUrl = () => keyboard.ask(tt('addM3u'), '', (value) => importM3uUrl(value), 'url')
+
+  /** En M3U-adress från fjärrens tangentbord eller från telefonen: samma väg. */
+  function importM3uUrl(value: string): void {
     const url = value.trim()
     if (!url) return
     const source = getLiveTvUrlsKey([url])
@@ -439,7 +445,28 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
       if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url])
       if (ok && !existedBefore) askName(list)
     })
-  }, 'url')
+  }
+
+  /**
+   * LÄGG TILL MED TELEFONEN (TV-läget, ny värd): telefonen fyller i M3U-adresser
+   * och/eller en Xtream-inloggning, och TV:n kör samma import som tangentbordet.
+   * En äldre app saknar värdvägen, och då visas inte raden.
+   */
+  const { lang } = useLang()
+  const [phoneForm, setPhoneForm] = useState(false)
+  const [phoneSupported, setPhoneSupported] = useState(false)
+  useEffect(() => {
+    if (phone) return
+    let live = true
+    void phoneFormSupported().then((ok) => { if (live) setPhoneSupported(ok) })
+    return () => { live = false }
+  }, [phone])
+  function onPhoneValues(values: PhoneValues): void {
+    const { urls, xtream } = playlistFromPhone(values)
+    if (urls.length === 0 && !xtream) { toast(tt('phoneFormNothing')); return }
+    for (const url of urls) importM3uUrl(url)
+    if (xtream) void connectXtream(xtream.server, xtream.username, xtream.password, null)
+  }
 
   /** Server → användarnamn → lösenord, ett tangentbord i taget. */
   const askXtream = (prefillServer: string, reuseLoginId: string | null) => keyboard.ask(tt('xtreamServer'), prefillServer, (serverValue) => {
@@ -632,6 +659,7 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
           phone={phone}
         />
       ))}
+      {!phone && phoneSupported ? <Row phone={phone} testId="add-from-phone" label={<span style={{ display: 'flex', flexDirection: 'column', gap: dp(4) }}><span>{tt('addFromPhone')}</span><span style={{ fontSize: dp(16), color: TV.muted, fontWeight: 400 }}>{tt('addFromPhoneHint')}</span></span>} right={plus} onOk={() => setPhoneForm(true)} /> : null}
       {keyboard.available ? <Row phone={phone} label={tt('addM3u')} right={plus} onOk={addUrl} /> : null}
       {keyboard.available ? <Row phone={phone} label={tt('addXtream')} right={plus} onOk={() => askXtream('', null)} /> : null}
       {keyboard.available ? <Row phone={phone} testId="create-list" label={tt('createList')} right={plus} onOk={createList} /> : null}
@@ -650,6 +678,7 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
         const target = lists.find((entry) => entry.id === curation.listId)
         return target ? <TvCurationPicker nav={nav} list={target} mode={curation.mode} keyboard={keyboard} onClose={() => setCuration(null)} /> : null
       })() : null}
+      {phoneForm ? <PhoneAddPanel nav={nav} tt={tt} lang={lang === 'sv' ? 'sv' : 'en'} onValues={onPhoneValues} onClose={() => setPhoneForm(false)} /> : null}
       {keyboard.node}
     </section>
   )

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add a playlist with your phone: on the TV, Playlists → Add with your phone shows a QR code. Scan it on a phone on the same network and type the M3U address or the Xtream server, username and password there; the TV adds the playlist. No more typing a password with the remote. Requires Lumio 0.1.637; older apps keep the remote keyboard.
+
 ## 0.17.9
 
 - How to: a new tab in Live TV settings explains what you can do and where — favourites and their order, your own lists, tidying categories, the guide time shift, Multiview and Sport.

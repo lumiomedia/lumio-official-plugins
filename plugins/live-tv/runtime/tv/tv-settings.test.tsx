@@ -6,6 +6,7 @@ import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, getXtreamLog
 import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
 
+import { __resetPhoneFormForTests } from '../phone-form'
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 // completeLogos gör ett riktigt nätverksanrop i produktionskoden — testerna
 // ersätter den med en spion, samma mönster som skrivbordets
@@ -44,6 +45,7 @@ beforeEach(() => {
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex()
+  __resetPhoneFormForTests()
 })
 
 /**
@@ -351,6 +353,42 @@ describe('TvSettingsView', () => {
     expect(await screen.findByTestId('help-tab')).toBeInTheDocument()
     expect(screen.getByTestId('help-favourites')).toHaveTextContent('Move up')
     expect(screen.getByTestId('help-multiview')).toHaveTextContent('Full screen')
+  })
+
+  it('Lägg till med telefonen: QR till telefonsidan, och telefonens M3U-adress importeras', async () => {
+    const sources = stubImportCapture()
+    const base = globalThis.fetch
+    const json = (body: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => body } as unknown as Response)
+    const specs: unknown[] = []
+    vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' ? input : String(input), 'http://localhost')
+      if (url.pathname === '/api/phone-form') {
+        if (init?.method === 'POST') { specs.push(JSON.parse(String(init.body))); return json({ code: 'abc', url: 'http://192.168.1.2:3012/form?c=abc' }) }
+        if (init?.method === 'DELETE') return json({ ok: true })
+        return json(url.searchParams.get('code') === 'probe' ? { state: 'expired' } : { state: 'received', values: { m3u: 'http://iptv.test/list.m3u\nnot a url', server: '', username: '', password: '' } })
+      }
+      return base(input as RequestInfo, init)
+    }) as typeof fetch)
+    mount('playlists')
+    fireEvent.click(await screen.findByTestId('add-from-phone'))
+    const qr = await screen.findByTestId('phone-add-qr')
+    await waitFor(() => expect(qr.innerHTML).toContain('http://192.168.1.2:3012/form?c=abc'))
+    expect(specs[0]).toMatchObject({ lang: 'en', fields: [{ id: 'm3u' }, { id: 'server' }, { id: 'username' }, { id: 'password', kind: 'password' }] })
+    await waitFor(() => expect(sources).toContain('http://iptv.test/list.m3u'), { timeout: 4000 })
+    expect(screen.queryByTestId('phone-add')).toBeNull()
+  })
+
+  it('Lägg till med telefonen syns inte när appen saknar vägen', async () => {
+    const base = globalThis.fetch
+    vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' ? input : String(input), 'http://localhost')
+      if (url.pathname === '/api/phone-form') return Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as unknown as Response)
+      return base(input as RequestInfo, init)
+    }) as typeof fetch)
+    mount('playlists')
+    expect(await screen.findByText('Add Xtream login')).toBeInTheDocument()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByTestId('add-from-phone')).toBeNull()
   })
 
   it('EPG-källor: listar URL:er', async () => {
