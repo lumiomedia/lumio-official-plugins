@@ -8,7 +8,8 @@
     "fr": "Trakt",
     "es": "Trakt"
   },
-  "version": "0.2.7",
+  "version": "0.2.8",
+  "minAppVersion": "0.1.637",
   "description": {
     "en": "Sync watched history, watchlists and collection data with Trakt.",
     "sv": "Synka visningshistorik, listor och samlingsdata med Trakt.",

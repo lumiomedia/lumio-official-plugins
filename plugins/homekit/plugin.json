@@ -8,7 +8,8 @@
     "fr": "HomeKit",
     "es": "HomeKit"
   },
-  "version": "0.2.7",
+  "version": "0.2.8",
+  "minAppVersion": "0.1.637",
   "description": {
     "en": "Connect Lumio playback events to HomeKit scenes and automations.",
     "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer.",

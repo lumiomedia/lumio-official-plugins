@@ -13,7 +13,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.37",
+      "version": "1.0.38",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -26,7 +26,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/plex",
-      "minAppVersion": "0.1.630"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.jellyfin",
@@ -36,7 +36,7 @@
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.5",
+      "version": "0.1.6",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -49,7 +49,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/jellyfin",
-      "minAppVersion": "0.1.603"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.emby",
@@ -59,7 +59,7 @@
         "en": "Emby",
         "sv": "Emby"
       },
-      "version": "0.1.5",
+      "version": "0.1.6",
       "description": {
         "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -72,7 +72,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/emby",
-      "minAppVersion": "0.1.603"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.live-tv",
@@ -82,8 +82,8 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.17.7",
-      "minAppVersion": "0.1.630",
+      "version": "0.17.8",
+      "minAppVersion": "0.1.637",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
         "sv": "Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio."
@@ -105,7 +105,7 @@
         "en": "HomeKit",
         "sv": "HomeKit"
       },
-      "version": "0.2.7",
+      "version": "0.2.8",
       "description": {
         "en": "Connect Lumio playback events to HomeKit scenes and automations.",
         "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer."
@@ -117,7 +117,8 @@
       "official": true,
       "bundled": true,
       "removable": true,
-      "repoPath": "plugins/homekit"
+      "repoPath": "plugins/homekit",
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.trakt",
@@ -127,7 +128,7 @@
         "en": "Trakt",
         "sv": "Trakt"
       },
-      "version": "0.2.7",
+      "version": "0.2.8",
       "description": {
         "en": "Sync watched history, watchlists and collection data with Trakt.",
         "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
@@ -139,7 +140,8 @@
       "official": true,
       "bundled": true,
       "removable": true,
-      "repoPath": "plugins/trakt"
+      "repoPath": "plugins/trakt",
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.mdblist",
@@ -148,7 +150,7 @@
         "en": "MDBList",
         "sv": "MDBList"
       },
-      "version": "0.1.2",
+      "version": "0.1.3",
       "description": {
         "en": "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
         "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
@@ -161,7 +163,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/mdblist",
-      "minAppVersion": "0.1.622"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.simkl",
@@ -170,7 +172,7 @@
         "en": "SIMKL",
         "sv": "SIMKL"
       },
-      "version": "0.1.2",
+      "version": "0.1.3",
       "description": {
         "en": "Scrobble playback, sync watched titles and your watchlist with SIMKL, and show SIMKL lists as rows.",
         "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist med SIMKL, och visa SIMKL-listor som rader."
@@ -183,7 +185,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/simkl",
-      "minAppVersion": "0.1.622"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.twitch",
@@ -193,7 +195,7 @@
         "en": "Twitch",
         "sv": "Twitch"
       },
-      "version": "1.4.3",
+      "version": "1.4.4",
       "description": {
         "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
         "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."
@@ -210,7 +212,7 @@
         "supportsPersonalOverride": false
       },
       "repoPath": "plugins/twitch",
-      "minAppVersion": "0.1.603"
+      "minAppVersion": "0.1.637"
     },
     {
       "id": "com.lumio.channels",
@@ -220,7 +222,7 @@
         "en": "LumioTV",
         "sv": "LumioTV"
       },
-      "version": "0.1.39",
+      "version": "0.1.41",
       "description": {
         "en": "Personal linear TV channels built from your library, watchlist and debrid cloud.",
         "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln."
@@ -233,7 +235,7 @@
       "bundled": true,
       "removable": true,
       "repoPath": "plugins/channels",
-      "minAppVersion": "0.1.630"
+      "minAppVersion": "0.1.637"
     }
   ]
 }

@@ -2,7 +2,7 @@
   "id": "com.lumio.simkl",
   "slug": "simkl",
   "name": { "en": "SIMKL", "sv": "SIMKL" },
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": {
     "en": "Scrobble playback, sync watched titles and your watchlist with SIMKL, and show SIMKL lists as rows.",
     "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist med SIMKL, och visa SIMKL-listor som rader."
@@ -12,5 +12,5 @@
   "removable": true,
   "runtimeBundlePath": "dist/runtime.js",
   "sdkCapabilities": ["settings-section"],
-  "minAppVersion": "0.1.622"
+  "minAppVersion": "0.1.637"
 }

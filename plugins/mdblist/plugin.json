@@ -5,7 +5,7 @@
     "en": "MDBList",
     "sv": "MDBList"
   },
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": {
     "en": "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
     "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
@@ -17,5 +17,5 @@
   "sdkCapabilities": [
     "settings-section"
   ],
-  "minAppVersion": "0.1.622"
+  "minAppVersion": "0.1.637"
 }

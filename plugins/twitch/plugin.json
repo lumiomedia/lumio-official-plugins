@@ -8,8 +8,8 @@
     "fr": "Twitch",
     "es": "Twitch"
   },
-  "version": "1.4.3",
-  "minAppVersion": "0.1.603",
+  "version": "1.4.4",
+  "minAppVersion": "0.1.637",
   "description": {
     "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
     "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch.",

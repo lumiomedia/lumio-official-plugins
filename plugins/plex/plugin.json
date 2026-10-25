@@ -8,8 +8,8 @@
     "fr": "Plex",
     "es": "Plex"
   },
-  "version": "1.0.37",
-  "minAppVersion": "0.1.630",
+  "version": "1.0.38",
+  "minAppVersion": "0.1.637",
   "description": {
     "en": "Browse and play media from your Plex Media Server.",
     "sv": "Bläddra i och spela upp media från din Plex Media Server.",
