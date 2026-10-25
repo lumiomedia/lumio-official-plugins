@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.5
+
+- Sport no longer freezes on TV boxes without a sport key. Free scores from ESPN are fetched only for the leagues in your guide and the ones you follow (otherwise the biggest leagues), yesterday and tomorrow only when you step to them, and the page redraws once per update instead of once per league.
+
 ## 0.17.4
 
 - Home no longer gets stuck on "Film & series are being prepared". The film and series library is built per playlist and tried again if a build was interrupted (app closed, TV box asleep, network error), a newly added playlist gets its own build, and choosing categories starts it right away. Home now says what it is waiting for: categories to choose, a playlist without films or series, the catalogue still downloading, or a retry.

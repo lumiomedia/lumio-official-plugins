@@ -121,3 +121,37 @@ describe('repriser som tablån inte märker', () => {
     expect(direct).toHaveBeenCalledTimes(8)
   })
 })
+
+describe('ESPN-dagar och omritning', () => {
+  const flag = globalThis as { __lumioNoKeylessSources?: boolean }
+  const NOW = Date.UTC(2026, 9, 22, 18, 10)
+  beforeEach(() => { flag.__lumioNoKeylessSources = false; __resetEspnForTests(); vi.useFakeTimers(); vi.setSystemTime(NOW) })
+  afterEach(() => { flag.__lumioNoKeylessSources = true; vi.useRealTimers() })
+
+  it('bara ESPN: i går och i morgon hämtas först när en vy visar dagen', async () => {
+    const direct = vi.fn(async () => ({ data: {}, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null }) as SportFetchResponse)
+    const router = new SportRouter({}, {}, { direct: direct as never, now: () => NOW, sleep: async () => {} })
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    await c.runPlan({ sports: ['hockey'], leagues: [] })
+    const dates = () => new Set(direct.mock.calls.map(([a]) => /dates=(\d+)/.exec((a as { req: { path: string } }).req.path)![1]))
+    // Dagens svenska dygn = östkustens 21:a och 22:a; i morgon (23:e) hämtas inte.
+    expect(dates().has('20261023')).toBe(false)
+    c.wantDay('2026-10-23')
+    await c.runPlan({ sports: ['hockey'], leagues: [] })
+    expect(dates().has('20261023')).toBe(true)
+  })
+
+  it('flera ändringar i samma omgång ger en signal till vyerna', async () => {
+    const router = new SportRouter({}, {}, { now: () => NOW })
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    const cb = vi.fn()
+    c.subscribe(cb)
+    const v0 = c.version
+    c.applyFixtures('football', '2026-10-22', [fx('A', 'B', NOW)], 'day', NOW)
+    c.applyFixtures('football', '2026-10-22', [fx('C', 'D', NOW)], 'day', NOW + 1)
+    expect(c.version).toBe(v0 + 2)
+    expect(cb).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+})

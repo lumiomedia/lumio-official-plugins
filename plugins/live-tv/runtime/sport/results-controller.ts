@@ -13,7 +13,7 @@ import { linkFixtures, type LinkMap } from './sport-link'
 import { fixtureMatchKey, foldTeamKey, mergeLinked, relevantMatches } from './merge'
 import { coverageFor, providerFor } from './providers'
 import { fillFrom, findSameMatch, keepFilled, lacksDetail } from './detail-fill'
-import { ESPN_SLUG_BY_LEAGUE, espnRecent } from './espn'
+import { ESPN_SLUG_BY_LEAGUE, espnRecent, setEspnFocus } from './espn'
 import { followState } from './sport-day-model'
 import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, sportsCompatible, teamKeysMatch, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
@@ -111,7 +111,26 @@ export class ResultsController {
   private mergedListeners = new Set<() => void>()
 
   subscribe(cb: () => void): () => void { this.listeners.add(cb); return () => { this.listeners.delete(cb) } }
-  private emit(): void { this.version += 1; for (const cb of [...this.listeners]) cb() }
+  /**
+   * Versionen höjs direkt; lyssnarna (vyernas omritning) får EN signal per
+   * omgång. Dygnsplanen lägger in flera sporter och dagar i följd, och varje
+   * signal ritade om hela sportsidan och länkade om mot tablån — på en TV-box
+   * frös vyn (feedback 2026-10-25).
+   */
+  private notifyQueued = false
+  private emit(): void {
+    this.version += 1
+    if (this.notifyQueued) return
+    this.notifyQueued = true
+    queueMicrotask(() => {
+      this.notifyQueued = false
+      for (const cb of [...this.listeners]) cb()
+    })
+  }
+
+  /** Dagarna någon vy visar (dagstegaren). Bara de, och i dag, hämtas från källor utan kvot. */
+  private wantedDays = new Set<string>()
+  wantDay(day: string): void { this.wantedDays.add(day) }
 
   fixtures(sport: SportKind, date: string): Fixture[] {
     return [...(this.days.get(this.dayKey(sport, date))?.values() ?? [])].sort((a, b) => a.kickoff - b.kickoff)
@@ -306,6 +325,8 @@ export class ResultsController {
 
   private async runPlanned(call: PlannedCall, today: string, dayEndMs: (date: string) => number): Promise<void> {
     if (call.kind === 'day') {
+      // ESPN (ingen kvot, men ~1 MB per fotbollsdag): i går och i morgon bara när någon bläddrar dit.
+      if (call.date !== today && !this.wantedDays.has(call.date) && this.router.candidates(call.sport).every((b) => b.provider.keyless)) return
       const res = await this.router.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) })
       if (res.data) this.applyFixtures(call.sport, call.date, res.data, 'day', res.fetchedAt ?? 0)
       if (res.ok && call.date !== today) this.done.add(planKey(call))
@@ -587,15 +608,34 @@ export function useSportResults(opts: { day: string | null; epg: SportMatch[] })
     return [...new Set([...opts.epg.map((m) => m.kind), ...follows.map((f) => f.sport)])].sort()
   }, [opts.epg])
 
+  // ESPN:s ligor: de som syns i tablån och de som följs (espn.ts setEspnFocus). Ändras
+  // fokus hämtas dagen om (nyckeln ingår i planens beroenden nedan).
+  const espnFocus = useMemo(() => {
+    const out: Partial<Record<SportKind, string[]>> = {}
+    for (const m of opts.epg) {
+      const t = ESPN_SLUG_BY_LEAGUE[m.leagueKey]
+      if (t) (out[t.sport] ??= []).push(t.slug)
+    }
+    for (const f of follows) {
+      const m = /^fx:espn:(.+)$/.exec(f.key)
+      if (f.kind === 'league' && m) (out[f.sport] ??= []).push(m[1])
+    }
+    return out
+  }, [opts.epg, follows])
+  const espnFocusKey = JSON.stringify(Object.entries(espnFocus).map(([k, v]) => [k, [...new Set(v)].sort()]).sort())
+  useEffect(() => { setEspnFocus(espnFocus) }, [espnFocusKey])
+
   useEffect(() => {
     if (!controller || !opts.day) return
+    controller.wantDay(opts.day)
     // Tabeller i dygnsplanen: ligor för följda lag och ligor bland redan kopplade matcher.
     const follows = getFollows()
     const leagues = controller.merged()
       .filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows).any)
       .map((m) => ({ sport: m.kind, leagueId: m.fixture!.leagueId!, season: m.fixture!.season!, provider: m.fixture!.provider as ProviderId }))
+    setEspnFocus(espnFocus)
     void controller.runPlan({ sports, leagues })
-  }, [controller, opts.day, sports.join(',')])
+  }, [controller, opts.day, sports.join(','), espnFocusKey])
 
   const version = controller?.version ?? 0
   const fixtures = useMemo(() => (controller && opts.day ? controller.allFixtures(opts.day) : []), [controller, opts.day, version])

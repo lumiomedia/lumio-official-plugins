@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { __resetEspnForTests, espn, espnDatesFor, espnEventType, espnMinute, espnScoreboard, ESPN_LEAGUES, localDay } from './espn'
+import { __resetEspnForTests, espn, espnDatesFor, espnEventType, espnLeaguesFor, espnMinute, espnScoreboard, ESPN_LEAGUES, localDay, setEspnFocus } from './espn'
 import type { ProviderRequest } from './provider'
 import ucl from './__fixtures__/espn/ucl-scoreboard.json'
 import nba from './__fixtures__/espn/nba-scoreboard.json'
@@ -53,7 +53,9 @@ describe('ESPN: dagen och livepollen', () => {
   it('ett anrop per liga och östkustdatum, och bara matcher inom det lokala dygnet', () => {
     const call = espn.day('football', '2026-10-21', OPTS)
     expect(espnDatesFor({ start: DAY_END_21 - 86_400_000, end: DAY_END_21 })).toEqual(['20261020', '20261021'])
-    expect(call.requests).toHaveLength(ESPN_LEAGUES.football!.length * 2)
+    // Utan fokus: de största ligorna, inte hela katalogen.
+    expect(call.requests).toHaveLength(espnLeaguesFor('football').length * 2)
+    expect(espnLeaguesFor('football').length).toBeLessThan(ESPN_LEAGUES.football!.length)
     expect(call.requests[0]).toMatchObject({ path: 'site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261020&limit=300', ttlS: 900 })
     expect(call.requests[1].path).toContain('dates=20261021')
     // Samma svar för båda datumen: varje match en gång.
@@ -148,5 +150,18 @@ describe('ESPN: granskningens fall', () => {
     day.parse(day.requests.map((r) => (r.path.includes('/uefa.champions/') ? ucl : r.path.includes('/swe.1/') ? null : {})))
     const live = new Set(espn.live('football', { today: '2026-10-21', tz: 'Europe/Stockholm' }).requests.map((r) => r.path.split('/')[4]))
     expect([...live].sort()).toEqual(['swe.1', 'uefa.champions'])
+  })
+})
+
+describe('ESPN: ligorna i fokus', () => {
+  it('fokus styr dagen; okända ligor släpps; tomt fokus = de största', () => {
+    expect(setEspnFocus({ football: ['eng.1', 'swe.1', 'okand.liga'] })).toBe(true)
+    expect(espnLeaguesFor('football')).toEqual(['eng.1', 'swe.1'])
+    expect(setEspnFocus({ football: ['swe.1', 'eng.1'] })).toBe(false)
+    const call = espn.day('football', '2026-10-21', OPTS)
+    expect(new Set(call.requests.map((r) => r.path.split('/')[4]))).toEqual(new Set(['eng.1', 'swe.1']))
+    expect(setEspnFocus({})).toBe(true)
+    expect(espnLeaguesFor('football')).toContain('uefa.champions')
+    expect(espnLeaguesFor('hockey')).toEqual(['nhl'])
   })
 })

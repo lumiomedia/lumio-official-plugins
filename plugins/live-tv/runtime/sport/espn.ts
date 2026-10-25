@@ -153,7 +153,35 @@ export function espnScoreboard(sport: SportKind, slug: string, body: unknown): F
 
 /** Ligorna som hade matcher i dag, per sport (dagsanropet sätter, livepollen läser). */
 const leaguesToday = new Map<string, { date: string; slugs: string[] }>()
-export function __resetEspnForTests(): void { leaguesToday.clear() }
+
+/**
+ * LIGORNA I FOKUS. Hela katalogen (26 fotbollsligor × två datum = 52 anrop och
+ * ~1,3 MB JSON per dag) fick sportsidan att frysa på TV-boxar (feedback
+ * 2026-10-25). Dagen hämtas nu bara för ligorna som syns i tablån eller som
+ * användaren följer (`setEspnFocus`), och utan fokus de största (`LIVE_FALLBACK`).
+ */
+const focus = new Map<SportKind, readonly string[]>()
+
+/** Sätter fokus per sport; `true` när det ändrades (då ska dagen hämtas om). */
+export function setEspnFocus(next: Partial<Record<SportKind, readonly string[]>>): boolean {
+  let changed = false
+  for (const sport of Object.keys(ESPN_LEAGUES) as SportKind[]) {
+    const want = [...new Set(next[sport] ?? [])].filter((s) => covered(sport).includes(s)).sort()
+    const had = focus.get(sport) ?? []
+    if (want.join('|') !== had.join('|')) { changed = true; if (want.length) focus.set(sport, want); else focus.delete(sport) }
+  }
+  return changed
+}
+
+/** Ligorna dagen hämtas för: fokus, annars de största (hockey och basket har bara en eller två). */
+export function espnLeaguesFor(sport: SportKind): readonly string[] {
+  const all = covered(sport)
+  const f = focus.get(sport)
+  if (f?.length) return all.filter((s) => f.includes(s))
+  return all.length > 3 ? all.filter((s) => LIVE_FALLBACK.has(s)) : all
+}
+
+export function __resetEspnForTests(): void { leaguesToday.clear(); focus.clear() }
 
 interface Board { slug: string; date: string }
 const boards = (slugs: readonly string[], day: { start: number; end: number }): Board[] => slugs.flatMap((slug) => espnDatesFor(day).map((date) => ({ slug, date })))
@@ -274,7 +302,7 @@ export const espn: SportsProvider = {
   coverage: (sport) => (covered(sport).length > 0 ? 'full' : 'epg'),
   bucket: (sport) => sport,
   day(sport, date, opts: DayOpts): ProviderCall<Fixture[]> {
-    const slugs = covered(sport)
+    const slugs = espnLeaguesFor(sport)
     const window = { start: localDay(date, opts.tz).start, end: opts.dayEndMs }
     const list = boards(slugs, window)
     const past = date < opts.today
@@ -292,7 +320,7 @@ export const espn: SportsProvider = {
   live(sport, opts): ProviderCall<Fixture[]> {
     const known = leaguesToday.get(sport)
     // Utan dagens svar (en nyckelkälla gav dagen, eller det är strax efter midnatt): bara de största ligorna, inte hela katalogen.
-    const slugs = known && known.date === opts.today ? known.slugs : covered(sport).filter((s) => LIVE_FALLBACK.has(s) || covered(sport).length <= 3)
+    const slugs = known && known.date === opts.today ? known.slugs : espnLeaguesFor(sport)
     const window = localDay(opts.today, opts.tz)
     const list = boards(slugs, window)
     return {
