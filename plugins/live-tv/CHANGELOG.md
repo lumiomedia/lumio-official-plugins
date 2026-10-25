@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.6
+
+- Evening plan: a match that is only in the results (not on any of your channels) shows "No channel" instead of a checkbox that did nothing. Reminders still work for every match on a channel.
+
 ## 0.17.5
 
 - Sport no longer freezes on TV boxes without a sport key. Free scores from ESPN are fetched only for the leagues in your guide and the ones you follow (otherwise the biggest leagues), yesterday and tomorrow only when you step to them, and the page redraws once per update instead of once per league.

@@ -274,15 +274,20 @@ export function PhoneFeed({ ctx, matches, days, onAddTeam }: { ctx: SportCtx; ma
             const best = rankedSources(m, ctx.overrides)[0]
             return (
               <div key={m.id} data-testid="sport-phone-plan-row" data-on={on ? '1' : '0'} {...station(() => ctx.openMatch(m))} style={{ minHeight: 58, flexShrink: 0, borderRadius: 14, background: on ? 'rgba(244,132,95,0.12)' : P.card, border: `1px solid ${on ? 'rgba(244,132,95,0.55)' : P.line14}`, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', cursor: 'pointer', boxSizing: 'border-box' }}>
-                <div data-testid="sport-phone-plan-check" {...(best ? station(() => ctx.toggleRemind(m)) : {})} role="checkbox" aria-checked={on ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')}
-                  onClick={(e) => { e.stopPropagation(); if (best) ctx.toggleRemind(m) }}
-                  style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, boxSizing: 'border-box', display: 'grid', placeItems: 'center', background: on ? P.coral : 'transparent', border: `2px solid ${on ? P.coral : 'rgba(255,255,255,0.4)'}`, color: '#fff', opacity: best ? 1 : 0.4, cursor: best ? 'pointer' : 'default' }}>
-                  {on ? <PIcons.Check size={16} /> : null}
-                </div>
+                {best ? (
+                  <div data-testid="sport-phone-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={on ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')}
+                    onClick={(e) => { e.stopPropagation(); ctx.toggleRemind(m) }}
+                    style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, boxSizing: 'border-box', display: 'grid', placeItems: 'center', background: on ? P.coral : 'transparent', border: `2px solid ${on ? P.coral : 'rgba(255,255,255,0.4)'}`, color: '#fff', cursor: 'pointer' }}>
+                    {on ? <PIcons.Check size={16} /> : null}
+                  </div>
+                ) : (
+                  // Ingen kanal = ingen påminnelse att sätta: etiketten i stället för en ruta som inte gör något.
+                  <span data-testid="sport-phone-plan-no-channel" style={{ fontSize: 10, color: P.muted65, whiteSpace: 'nowrap', flexShrink: 0, padding: '3px 6px', borderRadius: 6, border: '1px dashed rgba(255,255,255,0.3)' }}>{ctx.tt('sportResultOnly')}</span>
+                )}
                 <span style={{ width: 44, flexShrink: 0, fontSize: 15, fontWeight: 700, color: P.coralLight }}>{formatClock(m.start, ctx.locale)}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-                  <div style={{ fontSize: 11, color: P.muted65, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name ?? ctx.tt('sportResultOnly')].join(' · ')}</div>
+                  <div style={{ fontSize: 11, color: P.muted65, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
                 </div>
                 {followState(m, ctx.follows).any ? <span style={{ color: P.coral, display: 'inline-flex' }}><MIcons.Heart size={14} filled /></span> : null}
                 {clash ? <span data-testid="sport-phone-plan-clash" title={ctx.tt('sportClash')} aria-label={ctx.tt('sportClash')} style={{ color: '#fbbf24', display: 'inline-flex' }}><PIcons.Warning /></span> : null}

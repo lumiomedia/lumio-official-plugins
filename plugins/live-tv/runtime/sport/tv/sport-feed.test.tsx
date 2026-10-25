@@ -54,6 +54,15 @@ describe('Flöde', () => {
     expect(within(evening).getAllByTestId('evening-clash')).toHaveLength(2)
     expect(within(screen.getByTestId('feed-finished')).getByText(/Örgryte - GAIS/)).toBeInTheDocument()
   })
+  it('Kvällsplan: en match utan kanal (bara resultat) visar "No channel" i stället för en bock som inte gör något', () => {
+    const noChannel = { ...c, id: 'nc', home: 'Barcelona', away: 'Real Madrid', homeKey: 'barcelona', awayKey: 'real madrid', sources: [] }
+    const ctx = fakeCtx({ now })
+    render(<SportFeed ctx={ctx} matches={[...matches, noChannel]} days={[fxDay('d0', [...matches, noChannel]), null]} />)
+    const row = screen.getAllByTestId('feed-plan-row').find((r) => r.textContent?.includes('Barcelona - Real Madrid'))!
+    expect(within(row).queryByTestId('feed-plan-check')).toBeNull()
+    expect(within(row).getByTestId('feed-plan-no-channel')).toHaveTextContent('No channel')
+    expect(screen.getAllByTestId('feed-plan-check')).toHaveLength(3)
+  })
   it('Din kväll börjar i höjd med kvällsplanens första rad — rubriken står ovanför båda kolumnerna', () => {
     const ctx = fakeCtx({ now })
     render(<SportFeed ctx={ctx} matches={matches} days={[fxDay('d0', matches), null]} />)

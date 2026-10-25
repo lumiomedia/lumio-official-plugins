@@ -92,7 +92,12 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
                 const best = m.sources[0]
                 return (
                   <div key={m.id} data-testid="feed-plan-row" data-focus-row="" style={{ ...sportCardStyle, display: 'flex', alignItems: 'center', gap: u(16), padding: `${u(12)}px ${u(16)}px` }}>
-                    <div data-testid="feed-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={reminded ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')} style={{ width: u(34), height: u(34), minHeight: u(34), borderRadius: u(8), border: `2px solid ${reminded ? TV.acc : TV.lineStrong}`, background: reminded ? TV.acc : 'transparent', color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: u(20), cursor: 'pointer', flexShrink: 0 }}>{reminded ? '✓' : ''}</div>
+                    {/* Påminnelsen hör till en kanal: en match bara ur resultatkällan (ESPN, inte i tablån) har ingen, och bocken gjorde då ingenting. */}
+                    {best ? (
+                      <div data-testid="feed-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={reminded ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')} style={{ width: u(34), height: u(34), minHeight: u(34), borderRadius: u(8), border: `2px solid ${reminded ? TV.acc : TV.lineStrong}`, background: reminded ? TV.acc : 'transparent', color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: u(20), cursor: 'pointer', flexShrink: 0 }}>{reminded ? '✓' : ''}</div>
+                    ) : (
+                      <span data-testid="feed-plan-no-channel" style={{ fontSize: u(14), color: TV.muted, whiteSpace: 'nowrap', flexShrink: 0, padding: `${u(6)}px ${u(10)}px`, borderRadius: u(8), border: `1px dashed ${TV.lineStrong}` }}>{ctx.tt('sportResultOnly')}</span>
+                    )}
                     <span style={{ fontSize: u(22), fontWeight: 700, width: u(84), flexShrink: 0 }}>{formatClock(m.start, ctx.locale)}</span>
                     <div {...station(() => ctx.openMatch(m), undefined, focusAttr('none'))} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                       <div style={{ fontSize: u(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
