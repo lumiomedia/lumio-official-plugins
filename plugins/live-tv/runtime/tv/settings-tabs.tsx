@@ -55,6 +55,11 @@ import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { TvCurationPicker } from './tv-curation-picker'
 import { useTextPrompt } from './tv-text-entry'
+import { PickerPanel } from './picker-panel'
+import { formatEpgShift, getEpgShiftMinutes, setEpgShiftMinutes, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN } from '../epg-shift'
+
+/** Valen i Förskjut tablån: −12 h … +12 h i halvtimmar, 0 först i mitten. */
+const EPG_SHIFT_CHOICES: number[] = Array.from({ length: (2 * EPG_SHIFT_LIMIT_MIN) / EPG_SHIFT_STEP_MIN + 1 }, (_, i) => -EPG_SHIFT_LIMIT_MIN + i * EPG_SHIFT_STEP_MIN)
 import { TV, Toggle, dp, station } from './tv-ui'
 import type { useTvText } from './tv-strings'
 import { MT, ellipsis, sectionLabel } from './mobile/mobile-tokens'
@@ -979,6 +984,9 @@ function VodLibrarySection({ tt, phone, nav }: { tt: TT; phone: boolean; nav?: T
 }
 
 export function EpgTab({ lists, nav, tt, locale, phone = false }: { lists: LiveTvList[]; nav: TvNav; tt: TT; locale: string; phone?: boolean }) {
+  // Förskjut tablån (epg-shift.ts): hel- och halvtimmar, ±12 h.
+  const [shift, setShift] = useState(getEpgShiftMinutes)
+  const [shiftOpen, setShiftOpen] = useState(false)
   const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
   const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus()
   /* SPELLISTANS EGEN ADRESS VISAS OCKSÅ (Jerry 2026-09-22: "klickade på epg
@@ -1022,8 +1030,29 @@ export function EpgTab({ lists, nav, tt, locale, phone = false }: { lists: LiveT
           )
         })}
         {keyboard.available && lists[0] ? <Row phone={phone} label={tt('addEpgUrl')} right={phone ? <PhoneCaret /> : '+'} onOk={() => keyboard.ask(tt('addEpgUrl'), '', (value) => { const url = value.trim(); if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] }) }, 'url')} /> : null}
+        <Row phone={phone} testId="epg-shift" label={tt('epgShift')} right={<>{shift === 0 ? tt('epgShiftNone') : formatEpgShift(shift)}{phone ? <PhoneCaret /> : null}</>} onOk={() => setShiftOpen(true)} />
         {keyboard.node}
       </section>
+      {shiftOpen ? (
+        <PickerPanel
+          nav={nav}
+          title={tt('epgShift')}
+          testId="epg-shift-picker"
+          chips={<div style={{ fontSize: phone ? 14 : dp(17), color: TV.muted, lineHeight: 1.4 }}>{tt('epgShiftHint')}</div>}
+          onClose={() => setShiftOpen(false)}
+          rows={(close) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(6) }}>
+              {EPG_SHIFT_CHOICES.map((min) => (
+                <div key={min} data-testid={`epg-shift-${min}`} {...station(() => { setEpgShiftMinutes(min); setShift(min); close() })} {...(min === shift ? { 'data-init': '' } : {})}
+                  style={{ minHeight: phone ? 48 : dp(56), padding: phone ? '0 14px' : `0 ${dp(18)}px`, borderRadius: phone ? 0 : dp(10), background: min === shift ? TV.s06 : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: phone ? 15 : dp(19), cursor: 'pointer' }}>
+                  <span>{min === 0 ? tt('epgShiftNone') : formatEpgShift(min)}</span>
+                  {min === shift ? <span style={{ color: TV.acc }}>✓</span> : null}
+                </div>
+              ))}
+            </div>
+          )}
+        />
+      ) : null}
       {statusUrls.length > 0 ? (
         <section style={{ display: 'flex', flexDirection: 'column', gap: sectionGap }}>
           <div style={phone ? { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingRight: 14 } : { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dp(16) }}>

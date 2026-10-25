@@ -15,6 +15,7 @@
  */
 
 import { epgNow, epgNowForKeys } from '../index-client'
+import { getEpgShiftMinutes } from '../epg-shift'
 import { epgStoreId } from './store-id'
 import type { NowNextLater } from './types'
 
@@ -40,7 +41,7 @@ const snapshots = new Map<string, NowSnapshot>()
 const inflight = new Map<string, Promise<NowSnapshot>>()
 
 function snapshotKey(listId: string, source: string | null): string {
-  return `${epgStoreId(listId)}|${source ?? ''}`
+  return `${epgStoreId(listId)}|${source ?? ''}|${getEpgShiftMinutes()}`
 }
 
 /**

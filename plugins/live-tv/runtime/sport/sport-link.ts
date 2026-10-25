@@ -2,7 +2,8 @@
 
 import { LIVE_TV_GLOBAL_EPG_ID } from '../live-tv-data'
 import type { Fixture } from './provider'
-import { tzOffsetFor } from './sport-epg'
+import { hostTzOffset } from './sport-epg'
+import { getEpgShiftMinutes } from '../epg-shift'
 import { fixtureMatchKey } from './merge'
 
 /** `fx:källa:id` (merge.ts `fixtureMatchKey`) → EPG-matchens id (fas 1:s gruppering) och om hemma/borta är omvända. */
@@ -16,8 +17,9 @@ export async function linkFixtures(args: { day: string; fixtures: Fixture[] }): 
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        listId: LIVE_TV_GLOBAL_EPG_ID, day: args.day, tzOffset: tzOffsetFor(args.day),
-        fixtures: args.fixtures.map((f) => ({ id: fixtureMatchKey(f), sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff })),
+        // Förskjuten tablå: värdens kandidater har tablåns egna (oförskjutna) tider.
+        listId: LIVE_TV_GLOBAL_EPG_ID, day: args.day, tzOffset: hostTzOffset(args.day),
+        fixtures: args.fixtures.map((f) => ({ id: fixtureMatchKey(f), sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff - getEpgShiftMinutes() * 60_000 })),
       }),
     })
     if (!res.ok) return {}

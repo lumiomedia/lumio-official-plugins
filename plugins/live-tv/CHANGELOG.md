@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Guide time shift: if the whole programme guide is hours off (common when an IPTV provider labels its times with the wrong time zone), Settings → Programme guide → Guide time shift moves every programme by up to ±12 hours in half-hour steps. It applies to the guide, Now & Next, search, reminders, catch-up and Sport. Works with the current Lumio app.
+
 ## 0.17.6
 
 - Evening plan: a match that is only in the results (not on any of your channels) shows "No channel" instead of a checkbox that did nothing. Reminders still work for every match on a channel.

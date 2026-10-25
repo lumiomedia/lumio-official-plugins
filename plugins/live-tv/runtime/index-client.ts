@@ -8,6 +8,7 @@
  * memory (spec 2026-09-14-live-tv-storage-v2-design.md, sections 3.1–3.3).
  */
 
+import { epgShiftMs, shiftTimes } from './epg-shift'
 import type { M3uChannel } from './live-tv-data'
 import type { EpgProgramme, NowNextLater } from './epg/types'
 
@@ -351,17 +352,16 @@ export async function epgNow(opts: {
   listId: string
   at?: number
 }): Promise<{ at: number; fetchedAt: number | null; items: Record<string, NowNextLater> }> {
-  const qs = buildQuery({ source: opts.source, listId: opts.listId, at: opts.at })
+  // Förskjuten tablå (epg-shift.ts): värden frågas om tidpunkten i SIN tid, svaret flyttas tillbaka.
+  const shift = epgShiftMs()
+  const at = shift ? (opts.at ?? Date.now()) - shift : opts.at
+  const qs = buildQuery({ source: opts.source, listId: opts.listId, at })
   const data = await requestJson<{
     at: number
     fetchedAt?: number | null
     items?: Record<string, Partial<NowNextLater>>
   }>(`/api/live-tv/epg/now${qs}`)
-  const items: Record<string, NowNextLater> = {}
-  for (const [key, value] of Object.entries(data.items ?? {})) {
-    items[key] = { now: value.now ?? null, next: value.next ?? null, later: value.later ?? null }
-  }
-  return { at: data.at, fetchedAt: data.fetchedAt ?? null, items }
+  return { at: data.at + shift, fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, shift) }
 }
 
 /**
@@ -378,12 +378,22 @@ export async function epgNowForKeys(opts: {
     at: number
     fetchedAt?: number | null
     items?: Record<string, Partial<NowNextLater>>
-  }>('/api/live-tv/epg/now', { listId: opts.listId, keys: opts.keys, at: opts.at })
+  }>('/api/live-tv/epg/now', { listId: opts.listId, keys: opts.keys, at: atHost(opts.at) })
+  return { at: data.at + epgShiftMs(), fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, epgShiftMs()) }
+}
+
+/** `at` i värdens (oförskjutna) tid; utan förskjutning oförändrat (värden tar då sin egen klocka). */
+function atHost(at: number | undefined): number | undefined {
+  const shift = epgShiftMs()
+  return shift ? (at ?? Date.now()) - shift : at
+}
+
+function shiftedNow(raw: Record<string, Partial<NowNextLater>> | undefined, shift: number): Record<string, NowNextLater> {
   const items: Record<string, NowNextLater> = {}
-  for (const [key, value] of Object.entries(data.items ?? {})) {
-    items[key] = { now: value.now ?? null, next: value.next ?? null, later: value.later ?? null }
+  for (const [key, value] of Object.entries(raw ?? {})) {
+    items[key] = { now: shiftTimes(value.now, shift), next: shiftTimes(value.next, shift), later: shiftTimes(value.later, shift) }
   }
-  return { at: data.at, fetchedAt: data.fetchedAt ?? null, items }
+  return items
 }
 
 /**
@@ -399,14 +409,15 @@ export async function epgSchedule(
   to: number,
 ): Promise<Record<string, EpgProgramme[]>> {
   const merged: Record<string, EpgProgramme[]> = {}
+  const shift = epgShiftMs()
   for (const group of chunk(keys, EPG_SCHEDULE_CHUNK_SIZE)) {
     const data = await postJson<{ items?: Record<string, EpgProgramme[]> }>('/api/live-tv/epg/schedule', {
       listId,
       keys: group,
-      from,
-      to,
+      from: from - shift,
+      to: to - shift,
     })
-    Object.assign(merged, data.items ?? {})
+    for (const [key, list] of Object.entries(data.items ?? {})) merged[key] = shift ? list.map((p) => shiftTimes(p, shift)) : list
   }
   return merged
 }
@@ -418,9 +429,10 @@ export async function epgSearch(
   to: number,
   limit?: number,
 ): Promise<{ key: string; programme: EpgProgramme }[]> {
-  const qs = buildQuery({ listId, q, from, to, limit })
+  const shift = epgShiftMs()
+  const qs = buildQuery({ listId, q, from: from - shift, to: to - shift, limit })
   const data = await requestJson<{ items?: { key: string; programme: EpgProgramme }[] }>(
     `/api/live-tv/epg/search${qs}`,
   )
-  return data.items ?? []
+  return (data.items ?? []).map((hit) => (shift ? { ...hit, programme: shiftTimes(hit.programme, shift) } : hit))
 }

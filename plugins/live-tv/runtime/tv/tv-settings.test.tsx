@@ -332,6 +332,20 @@ describe('TvSettingsView', () => {
     expect(screen.getByTestId('tv-keyboard-input')).toHaveValue('')
   })
 
+  it('Förskjut tablån: väljaren sparar värdet och raden visar det', async () => {
+    const { getEpgShiftMinutes, setEpgShiftMinutes } = await import('../epg-shift')
+    setEpgShiftMinutes(0)
+    mount('epg')
+    const row = await screen.findByTestId('epg-shift')
+    expect(row).toHaveTextContent('None')
+    fireEvent.click(row)
+    fireEvent.click(await screen.findByTestId('epg-shift-120'))
+    expect(getEpgShiftMinutes()).toBe(120)
+    await waitFor(() => expect(screen.queryByTestId('epg-shift-picker')).toBeNull())
+    expect(screen.getByTestId('epg-shift')).toHaveTextContent('+2 h')
+    setEpgShiftMinutes(0)
+  })
+
   it('EPG-källor: listar URL:er', async () => {
     mount('epg')
     // Två förekomster sedan 0.6.0: adressraden (lägg till/ta bort) och

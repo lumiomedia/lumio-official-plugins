@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { LIVE_TV_GLOBAL_EPG_ID } from '../live-tv-data'
+import { getEpgShiftMinutes } from '../epg-shift'
 import type { SportDay, SportMatch } from './sport-model'
 
 /*
@@ -68,18 +69,44 @@ function sanitizeDay(raw: unknown, day: string): SportDay {
   }
 }
 
+/**
+ * Förskjuten tablå (epg-shift.ts): värden räknar dygnet ur `tzOffset`, så
+ * dygnet i VÄRDENS tid nås med zonen plus förskjutningen; matchernas och
+ * kanalernas tider flyttas sedan tillbaka.
+ */
+export function hostTzOffset(day: string, shiftMin: number = getEpgShiftMinutes()): number {
+  return tzOffsetFor(day) + shiftMin
+}
+
+function shiftDayTimes(d: SportDay, ms: number): SportDay {
+  if (ms === 0) return d
+  return {
+    ...d,
+    from: d.from + ms,
+    to: d.to + ms,
+    matches: d.matches.map((m) => ({
+      ...m,
+      start: m.start + ms,
+      stop: m.stop + ms,
+      sources: m.sources.map((s) => ({ ...s, programmeStart: s.programmeStart + ms, programmeStop: s.programmeStop + ms })),
+    })),
+  }
+}
+
 export function fetchSportDay(day: string, now: number = Date.now()): Promise<SportDay> {
-  const hit = cache.get(day)
+  const shiftMin = getEpgShiftMinutes()
+  const key = `${day}|${shiftMin}`
+  const hit = cache.get(key)
   if (hit && now - hit.at < TTL_MS) return hit.promise
-  const qs = new URLSearchParams({ listId: LIVE_TV_GLOBAL_EPG_ID, day, tzOffset: String(tzOffsetFor(day)) })
+  const qs = new URLSearchParams({ listId: LIVE_TV_GLOBAL_EPG_ID, day, tzOffset: String(hostTzOffset(day, shiftMin)) })
   const promise = fetch(`/api/live-tv/sport/day?${qs.toString()}`).then(async (res) => {
     if (res.status === 404) throw new SportEndpointMissing()
     if (!res.ok) throw new Error(`/api/live-tv/sport/day returned ${res.status}`)
-    return sanitizeDay(await res.json(), day)
+    return shiftDayTimes(sanitizeDay(await res.json(), day), shiftMin * 60_000)
   })
-  cache.set(day, { at: now, promise })
+  cache.set(key, { at: now, promise })
   promise.catch(() => {
-    if (cache.get(day)?.promise === promise) cache.delete(day)
+    if (cache.get(key)?.promise === promise) cache.delete(key)
   })
   return promise
 }

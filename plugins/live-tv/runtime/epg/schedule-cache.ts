@@ -18,6 +18,7 @@
  */
 
 import { epgSchedule } from '../index-client'
+import { getEpgShiftMinutes } from '../epg-shift'
 import { epgStoreId } from './store-id'
 import type { EpgProgramme } from './types'
 
@@ -125,7 +126,8 @@ function queueBatch(
 
 function entryKey(listId: string, key: string, from: number, to: number): string {
   // Alla list-id pekar på samma EPG-store, se epg/store-id.ts.
-  return `${epgStoreId(listId)}|${key}|${from}|${to}`
+  // Förskjutningen i nyckeln: ändras den gäller inga gamla svar (epg-shift.ts).
+  return `${epgStoreId(listId)}|${key}|${from}|${to}|${getEpgShiftMinutes()}`
 }
 
 /** Kastar utgångna poster, och de äldsta om taket är nått. */
