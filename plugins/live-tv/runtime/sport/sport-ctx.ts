@@ -9,6 +9,7 @@ import { useTvText, type TvStringKey } from '../tv/tv-strings'
 import { localDayKey } from './sport-epg'
 import { matchTitle, sourceChannel, type MatchSource, type SportKind, type SportMatch } from './sport-model'
 import { rankedSources, statusAt } from './sport-day-model'
+import { addPlanned, isPlanned, removePlanned, useEveningPlan, type PlanEntry } from './evening-plan'
 import { setAlertSkip, teamKeysMatch, useFollows, useOverrides, useSportSettings, type SportFollow, type SportOverrides, type SportSettings } from './sport-store'
 import type { LeagueTarget, TeamTarget } from './team-model'
 
@@ -53,6 +54,11 @@ export interface SportCtx {
   watch(match: SportMatch, source?: MatchSource): void
   toggleRemind(match: SportMatch): void
   isReminded(match: SportMatch): boolean
+  /** Har matchen en påminnelse på sin kanal (inte bara en plats i kvällsplanen)? */
+  hasReminder(match: SportMatch): boolean
+  /** Påminnelse på matchens kanal om den saknas (en planerad match som fått kanal). */
+  ensureReminder(match: SportMatch): void
+  plan: PlanEntry[]
 }
 
 const NOOP = () => {}
@@ -66,12 +72,14 @@ export function buildSportCtx(input: {
   overrides: SportOverrides
   settings: SportSettings
   reminders: Reminder[]
+  plan?: PlanEntry[]
   openMatch(match: SportMatch): void
   openFollowPicker(): void
   openTeam?(target: TeamTarget): void
   openLeague?(target: LeagueTarget): void
 }): SportCtx {
   const { model, nav, tt, overrides, reminders } = input
+  const plan = input.plan ?? []
   const best = (m: SportMatch): MatchSource | null => rankedSources(m, overrides)[0] ?? null
   return {
     model,
@@ -93,22 +101,46 @@ export function buildSportCtx(input: {
       const chosen = source ?? best(m)
       if (chosen) nav.play({ channel: sourceChannel(chosen) })
     },
+    /*
+     * Bocken: kvällsplan och påminnelse. Med kanal sätts en påminnelse (som
+     * förut) och matchen planeras; utan kanal bara planen, och påminnelsen
+     * kommer när tablån ger matchen en kanal (evening-plan.ts). Av tar bort båda.
+     */
     toggleRemind: (m) => {
       const chosen = best(m)
-      if (!chosen) return
-      const channel = sourceChannel(chosen)
-      const id = reminderId(channel, { start: chosen.programmeStart })
-      const existing = reminders.find((r) => r.id === id)
-      // En automatisk (följd) påminnelse som bockas av måste kommas ihåg,
-      // annars skapar nästa avsparkssynk den igen. På igen = manuell påminnelse.
-      if (existing?.origin === 'sport') setAlertSkip(m.id, m.start, true)
-      else if (!existing) setAlertSkip(m.id, m.start, false)
-      toggleReminder(channel, { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
+      const reminder = chosen ? reminders.find((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart })) : undefined
+      const on = !!reminder || isPlanned(plan, m)
+      if (on) {
+        removePlanned(m)
+        if (reminder && chosen) {
+          // En automatisk (följd) påminnelse som bockas av måste kommas ihåg,
+          // annars skapar nästa avsparkssynk den igen.
+          if (reminder.origin === 'sport') setAlertSkip(m.id, m.start, true)
+          toggleReminder(sourceChannel(chosen), { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
+        }
+        return
+      }
+      addPlanned(m, matchTitle(m))
+      if (chosen) {
+        setAlertSkip(m.id, m.start, false)
+        toggleReminder(sourceChannel(chosen), { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
+      }
     },
     isReminded: (m) => {
       const chosen = best(m)
+      return (chosen ? reminders.some((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart })) : false) || isPlanned(plan, m)
+    },
+    hasReminder: (m) => {
+      const chosen = best(m)
       return chosen ? reminders.some((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart })) : false
     },
+    ensureReminder: (m) => {
+      const chosen = best(m)
+      if (!chosen || reminders.some((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart }))) return
+      setAlertSkip(m.id, m.start, false)
+      toggleReminder(sourceChannel(chosen), { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
+    },
+    plan,
   }
 }
 
@@ -118,10 +150,11 @@ export function useSportCtx(args: { model: LiveTvModel; nav: TvNav; openMatch(ma
   const overrides = useOverrides()
   const settings = useSportSettings()
   const reminders = useReminders()
+  const plan = useEveningPlan()
   const { model, nav, openMatch, openFollowPicker, openTeam, openLeague } = args
   return useMemo(
-    () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker, openTeam, openLeague }),
-    [model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker, openTeam, openLeague],
+    () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, plan, openMatch, openFollowPicker, openTeam, openLeague }),
+    [model, nav, tt, locale, follows, overrides, settings, reminders, plan, openMatch, openFollowPicker, openTeam, openLeague],
   )
 }
 

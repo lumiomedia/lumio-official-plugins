@@ -15,7 +15,7 @@ import type { ProviderId, ProviderRequest } from './provider'
  */
 
 const BASES: Partial<Record<ProviderId, { base: string; allow: RegExp }>> = {
-  espn: { base: 'https://site.api.espn.com/apis/', allow: /^(site\/v2|v2)\/sports\/(soccer|hockey|basketball)\/[a-z0-9._]+\/(scoreboard|summary|standings)(\?[A-Za-z0-9=&%._-]*)?$/ },
+  espn: { base: 'https://site.api.espn.com/apis/', allow: /^(site\/v2|v2)\/sports\/(soccer|hockey|basketball|football|baseball)\/[a-z0-9._]+\/(scoreboard|summary|standings)(\?[A-Za-z0-9=&%._-]*)?$/ },
 }
 
 /** Hela svar ligger i minnet: taket håller en svag TV-box nere på några megabyte. */

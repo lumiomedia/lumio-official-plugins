@@ -31,6 +31,8 @@ export const ESPN_LEAGUES: Partial<Record<SportKind, readonly string[]>> = {
   ],
   hockey: ['nhl'],
   basketball: ['nba', 'wnba'],
+  // Amerikansk fotboll och baseboll: Rust har dem som "Övrigt" (ingen egen sport), ESPN under football/ och baseball/.
+  other: ['nfl', 'mlb'],
 }
 
 /** Tablåns ligor (Rusts `league_key`) i ESPN:s sluggar: repriskollen slår upp ligans senaste vecka. */
@@ -46,6 +48,7 @@ export const ESPN_SLUG_BY_LEAGUE: Record<string, { sport: SportKind; slug: strin
   'uefa-champions-league': { sport: 'football', slug: 'uefa.champions' }, 'uefa-europa-league': { sport: 'football', slug: 'uefa.europa' },
   'uefa-conference-league': { sport: 'football', slug: 'uefa.europa.conf' }, 'uefa-nations-league': { sport: 'football', slug: 'uefa.nations' },
   nhl: { sport: 'hockey', slug: 'nhl' }, nba: { sport: 'basketball', slug: 'nba' }, wnba: { sport: 'basketball', slug: 'wnba' },
+  nfl: { sport: 'other', slug: 'nfl' }, mlb: { sport: 'other', slug: 'mlb' },
 }
 
 /**
@@ -55,7 +58,7 @@ export const ESPN_SLUG_BY_LEAGUE: Record<string, { sport: SportKind; slug: strin
  * mot en liga, som inte ändras längre: cachade i sex timmar.
  */
 export function espnRecent(sport: SportKind, slug: string, date: string, tz: string): ProviderCall<Fixture[]> {
-  if (!SPORT_PATH[sport]) return { requests: [], parse: () => [] }
+  if (!pathOf(sport, slug)) return { requests: [], parse: () => [] }
   const end = localDay(date, tz).start
   const dates = [...new Set(Array.from({ length: 8 }, (_, i) => ymdLocal(shiftDate(date, -(i + 1)))))]
   const list: Board[] = dates.map((d) => ({ slug, date: d }))
@@ -70,6 +73,9 @@ const ymdLocal = (date: string): string => date.replace(/-/g, '')
 const LIVE_FALLBACK = new Set(['uefa.champions', 'uefa.europa', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'swe.1'])
 
 const SPORT_PATH: Partial<Record<SportKind, string>> = { football: 'soccer', hockey: 'hockey', basketball: 'basketball' }
+/** Ligor vars ESPN-sport inte följer vår sport (Övrigt rymmer flera). */
+const SLUG_PATH: Record<string, string> = { nfl: 'football', mlb: 'baseball' }
+const pathOf = (sport: SportKind, slug: string): string | undefined => SLUG_PATH[slug] ?? SPORT_PATH[sport]
 
 const arr = (v: any): any[] => (Array.isArray(v) ? v : [])
 const num = (v: any): number | null =>
@@ -186,7 +192,7 @@ export function __resetEspnForTests(): void { leaguesToday.clear(); focus.clear(
 interface Board { slug: string; date: string }
 const boards = (slugs: readonly string[], day: { start: number; end: number }): Board[] => slugs.flatMap((slug) => espnDatesFor(day).map((date) => ({ slug, date })))
 const scoreboard = (sport: SportKind, b: Board, ttlS: number): ProviderRequest =>
-  ({ sport, path: `site/v2/sports/${SPORT_PATH[sport]}/${b.slug}/scoreboard?dates=${b.date}&limit=300`, ttlS })
+  ({ sport, path: `site/v2/sports/${pathOf(sport, b.slug)}/${b.slug}/scoreboard?dates=${b.date}&limit=300`, ttlS })
 
 function dayList(sport: SportKind, list: Board[], bodies: unknown[], day: { start: number; end: number }): Fixture[] {
   const seen = new Set<string>()
@@ -330,15 +336,15 @@ export const espn: SportsProvider = {
   },
   fixture(sport, id, opts): ProviderCall<FixtureDetail | null> {
     const ref = splitId(id)
-    if (!ref || !SPORT_PATH[sport]) return { requests: [], parse: () => null }
+    if (!ref || !pathOf(sport, ref.slug)) return { requests: [], parse: () => null }
     return {
-      requests: [{ sport, path: `site/v2/sports/${SPORT_PATH[sport]}/${ref.slug}/summary?event=${encodeURIComponent(ref.event)}`, ttlS: opts.finished ? -1 : 60 }],
+      requests: [{ sport, path: `site/v2/sports/${pathOf(sport, ref.slug)}/${ref.slug}/summary?event=${encodeURIComponent(ref.event)}`, ttlS: opts.finished ? -1 : 60 }],
       parse: (bodies) => detailOf(sport, ref.slug, bodies[0]),
     }
   },
   standings(sport, leagueId): ProviderCall<StandingRow[]> {
-    if (!SPORT_PATH[sport] || !covered(sport).includes(leagueId)) return { requests: [], parse: () => [] }
-    return { requests: [{ sport, path: `v2/sports/${SPORT_PATH[sport]}/${leagueId}/standings`, ttlS: 21_600 }], parse: (bodies) => standingRows(bodies[0]) }
+    if (!pathOf(sport, leagueId) || !covered(sport).includes(leagueId)) return { requests: [], parse: () => [] }
+    return { requests: [{ sport, path: `v2/sports/${pathOf(sport, leagueId)}/${leagueId}/standings`, ttlS: 21_600 }], parse: (bodies) => standingRows(bodies[0]) }
   },
   // Lag och ligor söks hos nyckelkällorna; ESPN har ingen sökväg som täcker allt i ett anrop.
   searchTeams(): ProviderCall<TeamHit[]> { return { requests: [], parse: () => [] } },

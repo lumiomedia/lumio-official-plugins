@@ -47,7 +47,7 @@ describe('registreringen', () => {
     expect(sources[0]!.label).toMatchObject({ en: 'Sport: Live now', sv: 'Sport: Live nu' })
     expect(sources[5]!.label).toMatchObject({ en: 'Sport: Results for my teams', sv: 'Sport: Resultat för mina lag' })
     expect(sources.filter((s) => s.option).map((s) => s.id)).toEqual(['sport-live-now', 'sport-tonight', 'sport-zap', 'sport-league', 'sport-results'])
-    expect(sources[0]!.option!.choices().map((c) => c.value)).toEqual(['', 'football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis'])
+    expect(sources[0]!.option!.choices().map((c) => c.value)).toEqual(['', 'football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis', 'other'])
     expect(sources[5]!.option!.choices().map((c) => c.value)).toEqual(['', 'hide'])
   })
   it('Liga-valet: följda ligor först', () => {

@@ -13,6 +13,7 @@ import { linkFixtures, type LinkMap } from './sport-link'
 import { fixtureMatchKey, foldTeamKey, mergeLinked, relevantMatches } from './merge'
 import { coverageFor, providerFor } from './providers'
 import { fillFrom, findSameMatch, keepFilled, lacksDetail } from './detail-fill'
+import { isPlanned, useEveningPlan } from './evening-plan'
 import { ESPN_SLUG_BY_LEAGUE, espnRecent, setEspnFocus } from './espn'
 import { followState } from './sport-day-model'
 import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, sportsCompatible, teamKeysMatch, useFollows, useOverrides } from './sport-store'
@@ -654,7 +655,14 @@ export function useSportResults(opts: { day: string | null; epg: SportMatch[] })
     const history = opts.day ? controller.history(opts.day) : []
     return mergeLinked({ epg: opts.epg, fixtures, links, overrides, history, coverage: (s) => controller.router.coverage(s), canonical: (f) => controller.canonicalOf(f) })
   }, [controller, opts.epg, opts.day, fixtures, links, overrides, version])
-  const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows])
+  // Kvällsplanen: en planerad match följer med även när laget inte följs (evening-plan.ts).
+  const plan = useEveningPlan()
+  const matches = useMemo(() => {
+    const relevant = relevantMatches(allMatches, follows)
+    if (plan.length === 0) return relevant
+    const ids = new Set(relevant.map((m) => m.id))
+    return [...relevant, ...allMatches.filter((m) => !ids.has(m.id) && isPlanned(plan, m))]
+  }, [allMatches, follows, plan])
 
   // Repriser som tablån inte märker: ligans senaste vecka från ESPN (se probeReplays).
   useEffect(() => { if (controller && opts.day) controller.probeReplays(opts.epg, opts.day) }, [controller, opts.day, opts.epg, version])

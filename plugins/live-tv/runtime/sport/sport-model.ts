@@ -4,7 +4,7 @@ import type { M3uChannel } from '../live-tv-data'
 export type SportKind = 'football' | 'hockey' | 'basketball' | 'handball' | 'motorsport' | 'tennis' | 'other'
 export const SPORT_KINDS: readonly SportKind[] = ['football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis', 'other']
 /** Sportknapparna (spec, beslut 2026-10-10), i ordning. */
-export const SPORT_CHIPS: readonly SportKind[] = ['football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis']
+export const SPORT_CHIPS: readonly SportKind[] = ['football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis', 'other']
 export type SportFilter = SportKind | 'all'
 export type Quality = '4K' | 'FHD' | 'HD' | 'SD'
 export type MatchStatus = 'live' | 'upcoming' | 'finished'

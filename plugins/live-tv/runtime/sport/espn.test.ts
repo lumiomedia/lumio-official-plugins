@@ -165,3 +165,16 @@ describe('ESPN: ligorna i fokus', () => {
     expect(espnLeaguesFor('hockey')).toEqual(['nhl'])
   })
 })
+
+describe('ESPN: NFL och MLB under Övrigt', () => {
+  it('rätt ESPN-sport i sökvägen, och tablåns NFL-liga hittar sin slugg', async () => {
+    const { ESPN_SLUG_BY_LEAGUE } = await import('./espn')
+    const call = espn.day('other', '2026-10-21', OPTS)
+    const paths = call.requests.map((r) => r.path)
+    expect(paths.some((p) => p.startsWith('site/v2/sports/football/nfl/scoreboard'))).toBe(true)
+    expect(paths.some((p) => p.startsWith('site/v2/sports/baseball/mlb/scoreboard'))).toBe(true)
+    expect(espn.coverage('other')).toBe('full')
+    expect(ESPN_SLUG_BY_LEAGUE.nfl).toEqual({ sport: 'other', slug: 'nfl' })
+    expect(espn.fixture('other', 'nfl:401', { finished: true }).requests[0].path).toBe('site/v2/sports/football/nfl/summary?event=401')
+  })
+})

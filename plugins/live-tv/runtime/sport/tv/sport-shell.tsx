@@ -1,5 +1,6 @@
 'use client'
 
+import { useEveningPlanUpgrade } from '../evening-plan'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
 import { onTvFocusEdge, useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from '../../tv/tv-shell'
@@ -139,6 +140,8 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
 
   const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
+  // En planerad match utan kanal får sin påminnelse när tablån ger den en (evening-plan.ts).
+  useEveningPlanUpgrade(mergedMatches, ctx.plan, ctx.hasReminder, ctx.ensureReminder)
   const tvMode = useTvMode()
   /* Sportsidan behåller appens toppkrom, och värdens klocka står då uppe
      till höger som på Hem — en klocka till i rubriken hade dubblerat den

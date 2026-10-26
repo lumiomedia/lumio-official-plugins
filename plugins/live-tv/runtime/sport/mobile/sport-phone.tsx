@@ -1,5 +1,6 @@
 'use client'
 
+import { useEveningPlanUpgrade } from '../evening-plan'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { station } from '../../tv/tv-ui'
@@ -66,6 +67,8 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const selected = useSportDay(day, model.nowMs)
   const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
+  // En planerad match utan kanal får sin påminnelse när tablån ger den en (evening-plan.ts).
+  useEveningPlanUpgrade(mergedMatches, ctx.plan, ctx.hasReminder, ctx.ensureReminder)
   usePollDemand('sport-view', true)
   useCouchMark('sport-page', true)
   const view = ctx.settings.phoneView ?? 'matchday'
