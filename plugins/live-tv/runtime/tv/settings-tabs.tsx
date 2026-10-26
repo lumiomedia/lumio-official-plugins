@@ -55,6 +55,7 @@ import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { TvCurationPicker } from './tv-curation-picker'
 import { useTextPrompt } from './tv-text-entry'
+import { helpSections } from './help-content'
 import { PickerPanel } from './picker-panel'
 import { formatEpgShift, getEpgShiftMinutes, setEpgShiftMinutes, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN } from '../epg-shift'
 
@@ -1122,6 +1123,31 @@ export function ParentalTab({ model, tt, phone = false }: { model: TvViewProps['
           if (channel) toggleChannelLock(channel)
         }}
       />
+    </section>
+  )
+}
+
+/**
+ * SÅ GÖR DU (help-content.ts). Varje avsnitt är en station, så att fjärren kan
+ * stega och rulla genom sidan; OK gör ingenting.
+ */
+export function HelpTab({ tt, lang, phone = false }: { tt: TT; lang: string; phone?: boolean }) {
+  const sections = helpSections(lang)
+  return (
+    <section data-testid="help-tab" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(14) }}>
+      {phone ? null : <Heading>{tt('tabHelp')}</Heading>}
+      <div style={{ fontSize: phone ? 14 : dp(18), color: phone ? MT.muted : TV.muted, padding: phone ? '12px 14px' : 0 }}>{tt('helpIntro')}</div>
+      {sections.map((sec, i) => (
+        <div key={sec.id} data-testid={`help-${sec.id}`} {...station(() => {}, undefined, i === 0 ? { 'data-init': '' } : undefined)}
+          style={phone
+            ? { padding: '12px 14px', borderTop: `1px solid ${MT.line07}`, display: 'flex', flexDirection: 'column', gap: 6 }
+            : { padding: `${dp(18)}px ${dp(22)}px`, borderRadius: dp(14), background: TV.s06, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
+          <div style={{ fontSize: phone ? 15 : dp(21), fontWeight: 600 }}>{sec.title}</div>
+          <ol style={{ margin: 0, paddingLeft: phone ? 18 : dp(24), display: 'flex', flexDirection: 'column', gap: phone ? 4 : dp(6), fontSize: phone ? 14 : dp(18), lineHeight: 1.45, color: phone ? MT.muted : 'rgba(243,244,248,0.82)' }}>
+            {sec.steps.map((step, j) => <li key={j}>{step}</li>)}
+          </ol>
+        </div>
+      ))}
     </section>
   )
 }

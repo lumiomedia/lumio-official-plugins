@@ -5,7 +5,7 @@ import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
-import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
+import { ContentTab, EpgTab, HelpTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
 import { nextStartView, startViewLabelKey } from '../start-view'
 import { groupOrderLabelKey, nextGroupOrder } from '../../group-order'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
@@ -30,7 +30,7 @@ import { phoneGuideMode, type PhoneGuideMode } from './guide-phone'
  */
 export function TvSettingsPhone(props: TvViewProps) {
   const { model, nav, params, settings } = props
-  const { tt, locale } = useTvText()
+  const { tt, locale, lang } = useTvText()
   const guideMode = useGuideMode()
 
   /* INNEHÅLL ÄR EN UNDERSIDA HÄR OCKSÅ (Jerry 2026-09-22).
@@ -43,6 +43,13 @@ export function TvSettingsPhone(props: TvViewProps) {
 
      ContentTab har redan en telefonvariant (`phone`); den renderades bara
      aldrig. */
+  if (params.tab === 'help') {
+    return (
+      <PhonePage header={<MobileHeader title={tt('tabHelp')} back onBack={() => nav.go('settings')} />}>
+        <Card><HelpTab tt={tt} lang={lang} phone /></Card>
+      </PhonePage>
+    )
+  }
   if (params.tab === 'epg' || params.tab === 'parental' || params.tab === 'content' || params.tab === 'sport') {
     const rubrik = params.tab === 'epg' ? 'tabEpg' : params.tab === 'parental' ? 'tabParental' : params.tab === 'sport' ? 'tabSport' : 'tabContent'
     return (
@@ -98,6 +105,7 @@ export function TvSettingsPhone(props: TvViewProps) {
           <NavRow testId="settings-epg" label={tt('tabEpg')} onOk={() => nav.go('settings', { tab: 'epg' })} />
           <NavRow testId="settings-parental" label={tt('tabParental')} onOk={() => nav.go('settings', { tab: 'parental' })} />
           <NavRow testId="settings-sport" label={tt('tabSport')} onOk={() => nav.go('settings', { tab: 'sport' })} />
+          <NavRow testId="settings-help" label={tt('tabHelp')} onOk={() => nav.go('settings', { tab: 'help' })} />
         </Card>
       </Section>
     </PhonePage>

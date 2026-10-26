@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- How to: a new tab in Live TV settings explains what you can do and where — favourites and their order, your own lists, tidying categories, the guide time shift, Multiview and Sport.
+- Multiview can go full screen: the tiles fill the screen, Back leaves it.
+- Evening plan: tick any match to plan your evening, also one without a channel yet; its reminder is set when a channel shows it.
+- NFL and MLB get free scores, and Sport has an Other chip for them.
+
 ## 0.17.7
 
 - Guide time shift: if the whole programme guide is hours off (common when an IPTV provider labels its times with the wrong time zone), Settings → Programme guide → Guide time shift moves every programme by up to ±12 hours in half-hour steps. It applies to the guide, Now & Next, search, reminders, catch-up and Sport. Works with the current Lumio app.

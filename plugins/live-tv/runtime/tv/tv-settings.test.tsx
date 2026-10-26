@@ -346,6 +346,13 @@ describe('TvSettingsView', () => {
     setEpgShiftMinutes(0)
   })
 
+  it('Så gör du: egen flik med avsnitten', async () => {
+    mount('help')
+    expect(await screen.findByTestId('help-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('help-favourites')).toHaveTextContent('Move up')
+    expect(screen.getByTestId('help-multiview')).toHaveTextContent('Full screen')
+  })
+
   it('EPG-källor: listar URL:er', async () => {
     mount('epg')
     // Två förekomster sedan 0.6.0: adressraden (lägg till/ta bort) och
