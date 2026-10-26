@@ -17,7 +17,7 @@ import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
 import { TvRail, shellRailActive } from './tv-rail'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
-import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
+import { addToFirstFree, getMultiviewState, setMultiviewState, useMultiviewImmersive } from './tv-multiview-store'
 import { createZapBuffer, resolveZap } from './tv-zap'
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
@@ -364,6 +364,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   // "Dölj VOD helt" (VOD-läget 'off'): aldrig Hem och ingen autoindexering — Kanaler direkt.
   // Sportsidan öppnas också utan params, men den är aldrig Live TV:s hem.
   // Startvyn avgör: bara Hem omdirigerar, en annan startvy ritas direkt.
+  // Multiview i helskärm: ikonraden göms (tv-multiview.tsx).
+  const mvFull = useMultiviewImmersive()
   const [redirectCheck, setRedirectCheck] = useState(() => !sportOnly && params === undefined && startView === 'home' && shouldRedirectToVodHome(params, Date.now()))
   useEffect(() => {
     if (!redirectCheck) return
@@ -756,7 +758,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
-      {phone || sportOnly ? null : (
+      {phone || sportOnly || (view === 'multi' && mvFull) ? null : (
         <TvRail
           active={shellRailActive(view, redirectCheck)}
           isTv={isTv}

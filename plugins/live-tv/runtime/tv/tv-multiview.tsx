@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Icons, Segment, Tag, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
-import { assignTile, enlargeTile, removeTile, setLayout, setMultiviewState, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
+import { assignTile, enlargeTile, removeTile, setImmersive, setLayout, setMultiviewState, useMultiviewImmersive, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
 import { narrowVisibleIndices } from './multiview-slots'
 import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
 import { logSurfaceStack } from './surface-diagnostics'
@@ -41,6 +42,28 @@ function TvMultiviewDesktop(props: TvViewProps) {
   const state = useMultiviewState()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const narrow = useNarrowSurface(rootRef)
+  const full = useMultiviewImmersive()
+  const tvMode = useTvMode()
+  // Bakåt lämnar helskärmen först; webbläsarens helskärm följer med (skrivbord).
+  const navRef = useRef(nav)
+  navRef.current = nav
+  useEffect(() => {
+    if (!full) return
+    const root = rootRef.current
+    const el = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> }
+    if (!tvMode && typeof el.requestFullscreen === 'function' && !document.fullscreenElement) void el.requestFullscreen().catch(() => {})
+    const onFs = () => { if (!document.fullscreenElement && !tvMode) setImmersive(false) }
+    document.addEventListener('fullscreenchange', onFs)
+    const off = navRef.current.pushLayer(() => setImmersive(false))
+    window.setTimeout(() => root?.querySelector<HTMLElement>('[data-f]')?.focus({ preventScroll: true }), 0)
+    return () => {
+      off()
+      document.removeEventListener('fullscreenchange', onFs)
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+    }
+  }, [full])
+  // Vyn stängs (annan vy, spelaren): aldrig kvar i helskärm.
+  useEffect(() => () => setImmersive(false), [])
   /**
    * FORCERAD SMAL LAYOUT — REN VISNING, INGEN MUTATION. På en smal yta visas
    * bara två rutor (audiorutan + en till, se `narrowVisibleIndices`), rakt
@@ -111,8 +134,8 @@ function TvMultiviewDesktop(props: TvViewProps) {
   let liveLeft = liveBudget
 
   return (
-    <div ref={rootRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: `${dp(34)}px ${dp(48)}px ${dp(32)}px`, gap: dp(18) }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(20) }}>
+    <div ref={rootRef} data-testid="mv-root" data-mv-full={full ? '1' : '0'} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: full ? 0 : `${dp(34)}px ${dp(48)}px ${dp(32)}px`, gap: full ? 0 : dp(18), ...(full ? { position: 'fixed', inset: 0, zIndex: 50, background: '#000' } : null) }}>
+      <div style={{ display: full ? 'none' : 'flex', alignItems: 'center', gap: dp(20) }}>
         <span style={{ fontSize: dp(34), fontWeight: 600 }}>{tt('multiview')}</span>
         {/* Segment<K extends string> tar bara strängnycklar — layout (2|3|4) är
             numerisk, så vi växlar via strängar och tolkar tillbaka i onChange.
@@ -128,11 +151,12 @@ function TvMultiviewDesktop(props: TvViewProps) {
         )}
         {/* Fjärrhjälpen ("OK on a tile = ...") är borttagen helt (Jerrys
             uppföljning): bara ljudetiketten är innehåll och blir kvar. */}
+        <div data-testid="mv-fullscreen" {...station(() => setImmersive(true))} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), background: TV.s06, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), fontWeight: 600, cursor: 'pointer' }}>{tt('mvFullscreen')}</div>
         <span data-testid="mv-audio-help" style={{ marginLeft: 'auto', fontSize: dp(18), color: 'rgba(243,244,248,0.6)', textAlign: 'right' }}>
           {audioChannel ? <><span>{tt('audioLabel')}: </span><strong style={{ color: TV.text }}>{audioChannel.name}</strong></> : null}
         </span>
       </div>
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: dp(16) }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state.layout]).rows, gap: full ? dp(4) : dp(16) }}>
         {slots.map(({ realIndex, key }) => {
           const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null
           const hasAudio = realIndex === state.audioIndex && channel !== null

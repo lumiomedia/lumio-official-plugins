@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 
@@ -78,3 +78,26 @@ export function addToFirstFree(state: MultiviewState, key: string): MultiviewSta
   const free = state.tiles.findIndex((t) => t === null)
   return assignTile(state, free === -1 ? state.tiles.length - 1 : free, key)
 }
+
+/**
+ * HELSKÄRM FÖR MULTIVIEW (feedback 2026-10-26: "A full screen multiview would
+ * be nice for sporting events"). Rutorna fyller hela ytan: skalets ikonrad,
+ * rubrikraden och marginalerna försvinner, och på skrivbordet används även
+ * webbläsarens helskärm. Bakåt (eller Esc) lämnar läget. Skalet läser
+ * tillståndet för att dölja ikonraden (`useMultiviewImmersive`).
+ */
+let immersive = false
+const immersiveListeners = new Set<() => void>()
+export function setImmersive(on: boolean): void {
+  if (immersive === on) return
+  immersive = on
+  for (const cb of [...immersiveListeners]) cb()
+}
+export function useMultiviewImmersive(): boolean {
+  return useSyncExternalStore(
+    (cb) => { immersiveListeners.add(cb); return () => { immersiveListeners.delete(cb) } },
+    () => immersive,
+    () => false,
+  )
+}
+

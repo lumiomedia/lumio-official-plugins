@@ -175,4 +175,17 @@ describe('TvMultiview på smal yta', () => {
     // Regression: menyn öppnas fortfarande med resten av handlingarna intakta.
     expect(screen.getByText('Remove tile')).toBeInTheDocument()
   })
+
+  it('Helskärm: rutorna fyller skärmen utan ikonrad och rubrik; Bakåt lämnar läget', async () => {
+    mount()
+    expect(screen.getByTestId('mv-root').getAttribute('data-mv-full')).toBe('0')
+    const railBefore = document.querySelectorAll('[data-testid^="rail-"]').length
+    expect(railBefore).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('mv-fullscreen'))
+    await waitFor(() => expect(screen.getByTestId('mv-root').getAttribute('data-mv-full')).toBe('1'))
+    expect(document.querySelectorAll('[data-testid^="rail-"]')).toHaveLength(0)
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.getByTestId('mv-root').getAttribute('data-mv-full')).toBe('0'))
+    expect(document.querySelectorAll('[data-testid^="rail-"]').length).toBe(railBefore)
+  })
 })
