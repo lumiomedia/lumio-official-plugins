@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.17.9
 
 - How to: a new tab in Live TV settings explains what you can do and where — favourites and their order, your own lists, tidying categories, the guide time shift, Multiview and Sport.
 - Multiview can go full screen: the tiles fill the screen, Back leaves it.
