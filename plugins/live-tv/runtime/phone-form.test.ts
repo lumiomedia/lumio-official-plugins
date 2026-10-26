@@ -66,3 +66,13 @@ describe('värdens väg', () => {
     expect(result.current.failed).toBe(true)
   })
 })
+
+describe('texterna på alla språk', () => {
+  it('raden och rutan finns på sv, de, fr och es — inte bara engelsk reserv', async () => {
+    const { tvText } = await import('./tv/tv-strings')
+    const keys = ['addFromPhone', 'addFromPhoneHint', 'phoneFormTitle', 'phoneFormIntro', 'phoneFieldM3u', 'phoneFieldServer', 'phoneFieldUsername', 'phoneFieldPassword', 'phoneFormScan', 'phoneFormWaiting', 'phoneFormExpired', 'phoneFormRetry', 'phoneFormFailed', 'phoneFormNothing']
+    for (const lang of ['sv', 'de', 'fr', 'es']) {
+      for (const key of keys) expect(tvText(lang, key as never), `${lang}.${key}`).not.toBe(tvText('en', key as never))
+    }
+  })
+})

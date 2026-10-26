@@ -678,7 +678,7 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
         const target = lists.find((entry) => entry.id === curation.listId)
         return target ? <TvCurationPicker nav={nav} list={target} mode={curation.mode} keyboard={keyboard} onClose={() => setCuration(null)} /> : null
       })() : null}
-      {phoneForm ? <PhoneAddPanel nav={nav} tt={tt} lang={lang === 'sv' ? 'sv' : 'en'} onValues={onPhoneValues} onClose={() => setPhoneForm(false)} /> : null}
+      {phoneForm ? <PhoneAddPanel nav={nav} tt={tt} lang={(['sv', 'de', 'fr', 'es'] as const).find((l) => l === lang) ?? 'en'} onValues={onPhoneValues} onClose={() => setPhoneForm(false)} /> : null}
       {keyboard.node}
     </section>
   )

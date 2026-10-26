@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { QRCodeSVG } from '@/lib/plugin-sdk'
-import { usePhoneForm, type PhoneFormSpec, type PhoneValues } from '../phone-form'
+import { usePhoneForm, type PhoneFormLang, type PhoneFormSpec, type PhoneValues } from '../phone-form'
 import { PickerPanel } from './picker-panel'
 import type { TvNav } from './tv-shell'
 import type { TvStringKey } from './tv-strings'
@@ -11,7 +11,7 @@ import { TV, dp, station } from './tv-ui'
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
 /** Formuläret telefonen ritar: M3U-adresser ELLER en Xtream-inloggning. */
-export function playlistPhoneSpec(tt: TT, lang: 'sv' | 'en'): PhoneFormSpec {
+export function playlistPhoneSpec(tt: TT, lang: PhoneFormLang): PhoneFormSpec {
   return {
     title: tt('phoneFormTitle'),
     intro: tt('phoneFormIntro'),
@@ -30,7 +30,7 @@ export function playlistPhoneSpec(tt: TT, lang: 'sv' | 'en'): PhoneFormSpec {
  * till `onValues` och panelen stängs. Bakåt (eller Avbryt) stänger och
  * avbryter koden.
  */
-export function PhoneAddPanel({ nav, tt, lang, onValues, onClose }: { nav: TvNav; tt: TT; lang: 'sv' | 'en'; onValues: (values: PhoneValues) => void; onClose: () => void }) {
+export function PhoneAddPanel({ nav, tt, lang, onValues, onClose }: { nav: TvNav; tt: TT; lang: PhoneFormLang; onValues: (values: PhoneValues) => void; onClose: () => void }) {
   const spec = useMemo(() => playlistPhoneSpec(tt, lang), [tt, lang])
   return (
     <PickerPanel

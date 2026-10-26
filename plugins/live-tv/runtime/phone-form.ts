@@ -17,7 +17,8 @@ const POLL_MS = 2_000
 
 export type PhoneFieldKind = 'text' | 'url' | 'password' | 'multiline'
 export interface PhoneField { id: string; label: string; kind?: PhoneFieldKind; placeholder?: string; value?: string; required?: boolean }
-export interface PhoneFormSpec { title: string; intro?: string; submit?: string; lang: 'sv' | 'en'; fields: PhoneField[] }
+export type PhoneFormLang = 'en' | 'sv' | 'de' | 'fr' | 'es'
+export interface PhoneFormSpec { title: string; intro?: string; submit?: string; lang: PhoneFormLang; fields: PhoneField[] }
 export type PhoneValues = Record<string, string>
 
 let supported: Promise<boolean> | null = null
