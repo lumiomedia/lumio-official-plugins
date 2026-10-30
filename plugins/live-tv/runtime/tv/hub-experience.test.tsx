@@ -148,4 +148,25 @@ describe('HubExperience', () => {
     act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
     expect(screen.getByTestId('hub-experience').contains(document.activeElement)).toBe(false)
   })
+  it('sifferzappen fungerar i raderna ("nummer = zappa direkt")', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown'); press('ArrowDown')
+    vi.useFakeTimers()
+    act(() => { fireEvent.keyDown(window, { key: '2' }) })
+    act(() => { vi.advanceTimersByTime(1500) })
+    vi.useRealTimers()
+    await vi.waitFor(() => expect(screen.getByTestId('player')).toHaveTextContent('B'))
+  })
+  it('försvinner det fokuserade kortet faller fokus inte till body — vyn tar tillbaka det', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown'); press('ArrowDown')
+    const card = document.activeElement as HTMLElement
+    expect(card.hasAttribute('data-xp')).toBe(true)
+    // Noden försvinner: blur utan mottagare och fokus på body (som när React tar bort den).
+    act(() => { card.blur() })
+    // Blur ritar om vyn, och ritningen tar tillbaka fokus till zonens station.
+    expect((document.activeElement as HTMLElement).hasAttribute('data-xp')).toBe(true)
+  })
 })

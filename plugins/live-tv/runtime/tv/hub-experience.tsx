@@ -123,11 +123,20 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   // Fokus flyttas efter ritningen: målet kan vara en station som inte fanns
   // förrän zonen bytte (heronas knappar ritas inte medan legenden visas).
   const pendingFocus = useRef<XpNavState | null>(null)
+  // Ägde vyn fokus senast? Släpps bara när fokus går till något UTANFÖR vyn.
+  // Försvinner det fokuserade kortet (Börjar snart-kortet när programmet
+  // startar, ett kort ett chip filtrerar bort) hamnar fokus på body — då tar
+  // vyn tillbaka det i stället för att lämna fjärren utan fäste.
+  const ownsFocus = useRef(false)
   useLayoutEffect(() => {
     const target = pendingFocus.current
-    if (!target) return
-    pendingFocus.current = null
-    focusAt(target)
+    if (target) {
+      pendingFocus.current = null
+      focusAt(target)
+      return
+    }
+    const now = document.activeElement
+    if (ownsFocus.current && (!now || now === document.body)) focusAt(live.current.s)
   })
   const apply = (key: XpKey): boolean => {
     const { s: cur, dims: d } = live.current
@@ -145,7 +154,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const claimBack = s.zone !== 'hero' && active
   useEffect(() => {
     if (!claimBack) return
-    return navRef.current.pushLayer(() => { apply('back') })
+    return navRef.current.pushLayer(() => { apply('back') }, { allowZap: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimBack])
 
@@ -240,8 +249,16 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       ref={rootRef}
       data-testid="hub-experience"
       onKeyDown={onKeyDown}
-      onFocusCapture={(e) => setActive((e.target as HTMLElement).hasAttribute?.('data-xp') ?? false)}
-      onBlurCapture={() => setActive(false)}
+      onFocusCapture={(e) => {
+        const xp = (e.target as HTMLElement).hasAttribute?.('data-xp') ?? false
+        setActive(xp)
+        if (xp) ownsFocus.current = true
+      }}
+      onBlurCapture={(e) => {
+        setActive(false)
+        const to = e.relatedTarget as Node | null
+        if (to && !rootRef.current?.contains(to)) ownsFocus.current = false
+      }}
       style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden', background: bg, color: V2.text, fontSize: dp(22), lineHeight: 1.3 }}
     >
       <V2FocusStyle />
