@@ -6,10 +6,11 @@ import type { EpgProgramme, NowNextLater } from '../epg/types'
 import type { LiveTvModel } from '../live-tv-model'
 import { qualityFromName } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { isReminded, onRemindersChanged, toggleReminder } from '../reminders'
+import { isReminded, onRemindersChanged } from '../reminders'
 import type { TvNav } from './tv-shell'
 import { Icons, dp, station, type StationProps } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { holdMenu, okAction } from './programme-actions'
 import { filterByGroup } from './tv-guide-shared'
 import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import { V2 } from './v2-tokens'
@@ -118,18 +119,6 @@ export function withLeftEdge(props: StationProps, onLeftEdge: (() => boolean) | 
   }
 }
 
-/**
- * OK på ett program. TILLFÄLLIGT tills `programme-actions.ts` (Task 9):
- * pågående/inget program → spela kanalen; framtida → påminnelse av/på.
- */
-function programmeOk(nav: TvNav, channel: M3uChannel, programme: EpgProgramme | null, nowMs: number): void {
-  if (programme && programme.start > nowMs) { toggleReminder(channel, programme, nowMs); return }
-  nav.play({ channel })
-}
-/** Håll OK. TILLFÄLLIGT tills Task 9: kanalens glasmeny. */
-function programmeHold(nav: TvNav, channel: M3uChannel, element: HTMLElement): void {
-  nav.channelMenu(channel, element)
-}
 
 type Row = { channel: M3uChannel; info: NowNextLater | null }
 
@@ -192,8 +181,8 @@ export function GuideNowSenView({ model, nav, category, categoryLabel, selection
 
   const cellProps = (sel: GuideSelection, init: boolean, leftEdge: boolean, extra: Record<string, string> = {}) => {
     const props = station(
-      () => { focusProgramme(sel); programmeOk(nav, sel.channel, sel.programme, nowMs) },
-      (element) => programmeHold(nav, sel.channel, element),
+      () => { focusProgramme(sel); okAction({ channel: sel.channel, programme: sel.programme, nav, nowMs })() },
+      (element) => holdMenu({ channel: sel.channel, programme: sel.programme, nav, nowMs, element, tt, locale }),
       { 'data-v2f': 'inset', ...extra, ...(init ? { 'data-init': '' } : {}) },
     )
     return {

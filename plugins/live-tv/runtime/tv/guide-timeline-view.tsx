@@ -5,10 +5,11 @@ import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock } from '../live-tv-ui'
-import { isReminded, toggleReminder } from '../reminders'
+import { isReminded } from '../reminders'
 import type { TvNav } from './tv-shell'
 import { Icons, dp, station, type StationProps } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { holdMenu, okAction } from './programme-actions'
 import { epgRowBoxes, pctShapeThresholds, type EpgRowEntry } from './epg-grid-geometry'
 import { useGridRows } from './grid-rows'
 import { filterByGroup } from './tv-guide-shared'
@@ -47,18 +48,6 @@ function clampWindow(ms: number, nowMs: number): number {
   return Math.max(startOfLocalDay(nowMs), Math.min(startOfLocalDay(nowMs, 2) - TL_SPAN_MS, ms))
 }
 
-/**
- * OK på ett block. TILLFÄLLIGT tills `programme-actions.ts` (Task 9):
- * pågående → spela; framtida → påminnelse av/på; passerat → spela kanalen.
- */
-function programmeOk(nav: TvNav, channel: M3uChannel, programme: EpgProgramme | null, nowMs: number): void {
-  if (programme && programme.start > nowMs) { toggleReminder(channel, programme, nowMs); return }
-  nav.play({ channel })
-}
-/** Håll OK. TILLFÄLLIGT tills Task 9: kanalens glasmeny. */
-function programmeHold(nav: TvNav, channel: M3uChannel, element: HTMLElement): void {
-  nav.channelMenu(channel, element)
-}
 
 type Pending = { key: string; start: number }
 
@@ -245,8 +234,8 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
                       const reminded = !live && !past && isReminded(channel, programme)
                       const props = keys(
                         station(
-                          () => { focusProgramme(sel); programmeOk(nav, channel, programme, nowMs) },
-                          (element) => programmeHold(nav, channel, element),
+                          () => { focusProgramme(sel); okAction({ channel, programme, nav, nowMs })() },
+                          (element) => holdMenu({ channel, programme, nav, nowMs, element, tt, locale }),
                           { 'data-v2f': 'inset', ...(rowInit && programme === initProgramme ? { 'data-init': '' } : {}) },
                         ),
                         (k, el) => (k === 'ArrowRight' ? step(channel, programme, 1)
@@ -295,7 +284,7 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
                     {...withPointerLeave(keys(
                       withLeftEdge(station(
                         () => { focusProgramme({ channel, programme: null }); nav.play({ channel }) },
-                        (element) => programmeHold(nav, channel, element),
+                        (element) => holdMenu({ channel, programme: null, nav, nowMs, element, tt, locale }),
                         { 'data-v2f': 'inset', ...(rowInit ? { 'data-init': '' } : {}) },
                       ), onLeftEdge),
                       (k, el) => (k === 'ArrowUp' || k === 'ArrowDown' ? vertical(el, nowIn ? nowMs : windowStart + TL_SPAN_MS / 2, k === 'ArrowDown' ? 1 : -1) : false),

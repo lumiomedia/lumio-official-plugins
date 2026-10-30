@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, typ
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme, NowNextLater } from '../epg/types'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { isReminded, toggleReminder } from '../reminders'
+import { isReminded } from '../reminders'
 import type { TvNav } from './tv-shell'
 import { Icons, dp, station, type StationProps } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { holdMenu, okAction } from './programme-actions'
 import { filterByGroup } from './tv-guide-shared'
 import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import { V2 } from './v2-tokens'
@@ -17,18 +18,6 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
 /** Programkortens kolumn (handoff "Kanallista"). */
 const CARDS_W = 560
 
-/**
- * OK på ett program. TILLFÄLLIGT tills `programme-actions.ts` (Task 9):
- * pågående/inget program → spela kanalen; framtida → påminnelse av/på.
- */
-function programmeOk(nav: TvNav, channel: M3uChannel, programme: EpgProgramme | null, nowMs: number): void {
-  if (programme && programme.start > nowMs) { toggleReminder(channel, programme, nowMs); return }
-  nav.play({ channel })
-}
-/** Håll OK. TILLFÄLLIGT tills Task 9: kanalens glasmeny. */
-function programmeHold(nav: TvNav, channel: M3uChannel, element: HTMLElement): void {
-  nav.channelMenu(channel, element)
-}
 
 type Row = { channel: M3uChannel; info: NowNextLater | null }
 type Card = { id: 'now' | 'next' | 'later'; programme: EpgProgramme | null }
@@ -146,8 +135,8 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
             const sel: GuideSelection = { channel, programme: info?.now ?? null }
             const props = onKeys(
               withLeftEdge(station(
-                () => { focusProgramme(sel); programmeOk(nav, channel, sel.programme, nowMs) },
-                (element) => programmeHold(nav, channel, element),
+                () => { focusProgramme(sel); okAction({ channel, programme: sel.programme, nav, nowMs })() },
+                (element) => holdMenu({ channel, programme: sel.programme, nav, nowMs, element, tt, locale }),
                 { 'data-v2f': 'inset', ...(index === initIndex ? { 'data-init': '' } : {}) },
               ), onLeftEdge),
               (k) => (k === 'ArrowRight' ? focusCard(0) : false),
@@ -195,8 +184,8 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
             const sel: GuideSelection = { channel: cardChannel, programme }
             const props = onKeys(
               station(
-                () => { focusProgramme(sel); programmeOk(nav, cardChannel, programme, nowMs) },
-                (element) => programmeHold(nav, cardChannel, element),
+                () => { focusProgramme(sel); okAction({ channel: cardChannel, programme, nav, nowMs })() },
+                (element) => holdMenu({ channel: cardChannel, programme, nav, nowMs, element, tt, locale }),
                 { 'data-v2f': 'inset' },
               ),
               (k) => {
