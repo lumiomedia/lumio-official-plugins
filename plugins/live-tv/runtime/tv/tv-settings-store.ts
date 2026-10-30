@@ -5,6 +5,7 @@ import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/p
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
 import { DEFAULT_GROUP_ORDER, sanitizeGroupOrder, type GroupOrder } from '../group-order'
+import { sanitizeGuideCategoryLayout, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -59,6 +60,14 @@ export interface TvSettings {
    * var det alltid flest kanaler först (se `group-order.ts`).
    */
   groupOrder: GroupOrder
+  /** Kanaler-vyns layout (handoff v2): Klassisk är standard, Upplevelse = Hem v3. */
+  hubLayout: HubLayout
+  /** Guidens kategorier: kolumn till vänster (standard) eller chips ovanför listan. */
+  guideCategoryLayout: GuideCategoryLayout
+  /** Färgton från bild i guidens hero och Upplevelses bakgrund. */
+  heroTint: boolean
+  /** Bakgrundstonen i Kanaler och guiden (Skiffer/Grafit/Natt). `TV.bg` rörs inte. */
+  liveBackground: LiveBackground
 }
 
 const DEFAULTS: TvSettings = {
@@ -76,6 +85,10 @@ const DEFAULTS: TvSettings = {
   streamFallback: true,
   streamFallbackAfterS: 5,
   groupOrder: DEFAULT_GROUP_ORDER,
+  hubLayout: 'classic',
+  guideCategoryLayout: 'column',
+  heroTint: true,
+  liveBackground: 'slate',
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -97,6 +110,10 @@ function sanitize(raw: unknown): TvSettings {
     streamFallback: typeof r.streamFallback === 'boolean' ? r.streamFallback : DEFAULTS.streamFallback,
     streamFallbackAfterS: (FALLBACK_AFTER_OPTIONS as readonly number[]).includes(r.streamFallbackAfterS as number) ? (r.streamFallbackAfterS as FallbackAfterS) : DEFAULTS.streamFallbackAfterS,
     groupOrder: sanitizeGroupOrder(r.groupOrder),
+    hubLayout: sanitizeHubLayout(r.hubLayout),
+    guideCategoryLayout: sanitizeGuideCategoryLayout(r.guideCategoryLayout),
+    heroTint: typeof r.heroTint === 'boolean' ? r.heroTint : DEFAULTS.heroTint,
+    liveBackground: sanitizeLiveBackground(r.liveBackground),
   }
 }
 

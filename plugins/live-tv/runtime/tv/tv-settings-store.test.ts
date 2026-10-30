@@ -22,6 +22,10 @@ describe('tv-settings-store', () => {
       streamFallback: true,
       streamFallbackAfterS: 5,
       groupOrder: 'playlist',
+      hubLayout: 'classic',
+      guideCategoryLayout: 'column',
+      heroTint: true,
+      liveBackground: 'slate',
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
@@ -101,5 +105,11 @@ describe('tv-settings-store', () => {
     expect(getTvSettings().guideCategory).toBeNull()
     expect(getTvSettings().timelineZoom).toBe('day')
     expect(getTvSettings().nowNextDetails).toBe(true)
+  })
+  it('v2-utseendet: Klassisk, kolumn, färgton på och Skiffer som standard; ogiltigt faller tillbaka', () => {
+    setTvSettings({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
+    expect(getTvSettings()).toMatchObject({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { hubLayout: 'x', guideCategoryLayout: 1, heroTint: 'yes', liveBackground: 'pink' })
+    expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'column', heroTint: true, liveBackground: 'slate' })
   })
 })

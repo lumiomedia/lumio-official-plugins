@@ -14,6 +14,7 @@ import { SportKeySettingsTv } from '../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../sport/sport-backdrop-settings'
 import { SportSpoilerSettingsTv } from '../sport/sport-spoiler-settings'
 import { nextStartView, startViewLabelKey } from './start-view'
+import { guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, nextGuideCategoryLayout, nextHubLayout, nextLiveBackground } from './v2-settings'
 
 type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'sport' | 'help'
 const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'sport', 'help']
@@ -105,6 +106,13 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
             </div>
           ))}
         </div>
+      </section>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+        <Heading>{tt('appearanceGuideHeading')}</Heading>
+        <Row testId="setting-hubLayout" label={tt('settingHubLayout')} right={tt(hubLayoutLabelKey(settings.hubLayout))} onOk={() => setTvSettings({ hubLayout: nextHubLayout(settings.hubLayout) })} />
+        <Row testId="setting-guideCategoryLayout" label={tt('settingGuideCategories')} right={tt(guideCategoryLayoutLabelKey(settings.guideCategoryLayout))} onOk={() => setTvSettings({ guideCategoryLayout: nextGuideCategoryLayout(settings.guideCategoryLayout) })} />
+        <Row testId="setting-heroTint" label={tt('settingHeroTint')} right={<Toggle on={settings.heroTint} />} onOk={() => setTvSettings({ heroTint: !settings.heroTint })} />
+        <Row testId="setting-liveBackground" label={tt('settingLiveBackground')} right={tt(liveBackgroundLabelKey(settings.liveBackground))} onOk={() => setTvSettings({ liveBackground: nextLiveBackground(settings.liveBackground) })} />
       </section>
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
         <Heading>{tt('behaviour')}</Heading>

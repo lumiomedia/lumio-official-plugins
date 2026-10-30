@@ -53,6 +53,7 @@ import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
 import { FALLBACK_AFTER_OPTIONS, setTvSettings, useTvSettings, type FallbackAfterS } from './tv/tv-settings-store'
 import { START_VIEWS, startViewLabelKey } from './tv/start-view'
+import { GUIDE_CATEGORY_LAYOUTS, HUB_LAYOUTS, LIVE_BACKGROUNDS, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey } from './tv/v2-settings'
 import { GROUP_ORDERS, groupOrderLabelKey, sanitizeGroupOrder } from './group-order'
 import { useTvText } from './tv/tv-strings'
 
@@ -344,6 +345,30 @@ function DesktopPage() {
             options={START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) }))}
             value={tvSettings.startView}
             onChange={(startView) => setTvSettings({ startView })}
+          />
+          {/* Utseendet för Kanaler och guiden (handoff v2, 2026-10-30). Samma lager som TV:ns rader. */}
+          <LtChoiceRow
+            testId="lt-hub-layout"
+            label={tt('settingHubLayout')}
+            desc={tt('settingHubLayoutHint')}
+            options={HUB_LAYOUTS.map((key) => ({ key, label: tt(hubLayoutLabelKey(key)) }))}
+            value={tvSettings.hubLayout}
+            onChange={(hubLayout) => setTvSettings({ hubLayout })}
+          />
+          <LtChoiceRow
+            testId="lt-guide-categories"
+            label={tt('settingGuideCategories')}
+            options={GUIDE_CATEGORY_LAYOUTS.map((key) => ({ key, label: tt(guideCategoryLayoutLabelKey(key)) }))}
+            value={tvSettings.guideCategoryLayout}
+            onChange={(guideCategoryLayout) => setTvSettings({ guideCategoryLayout })}
+          />
+          <LtToggleRow first={false} testId="lt-hero-tint" label={tt('settingHeroTint')} desc={tt('settingHeroTintHint')} checked={tvSettings.heroTint} onChange={(heroTint) => setTvSettings({ heroTint })} />
+          <LtChoiceRow
+            testId="lt-live-background"
+            label={tt('settingLiveBackground')}
+            options={LIVE_BACKGROUNDS.map((key) => ({ key, label: tt(liveBackgroundLabelKey(key)) }))}
+            value={tvSettings.liveBackground}
+            onChange={(liveBackground) => setTvSettings({ liveBackground })}
           />
           {/* Strömbytet när kanalen hackar (Jerry 2026-10-14). Sparas i samma lager som TV:ns och telefonens rader. */}
           <LtToggleRow first={false} testId="lt-stream-fallback" label={tt('settingStreamFallback')} desc={tt('settingStreamFallbackHint')} checked={tvSettings.streamFallback} onChange={(streamFallback) => setTvSettings({ streamFallback })} />
