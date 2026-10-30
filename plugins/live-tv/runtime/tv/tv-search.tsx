@@ -271,7 +271,7 @@ function SearchProgrammeCell({ programme, nowMs, stationProps, next = null }: { 
  */
 export function VodHit({ item, onOpen }: { item: VodItem; onOpen: () => void }) {
   return (
-    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(170), flexShrink: 0, cursor: 'pointer' }}>
+    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(136), flexShrink: 0, cursor: 'pointer' }}>
       <div data-testid="search-vod-poster" style={{ position: 'relative', aspectRatio: '2 / 3', borderRadius: dp(10), border: `1px solid ${TV.lineCard}`, background: TV.s07, overflow: 'hidden' }}>
         {item.posterUrl ? (
           <img src={item.posterUrl} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
