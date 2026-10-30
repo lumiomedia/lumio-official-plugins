@@ -16,6 +16,7 @@ import { listVodCategories } from '../vod-client'
 import { getVodMode } from '../vod-data'
 import { isDesktopTauri } from './guide-surface'
 import { useImageTone, type Rgb } from '../sport/backdrop'
+import { railTone } from './rail-tint'
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 
@@ -69,16 +70,7 @@ function useHomeHeroImage(enabled: boolean): string | null {
 
 const GLASS_BLUR = 'blur(24px) saturate(140%)'
 
-/**
- * Rälsens ton ur herons medelton. `darkTone` (sportens, luminans ≈ 42) låg så
- * nära sidtonen att rälsen såg platt ut; här ljusas inget upp, men mörkas bara
- * ner till luminans 64 — vit text läses fortfarande (kontrast ≈ 8:1).
- */
-export function railTone([r, g, b]: Rgb): Rgb {
-  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  const f = lum > 64 ? 64 / lum : 1
-  return [Math.round(r * f), Math.round(g * f), Math.round(b * f)]
-}
+export { railTone } from './rail-tint'
 
 function hexRgb(color: string): Rgb | null {
   const h = color.trim().replace('#', '')

@@ -6,6 +6,7 @@ import { TV, belowTitleBar, dp, station, Icons } from './tv-ui'
 import type { TvView } from './tv-shell'
 import { SportIcons } from '../sport/tv/sport-icons'
 import { V2 } from './v2-tokens'
+import { railTintBackground, useRailTint } from './rail-tint'
 
 /**
  * IKONRADENS MÅTT — allt på ETT ställe, i designpixlar.
@@ -73,6 +74,9 @@ export function shellRailActive(view: TvView, redirecting: boolean): RailKey | n
 }
 
 export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: TvRailProps) {
+  // En vy med bakgrundsbild (sporten) tonar rälsen efter bilden; annars rälsens vanliga yta.
+  const tint = useRailTint()
+  const railBg = tint ? railTintBackground(tint) : V2.railSurface
   const { tt } = useTvText()
   const railWidth = isTv ? (railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT) : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT
   const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT
@@ -118,7 +122,7 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
         På telefon finns ingen rad alls: flik-raden nedan tar över. */
   return (
-      <nav data-testid="tv-rail" aria-label={tt('liveTv')} data-bg={V2.railSurface} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: V2.railSurface, padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
+      <nav data-testid="tv-rail" aria-label={tt('liveTv')} data-bg={railBg} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: railBg, transition: 'background 600ms ease', padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
         {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
             yta går den bort tillsammans med luften ovanför — posterna ska nå
             ner i skärmen, inte trängas under en logotyp. */}

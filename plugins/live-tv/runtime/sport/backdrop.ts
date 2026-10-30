@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { setRailTint } from '../tv/rail-tint'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { currentRouter } from './router'
 import { cardOpacity, hasAnyKey, useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
@@ -392,6 +393,12 @@ export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope =
   })
   const src = choice.kind === 'image' ? backdropSrc(choice) : null
   const tone = useImageTone(src, settings.cards.tone === 'image')
+  // Rälsen tar färg av bilden bakom (Jerry 2026-10-30), oavsett korttonen.
+  const railImageTone = useImageTone(src, choice.kind === 'image')
+  useEffect(() => {
+    setRailTint(railImageTone)
+    return () => setRailTint(null)
+  }, [railImageTone])
   // Oskärpan kostar på TV-boxarna (och gamla WebViews saknar den): bara skrivbord och telefon.
   const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode, tv: tvMode }) : null
   return { choice, onBroken, surface }
