@@ -8,11 +8,13 @@ import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
+import { VodHit } from './tv-search'
+import { dp } from './tv-ui'
 
 const now = Date.now()
 const ch = (name: string, tvgId: string | null = null) => ({ name, logo: null, group: 'Sport', url: `http://x/${name}`, tvgId })
 const list: LiveTvList = { id: 'l1', name: 'X', channels: [ch('Sky Sports', 'sky.tv'), ch('ESPN')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
-const cache: EpgCacheEntry = { index: { 'sky.tv': [{ title: 'Golf Tonight', start: now + 60_000, stop: now + 120_000 }] }, fetchedAt: now, sources: [] }
+const cache: EpgCacheEntry = { index: { 'sky.tv': [{ title: 'Golf Tonight', start: now + 60_000, stop: now + 120_000 }, { title: 'Golf Live', start: now - 30 * 60_000, stop: now + 30 * 60_000 }] }, fetchedAt: now, sources: [] }
 
 afterEach(cleanup)
 beforeEach(() => {
@@ -145,5 +147,49 @@ describe('TvSearch på telefon: grenar till TvSearchPhone', () => {
     await flushLiveTvIndex()
     expect(within(box).getByTestId('search-input')).toBeInTheDocument()
     expect(within(box).queryByTestId('search-view-root')).toBeNull()
+  })
+})
+
+/**
+ * Jerry 2026-10-30: affischerna i "Film & serier" lite mindre (≈ 80 %), och
+ * "Program i dag" ska se ut som guidens rader — kanalcell med logoplatta,
+ * programcell med tidsintervall och, för det som sänds nu, förlopp.
+ */
+describe('TvSearch: mindre affischer, programträffar som guiderader', () => {
+  const shellProps = { pageId: 'live-tv-browse', params: { view: 'search' }, onNavigate: () => {}, onOpenDetails: () => {} } as unknown as ComponentProps<typeof LiveTvTvShell>
+  it('VOD-affischen är ≈ 80 % av den gamla bredden (130 → 104) och behåller 2:3', () => {
+    render(<VodHit item={{ key: 'k', title: 'Alien', year: 1979, posterUrl: null } as never} onOpen={() => {}} />)
+    const hit = screen.getByTestId('search-vod-hit')
+    expect(hit.style.width).toBe(`${dp(104)}px`)
+    expect(screen.getByTestId('search-vod-poster').style.aspectRatio).toBe('2 / 3')
+    expect(hit).toHaveTextContent('Alien')
+    expect(hit).toHaveTextContent('1979')
+  })
+
+  it('en programträff har guidens kanalcell (logoplatta) och ett tidsintervall', async () => {
+    render(<LiveTvTvShell {...shellProps} />)
+    fireEvent.click(screen.getByText('g'))
+    await settle()
+    const hit = within(screen.getByTestId('search-programmes')).getByText('Golf Tonight').closest('[data-testid="search-programme-hit"]') as HTMLElement
+    expect(hit).not.toBeNull()
+    expect(within(hit).getByTestId('logo-plate')).toBeInTheDocument()
+    expect(hit).toHaveTextContent('Sky Sports')
+    const cell = within(hit).getByTestId('search-programme-cell')
+    expect(cell.getAttribute('data-v2f')).toBe('inset')
+    expect(within(hit).getByTestId('search-programme-time').textContent).toMatch(/\d{2}.\d{2}–\d{2}.\d{2}/)
+    // Framtida program: inget förlopp.
+    expect(within(hit).queryByTestId('search-programme-progress')).toBeNull()
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
+  it('ett program som sänds nu visar förlopp och "min kvar"', async () => {
+    render(<LiveTvTvShell {...shellProps} />)
+    fireEvent.click(screen.getByText('g'))
+    await settle()
+    const hit = within(screen.getByTestId('search-programmes')).getByText('Golf Live').closest('[data-testid="search-programme-hit"]') as HTMLElement
+    const bar = within(hit).getByTestId('search-programme-progress')
+    expect(parseInt(bar.style.width, 10)).toBeGreaterThanOrEqual(45)
+    expect(parseInt(bar.style.width, 10)).toBeLessThanOrEqual(55)
+    expect(hit).toHaveTextContent(/30 min/)
   })
 })

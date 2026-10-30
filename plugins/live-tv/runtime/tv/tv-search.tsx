@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
-import { formatClock } from '../live-tv-ui'
+import { formatClock, progressOf } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { ChannelArt, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -15,6 +15,12 @@ import { TvSearchPhone } from './mobile/search-phone'
 import { useVodPage } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
 import type { VodItem } from '../vod-client'
+import type { ProgrammeSearchHit } from '../hooks/useProgrammeSearch'
+import type { LiveTvModel } from '../live-tv-model'
+import type { TvNav } from './tv-shell'
+import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_ROW_GAP, GUIDE_ROW_H, GuideChannelCellV2, accentMix, ellipsis } from './guide-nowsen-view'
+import { V2 } from './v2-tokens'
+import { holdMenu, programmeState } from './programme-actions'
 
 /**
  * Sökets omfång. Sessionstillstånd med flit — den som sökte film igår vill
@@ -177,11 +183,7 @@ function TvSearchDesktop(props: TvViewProps) {
               svaret kommit, inte "inga träffar". */}
           {query && programmes.length === 0 ? <div data-testid="search-programmes-empty" style={{ color: TV.dim, fontSize: dp(18) }}>{programmesLoading ? tt('loadingGuide') : tt('noResults')}</div> : null}
           {programmes.map((hit) => (
-            <div key={`${channelKey(hit.channel)}:${hit.programme.start}`} {...station(() => nav.go('guide', { channel: channelKey(hit.channel) }))} style={{ height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(16), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
-              <span style={{ width: dp(80), fontSize: dp(18), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{formatClock(hit.programme.start, locale)}</span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: dp(20), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hit.programme.title}</span>
-              <span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{hit.channel.name}</span>
-            </div>
+            <ProgrammeHit key={`${channelKey(hit.channel)}:${hit.programme.start}`} hit={hit} model={model} nav={nav} />
           ))}
         </section>
         ) : null}
@@ -190,17 +192,59 @@ function TvSearchDesktop(props: TvViewProps) {
   )
 }
 
-/** En VOD-träff i söket: liten affisch, titel och år. */
-function VodHit({ item, onOpen }: { item: VodItem; onOpen: () => void }) {
+/**
+ * En programträff som en guiderad (Jerry 2026-10-30: "mer som EPG:n"):
+ * guidens kanalcell (logoplatta med nummer, namn, kategori) och en programcell
+ * som Nu/Sen-cellerna — titel, "HH:MM–HH:MM" och, för det som sänds nu,
+ * accenttonad bakgrund, tunt förlopp och "N min kvar". Bara programcellen är
+ * en station (som i guiden); OK går till guiden fokuserad på kanalen, håll
+ * ger programmenyn (påminnelse / starta om / repris).
+ */
+function ProgrammeHit({ hit, model, nav }: { hit: ProgrammeSearchHit; model: LiveTvModel; nav: TvNav }) {
+  const { tt, locale } = useTvText()
+  const { channel, programme } = hit
+  const { nowMs } = model
+  const live = programmeState(programme, nowMs) === 'live'
+  const props = station(
+    () => nav.go('guide', { channel: channelKey(channel) }),
+    (element) => holdMenu({ channel, programme, nav, nowMs, element, tt, locale }),
+    { 'data-v2f': 'inset', 'data-testid': 'search-programme-cell' },
+  )
   return (
-    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(130), flexShrink: 0, cursor: 'pointer' }}>
-      <div style={{ position: 'relative', aspectRatio: '2 / 3', borderRadius: dp(10), border: `1px solid ${TV.lineCard}`, background: TV.s07, overflow: 'hidden' }}>
+    <div data-testid="search-programme-hit" style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), minHeight: dp(GUIDE_ROW_H), flexShrink: 0 }}>
+      <GuideChannelCellV2 channel={channel} model={model} selected={false} />
+      <div {...props} style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dp(6), boxSizing: 'border-box', cursor: 'pointer', background: live ? accentMix(18) : V2.surface3 }}>
+        <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{programme.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(15), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+          <span data-testid="search-programme-time" style={{ flexShrink: 0 }}>{`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}</span>
+          {live ? (
+            <>
+              <div style={{ flex: 1, maxWidth: dp(320), height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
+                <div data-testid="search-programme-progress" style={{ height: '100%', width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: ACCENT }} />
+              </div>
+              <span style={{ flexShrink: 0, fontSize: dp(14) }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((programme.stop - nowMs) / 60_000)) })}</span>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * En VOD-träff i söket: liten affisch, titel och år. 104 dp bred (≈ 80 % av
+ * de tidigare 130 — Jerry 2026-10-30: "lite mindre affischer"), 2:3.
+ */
+export function VodHit({ item, onOpen }: { item: VodItem; onOpen: () => void }) {
+  return (
+    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(104), flexShrink: 0, cursor: 'pointer' }}>
+      <div data-testid="search-vod-poster" style={{ position: 'relative', aspectRatio: '2 / 3', borderRadius: dp(10), border: `1px solid ${TV.lineCard}`, background: TV.s07, overflow: 'hidden' }}>
         {item.posterUrl ? (
           <img src={item.posterUrl} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : null}
       </div>
-      <div style={{ fontSize: dp(16), fontWeight: 600, marginTop: dp(6), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-      <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)' }}>{item.year ?? ''}</div>
+      <div style={{ fontSize: dp(15), fontWeight: 600, marginTop: dp(6), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+      <div style={{ fontSize: dp(13), color: 'rgba(243,244,248,0.55)' }}>{item.year ?? ''}</div>
     </div>
   )
 }
