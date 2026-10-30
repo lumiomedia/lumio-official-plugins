@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mixHex, v2Bg, V2 } from './v2-tokens'
+import { mixHex, v2Ambient, v2Bg, V2 } from './v2-tokens'
 
 describe('v2-tokens', () => {
   it('blandar två hexfärger med andelen för den första', () => {
@@ -13,5 +13,12 @@ describe('v2-tokens', () => {
   })
   it('logoplattan är ljus', () => {
     expect(V2.logoPlate).toBe('#f3f4f8')
+  })
+  it('den gemensamma bakgrunden: neutral radiell ton uppe till höger mot sidtonen (Jerry 2026-10-30)', () => {
+    const a = v2Ambient('slate')
+    expect(a).toContain('radial-gradient(')
+    expect(a).toContain('at 70% 10%')
+    expect(a).toContain(mixHex(V2.categoryTints.other, '#161a23', 75))
+    expect(a).toContain('#161a23 75%')
   })
 })

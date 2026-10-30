@@ -17,7 +17,7 @@ import { GuideListView } from './guide-list-view'
 import { GuideHero, useDebouncedSelection } from './guide-hero'
 import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
 import { guideKeyAction } from './guide-keys'
-import { V2, v2Bg } from './v2-tokens'
+import { V2, v2Ambient, v2Bg } from './v2-tokens'
 import { CutoutLayer } from './cutout-layer'
 import { V2FocusStyle } from './v2-ui'
 import type { GuideSelection, GuideViewProps } from './guide-types'
@@ -202,7 +202,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     >
       <V2FocusStyle />
       {/* Sidans ton med hål åt förhandsrutan (mpv ritar under webbvyn). */}
-      <CutoutLayer background={v2Bg(settings.liveBackground)} style={{ zIndex: -1 }} />
+      <CutoutLayer background={v2Ambient(settings.liveBackground)} style={{ zIndex: -1 }} />
       <div onFocusCapture={() => setInCats(false)} style={{ flexShrink: 0 }}>
         <GuideHero
           sel={heroSelection}

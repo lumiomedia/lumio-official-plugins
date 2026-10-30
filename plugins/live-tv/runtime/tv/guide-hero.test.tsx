@@ -134,4 +134,8 @@ describe('guideKeyAction', () => {
     hero({ channel, programme: live })
     expect(screen.queryByTestId('guide-clock')).toBeNull()
   })
+  it('utan färgton målar heron ingen egen bandfärg — sidans gemensamma bakgrund syns igenom', () => {
+    hero({ channel, programme: live })
+    expect(screen.getByTestId('guide-hero-base').style.background).toBe('transparent')
+  })
 })

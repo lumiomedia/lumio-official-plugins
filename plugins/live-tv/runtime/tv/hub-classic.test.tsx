@@ -128,4 +128,8 @@ describe('HubClassic', () => {
     expect(screen.getByTestId('hub-spotlight')).toHaveAttribute('data-f')
     box.remove()
   })
+  it('bakgrunden är den gemensamma neutrala gradienten (färgton av)', async () => {
+    await mount()
+    expect(screen.getByTestId('hub-classic').getAttribute('data-bg')).toContain('radial-gradient(')
+  })
 })

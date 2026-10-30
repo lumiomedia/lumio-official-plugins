@@ -59,6 +59,17 @@ export function mixHex(a: string, b: string, aPct: number): string {
   return `rgb(${m(ar, br)},${m(ag, bg)},${m(ab, bb)})`
 }
 
+/**
+ * DEN GEMENSAMMA BAKGRUNDEN för guiden och Kanaler (båda layouterna): neutral
+ * radiell ton uppe till höger mot sidtonen — Upplevelses kategorihero, som
+ * Jerry valde 2026-10-30 ("så här på guide samt channel, även när det finns
+ * ett förhandsfönster"). Den tonas inte av logor eller programbilder.
+ */
+export function v2Ambient(bg: LiveBackground): string {
+  const base = v2Bg(bg)
+  return `radial-gradient(1500px 900px at 70% 10%, ${mixHex(V2.categoryTints.other, base, 75)}, ${base} 75%)`
+}
+
 /** Fokus på kort/celler (Hem), inset i guiden där cellerna står tätt, och på knappar/chips. */
 export const FOCUS_CARD = `0 0 0 3px ${TV.acc}, 0 24px 60px rgba(0,0,0,.55), 0 0 40px ${TV.accMix(35)}`
 export const FOCUS_INSET = `inset 0 0 0 2px ${TV.acc}, 0 0 24px ${TV.accMix(35)}`

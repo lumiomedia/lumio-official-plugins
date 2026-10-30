@@ -6,6 +6,7 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 import { setTvSettings } from './tv-settings-store'
+import { v2Ambient } from './v2-tokens'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -193,5 +194,10 @@ describe('HubExperience', () => {
     const track = screen.getByTestId('xp-rows-track')
     press('ArrowDown'); press('ArrowDown'); press('ArrowDown')
     expect(track.style.transform).toMatch(/translateY\(-[1-9]/)
+  })
+  it('bakgrunden är den gemensamma neutrala gradienten även när heron visar en kanal med förhandsruta', async () => {
+    await mount()
+    expect(screen.getByTestId('xp-hero-tile')).toBeInTheDocument()
+    expect(screen.getByTestId('xp-ambient').getAttribute('data-bg')).toBe(v2Ambient('slate'))
   })
 })

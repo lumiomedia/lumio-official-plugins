@@ -131,7 +131,7 @@ export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sou
       {/* Sidans ton: bandets färg rakt ner till 276 px och sedan ut i
           bakgrunden vid 640 px. Ligger UNDER listan (zIndex 0); listan
           ritas ovanpå med genomskinliga ytor. */}
-      <CutoutLayer testId="guide-hero-base" data={{ 'data-base': base }} background={`linear-gradient(180deg, ${base} 0px, ${base} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)`} style={{ inset: 'auto', left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), transition: 'background .4s', zIndex: 0 }} />
+      <CutoutLayer testId="guide-hero-base" data={{ 'data-base': base }} background={tint && channel ? `linear-gradient(180deg, ${base} 0px, ${base} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)` : 'transparent'} style={{ inset: 'auto', left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), transition: 'background .4s', zIndex: 0 }} />
       <CutoutLayer background="transparent" style={{ overflow: 'hidden', zIndex: 0 }}>
         {art ? (
           <>

@@ -18,7 +18,7 @@ import { useGroupPicker } from './tv-group-picker'
 import { holdMenu } from './programme-actions'
 import { useProgrammeArt } from './programme-art'
 import { useTint } from './tint'
-import { V2, mixHex, v2Bg } from './v2-tokens'
+import { V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
 import { LivePill, LogoPlate, ProgrammeArtBox, V2FocusStyle } from './v2-ui'
 import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 
@@ -70,7 +70,7 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
   const leadLogo = lead ? getLiveTvLogoSrc(lead.logo) ?? getLiveTvLogoSrc(lead.logoFallback) : null
   const tone = useTint(leadArt ?? leadLogo, settings.heroTint && lead !== null)
   const bg = v2Bg(settings.liveBackground)
-  const background = settings.heroTint && lead ? `radial-gradient(${dp(1400)}px ${dp(700)}px at 20% 0%, ${mixHex(tone, bg, 38)}, ${bg} 70%)` : bg
+  const background = settings.heroTint && lead ? `radial-gradient(${dp(1400)}px ${dp(700)}px at 20% 0%, ${mixHex(tone, bg, 38)}, ${bg} 70%)` : v2Ambient(settings.liveBackground)
 
   const hold = (channel: M3uChannel, programme: EpgProgramme | null) => (el: HTMLElement) => holdMenu({ channel, programme, nav, nowMs: model.nowMs, element: el, tt, locale })
   const liveHold = (channel: M3uChannel) => hold(channel, model.nowFor(channel).now)
@@ -81,7 +81,7 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
   const pillInit = spotlight.length === 0 && shown.length === 0
 
   return (
-    <div data-testid="hub-classic" data-scroll="" style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', background, color: V2.text, transition: 'background .6s ease', padding: `${dp(30)}px ${dp(48)}px ${dp(56)}px`, display: 'flex', flexDirection: 'column', gap: dp(30), scrollPaddingTop: dp(120) }}>
+    <div data-testid="hub-classic" data-scroll="" data-bg={background} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', background, color: V2.text, transition: 'background .6s ease', padding: `${dp(30)}px ${dp(48)}px ${dp(56)}px`, display: 'flex', flexDirection: 'column', gap: dp(30), scrollPaddingTop: dp(120) }}>
       <V2FocusStyle />
       {/* Appen saknar v2-endpointerna (0.1.596+): starten hoppade över
           migreringen med flit, så vyn kan vara tom utan att något är trasigt. */}

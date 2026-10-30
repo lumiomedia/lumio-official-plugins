@@ -15,7 +15,7 @@ import { holdMenu, okAction } from './programme-actions'
 import { useProgrammeArt } from './programme-art'
 import { useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
-import { FOCUS_BTN, FOCUS_CARD, V2, mixHex, v2Bg } from './v2-tokens'
+import { FOCUS_BTN, FOCUS_CARD, V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
 import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
 import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 import { useExperienceRows, type XpItem, type XpRowId } from './hub-experience-data'
@@ -224,7 +224,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   // "Färgton från bild" gäller guiden och Klassisk.
   const imageTone = useTint(art ?? logo, heroChannel !== null)
   const tone = heroItem?.kind === 'category' ? categoryTint(heroItem.category ?? '') : imageTone
-  const ambient = heroItem ? `radial-gradient(${dp(1500)}px ${dp(900)}px at 70% 10%, ${mixHex(tone, bg, 75)}, ${bg} 75%)` : bg
+  // Samma neutrala gradient oavsett hero (Jerry 2026-10-30) — tonen ovan färgar bara reservrutan.
+  const ambient = v2Ambient(settings.liveBackground)
 
   if (model.allChannels.length === 0 || !featured) return <HubEmptyState testId="hub-experience" model={model} nav={nav} background={bg} />
 
@@ -268,7 +269,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     >
       <V2FocusStyle />
       {/* Hål åt förhandsrutan: mpv ritar videon under webbvyn. */}
-      <CutoutLayer testId="xp-ambient" background={ambient} style={{ zIndex: -1, transition: 'background .6s ease' }} />
+      <CutoutLayer testId="xp-ambient" data={{ 'data-bg': ambient }} background={ambient} style={{ zIndex: -1, transition: 'background .6s ease' }} />
       {hasArt ? (
         <div style={{ position: 'absolute', top: 0, right: 0, width: '72%', height: dp(640), WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 42%)', maskImage: 'linear-gradient(90deg, transparent 0%, #000 42%)' }}>
           <div data-testid="xp-hero-art" style={{ position: 'absolute', inset: 0, background: `url("${art}") center / cover no-repeat`, transition: 'background .5s', WebkitMaskImage: 'linear-gradient(180deg, #000 50%, transparent 100%)', maskImage: 'linear-gradient(180deg, #000 50%, transparent 100%)' }} />
