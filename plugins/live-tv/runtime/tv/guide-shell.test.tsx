@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
-import { getActivePlaylistId, getGuideMode, getTvSettings } from './tv-settings-store'
+import { getActivePlaylistId, getGuideMode, getTvSettings, setTvSettings } from './tv-settings-store'
 import { guideWindowStart } from './epg-grid-geometry'
 import { v2Bg } from './v2-tokens'
 import type { EpgCacheEntry } from '../epg/types'
@@ -228,5 +228,10 @@ describe('guidens bakgrund', () => {
   it('slät sidton utan gradient (bilden har sin egen övertoning i heron)', async () => {
     await mount()
     expect(screen.getByTestId('guide-bg').getAttribute('data-bg')).toBe(v2Bg('slate'))
+  })
+  it('djuplänk till en kanal utanför den sparade kategorin byter till Alla (sökträffar, Jerry 2026-10-30)', async () => {
+    setTvSettings({ guideCategory: 'News' })
+    await mount({ view: 'guide', channel: 'A::http://x/A' })
+    expect(getTvSettings().guideCategory).toBeNull()
   })
 })

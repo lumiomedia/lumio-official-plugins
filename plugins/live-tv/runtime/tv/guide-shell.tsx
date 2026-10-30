@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
+import { channelKey } from '../live-tv-data'
 import type { TvViewProps } from './tv-shell'
 import { useTvText } from './tv-strings'
 import { getTvSettings, setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
@@ -79,8 +80,21 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     if (next !== getTvSettings().guideCategory) setTvSettings({ guideCategory: next })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  // `params.channel` (Klassisks favoriter): vyn ger den kanalen startfokus.
+  // `params.channel` (Klassisks favoriter, sökträffar): vyn ger den kanalen startfokus.
   const focusChannelKey = params.channel ?? null
+  // Ligger kanalen utanför den sparade kategorin finns den inte i listan och
+  // kan inte få fokus — då Alla, en gång, när kanalerna har laddats.
+  const deepLinkChecked = useRef(false)
+  useEffect(() => {
+    if (deepLinkChecked.current || !focusChannelKey || groupParam) return
+    const target = model.channels.find((c) => channelKey(c) === focusChannelKey)
+    if (!target) return
+    deepLinkChecked.current = true
+    const stored = getTvSettings().guideCategory
+    if (stored === null) return
+    const inside = stored === FAVS_GROUP ? model.pinnedSet.has(focusChannelKey) : target.group === stored
+    if (!inside) setTvSettings({ guideCategory: null })
+  }, [focusChannelKey, groupParam, model.channels, model.pinnedSet])
 
   // Fönsterstart är VY-state (halvtimmesjusterad vid inträde och vid Nu);
   // Tablån flyttar den med ◂▸ förbi kanten.
