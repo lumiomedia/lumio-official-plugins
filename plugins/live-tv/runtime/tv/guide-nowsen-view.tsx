@@ -67,7 +67,10 @@ export function useFocusNowOnTick(rootRef: RefObject<HTMLElement | null>, nowTic
   useEffect(() => {
     if (first.current) { first.current = false; return }
     const root = rootRef.current
-    if (!root || !root.contains(document.activeElement)) return
+    // Fokus kan ha fallit till body: blocket det stod på försvann när
+    // fönstret flyttades tillbaka (Tablå). Då hör fokus också hemma här.
+    const active = document.activeElement
+    if (!root || !(root.contains(active) || active === document.body || active === null)) return
     const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-guide-v2-row]'))
     const row = rows.find((r) => r.dataset.key === selectedKey) ?? rows[0]
     row?.querySelector<HTMLElement>('[data-now-station]')?.focus()

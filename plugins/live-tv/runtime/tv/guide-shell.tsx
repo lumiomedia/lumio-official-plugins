@@ -14,6 +14,7 @@ import { TvGroupPanel } from './tv-group-picker'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideGridView } from './guide-grid-view'
 import { GuideNowSenView } from './guide-nowsen-view'
+import { GuideTimelineView } from './guide-timeline-view'
 import { GuideHero, useDebouncedSelection } from './guide-hero'
 import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
 import { guideKeyAction } from './guide-keys'
@@ -184,10 +185,12 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     isTv,
     mode,
   }
-  // TILLFÄLLIGT: Tablå och Kanallista byts mot v2-vyerna i Task 7–8.
+  // TILLFÄLLIGT: Kanallista byts mot v2-vyn i Task 8.
   const view = mode === 'now'
     ? <GuideNowSenView {...viewProps} />
-    : <GuideGridView {...viewProps} detailPanel={false} />
+    : mode === 'tl'
+      ? <GuideTimelineView {...viewProps} />
+      : <GuideGridView {...viewProps} detailPanel={false} />
 
   const categories = { items: categoryItems, value: category, onPick: pickCategory }
 

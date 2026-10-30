@@ -50,7 +50,7 @@ const column = () => screen.getByTestId('guide-category-column')
 const cat = (label: string) => within(document.body).getAllByTestId('guide-cat').find((el) => el.textContent?.startsWith(label))!
 const press = (key: string) => fireEvent.keyDown(window, { key })
 const leftGuide = (onNavigate: ReturnType<typeof vi.fn>) => onNavigate.mock.calls.some((call) => (call[0] as { params: Record<string, string> }).params.view === 'hub')
-const block = (title: string) => screen.getAllByTestId('grid-block').find((el) => el.textContent?.includes(title))!
+const block = (title: string) => screen.getAllByTestId('tl-block').find((el) => el.textContent?.includes(title))!
 
 describe('TvGuideShell v2 (TV-läge)', () => {
   it('hero med segmentet (tre stationer), kategorikolumn och exakt en [data-init]', async () => {
