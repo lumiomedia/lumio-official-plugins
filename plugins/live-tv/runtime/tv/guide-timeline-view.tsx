@@ -187,8 +187,12 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
   return (
     <div ref={rootRef} data-testid="guide-timeline-view" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <div data-testid="tl-header" style={{ height: dp(44), flexShrink: 0, display: 'flex', gap: dp(GUIDE_ROW_GAP), fontSize: dp(15), letterSpacing: '0.1em', textTransform: 'uppercase', color: V2.text3 }}>
-        <div style={{ width: dp(GUIDE_CHANNEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: dp(16), boxSizing: 'border-box', ...ellipsis }}>
-          {`${categoryLabel ?? tt('categoryAll')} · ${tt('channelsCount', { count: total })}`}
+        {/* "◂ tidigare" bor i kanalkolumnens rubrik, efter etiketten (som kortas) — förut låg den absolut och skrev över "N KANALER". */}
+        <div data-testid="tl-channel-head" style={{ width: dp(GUIDE_CHANNEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), padding: `0 ${dp(10)}px 0 ${dp(16)}px`, boxSizing: 'border-box', minWidth: 0 }}>
+          <span style={{ flex: 1, minWidth: 0, ...ellipsis }}>{`${categoryLabel ?? tt('categoryAll')} · ${tt('channelsCount', { count: total })}`}</span>
+          {earlier ? (
+            <span data-testid="tl-earlier" style={{ flexShrink: 0, fontSize: dp(14), color: V2.accText, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{`◂ ${tt('guideEarlier')}`}</span>
+          ) : null}
         </div>
         <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
           {ticks.map((t, i) => (
@@ -196,9 +200,6 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
               {nowIn && Math.abs(t - nowMs) < TICK_HIDE_MS ? '' : formatClock(t, locale)}
             </span>
           ))}
-          {earlier ? (
-            <span data-testid="tl-earlier" style={{ position: 'absolute', right: 'calc(100% + 8px)', top: '50%', transform: 'translateY(-50%)', fontSize: dp(14), color: V2.accText, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{`◂ ${tt('guideEarlier')}`}</span>
-          ) : null}
           {nowIn ? (
             <span data-testid="tl-now-badge" style={{ position: 'absolute', left: `${nowFrac * 100}%`, top: '50%', transform: 'translate(-50%,-50%)', background: ACCENT, color: '#fff', fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(6), letterSpacing: '0.04em', zIndex: 2, fontVariantNumeric: 'tabular-nums' }}>{formatClock(nowMs, locale)}</span>
           ) : null}

@@ -138,10 +138,11 @@ describe('guideKeyAction', () => {
     hero({ channel, programme: live })
     expect(screen.getByTestId('guide-hero-base').style.background).toBe('transparent')
   })
-  it('förhandsrutan är 384×216 (Jerry 2026-10-30: "aningen större")', () => {
+  it('förhandsrutan är 448×252 och slutar inom bandet (276 px)', () => {
     hero({ channel, programme: live })
     const tile = screen.getByTestId('guide-hero-preview')
-    expect(tile.style.width).toBe('384px')
-    expect(tile.style.height).toBe('216px')
+    expect(tile.style.width).toBe('448px')
+    expect(tile.style.height).toBe('252px')
+    expect(parseInt(tile.style.top) + 252).toBeLessThanOrEqual(276)
   })
 })

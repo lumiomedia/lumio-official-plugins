@@ -73,7 +73,7 @@ function clear(color: string): string {
  * Kanalguidens hero (handoff v2 "Screen 2 / Layout"): 276 px band med rubrik,
  * klocka, lägessegment och källpill på samma plats i alla lägen, sedan
  * titelrad, tid + förlopp och två rader beskrivning. Live-förhandsvisning
- * 384×216 uppe till höger (OK = helskärm). Bandet målar också sidans ton:
+ * 448×252 uppe till höger (OK = helskärm). Bandet målar också sidans ton:
  * `heroBase` ur bildens (annars logons) färg, blandad med bakgrunden.
  */
 export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sourceLabel, onOpenSource, isTv }: {
@@ -145,9 +145,9 @@ export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sou
         <div
           data-testid="guide-hero-preview"
           {...station(() => nav.play({ channel }), undefined, { 'data-v2f': 'btn' })}
-          style={{ position: 'absolute', right: dp(48), top: dp(34), width: dp(384), height: dp(216), borderRadius: dp(14), overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 18px 48px rgba(0,0,0,.45)', boxSizing: 'border-box', zIndex: 2, cursor: 'pointer' }}
+          style={{ position: 'absolute', right: dp(48), top: dp(24), width: dp(448), height: dp(252), borderRadius: dp(14), overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 18px 48px rgba(0,0,0,.45)', boxSizing: 'border-box', zIndex: 2, cursor: 'pointer' }}
         >
-          <LivePreviewArt channel={channel} live={channelLive} enabled={previewEnabled && !nav.playerOpen} height={dp(216)} radius={dp(14)} style={{ width: '100%' }}>
+          <LivePreviewArt channel={channel} live={channelLive} enabled={previewEnabled && !nav.playerOpen} height={dp(252)} radius={dp(14)} style={{ width: '100%' }}>
             <span style={{ position: 'absolute', left: dp(14), bottom: dp(12) }}><LivePill /></span>
             <span style={{ position: 'absolute', right: dp(12), bottom: dp(12), fontSize: dp(14), color: V2.text2, maxWidth: '60%', ...ellipsis }}>
               {number !== null ? `${number} · ${channel.name}` : channel.name}
@@ -156,7 +156,7 @@ export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sou
         </div>
       ) : null}
 
-      <div style={{ position: 'relative', zIndex: 1, height: '100%', boxSizing: 'border-box', padding: `${dp(34)}px ${dp(48)}px ${dp(26)}px`, display: 'flex', flexDirection: 'column', gap: dp(10), maxWidth: channel ? `calc(100% - ${dp(384 + 48 + 24)}px)` : undefined }}>
+      <div style={{ position: 'relative', zIndex: 1, height: '100%', boxSizing: 'border-box', padding: `${dp(34)}px ${dp(48)}px ${dp(26)}px`, display: 'flex', flexDirection: 'column', gap: dp(10), maxWidth: channel ? `calc(100% - ${dp(448 + 48 + 24)}px)` : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), minWidth: 0 }}>
           <span style={{ fontSize: dp(30), fontWeight: 600, whiteSpace: 'nowrap' }}>{tt('guideV2Title')}</span>
           <div data-testid="guide-mode" style={{ display: 'flex', gap: dp(4), padding: dp(4), borderRadius: 999, background: V2.surface3, border: '1px solid rgba(255,255,255,0.10)', marginLeft: dp(12), flexShrink: 0 }}>

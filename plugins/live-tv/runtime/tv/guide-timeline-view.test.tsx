@@ -70,6 +70,8 @@ describe('GuideTimelineView (TV-läge)', () => {
     expect(windowStart()).toBe(at(14, 30))
     expect(screen.getAllByTestId('tl-tick')).toHaveLength(4)
     expect(screen.getByTestId('tl-earlier')).toBeInTheDocument()
+    // Ligger i kanalkolumnens rubrik bredvid etiketten — förut skrev den över "N KANALER".
+    expect(screen.getByTestId('tl-channel-head').contains(screen.getByTestId('tl-earlier'))).toBe(true)
     const inits = document.querySelectorAll('[data-init]')
     expect(inits).toHaveLength(1)
     expect(inits[0]).toBe(blockOf('Show'))
