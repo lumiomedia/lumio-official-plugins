@@ -17,8 +17,8 @@ import { useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
 import { FOCUS_BTN, FOCUS_CARD, V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
 import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
-import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
-import { useExperienceRows, type XpItem, type XpRowId } from './hub-experience-data'
+import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
+import { XP_ALL, XP_GRID_COLUMNS, XP_GRID_STEP, useExperienceRows, type XpItem, type XpRow, type XpRowId } from './hub-experience-data'
 import { xpInitial, xpNavReduce, xpNormalise, type XpKey, type XpNavState } from './hub-experience-nav'
 import { CutoutLayer } from './cutout-layer'
 import { LivePreviewArt } from './live-preview-art'
@@ -36,6 +36,12 @@ import { LivePreviewArt } from './live-preview-art'
  *
  * Alla kort är stationer (`data-xp` = adressen) så att musen och värdens
  * motor kan landa på dem; `onFocus` för tillbaka adressen till tillståndet.
+ *
+ * Chippen (Jerry 2026-10-30): ingen är vald från början — då visas
+ * hemraderna. En vald chip (Alla, Favoriter, en grupp; även ett
+ * Utforska-kort) byter raderna mot Sänds nu i kategorin + ett rutnät med
+ * kategorins kanaler (6 kolumner, 60 åt gången, Visa fler sist). Samma chip
+ * igen = hemraderna. Bakåt: raderna → den valda chipen → avvald chip → heron.
  */
 
 const NO_CHANNEL: M3uChannel = { name: '', logo: null, group: '', url: '', tvgId: null }
@@ -49,8 +55,12 @@ const ROW: Record<XpRowId, { w: number; h: number; gap: number; extra: number; r
   yours: { w: 250, h: 160, gap: 18, extra: 76, radius: 22 },
   soon: { w: 380, h: 210, gap: 20, extra: 30, radius: 16 },
   explore: { w: 320, h: 180, gap: 20, extra: 30, radius: 16 },
+  // Rutnätets rad (TV): kortet 160 px yta + 64 px text, 14 px mellanrum.
+  grid: { w: 0, h: 224, gap: 14, extra: 14, radius: 14 },
 }
 const ROW_HEAD = 64
+/** Rutnätskortets fasta ythöjd på TV (radernas toppar räknas; skrivbordet tar 16:9). */
+const GRID_FACE_H = 160
 
 /** Kategorins färg i Utforska (README: Sport, Nyheter, Film, Barn, Dokumentär, övrigt). */
 export function categoryTint(name: string): string {
@@ -73,24 +83,40 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   void useRemindersVersion()
   const bg = v2Bg(settings.liveBackground)
 
+  // null = ingen chip vald (hemraderna); XP_ALL = "Alla" vald.
   const [chip, setChip] = useState<string | null>(null)
-  const chipItems = useGuideGroups(model, tt, chip)
+  // Rutnätets tak; Visa fler lägger till XP_GRID_STEP, ny chip nollställer.
+  const [limit, setLimit] = useState(XP_GRID_STEP)
+  const groupValue = chip === XP_ALL ? null : chip
+  const chipItems = useGuideGroups(model, tt, groupValue)
+  const chipValue = (key: string | null) => key ?? XP_ALL
+  const selectedChipIdx = chip === null ? -1 : chipItems.findIndex((c) => chipValue(c.key) === chip)
   const counts = useMemo(() => groupCounts(model.channels), [model.channels])
-  const groupPicker = useGroupPicker({ nav, phone: false, groups: model.groups, counts, value: chip, onPick: setChip })
-  const { featured, rows } = useExperienceRows(model, chip)
+  const { featured, rows } = useExperienceRows(model, chip, limit)
 
   const heroBtns = featured ? (featured.channel ? 3 : 2) : 0
-  const dims = { heroBtns, chips: chipItems.length, rowLens: rows.map((r) => r.items.length) }
+  const gridFrom = rows.findIndex((r) => r.id === 'grid')
+  const dims = { heroBtns, chips: chipItems.length, rowLens: rows.map((r) => r.items.length), gridFrom: gridFrom >= 0 ? gridFrom : undefined, backToChips: chip !== null }
   const [rawNav, setNav] = useState<XpNavState>(() => xpInitial(rows.length))
   const s = xpNormalise(rawNav, dims)
+  // Ny chip = nya rader: börja om i rad 0 (kolumnerna hörde till de gamla raderna).
+  const selectChip = (next: string | null) => {
+    setChip(next)
+    setLimit(XP_GRID_STEP)
+    setNav((p) => ({ ...p, row: 0, cols: [] }))
+  }
+  const groupPicker = useGroupPicker({ nav, phone: false, groups: model.groups, counts, value: groupValue, onPick: selectChip })
   // DOM-fokus ligger på en av vyns stationer (ringarna ritas ur tillståndet, så
   // utan den här flaggan hade heron visat en ring medan fokus stod i topraden).
   const [active, setActive] = useState(false)
 
-  const current: XpItem | null = s.zone === 'rows' ? rows[s.row]?.items[s.cols[s.row] ?? 0] ?? null : featured
+  const focusedItem: XpItem | null = s.zone === 'rows' ? rows[s.row]?.items[s.cols[s.row] ?? 0] ?? null : featured
+  // Visa fler-kortet har inget att visa i heron: den står kvar på förra kortet.
+  const onMore = focusedItem?.kind === 'more'
+  const current: XpItem | null = onMore ? null : focusedItem
   // Heron byter innehåll först när fokus stått still i 300 ms (inget blinkande vid skrubbning).
   const [heroKey, setHeroKey] = useState<string | null>(() => current?.key ?? null)
-  const currentKey = current?.key ?? null
+  const currentKey = onMore ? heroKey : current?.key ?? null
   useEffect(() => {
     if (currentKey === heroKey) return
     // Första innehållet (kanalerna kom efter monteringen) visas direkt.
@@ -101,7 +127,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const heroItem = useMemo(() => {
     if (featured?.key === heroKey) return featured
     for (const row of rows) for (const item of row.items) if (item.key === heroKey) return item
-    return current
+    return current ?? featured
   }, [featured, rows, heroKey, current])
 
   // Senaste värden för lager-/tangenthanterarna (de registreras sällan).
@@ -113,8 +139,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
    * coverflow) eftersom fjärren bara har pilar.
    */
   const native = !isTv
-  const live = useRef({ s, dims })
-  live.current = { s, dims }
+  const live = useRef({ s, dims, chip, selectedChipIdx })
+  live.current = { s, dims, chip, selectedChipIdx }
   const focusAt = (st: XpNavState) => {
     const id = st.zone === 'hero' ? `hero-${st.heroBtn}` : st.zone === 'chips' ? `chip-${st.chipIdx}` : `r${st.row}-${st.cols[st.row] ?? 0}`
     const el = rootRef.current?.querySelector<HTMLElement>(`[data-xp="${id}"]`)
@@ -158,14 +184,28 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     return true
   }
 
-  // Bakåt: från chips/rader till heron. Lagret finns bara medan det har något att göra.
+  const moveTo = (next: XpNavState) => {
+    pendingFocus.current = next
+    setNav(next)
+  }
+  /**
+   * Bakåt: från chips/rader till heron. I kategoriläget först raderna → den
+   * valda chipen, sedan avväljs chipen (hemraderna), först därefter heron.
+   */
+  const back = () => {
+    const { s: cur, chip: selected, selectedChipIdx: idx } = live.current
+    if (selected !== null && cur.zone === 'chips') { selectChip(null); return }
+    if (selected !== null && cur.zone === 'rows' && idx >= 0) { moveTo({ ...cur, zone: 'chips', chipIdx: idx }); return }
+    apply('back')
+  }
+  // Lagret finns bara medan det har något att göra.
   const navRef = useRef(nav)
   useEffect(() => { navRef.current = nav })
   // Bara medan fokus står i vyn: har användaren pilat ut i rälsen hör Bakåt till skalet.
   const claimBack = s.zone !== 'hero' && active
   useEffect(() => {
     if (!claimBack) return
-    return navRef.current.pushLayer(() => { apply('back') }, { allowZap: true })
+    return navRef.current.pushLayer(() => { back() }, { allowZap: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimBack])
 
@@ -198,7 +238,18 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   }
 
   const activate = (item: XpItem) => {
-    if (item.kind === 'category') { nav.go('guide', { group: item.category! }); return }
+    // Utforska-kortet väljer kategorins chip; fokus till första kortet i dess Sänds nu.
+    if (item.kind === 'category') {
+      selectChip(item.category!)
+      moveTo({ ...live.current.s, zone: 'rows', row: 0, cols: [] })
+      return
+    }
+    // Visa fler: 60 kort till; fokus står kvar på platsen (= första nya kanalen).
+    if (item.kind === 'more') {
+      setLimit((n) => n + XP_GRID_STEP)
+      pendingFocus.current = live.current.s
+      return
+    }
     const channel = item.channel!
     if (item.kind === 'replay' && item.catchUp) { nav.play({ channel, url: item.catchUp.url, label: item.catchUp.programme.title }); return }
     if (item.kind === 'continue' || item.kind === 'live') { nav.play({ channel }); return }
@@ -208,6 +259,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const ctaKey = (item: XpItem | null): TvStringKey => {
     if (!item) return 'watchNow'
     if (item.kind === 'category') return 'xpOpen'
+    if (item.kind === 'more') return 'showMore'
     if (item.kind === 'continue') return 'tagContinue'
     if (item.kind === 'replay') return 'playReplay'
     if (item.kind === 'upcoming') return item.channel && item.programme && isReminded(item.channel, item.programme) ? 'removeReminder' : 'remindMe'
@@ -237,9 +289,11 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const heroProgress = heroIsLive && heroProgramme ? progressOf(heroProgramme.start, heroProgramme.stop, model.nowMs) : null
 
   // Radernas toppar: fokuserad rad hamnar överst i fönstret.
+  const rowHeight = (row: XpRow, ri: number) => (row.id === 'grid' ? (ri === gridFrom ? ROW_HEAD : 0) : ROW_HEAD) + ROW[row.id].h + ROW[row.id].extra
   const tops: number[] = []
   let acc = 0
-  for (const row of rows) { tops.push(acc); acc += ROW_HEAD + ROW[row.id].h + ROW[row.id].extra }
+  rows.forEach((row, ri) => { tops.push(acc); acc += rowHeight(row, ri) })
+  const chipLabel = chipItems.find((c) => chipValue(c.key) === chip)?.label ?? null
 
   const featuredBtn = (i: number, onOk: () => void, extra: Record<string, string>, style: CSSProperties, children: ReactNode) => (
     <div
@@ -299,7 +353,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 
       <div data-testid="hub-topbar" style={{ position: 'absolute', left: dp(56), right: dp(56), top: dp(30), display: 'flex', alignItems: 'center', gap: dp(14), zIndex: 4 }}>
         <span style={{ fontSize: dp(34), fontWeight: 600, marginRight: dp(10) }}>{tt('liveTv')}</span>
-        <HubPlaylistPill model={model} nav={nav} init={false} height={48} onPicked={() => setChip(null)} />
+        <HubPlaylistPill model={model} nav={nav} init={false} height={48} onPicked={() => selectChip(null)} />
         <div {...station(() => nav.go('search'), undefined, { 'data-v2f': 'btn', 'aria-label': tt('railSearch') })} style={{ width: dp(48), height: dp(48), minHeight: dp(48), borderRadius: 999, background: 'rgba(252,252,255,0.12)', border: '1px solid rgba(255,255,255,0.12)', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Icons.Search size={dp(20)} />
         </div>
@@ -319,7 +373,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         ) : null}
         {showLegend ? (
           <div data-testid="xp-legend" style={{ display: 'flex', gap: dp(10), marginTop: dp(8), alignItems: 'center', fontSize: dp(17), color: V2.text2 }}>
-            <KeyCap>OK</KeyCap><span>{tt(ctaKey(current))}</span>
+            <KeyCap>OK</KeyCap><span>{tt(ctaKey(focusedItem))}</span>
             <span style={{ marginLeft: dp(14) }}><KeyCap>{tt('xpKeyHold')}</KeyCap></span><span>{tt('moreOptions')}</span>
             <span style={{ marginLeft: dp(14) }}><KeyCap>{tt('back')}</KeyCap></span><span>{tt('xpToTop')}</span>
           </div>
@@ -328,12 +382,14 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 
       <div data-testid="xp-chips" style={{ position: 'absolute', left: dp(50), right: dp(50), top: dp(514), display: 'flex', gap: dp(10), zIndex: 3, overflow: 'hidden', padding: dp(6) }}>
         {chipItems.map((c, i) => {
-          const on = chip === c.key
+          const on = chip !== null && c.key !== MORE_GROUPS && chipValue(c.key) === chip
           const focused = s.zone === 'chips' && s.chipIdx === i
+          // OK på den valda chipen igen = tillbaka till hemraderna.
+          const onOk = () => (c.key === MORE_GROUPS ? groupPicker.open() : selectChip(on ? null : chipValue(c.key)))
           return (
             <div
               key={c.id}
-              {...station(() => (c.key === MORE_GROUPS ? groupPicker.open() : setChip(c.key)), undefined, { 'data-xp': `chip-${i}`, 'data-v2f': 'xp', 'data-testid': `xp-chip-${c.id}` })}
+              {...station(onOk, undefined, { 'data-xp': `chip-${i}`, 'data-v2f': 'xp', 'data-testid': `xp-chip-${c.id}`, ...(on ? { 'data-selected': '1' } : {}) })}
               onFocus={() => setNav((p) => ({ ...p, zone: 'chips', chipIdx: i }))}
               style={{ height: dp(46), minHeight: dp(46), padding: `0 ${dp(20)}px`, borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: 'pointer', background: on ? V2.text : 'rgba(252,252,255,0.10)', color: on ? V2.onLight : V2.text, fontWeight: on ? 700 : 500, boxShadow: ring(focused, FOCUS_BTN) ?? 'inset 0 0 0 1px rgba(255,255,255,0.12)', transform: active && focused ? 'scale(1.06)' : 'none', transition: 'transform .2s, box-shadow .2s' }}
             >{c.label}</div>
@@ -344,12 +400,13 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       <div data-testid="xp-rows-viewport" style={{ position: 'absolute', left: 0, right: 0, top: dp(596), bottom: 0, overflowX: 'hidden', overflowY: native ? 'auto' : 'hidden', zIndex: 2 }}>
         <div data-testid="xp-rows-track" style={native ? { position: 'relative', paddingBottom: dp(40) } : { position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(-${dp(tops[s.row] ?? 0)}px)`, transition: `transform .45s ${EASE}` }}>
           {rows.map((row, ri) => {
+            if (row.id === 'grid') return null
             const m = ROW[row.id]
             const col = s.cols[ri] ?? 0
             const onRow = ri === s.row
             const inRows = s.zone === 'rows'
             const opacity = native ? 1 : ri < s.row ? 0 : onRow ? (inRows ? 1 : 0.8) : 0.55
-            const { title, sub } = rowHead(row.id, chip, chipItems.find((c) => c.key === chip)?.label ?? null, isTv, tt)
+            const { title, sub } = rowHead(row.id, chip, chipLabel, isTv, tt)
             return (
               <section key={row.id} data-testid={`xp-row-${row.id}`} style={{ height: dp(ROW_HEAD + m.h + m.extra), opacity, transition: 'opacity .35s' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14), padding: `0 ${dp(56)}px`, height: dp(50) }}>
@@ -407,6 +464,42 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
               </section>
             )
           })}
+          {gridFrom >= 0 ? (
+            <div data-testid="xp-grid">
+              {rows.map((row, ri) => {
+                if (row.id !== 'grid') return null
+                const onRow = ri === s.row
+                const inRows = s.zone === 'rows'
+                const opacity = native ? 1 : ri < s.row ? 0 : onRow ? (inRows ? 1 : 0.8) : 0.55
+                const first = ri === gridFrom
+                return (
+                  <section key={`grid-${ri}`} data-testid="xp-row-grid" style={{ height: native ? undefined : dp(rowHeight(row, ri)), paddingBottom: native ? dp(14) : undefined, opacity, transition: 'opacity .35s' }}>
+                    {first ? (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14), padding: `0 ${dp(56)}px`, height: dp(50), marginBottom: dp(14) }}>
+                        <span style={{ fontSize: dp(26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{chip === XP_ALL ? tt('allChannels') : chipLabel ?? ''}</span>
+                        <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.55)' }}>{tt('channelsCount', { count: row.total ?? 0 })}</span>
+                      </div>
+                    ) : null}
+                    {/* Vanligt CSS-rutnät, ingen vågrät rullning; varje rad om sex är en rad i reducern. */}
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${XP_GRID_COLUMNS}, minmax(0, 1fr))`, gap: dp(14), padding: `0 ${dp(56)}px` }}>
+                      {row.items.map((item, ii) => {
+                        const focused = onRow && inRows && (s.cols[ri] ?? 0) === ii
+                        const id = `r${ri}-${ii}`
+                        const props = {
+                          ...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind }),
+                          ...pointerArm(id),
+                          onFocus: () => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows' as const, row: ri, cols } }),
+                        }
+                        const style: CSSProperties = { height: native ? undefined : dp(ROW.grid.h), boxShadow: focused && active ? FOCUS_CARD : undefined, transform: focused ? 'scale(1.04)' : 'none', transition: `transform .3s ${EASE}, box-shadow .3s`, position: 'relative', zIndex: focused ? 2 : 1, outline: 'none', userSelect: 'none' }
+                        if (item.kind === 'more') return <MoreCard key={item.key} remaining={item.count ?? 0} props={props} style={style} />
+                        return <ChannelGridCard key={item.key} channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} {...props} style={style} />
+                      })}
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
       {groupPicker.node}
@@ -415,6 +508,17 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 }
 
 type TT = (key: TvStringKey, vars?: Record<string, string | number>) => string
+
+/** Visa fler sist i rutnätet: samma kortyta som kanalerna, "Visa 60 fler" + antal kvar. */
+function MoreCard({ remaining, props, style }: { remaining: number; props: Record<string, unknown>; style: CSSProperties }) {
+  const { tt } = useTvText()
+  return (
+    <div {...props} style={{ ...HUB_CARD, borderRadius: dp(14), minHeight: dp(120), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: dp(6), background: 'rgba(252,252,255,0.10)', ...style }}>
+      <span style={{ fontSize: dp(20), fontWeight: 700 }}>{tt('showMoreN', { n: Math.min(XP_GRID_STEP, remaining) })}</span>
+      <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)' }}>{tt('channelsCount', { count: remaining })}</span>
+    </div>
+  )
+}
 
 /** Radrubrik + underrad. Fjärrhjälpen ("OK = påminn mig", "nummer = zappa") bara i TV-läge. */
 function rowHead(id: XpRowId, chip: string | null, chipLabel: string | null, isTv: boolean, tt: TT): { title: string; sub: string | null } {

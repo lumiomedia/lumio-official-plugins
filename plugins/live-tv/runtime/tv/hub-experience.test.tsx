@@ -87,11 +87,13 @@ describe('HubExperience', () => {
     expect(screen.getByTestId('xp-row-explore')).toBeInTheDocument()
   })
 
-  it('OK på ett Utforska-kort öppnar kanalguiden filtrerad på kategorin', async () => {
+  it('OK på ett Utforska-kort väljer kategorins chip (kategoriläget) i stället för att öppna guiden', async () => {
     const { navigations } = await mount()
     const card = within(screen.getByTestId('xp-row-explore')).getAllByTestId('xp-card').find((el) => el.textContent?.includes('News'))!
     fireEvent.click(card)
-    expect(navigations.at(-1)).toEqual({ view: 'guide', group: 'News' })
+    expect(navigations).toEqual([])
+    expect(screen.getByTestId('xp-chip-News').getAttribute('data-selected')).toBe('1')
+    expect(within(screen.getByTestId('xp-grid')).getAllByTestId('xp-card')).toHaveLength(1)
   })
 
   it('mus: första klicket fokuserar, andra aktiverar', async () => {
@@ -117,11 +119,92 @@ describe('HubExperience', () => {
     expect(screen.getByTestId('xp-hero-title')).toHaveTextContent('Now B')
   })
 
-  it('chipfiltret Sport tar bort News-kanalen ur Sänds nu', async () => {
+  it('ingen chip är vald från början och hemraderna visas (Jerry 2026-10-30)', async () => {
+    await mount()
+    expect(document.querySelectorAll('[data-testid^="xp-chip-"][data-selected="1"]')).toHaveLength(0)
+    expect(screen.getByTestId('xp-row-yours')).toBeInTheDocument()
+    expect(screen.getByTestId('xp-row-explore')).toBeInTheDocument()
+    expect(screen.queryByTestId('xp-grid')).not.toBeInTheDocument()
+  })
+
+  it('chip Sport: Sänds nu filtrerad + rutnät med kategorins kanaler; samma chip igen = hemraderna', async () => {
     await mount()
     expect(within(screen.getByTestId('xp-row-onNow')).getAllByTestId('xp-card')).toHaveLength(3)
     fireEvent.click(screen.getByTestId('xp-chip-Sport'))
+    expect(screen.getByTestId('xp-chip-Sport').getAttribute('data-selected')).toBe('1')
+    expect(document.querySelectorAll('[data-selected="1"]')).toHaveLength(1)
     expect(within(screen.getByTestId('xp-row-onNow')).getAllByTestId('xp-card')).toHaveLength(2)
+    expect(within(screen.getByTestId('xp-grid')).getAllByTestId('xp-card')).toHaveLength(2)
+    expect(screen.queryByTestId('xp-row-yours')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('xp-row-explore')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('xp-chip-Sport'))
+    expect(screen.queryByTestId('xp-grid')).not.toBeInTheDocument()
+    expect(screen.getByTestId('xp-row-yours')).toBeInTheDocument()
+    expect(screen.getByTestId('xp-chip-Sport').hasAttribute('data-selected')).toBe(false)
+  })
+
+  it('chip Alla visar alla kanaler i rutnätet', async () => {
+    await mount()
+    fireEvent.click(screen.getByTestId('xp-chip-all'))
+    expect(screen.getByTestId('xp-chip-all').getAttribute('data-selected')).toBe('1')
+    expect(within(screen.getByTestId('xp-grid')).getAllByTestId('xp-card')).toHaveLength(3)
+  })
+
+  it('Bakåt: raderna → chippen, chippen med vald chip → hemraderna, sedan heron', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown')
+    press('ArrowRight'); press('ArrowRight')
+    expect(document.activeElement).toBe(screen.getByTestId('xp-chip-Sport'))
+    act(() => { fireEvent.keyDown(document.activeElement!, { key: 'Enter' }) })
+    expect(screen.getByTestId('xp-chip-Sport').getAttribute('data-selected')).toBe('1')
+    press('ArrowDown'); press('ArrowDown')
+    expect(within(screen.getByTestId('xp-grid')).getAllByTestId('xp-card')).toContain(document.activeElement)
+    act(() => { fireEvent.keyDown(window, { key: 'Backspace' }) })
+    expect(document.activeElement).toBe(screen.getByTestId('xp-chip-Sport'))
+    expect(screen.getByTestId('xp-grid')).toBeInTheDocument()
+    act(() => { fireEvent.keyDown(window, { key: 'Backspace' }) })
+    expect(screen.queryByTestId('xp-grid')).not.toBeInTheDocument()
+    expect(screen.getByTestId('xp-chip-Sport').hasAttribute('data-selected')).toBe(false)
+    expect(document.activeElement).toBe(screen.getByTestId('xp-chip-Sport'))
+    act(() => { fireEvent.keyDown(window, { key: 'Backspace' }) })
+    expect(document.activeElement).toBe(screen.getByTestId('xp-hero-btn-0'))
+  })
+
+  it('Visa fler lägger till 60 kort i rutnätet; stora kategorier monterar bara de visade', async () => {
+    __setTvModeForTests(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [...(list.channels ?? []), ...Array.from({ length: 130 }, (_, i) => ch(`M${i}`, 'Many'))] }])
+    seedLiveTvIndex({ cache })
+    await mount()
+    fireEvent.click(screen.getByTestId('xp-chip-Many'))
+    const cards = () => within(screen.getByTestId('xp-grid')).getAllByTestId('xp-card')
+    expect(cards().filter((c) => c.getAttribute('data-kind') === 'live')).toHaveLength(60)
+    const more = cards().at(-1)!
+    expect(more.getAttribute('data-kind')).toBe('more')
+    fireEvent.click(more)
+    expect(cards().filter((c) => c.getAttribute('data-kind') === 'live')).toHaveLength(120)
+    fireEvent.click(cards().at(-1)!)
+    expect(cards().filter((c) => c.getAttribute('data-kind') === 'live')).toHaveLength(130)
+    expect(cards().some((c) => c.getAttribute('data-kind') === 'more')).toBe(false)
+  })
+
+  it('TV: ▲▼ mellan rutnätets rader behåller kolumnen', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [...(list.channels ?? []), ...Array.from({ length: 14 }, (_, i) => ch(`M${i}`, 'Many'))] }])
+    seedLiveTvIndex({ cache })
+    await mount()
+    act(() => { screen.getByTestId('xp-chip-Many').focus() })
+    fireEvent.click(screen.getByTestId('xp-chip-Many'))
+    press('ArrowDown')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-0')
+    press('ArrowDown')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r1-0')
+    press('ArrowRight'); press('ArrowRight'); press('ArrowRight')
+    press('ArrowDown')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r2-3')
+    press('ArrowDown')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r3-1')
+    press('ArrowUp'); press('ArrowUp'); press('ArrowUp')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-0')
   })
 
   it('utanför TV-läge: ingen tangentlegend och inga OK-texter', async () => {

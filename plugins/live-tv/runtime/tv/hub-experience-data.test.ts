@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildExperienceRows, type XpInput } from './hub-experience-data'
+import { XP_ALL, buildExperienceRows, type XpInput } from './hub-experience-data'
 import { FAVS_GROUP } from './tv-guide-shared'
 import type { M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
@@ -53,11 +53,10 @@ describe('buildExperienceRows', () => {
     expect(row(out, 'yours').items.map((i) => i.channel!.name)).toEqual(['N1', 'S1', 'S2', 'K1'])
   })
 
-  it('chip Sport filtrerar Sänds nu och Dina kanaler men inte Börjar snart', () => {
-    const out = buildExperienceRows(base({ chip: 'Sport' }))
-    expect(row(out, 'onNow').items.map((i) => i.channel!.name)).toEqual(['S2', 'S1'])
-    expect(row(out, 'yours').items.map((i) => i.channel!.name)).toEqual(['S1', 'S2'])
-    expect(row(out, 'soon').items.map((i) => i.programme!.title)).toEqual(['Kickoff', 'Late news'])
+  it('utan vald chip: hemraderna, ofiltrerade (Jerry 2026-10-30: "Alla" ska inte vara aktiv)', () => {
+    const out = buildExperienceRows(base({ chip: null }))
+    expect(ids(out)).toEqual(['onNow', 'continue', 'yours', 'soon', 'explore'])
+    expect(out.rows.some((r) => r.id === 'grid')).toBe(false)
   })
 
   it('Börjar snart: bara start inom 2 h, sorterat på start', () => {
@@ -81,5 +80,52 @@ describe('buildExperienceRows', () => {
     const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [] }))
     expect(row(out, 'onNow').items.length).toBeLessThanOrEqual(24)
     expect(row(out, 'yours').items.length).toBeLessThanOrEqual(30)
+  })
+})
+
+describe('buildExperienceRows, kategoriläge (vald chip)', () => {
+  const grid = (out: ReturnType<typeof buildExperienceRows>) => out.rows.filter((r) => r.id === 'grid')
+
+  it('chip Sport: Sänds nu filtrerad, sedan rutnätet med kategorins kanaler — inga hemrader', () => {
+    const out = buildExperienceRows(base({ chip: 'Sport' }))
+    expect(ids(out)).toEqual(['onNow', 'grid'])
+    expect(row(out, 'onNow').items.map((i) => i.channel!.name)).toEqual(['S2', 'S1'])
+    expect(grid(out)[0]!.items.map((i) => [i.kind, i.channel!.name])).toEqual([['live', 'S1'], ['live', 'S2']])
+    expect(grid(out)[0]!.total).toBe(2)
+    expect(out.featured!.key).toBe(row(out, 'onNow').items[0]!.key)
+  })
+
+  it('Alla = alla kanaler, Favoriter = favoriterna', () => {
+    expect(grid(buildExperienceRows(base({ chip: XP_ALL })))[0]!.items.map((i) => i.channel!.name)).toEqual(['S1', 'S2', 'N1', 'K1'])
+    expect(row(buildExperienceRows(base({ chip: XP_ALL })), 'onNow').items).toHaveLength(4)
+    const favs = buildExperienceRows(base({ chip: FAVS_GROUP }))
+    expect(grid(favs)[0]!.items.map((i) => i.channel!.name)).toEqual(['N1'])
+    expect(row(favs, 'onNow').items.map((i) => i.channel!.name)).toEqual(['N1'])
+  })
+
+  it('rutnätet: rader om 6, kapat vid gränsen, sist ett Visa fler-kort när fler finns', () => {
+    const many = Array.from({ length: 4000 }, (_, i) => ch(`C${i}`, 'Grp'))
+    const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [], chip: 'Grp', limit: 60 }))
+    const lines = grid(out)
+    expect(lines.every((l) => l.items.length <= 6)).toBe(true)
+    const items = lines.flatMap((l) => l.items)
+    expect(items.filter((i) => i.kind === 'live')).toHaveLength(60)
+    expect(items.at(-1)).toMatchObject({ kind: 'more', count: 3940 })
+    expect(lines.slice(0, 10).every((l) => l.items.length === 6)).toBe(true)
+    expect(lines).toHaveLength(11)
+    expect(row(out, 'onNow').items.length).toBeLessThanOrEqual(24)
+  })
+
+  it('utan fler kanaler än gränsen: inget Visa fler-kort; sista raden kan vara kort', () => {
+    const some = Array.from({ length: 8 }, (_, i) => ch(`C${i}`, 'Grp'))
+    const out = buildExperienceRows(base({ channels: some, favourites: [], recent: [], chip: 'Grp', limit: 60 }))
+    expect(grid(out).map((l) => l.items.length)).toEqual([6, 2])
+    expect(grid(out).flatMap((l) => l.items).some((i) => i.kind === 'more')).toBe(false)
+  })
+
+  it('större gräns ger fler kort (Visa fler)', () => {
+    const many = Array.from({ length: 200 }, (_, i) => ch(`C${i}`, 'Grp'))
+    const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [], chip: 'Grp', limit: 120 }))
+    expect(grid(out).flatMap((l) => l.items).filter((i) => i.kind === 'live')).toHaveLength(120)
   })
 })

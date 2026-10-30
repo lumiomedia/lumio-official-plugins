@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { LiveTvModel } from '../live-tv-model'
+import { useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
+import { channelKey, type M3uChannel } from '../live-tv-data'
+import { progressOf } from '../live-tv-ui'
+import { qualityFromName, type LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { V2 } from './v2-tokens'
-import { V2FocusStyle } from './v2-ui'
+import { LogoPlate, V2FocusStyle } from './v2-ui'
 
 /**
  * DELAT MELLAN KANALERS TVÅ LAYOUTER (Klassisk och Upplevelse): hälsningen i
@@ -109,6 +111,46 @@ export function V2Progress({ value, height, track = 'rgba(252,252,255,.16)' }: {
   return (
     <div style={{ height: dp(height), borderRadius: dp(height), background: track, overflow: 'hidden' }}>
       <div data-fill="" style={{ width: `${pct}%`, height: '100%', background: TV.acc }} />
+    </div>
+  )
+}
+
+/** Kortyta enligt README: yta 2 + 1 px kant. */
+export const HUB_CARD = { background: V2.surface2, border: '1px solid rgba(255,255,255,0.10)', overflow: 'hidden', cursor: 'pointer' } as const
+const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const
+
+/**
+ * "Alla kanaler"-kortet (README 5), delat av Klassisk och Upplevelsens
+ * kategorirutnät: 16:9-yta med ljus logoplatta, nummer uppe till vänster,
+ * hjärta för favorit, 3 px förlopp, namn + det som sänds under. Ingen
+ * programbild och ingen tablåhämtning — bara `model.nowFor`, så tusentals
+ * kort kostar ingenting extra. Stationens props (fokus, OK, håll) och stilen
+ * kommer från vyn; `faceHeight` ger en fast ytahöjd i stället för 16:9
+ * (TV-rutnätet räknar radernas toppar).
+ */
+export function ChannelGridCard({ channel, model, faceHeight, style, ...rest }: {
+  channel: M3uChannel
+  model: LiveTvModel
+  faceHeight?: number
+  style?: CSSProperties
+} & Omit<HTMLAttributes<HTMLDivElement>, 'style'>) {
+  const info = model.nowFor(channel)
+  const number = model.channelNumber(channel)
+  const key = channelKey(channel)
+  return (
+    <div {...rest} style={{ ...HUB_CARD, borderRadius: dp(14), display: 'flex', flexDirection: 'column', ...style }}>
+      <div style={{ position: 'relative', width: '100%', ...(faceHeight ? { height: dp(faceHeight), flexShrink: 0 } : { aspectRatio: '16 / 9' }), background: V2.noArt }}>
+        {/* Logoplattan inramad 30 px runt om, 18 px nedtill (README 5). */}
+        <LogoPlate channel={channel} width={0} height={84} radius={8} style={{ position: 'absolute', left: dp(30), right: dp(30), top: dp(30), bottom: dp(18), width: 'auto', height: 'auto', boxShadow: 'none' }} />
+        <span style={{ position: 'absolute', top: dp(6), left: dp(8), fontSize: dp(13), fontWeight: 600, color: 'rgba(243,244,248,0.8)', fontVariantNumeric: 'tabular-nums' }}>{number ?? ''}</span>
+        {model.pinnedSet.has(key) ? <span style={{ position: 'absolute', top: dp(8), right: dp(9), color: TV.acc }}><Icons.Heart size={dp(16)} filled /></span> : null}
+        {model.locked.has(key) ? <span style={{ position: 'absolute', bottom: dp(8), right: dp(9), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
+        {info.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={3} track="rgba(0,0,0,0.35)" /></div> : null}
+      </div>
+      <div style={{ padding: `${dp(10)}px ${dp(12)}px ${dp(12)}px` }}>
+        <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
+        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
+      </div>
     </div>
   )
 }

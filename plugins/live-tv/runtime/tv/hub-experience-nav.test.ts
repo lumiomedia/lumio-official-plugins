@@ -63,3 +63,37 @@ describe('xpNavReduce (Upplevelse, zonerna hero → chips → rader)', () => {
     expect(out).toMatchObject({ row: 1, cols: [0, 1] })
   })
 })
+
+describe('xpNavReduce, kategoriläget (Sänds nu + rutnät om 6)', () => {
+  // Rad 0 = Sänds nu, rad 1–3 = rutnätets rader (sista raden kort: 6, 6, 2).
+  const grid = { heroBtns: 3, chips: 5, rowLens: [10, 6, 6, 2], gridFrom: 1, backToChips: true }
+  const go = (s: XpNavState, ...keys: Parameters<typeof xpNavReduce>[1][]) => keys.reduce((acc, k) => xpNavReduce(acc, k, grid), s)
+  const onNow = go(xpInitial(4), 'down', 'down', 'right', 'right', 'right', 'right', 'right', 'right', 'right')
+
+  it('▼ från Sänds nu går till rutnätets första rad (rutnätets egen kolumn)', () => {
+    expect(onNow).toMatchObject({ zone: 'rows', row: 0 })
+    expect(onNow.cols[0]).toBe(7)
+    expect(go(onNow, 'down')).toMatchObject({ row: 1, cols: [7, 0, 0, 0] })
+  })
+
+  it('▲▼ mellan rutnätets rader behåller kolumnen (klampad mot en kort rad)', () => {
+    const g = go(onNow, 'down', 'right', 'right', 'right', 'right')
+    expect(g).toMatchObject({ row: 1 })
+    expect(g.cols[1]).toBe(4)
+    expect(go(g, 'down').cols[2]).toBe(4)
+    expect(go(g, 'down', 'down')).toMatchObject({ row: 3 })
+    expect(go(g, 'down', 'down').cols[3]).toBe(1)
+    expect(go(g, 'down', 'down', 'up').cols[2]).toBe(1)
+  })
+
+  it('▲ från rutnätets första rad går till Sänds nu (som minns sin kolumn)', () => {
+    const up = go(onNow, 'down', 'right', 'up')
+    expect(up).toMatchObject({ row: 0 })
+    expect(up.cols[0]).toBe(7)
+  })
+
+  it('Bakåt från raderna i kategoriläget går till chippen, inte heron', () => {
+    expect(xpNavReduce(go(onNow, 'down'), 'back', grid).zone).toBe('chips')
+    expect(xpNavReduce(go(xpInitial(4), 'down'), 'back', grid).zone).toBe('hero')
+  })
+})

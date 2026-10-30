@@ -5,7 +5,6 @@ import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import type { CatchUpItem } from '../catch-up'
 import type { EpgProgramme } from '../epg/types'
 import { formatClock, progressOf } from '../live-tv-ui'
-import { qualityFromName } from '../live-tv-model'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { Chip, Icons, TV, dp, station, useTvClockNode } from './tv-ui'
@@ -20,7 +19,7 @@ import { useProgrammeArt } from './programme-art'
 import { useTint } from './tint'
 import { V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
 import { LivePill, LogoPlate, ProgrammeArtBox, V2FocusStyle } from './v2-ui'
-import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
+import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 
 /**
  * KANALER, LAYOUT KLASSISK (handoff v2 "Screen 1b").
@@ -35,8 +34,8 @@ const SPOTLIGHT_COUNT = 3
 const ALL_CHANNELS_COLUMNS = 6
 const NO_CHANNEL: M3uChannel = { name: '', logo: null, group: '', url: '', tvgId: null }
 
-/** Kortyta enligt README: yta 2 + 1 px kant. Fokus = `data-v2f="inset"`. */
-const CARD = { background: V2.surface2, border: '1px solid rgba(255,255,255,0.10)', overflow: 'hidden', cursor: 'pointer' } as const
+/** Kortyta enligt README (delad med Upplevelsens rutnät). Fokus = `data-v2f="inset"`. */
+const CARD = HUB_CARD
 const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const
 
 function SectionHead({ title, sub }: { title: string; sub?: string }) {
@@ -198,27 +197,9 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
           </>
         )}
         <div data-testid="all-channels" style={{ display: 'grid', gridTemplateColumns: `repeat(${ALL_CHANNELS_COLUMNS}, minmax(0, 1fr))`, gap: dp(14) }}>
-          {shown.map((channel, index) => {
-            const info = model.nowFor(channel)
-            const number = model.channelNumber(channel)
-            const key = channelKey(channel)
-            return (
-              <div key={key} {...station(() => nav.play({ channel }), liveHold(channel), { 'data-v2f': 'inset', ...(spotlight.length === 0 && index === 0 ? { 'data-init': '' } : {}) })} style={{ ...CARD, borderRadius: dp(14), display: 'flex', flexDirection: 'column' }}>
-                <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', background: V2.noArt }}>
-                  {/* Logoplattan inramad 30 px runt om, 18 px nedtill (README 5). */}
-                  <LogoPlate channel={channel} width={0} height={84} radius={8} style={{ position: 'absolute', left: dp(30), right: dp(30), top: dp(30), bottom: dp(18), width: 'auto', height: 'auto', boxShadow: 'none' }} />
-                  <span style={{ position: 'absolute', top: dp(6), left: dp(8), fontSize: dp(13), fontWeight: 600, color: 'rgba(243,244,248,0.8)', fontVariantNumeric: 'tabular-nums' }}>{number ?? ''}</span>
-                  {model.pinnedSet.has(key) ? <span style={{ position: 'absolute', top: dp(8), right: dp(9), color: TV.acc }}><Icons.Heart size={dp(16)} filled /></span> : null}
-                  {model.locked.has(key) ? <span style={{ position: 'absolute', bottom: dp(8), right: dp(9), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
-                  {info.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={3} track="rgba(0,0,0,0.35)" /></div> : null}
-                </div>
-                <div style={{ padding: `${dp(10)}px ${dp(12)}px ${dp(12)}px` }}>
-                  <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-                  <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
-                </div>
-              </div>
-            )
-          })}
+          {shown.map((channel, index) => (
+            <ChannelGridCard key={channelKey(channel)} channel={channel} model={model} {...station(() => nav.play({ channel }), liveHold(channel), { 'data-v2f': 'inset', ...(spotlight.length === 0 && index === 0 ? { 'data-init': '' } : {}) })} />
+          ))}
         </div>
         {filtered.length > visible ? (
           <div {...station(() => setVisible((v) => v + ALL_STEP), undefined, { 'data-v2f': 'btn' })} style={{ alignSelf: 'center', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: V2.surface3, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
