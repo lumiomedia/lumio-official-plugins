@@ -27,7 +27,7 @@ beforeEach(() => {
 const settle = async () => { await act(async () => { await new Promise((r) => setTimeout(r, 200)) }) }
 
 describe('TvSearch', () => {
-  it('tangenttryck filtrerar kanaler och program; OK på kanal öppnar kanaldetalj', async () => {
+  it('tangenttryck filtrerar kanaler och program; OK på en träff öppnar nya guiden fokuserad på kanalen', async () => {
     const onNavigate = vi.fn()
     render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'search' }} onNavigate={onNavigate} onOpenDetails={() => {}} />)
     fireEvent.click(screen.getByText('g'))
@@ -40,7 +40,8 @@ describe('TvSearch', () => {
     await settle()
     expect(screen.getByTestId('search-channels')).toHaveTextContent('No results')
     fireEvent.click(within(screen.getByTestId('search-programmes')).getByText('Golf Tonight').closest('[data-f]')!)
-    expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'channel', name: 'Sky Sports', programme: String(now + 60_000) }) }))
+    // Kanalsidan är den gamla vyn; sökträffar går till guide v2 (Jerry 2026-10-30).
+    expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'guide', channel: expect.stringContaining('Sky Sports') }) }))
   })
   it('kanalträffarna kommer direkt, programträffarna först efter fördröjningen', async () => {
     // Varje bokstav körde tidigare om HELA programgenomsökningen (dagens tablå
