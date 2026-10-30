@@ -15,27 +15,49 @@ interface LiveTvLogoImageProps {
 type LogoStage = 'primary' | 'fallback'
 
 const loadedLogoSrcs = new Set<string>()
-const pendingLogoLoads: Array<() => void> = []
+
+/**
+ * En kortplats i laddkön. Kortet som begärde den äger den och måste lämna
+ * tillbaka den — också när det försvinner eller byter kanal innan bilden
+ * landat. Annars blir platsen upptagen för alltid, och med EN plats i appen
+ * laddas sedan inga logotyper alls förrän appen startas om.
+ */
+interface LogoTicket {
+  start: () => void
+  active: boolean
+  released: boolean
+}
+
+const pendingLogoLoads: LogoTicket[] = []
 let activeLogoLoads = 0
 const MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8
 
 function drainLogoQueue() {
   while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
+    const next = pendingLogoLoads.shift()!
     activeLogoLoads += 1
-    const next = pendingLogoLoads.shift()
-    next?.()
+    next.active = true
+    next.start()
   }
 }
 
-function requestLogoLoad(start: () => void) {
-  pendingLogoLoads.push(start)
+function requestLogoLoad(start: () => void): LogoTicket {
+  const ticket: LogoTicket = { start, active: false, released: false }
+  pendingLogoLoads.push(ticket)
   drainLogoQueue()
+  return ticket
 }
 
-function finishLogoLoad(src: string) {
-  loadedLogoSrcs.add(src)
-  activeLogoLoads = Math.max(0, activeLogoLoads - 1)
-  drainLogoQueue()
+function releaseLogoLoad(ticket: LogoTicket | null) {
+  if (!ticket || ticket.released) return
+  ticket.released = true
+  if (ticket.active) {
+    activeLogoLoads = Math.max(0, activeLogoLoads - 1)
+    drainLogoQueue()
+    return
+  }
+  const index = pendingLogoLoads.indexOf(ticket)
+  if (index >= 0) pendingLogoLoads.splice(index, 1)
 }
 
 /**
@@ -55,6 +77,19 @@ export function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }: L
   const [shouldLoad, setShouldLoad] = useState(false)
   const [stage, setStage] = useState<LogoStage>('primary')
   const [failed, setFailed] = useState(false)
+  const ticketRef = useRef<LogoTicket | null>(null)
+
+  // Före kö-effekten: vid kanalbyte släpps den gamla platsen innan en ny begärs.
+  useEffect(() => () => {
+    releaseLogoLoad(ticketRef.current)
+    ticketRef.current = null
+  }, [src])
+
+  const finishLogoLoad = (loadedSrc: string) => {
+    loadedLogoSrcs.add(loadedSrc)
+    releaseLogoLoad(ticketRef.current)
+    ticketRef.current = null
+  }
 
   useEffect(() => {
     setShouldLoad(false)
@@ -72,14 +107,14 @@ export function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }: L
     if (!node || shouldLoad) return
 
     if (typeof IntersectionObserver === 'undefined') {
-      requestLogoLoad(() => setShouldLoad(true))
+      ticketRef.current = requestLogoLoad(() => setShouldLoad(true))
       return
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          requestLogoLoad(() => setShouldLoad(true))
+          ticketRef.current = requestLogoLoad(() => setShouldLoad(true))
           observer.disconnect()
         }
       },
