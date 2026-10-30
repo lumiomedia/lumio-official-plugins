@@ -38,6 +38,8 @@ describe('Guiden · Nu på telefon', () => {
   it('phoneGuideMode: nownext → now, timeline → grid', () => {
     expect(phoneGuideMode('nownext')).toBe('now')
     expect(phoneGuideMode('timeline')).toBe('grid')
+    // Kanallistan från TV/skrivbord (guide v2) synkas hit som telefonens listor.
+    expect(phoneGuideMode('list')).toBe('playlists')
   })
   it('segmentbyte skriver bara now/grid/playlists och Timeline ger grid', async () => {
     mountPhone({ view: 'guide' })

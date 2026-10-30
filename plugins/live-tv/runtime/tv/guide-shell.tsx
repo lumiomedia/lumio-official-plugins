@@ -142,11 +142,9 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   // Vyernas gemensamma props: fönstret rakt ur state (se `windowStart`).
   const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect: setSelection, isTv }
 
-  const view = mode === 'nownext'
+  const view = mode === 'now'
     ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
-    : mode === 'grid'
-      ? <GuideGridView {...viewProps} />
-      : <GuideGridView {...viewProps} detailPanel={false} />
+    : <GuideGridView {...viewProps} detailPanel={mode === 'list'} />
 
   return (
     <div data-testid="guide-shell" data-guide-mode={mode} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>

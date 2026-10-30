@@ -14,13 +14,14 @@ describe('isDesktopTauri', () => {
 })
 
 describe('desktopGuideMode', () => {
-  const cases: [GuideMode, 'grid' | 'nownext' | 'timeline'][] = [
-    ['now', 'nownext'],
-    ['tl', 'nownext'],
-    ['playlists', 'grid'],
-    ['grid', 'grid'],
-    ['nownext', 'nownext'],
-    ['timeline', 'timeline'],
+  const cases: [GuideMode, 'now' | 'tl' | 'list'][] = [
+    ['now', 'now'],
+    ['tl', 'tl'],
+    ['list', 'list'],
+    ['playlists', 'list'],
+    ['grid', 'tl'],
+    ['nownext', 'now'],
+    ['timeline', 'tl'],
   ]
   for (const [stored, expected] of cases) {
     it(`${stored} → ${expected}`, () => {

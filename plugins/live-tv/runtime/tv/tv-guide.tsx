@@ -128,7 +128,7 @@ export function TvGuide(props: TvViewProps) {
   // vyn känner bara `now`/`tl`, så de faller tillbaka till sin närmsta
   // motsvarighet (samma tanke som `phoneGuideMode`).
   const legacyMode: 'now' | 'tl' = mode === 'tl' ? 'tl' : 'now'
-  if (mode === 'playlists') return <TvGuidePlaylists {...props} mode={mode} onModeChange={changeMode} />
+  if (mode === 'playlists' || mode === 'list') return <TvGuidePlaylists {...props} mode="playlists" onModeChange={changeMode} />
   // Rutnätet är skrivbordets tablå i TV-trädet (spec 4.3). Den delar inte
   // komponent med Nu/Sen och Tablå, så lägesbytet hit går genom samma
   // fokusräddning som spellistevyn — se effekten på `mode` ovan.

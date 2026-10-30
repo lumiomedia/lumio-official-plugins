@@ -30,6 +30,8 @@ export type PhoneGuideMode = 'now' | 'grid' | 'playlists'
 export function phoneGuideMode(stored: GuideMode): PhoneGuideMode {
   if (stored === 'tl' || stored === 'nownext') return 'now'
   if (stored === 'timeline') return 'grid'
+  // Guide v2:s Kanallista (TV/skrivbord) är telefonens listor.
+  if (stored === 'list') return 'playlists'
   return stored
 }
 

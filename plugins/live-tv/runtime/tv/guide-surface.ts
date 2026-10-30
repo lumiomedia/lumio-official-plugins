@@ -26,18 +26,16 @@ export function useNewGuideSurface(phone: boolean): boolean {
   return sdk.useTvMode() || (isDesktopTauri() && !phone)
 }
 
-/** De tre lägena i den städade guiden (spec "Beslut", Lägen). */
-export type DesktopGuideMode = 'grid' | 'nownext' | 'timeline'
+/** Guide v2:s tre lägen (handoff `design_handoff_live_tv 2`): Nu/Sen · Tablå · Kanallista. */
+export type DesktopGuideMode = 'now' | 'tl' | 'list'
 
 /**
- * Normalisering per yta vid LÄSNING (spec "Beslut", Lagring): skrivbord/TV
- * slår ihop det gamla Nu/Sen-läget och tablåraden till ett enda Now/Next-
- * läge, och den gamla Spellistor-sidan till Rutnätet (källväljaren ersätter
- * den). Ingen migrering skrivs — bara hur ett läst värde tolkas.
+ * Normalisering per yta vid LÄSNING: lagringen delas med telefonen och LAN,
+ * och äldre versioner skrev Grid / Now/Next / Timeline / Spellistor. Ingen
+ * migrering skrivs — bara hur ett läst värde tolkas.
  */
 export function desktopGuideMode(stored: GuideMode): DesktopGuideMode {
-  if (stored === 'now' || stored === 'tl') return 'nownext'
-  if (stored === 'playlists') return 'grid'
-  if (stored === 'grid') return 'grid'
-  return stored
+  if (stored === 'now' || stored === 'nownext') return 'now'
+  if (stored === 'playlists' || stored === 'list') return 'list'
+  return 'tl'
 }

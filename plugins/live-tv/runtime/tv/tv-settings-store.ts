@@ -144,8 +144,8 @@ export function useTvSettings(): TvSettings {
  * mellan uppsättningarna sker vid LÄSNING i `guide-surface.ts` (skrivbord/TV)
  * respektive `mobile/guide-phone.ts` (telefon), inte här.
  */
-export type GuideMode = 'now' | 'tl' | 'playlists' | 'grid' | 'nownext' | 'timeline'
-const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists', 'grid', 'nownext', 'timeline']
+export type GuideMode = 'now' | 'tl' | 'playlists' | 'grid' | 'nownext' | 'timeline' | 'list'
+const GUIDE_MODES: GuideMode[] = ['now', 'tl', 'playlists', 'grid', 'nownext', 'timeline', 'list']
 export function getGuideMode(): GuideMode {
   const raw = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, GUIDE_MODE_KEY, 'now')
   return GUIDE_MODES.includes(raw as GuideMode) ? (raw as GuideMode) : 'now'

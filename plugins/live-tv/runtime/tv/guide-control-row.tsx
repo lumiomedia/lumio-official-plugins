@@ -100,11 +100,11 @@ export function GuideControlRow(props: GuideControls) {
   const { mode } = props
   // Dag och Nu hör till fönstervyerna: Now / Next visar alltid just nu, så
   // ett dagsegment där vore en knapp som inte gör något.
-  const showDay = mode !== 'nownext'
-  const showNow = mode !== 'nownext'
+  const showDay = mode !== 'now'
+  const showNow = mode !== 'now'
   // Tablå = Grid utan detaljpanel (Jerry 2026-09-17): ingen zoomväxel längre.
   const showZoom = false
-  const showDetails = mode === 'nownext'
+  const showDetails = mode === 'now'
   return (
     <div data-testid="guide-control-row" style={{ height: gp(56), minHeight: gp(56), padding: `0 ${gp(20)}px`, display: 'flex', alignItems: 'center', gap: gp(10), borderBottom: `1px solid ${TV.line}`, flexShrink: 0, boxSizing: 'border-box' }}>
       <Dropdown testId="guide-source" label={props.sourceLabel} count={props.sourceCount} onOpen={props.onOpenSource} />
@@ -131,7 +131,7 @@ export function GuideControlRow(props: GuideControls) {
       <Divider />
       <ControlSegment<DesktopGuideMode>
         testId="guide-mode"
-        options={[{ key: 'grid', label: tt('modeGrid') }, { key: 'nownext', label: tt('modeNowNext') }, { key: 'timeline', label: tt('modeTimelineDay') }]}
+        options={[{ key: 'now', label: tt('modeNowSen') }, { key: 'tl', label: tt('modeTabla') }, { key: 'list', label: tt('modeChannelList') }]}
         value={mode}
         onChange={props.onMode}
       />
