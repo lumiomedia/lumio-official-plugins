@@ -12,9 +12,9 @@ import { FAVS_GROUP, MORE_GROUPS, useGuideGroups } from './tv-guide-shared'
 import { groupCounts } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
-import { GuideGridView } from './guide-grid-view'
 import { GuideNowSenView } from './guide-nowsen-view'
 import { GuideTimelineView } from './guide-timeline-view'
+import { GuideListView } from './guide-list-view'
 import { GuideHero, useDebouncedSelection } from './guide-hero'
 import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
 import { guideKeyAction } from './guide-keys'
@@ -185,12 +185,11 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     isTv,
     mode,
   }
-  // TILLFÄLLIGT: Kanallista byts mot v2-vyn i Task 8.
   const view = mode === 'now'
     ? <GuideNowSenView {...viewProps} />
     : mode === 'tl'
       ? <GuideTimelineView {...viewProps} />
-      : <GuideGridView {...viewProps} detailPanel={false} />
+      : <GuideListView {...viewProps} />
 
   const categories = { items: categoryItems, value: category, onPick: pickCategory }
 
