@@ -278,12 +278,12 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         // Utan bild: tonad ruta med logoplattan (döljs för kategorier).
         // Handoffens "liveström, tyst": kanalen spelar ljudlöst i rutan när den
         // sänder; annars (och medan spelaren är öppen) tonad ruta med logoplattan.
-        <div data-testid="xp-hero-tile" style={{ position: 'absolute', right: dp(56), top: dp(110), width: dp(672), height: dp(378), borderRadius: dp(20), overflow: 'hidden', zIndex: 2, border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,.5)', boxSizing: 'border-box' }}>
+        <div data-testid="xp-hero-tile" style={{ position: 'absolute', right: dp(56), top: dp(120), width: dp(600), height: dp(338), borderRadius: dp(20), overflow: 'hidden', zIndex: 2, border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,.5)', boxSizing: 'border-box' }}>
           <LivePreviewArt
             channel={heroChannel}
             live={heroIsLive}
             enabled={settings.previewEnabled && !nav.playerOpen}
-            height={dp(378)}
+            height={dp(338)}
             radius={dp(20)}
             style={{ width: '100%', height: '100%' }}
             fallback={(
@@ -307,7 +307,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       </div>
 
       {/* Texten får gå fram till förhandsrutan (eller över hela bredden utan ruta); rubriken står på en rad. */}
-      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: hasArt ? dp(1000) : heroChannel && heroItem?.kind !== 'category' ? `calc(100% - ${dp(56 + 672 + 56 + 40)}px)` : `calc(100% - ${dp(112)}px)`, display: 'flex', flexDirection: 'column', gap: dp(14), zIndex: 3 }}>
+      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: hasArt ? dp(1000) : heroChannel && heroItem?.kind !== 'category' ? `calc(100% - ${dp(56 + 600 + 56 + 40)}px)` : `calc(100% - ${dp(112)}px)`, display: 'flex', flexDirection: 'column', gap: dp(14), zIndex: 3 }}>
         {heroItem ? <HeroText item={heroItem} model={model} /> : null}
         {showButtons ? (
           <div data-testid="xp-hero-buttons" style={{ display: 'flex', gap: dp(12), marginTop: dp(8), alignItems: 'center' }}>

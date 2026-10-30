@@ -207,11 +207,11 @@ describe('HubExperience', () => {
     expect(title.style.textOverflow).toBe('ellipsis')
     expect(title.style.fontSize).toBe('60px')
   })
-  it('heronas förhandsruta är 672×378 och slutar ovanför chipsen (520 px)', async () => {
+  it('heronas förhandsruta är 600×338 och slutar ovanför chipsen (520 px)', async () => {
     await mount()
     const tile = screen.getByTestId('xp-hero-tile')
-    expect(tile.style.width).toBe('672px')
-    expect(tile.style.height).toBe('378px')
-    expect(parseInt(tile.style.top) + 378).toBeLessThan(520)
+    expect(tile.style.width).toBe('600px')
+    expect(tile.style.height).toBe('338px')
+    expect(parseInt(tile.style.top) + 338).toBeLessThan(520)
   })
 })
