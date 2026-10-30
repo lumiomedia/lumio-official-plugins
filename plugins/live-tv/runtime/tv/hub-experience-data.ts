@@ -55,8 +55,12 @@ export interface XpRow { id: XpRowId; items: XpItem[]; total?: number }
 
 /** Chipvärdet för "Alla" i kategoriläget (`null` = ingen chip vald, hemraderna). */
 export const XP_ALL = '__xp_all'
-/** Rutnätets kolumner och sidstorlek (första sidan, och vad Visa fler lägger till). */
-export const XP_GRID_COLUMNS = 6
+/**
+ * Rutnätets kolumner och sidstorlek (första sidan, och vad Visa fler lägger till).
+ * Fem per rad (Jerry 2026-10-30: "för många per rad" med sex) — samma tal för
+ * det synliga CSS-rutnätet och reducerns rader, på TV och skrivbord.
+ */
+export const XP_GRID_COLUMNS = 5
 export const XP_GRID_STEP = 60
 
 const CONTINUE_MAX = 12

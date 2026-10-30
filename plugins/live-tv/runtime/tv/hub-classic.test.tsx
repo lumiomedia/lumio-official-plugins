@@ -11,7 +11,7 @@ import { LiveTvTvShell } from './tv-shell'
 
 /**
  * Kanaler, layout Klassisk (handoff "Screen 1b"): topprad, spotlight i tre
- * kolumner, Favoriter, Fortsätt titta och Alla kanaler i sex kolumner.
+ * kolumner, Favoriter, Fortsätt titta och Alla kanaler i fem kolumner.
  */
 const now = Date.now()
 const ch = (name: string, group: string, tvgId: string | null = null) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId })
@@ -56,7 +56,7 @@ describe('HubClassic', () => {
     expect(screen.getByTestId('hub-classic')).toBeInTheDocument()
     expect(screen.getByTestId('hub-spotlight')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' })
     expect(screen.getByTestId('hub-favourites')).toBeInTheDocument()
-    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' })
+    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' })
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
     expect(screen.getByTestId('hub-spotlight').querySelector('[data-f]')).toHaveAttribute('data-init')
   })
@@ -105,14 +105,14 @@ describe('HubClassic', () => {
   })
 
   it('Visa fler syns när kanalerna är fler än ett steg', async () => {
-    const big: LiveTvList = { ...list, channels: Array.from({ length: 40 }, (_, i) => ch(`K${i}`, 'Grp')) }
+    const big: LiveTvList = { ...list, channels: Array.from({ length: 44 }, (_, i) => ch(`K${i}`, 'Grp')) }
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [big])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
     seedLiveTvIndex()
     await mount()
-    expect(screen.getByTestId('all-channels').querySelectorAll('[data-f]').length).toBe(36)
-    fireEvent.click(screen.getByText('Show more'))
     expect(screen.getByTestId('all-channels').querySelectorAll('[data-f]').length).toBe(40)
+    fireEvent.click(screen.getByText('Show more'))
+    expect(screen.getByTestId('all-channels').querySelectorAll('[data-f]').length).toBe(44)
   })
 
   it('telefonen behåller sin egen hubb', async () => {

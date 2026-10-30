@@ -149,23 +149,23 @@ describe('buildExperienceRows, kategoriläge (vald chip)', () => {
     expect(row(favs, 'onNow').items.map((i) => i.channel!.name)).toEqual(['N1'])
   })
 
-  it('rutnätet: rader om 6, kapat vid gränsen, sist ett Visa fler-kort när fler finns', () => {
+  it('rutnätet: rader om 5 (Jerry 2026-10-30: "för många per rad"), kapat vid gränsen, sist ett Visa fler-kort när fler finns', () => {
     const many = Array.from({ length: 4000 }, (_, i) => ch(`C${i}`, 'Grp'))
     const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [], chip: 'Grp', limit: 60 }))
     const lines = grid(out)
-    expect(lines.every((l) => l.items.length <= 6)).toBe(true)
+    expect(lines.every((l) => l.items.length <= 5)).toBe(true)
     const items = lines.flatMap((l) => l.items)
     expect(items.filter((i) => i.kind === 'live')).toHaveLength(60)
     expect(items.at(-1)).toMatchObject({ kind: 'more', count: 3940 })
-    expect(lines.slice(0, 10).every((l) => l.items.length === 6)).toBe(true)
-    expect(lines).toHaveLength(11)
+    expect(lines.slice(0, 12).every((l) => l.items.length === 5)).toBe(true)
+    expect(lines).toHaveLength(13)
     expect(row(out, 'onNow').items.length).toBeLessThanOrEqual(24)
   })
 
   it('utan fler kanaler än gränsen: inget Visa fler-kort; sista raden kan vara kort', () => {
     const some = Array.from({ length: 8 }, (_, i) => ch(`C${i}`, 'Grp'))
     const out = buildExperienceRows(base({ channels: some, favourites: [], recent: [], chip: 'Grp', limit: 60 }))
-    expect(grid(out).map((l) => l.items.length)).toEqual([6, 2])
+    expect(grid(out).map((l) => l.items.length)).toEqual([5, 3])
     expect(grid(out).flatMap((l) => l.items).some((i) => i.kind === 'more')).toBe(false)
   })
 

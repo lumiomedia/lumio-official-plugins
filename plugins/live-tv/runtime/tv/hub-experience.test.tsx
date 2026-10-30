@@ -191,8 +191,20 @@ describe('HubExperience', () => {
     expect(cards().some((c) => c.getAttribute('data-kind') === 'more')).toBe(false)
   })
 
+  it('rutnätet: fem kort per rad (Jerry 2026-10-30: "för många per rad") — fast kolumnantal, en reducerrad per synlig rad', async () => {
+    __setTvModeForTests(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [...(list.channels ?? []), ...Array.from({ length: 12 }, (_, i) => ch(`M${i}`, 'Many'))] }])
+    seedLiveTvIndex({ cache })
+    await mount()
+    fireEvent.click(screen.getByTestId('xp-chip-Many'))
+    const rows = within(screen.getByTestId('xp-grid')).getAllByTestId('xp-row-grid')
+    expect(rows.map((r) => within(r).getAllByTestId('xp-card').length)).toEqual([5, 5, 2])
+    const gridEl = within(rows[0]!).getAllByTestId('xp-card')[0]!.parentElement as HTMLElement
+    expect(gridEl.style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))')
+  })
+
   it('TV: ▲▼ mellan rutnätets rader behåller kolumnen', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [...(list.channels ?? []), ...Array.from({ length: 14 }, (_, i) => ch(`M${i}`, 'Many'))] }])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, channels: [...(list.channels ?? []), ...Array.from({ length: 12 }, (_, i) => ch(`M${i}`, 'Many'))] }])
     seedLiveTvIndex({ cache })
     await mount()
     act(() => { screen.getByTestId('xp-chip-Many').focus() })
@@ -307,11 +319,13 @@ describe('HubExperience', () => {
     expect(plate.style.width).toBe('380px')
     expect(plate.style.height).toBe('190px')
   })
-  it('Dina kanaler: mörk kortyta, den ljusa logoplattan fyller kortet utom en jämn ram på 11 px, numret som bricka uppe till vänster', async () => {
+  it('Dina kanaler: mörk kortyta, loggan utan platta (bar bild med rundade hörn) inom en jämn luft på 11 px, numret som bricka uppe till vänster', async () => {
     await mount()
     const face = within(screen.getByTestId('xp-row-yours')).getAllByTestId('xp-yours-face')[0]!
     expect(face.getAttribute('data-surface')).toBe('dark')
     const plate = within(face).getByTestId('logo-plate')
+    expect(plate.getAttribute('data-bare')).toBe('1')
+    expect(plate.style.background).toBe('')
     expect(plate.style.width).toBe('228px')
     expect(plate.style.height).toBe('138px')
     expect(plate.style.left).toBe('11px')

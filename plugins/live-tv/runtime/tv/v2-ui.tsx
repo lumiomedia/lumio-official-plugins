@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
@@ -13,29 +13,65 @@ type LogoChannel = Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>
  * Den vita logoplattan (handoff v2, helvit sedan 2026-10-30): riktiga logor på `#ffffff` med luft runt,
  * initialer som reserv. Kanalnumret ligger som en liten mörk bricka i plattans
  * övre vänstra hörn — aldrig över själva logon.
+ *
+ * `bare` (Jerry 2026-10-30, Dina kanaler): ingen platta alls — logobilden
+ * står direkt på kortets mörka yta, så stor den får plats i `width`×`height`,
+ * med rundade hörn på SJÄLVA bilden. `object-fit: contain` hade rundat
+ * bildrutan, inte bilden, så rutan ges bildens form: när bilden laddats räknas
+ * den största rutan med bildens proportioner som ryms (`--logo-w/--logo-h`).
+ * Före laddningen gäller bildens egna mått inom max-bredd/-höjd. Initialerna
+ * blir ljusa (mörk yta i stället för vit platta).
  */
-export function LogoPlate({ channel, width, height, number, radius, style }: {
+export function LogoPlate({ channel, width, height, number, radius, bare = false, style }: {
   channel: LogoChannel
   width: number
   height: number
   number?: number | null
   radius?: number
+  /** Ingen platta: bara logobilden (rundade hörn), ljusa initialer som reserv. */
+  bare?: boolean
   style?: CSSProperties
 }) {
   const [failed, setFailed] = useState(false)
+  const [fit, setFit] = useState<[number, number] | null>(null)
+  const boxRef = useRef<HTMLSpanElement | null>(null)
   const primary = getLiveTvLogoSrc(channel.logo)
   const fallback = getLiveTvLogoSrc(channel.logoFallback)
   const logo = failed ? null : primary ?? fallback
   const r = radius ?? Math.max(6, Math.min(14, Math.round(height / 7)))
+
+  // Bar logga: bildens proportioner → största ruta som ryms. `load` bubblar inte,
+  // men en capture-lyssnare på föräldern får den (även reservbildens laddning).
+  useEffect(() => {
+    if (!bare) return
+    const box = boxRef.current
+    if (!box) return
+    const measure = () => {
+      const img = box.querySelector('img')
+      const nw = img?.naturalWidth ?? 0
+      const nh = img?.naturalHeight ?? 0
+      if (!nw || !nh) return
+      const ratio = nw / nh
+      setFit(width / height > ratio ? [Math.round(height * ratio), height] : [width, Math.round(width / ratio)])
+    }
+    if (box.querySelector('img')?.complete) measure()
+    box.addEventListener('load', measure, true)
+    return () => box.removeEventListener('load', measure, true)
+  }, [bare, logo, width, height])
+
+  const plateLook: CSSProperties = bare ? {} : { borderRadius: dp(r), background: V2.logoPlate, boxShadow: '0 8px 24px rgba(0,0,0,.35)', overflow: 'hidden' }
+  const boxStyle = (bare
+    ? { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', '--logo-r': `${dp(r)}px`, ...(fit ? { '--logo-w': `${dp(fit[0])}px`, '--logo-h': `${dp(fit[1])}px` } : {}) }
+    // Logon fyller det mesta av plattan (Jerry 2026-10-30: "gör logorna större"); lite luft kvar mot kanten.
+    : { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90%', height: '84%' }) as CSSProperties
   return (
-    <div data-testid="logo-plate" style={{ position: 'relative', width: dp(width), height: dp(height), flexShrink: 0, borderRadius: dp(r), background: V2.logoPlate, boxShadow: '0 8px 24px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...style }}>
+    <div data-testid="logo-plate" data-bare={bare ? '1' : undefined} style={{ position: 'relative', width: dp(width), height: dp(height), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', ...plateLook, ...style }}>
       {logo ? (
-        // Logon fyller det mesta av plattan (Jerry 2026-10-30: "gör logorna större"); lite luft kvar mot kanten.
-        <span data-testid="logo-plate-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90%', height: '84%' }}>
-          <LiveTvLogoImage src={logo} fallbackSrc={primary ? fallback : undefined} alt="" className="lumio-v2-logo-img" onError={() => setFailed(true)} />
+        <span ref={boxRef} data-testid="logo-plate-box" style={boxStyle}>
+          <LiveTvLogoImage src={logo} fallbackSrc={primary ? fallback : undefined} alt="" className={bare ? 'lumio-v2-logo-img lumio-v2-logo-bare' : 'lumio-v2-logo-img'} onError={() => setFailed(true)} />
         </span>
       ) : (
-        <span aria-hidden="true" style={{ color: V2.logoText, fontWeight: 800, fontSize: dp(Math.round(height * 0.36)), letterSpacing: '0.02em' }}>{initialsOf(channel.name)}</span>
+        <span aria-hidden="true" style={{ color: bare ? V2.text2 : V2.logoText, fontWeight: 800, fontSize: dp(Math.round(height * (bare ? 0.3 : 0.36))), letterSpacing: '0.02em' }}>{initialsOf(channel.name)}</span>
       )}
       {number != null ? (
         <span data-testid="logo-plate-number" style={{ position: 'absolute', top: dp(3), left: dp(3), padding: `0 ${dp(5)}px`, borderRadius: dp(5), background: 'rgba(17,19,26,.78)', color: V2.text, fontSize: dp(Math.max(11, Math.round(height * 0.2))), fontWeight: 700, lineHeight: 1.35, fontVariantNumeric: 'tabular-nums' }}>{number}</span>

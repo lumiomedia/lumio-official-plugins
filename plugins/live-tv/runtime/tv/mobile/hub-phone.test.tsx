@@ -41,14 +41,14 @@ describe('Hubben på telefon', () => {
     expect(grid.querySelectorAll('[data-f]')).toHaveLength(1)
   })
   it('Visa fler visar nästa steg när listan är längre än ett steg', async () => {
-    const big = { id: 'l2', name: 'Big', channels: Array.from({ length: 40 }, (_, i) => ({ name: `K${i}`, logo: null, group: 'Grp', url: `http://x/K${i}`, tvgId: null })), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    const big = { id: 'l2', name: 'Big', channels: Array.from({ length: 44 }, (_, i) => ({ name: `K${i}`, logo: null, group: 'Grp', url: `http://x/K${i}`, tvgId: null })), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
     mountPhone({ view: 'hub' }, { lists: [big], pins: [] })
     const grid = await screen.findByTestId('all-channels')
-    expect(grid.querySelectorAll('[data-f]')).toHaveLength(36)
+    expect(grid.querySelectorAll('[data-f]')).toHaveLength(40)
     const more = screen.getByTestId('show-more')
     expect(more).toHaveStyle({ minHeight: '44px' })
     fireEvent.click(more)
-    expect(grid.querySelectorAll('[data-f]')).toHaveLength(40)
+    expect(grid.querySelectorAll('[data-f]')).toHaveLength(44)
     expect(screen.queryByTestId('show-more')).toBeNull()
   })
   it('favoritbandet sidoscrollar med snap och öppnar kanalen', async () => {

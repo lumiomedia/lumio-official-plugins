@@ -153,12 +153,13 @@ describe('LiveTvLibraryFrame omklick', () => {
 
 describe('LiveTvLibraryFrame egna färger', () => {
   afterEach(() => { cleanup(); __resetForTests() })
-  it('egen bakgrund i ramen och .bg-mesh; rälsens variabel på ramens rot (TV — skrivbordets glas gör rälsen genomskinlig)', () => {
+  it('egen bakgrund i ramen och .bg-mesh; kortfärgen på ramens rot, rälsens egen yta genomskinlig så herotonen syns (även TV)', () => {
     setTvSettings({ liveBgColor: '#203040', liveSurfaceColor: '#405060' })
     render(<LiveTvLibraryFrame {...{ ...base, platform: 'tv' as const, onNavigate: vi.fn() }} />)
     const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
     expect(frame.getAttribute('data-live-tv-frame-bg')).toBe('#203040')
-    expect(frame.style.getPropertyValue('--lt-rail')).toContain('#405060')
+    expect(frame.style.getPropertyValue('--lt-card')).toContain('#405060')
+    expect(frame.style.getPropertyValue('--lt-rail')).toBe('transparent')
     const css = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
     expect(css).toContain('background-color: #203040')
   })
@@ -227,7 +228,7 @@ describe('LiveTvLibraryFrame glasräls på Hem (Jerry 2026-10-30)', () => {
     expect(frame.getAttribute('data-live-tv-frame-blur')).toBe('blur(24px) saturate(140%)')
     // Tonen mörkas (darkTone) så vit text läses; rälsens egen yta blir genomskinlig.
     expect(frame.getAttribute('data-live-tv-frame-tint')).toMatch(/^rgb\(\d+,\d+,\d+\)$/)
-    expect(frame.style.backgroundColor).toMatch(/^rgba\(/)
+    expect(frame.querySelector('[data-live-tv-frame-tint-layer]')!.getAttribute('data-live-tv-frame-tint-layer')).toMatch(/rgba\(/)
     expect(frame.style.getPropertyValue('--lt-rail')).toBe('transparent')
   })
   it('skrivbord utan hero: glaset står kvar, tonat av sidtonen', () => {
@@ -252,13 +253,70 @@ describe('LiveTvLibraryFrame glasräls på Hem (Jerry 2026-10-30)', () => {
     await waitFor(() => expect(frame.getAttribute('data-live-tv-frame-tint')).not.toBe(first))
     expect(toneState.asked).toContain('http://x/b.jpg')
   })
-  it('TV: rälsen förblir solid (oskärpa är för tungt på Mi Box/Shield) och heron provas inte', () => {
+  it('TV (Jerry 2026-10-30): samma herotonade genomskinliga toning, men ingen oskärpa och ingen bildkopia (för tungt på Mi Box/Shield)', () => {
+    toneState.tones['http://x/a.jpg'] = [200, 40, 40]
     mountHero(['http://x/a.jpg'], 0)
     render(<LiveTvLibraryFrame {...base} platform="tv" />)
     const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
-    expect(frame.hasAttribute('data-live-tv-frame-glass')).toBe(false)
-    expect(frame.style.background).toBeTruthy()
-    expect(frame.style.getPropertyValue('--lt-rail')).not.toBe('transparent')
-    expect(toneState.asked.every((s) => s === null)).toBe(true)
+    expect(frame.getAttribute('data-live-tv-frame-glass')).toBe('1')
+    expect(frame.getAttribute('data-live-tv-frame-tint')).toMatch(/^rgb\(\d+,\d+,\d+\)$/)
+    expect(frame.getAttribute('data-live-tv-frame-tint')).not.toBe('rgb(22,26,35)')
+    expect(frame.hasAttribute('data-live-tv-frame-blur')).toBe(false)
+    expect(frame.style.backdropFilter ?? '').toBe('')
+    expect(frame.querySelector('[data-live-tv-frame-hero]')).toBeNull()
+    expect(frame.querySelector('[data-live-tv-frame-tint-layer]')).not.toBeNull()
+    expect(frame.style.getPropertyValue('--lt-rail')).toBe('transparent')
+    expect(toneState.asked).toContain('http://x/a.jpg')
+  })
+  it('TV-heron (tv-hero.tsx): tonen läses ur det senaste bildlagret', () => {
+    const root = document.createElement('div')
+    root.setAttribute('data-testid', 'fake-hero')
+    root.innerHTML = '<section data-tv-hero><div data-tv-hero-backdrop><div><div data-tv-hero-image style="background-image: url(&quot;http://x/old.jpg&quot;)"></div><div data-tv-hero-image style="background-image: url(&quot;http://x/new.jpg&quot;)"></div></div></div></section>'
+    document.body.appendChild(root)
+    expect(readHomeHeroImage(document)).toBe('http://x/new.jpg')
+  })
+
+  /*
+    ROTORSAKEN (appen 2026-10-30: "solid mörk räls, ingen genomskinlighet, ingen ton").
+    Värden skickar platform="desktop" i Mac-appen (media-explorer: isTvMode ? 'tv'
+    : isPhoneViewport ? 'phone' : 'desktop') och glasgrenen VAR aktiv. Men bakom
+    rälsen finns bara <main>:s sidbakgrund — heron börjar till höger om insetten,
+    och ramen tvingar själv .bg-mesh till den platta sidtonen — så backdrop-filter
+    suddade en enfärgad yta. Tonen (darkTone, 55 % över sidtonen och sedan en
+    gradient tillbaka mot sidtonen) hamnade några enheter från sidtonen.
+  */
+  it('rotorsaken, skrivbord: ramen ritar själv en suddig kopia av herobilden bakom rälsen (bakom den finns annars bara sidtonen)', () => {
+    toneState.tones['http://x/b.jpg'] = [90, 70, 60]
+    mountHero(['http://x/a.jpg', 'http://x/b.jpg'], 1)
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    const hero = frame.querySelector('[data-live-tv-frame-hero]') as HTMLElement
+    expect(hero).not.toBeNull()
+    expect(hero.getAttribute('data-live-tv-frame-hero')).toBe('http://x/b.jpg')
+    expect(hero.style.backgroundImage).toContain('http://x/b.jpg')
+    expect(hero.style.filter).toContain('blur(')
+    // Ramens egen yta är inte en ogenomskinlig sidton som döljer kopian.
+    expect(frame.style.background).toBe('')
+    expect(frame.style.backgroundColor === '' || frame.style.backgroundColor === 'transparent').toBe(true)
+  })
+  it('rotorsaken, tonen: en vanlig hero (90,70,60) ger en räls som syns skild från sidtonen', () => {
+    toneState.tones['http://x/b.jpg'] = [90, 70, 60]
+    mountHero(['http://x/b.jpg'], 0)
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    const layer = frame.querySelector('[data-live-tv-frame-tint-layer]') as HTMLElement
+    const m = layer.getAttribute('data-live-tv-frame-tint-layer')!.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/)
+    expect(m).not.toBeNull()
+    const [r, g, b, a] = m!.slice(1).map(Number) as [number, number, number, number]
+    const page = [22, 26, 35]
+    const top = [r, g, b].map((c, i) => c * a + page[i]! * (1 - a))
+    expect(Math.max(...top.map((c, i) => Math.abs(c - page[i]!)))).toBeGreaterThanOrEqual(24)
+  })
+  it('skrivbord utan hero: ingen bildkopia, toningen i genomskinlig sidton', () => {
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.querySelector('[data-live-tv-frame-hero]')).toBeNull()
+    const layer = frame.querySelector('[data-live-tv-frame-tint-layer]') as HTMLElement
+    expect(layer.getAttribute('data-live-tv-frame-tint-layer')).toContain('rgba(22,26,35,')
   })
 })

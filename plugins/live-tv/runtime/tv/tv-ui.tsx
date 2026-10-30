@@ -199,6 +199,7 @@ export function TvFocusStyle() {
 [data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
 [data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
 .lumio-v2-logo-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lumio-v2-logo-img.lumio-v2-logo-bare { display: block; width: var(--logo-w, auto); height: var(--logo-h, auto); border-radius: var(--logo-r, 10px); }
 @keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
 [data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
 

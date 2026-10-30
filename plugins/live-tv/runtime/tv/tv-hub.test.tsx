@@ -149,9 +149,9 @@ describe('TvHub i porträtt (telefon)', () => {
     renderHubOnPhone()
     expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' })
   })
-  it('behåller sex kolumner i "alla kanaler" på skrivbordet', () => {
+  it('behåller fem kolumner i "alla kanaler" på skrivbordet (Jerry 2026-10-30)', () => {
     renderHubOnDesktop()
-    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' })
+    expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' })
   })
 })
 

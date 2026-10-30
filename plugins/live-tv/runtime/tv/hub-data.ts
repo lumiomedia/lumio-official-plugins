@@ -7,8 +7,8 @@ import { useEpgLoadStatus } from '../hooks/useEpgLoadStatus'
 import { useSchedules } from '../hooks/useSchedules'
 import { pickSpotlight } from './tv-spotlight'
 
-/** "Alla kanaler" visas i steg om 36 — Visa fler lägger på ett steg till. */
-export const ALL_STEP = 36
+/** "Alla kanaler" visas i steg om 40 (åtta hela rader om fem i Klassisk) — Visa fler lägger på ett steg till. */
+export const ALL_STEP = 40
 /** Repriser: hur långt bakåt tablån hämtas (urvalet av kanaler görs i view-helpers). */
 const REPLAY_DAYS = 3
 

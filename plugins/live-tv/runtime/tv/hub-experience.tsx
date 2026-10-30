@@ -40,7 +40,7 @@ import { LivePreviewArt } from './live-preview-art'
  * Chippen (Jerry 2026-10-30): ingen är vald från början — då visas
  * hemraderna. En vald chip (Alla, Favoriter, en grupp; även ett
  * Utforska-kort) byter raderna mot Sänds nu i kategorin + ett rutnät med
- * kategorins kanaler (6 kolumner, 60 åt gången, Visa fler sist). Samma chip
+ * kategorins kanaler (5 kolumner, 60 åt gången, Visa fler sist). Samma chip
  * igen = hemraderna. Bakåt: raderna → den valda chipen → avvald chip → heron.
  */
 
@@ -61,7 +61,7 @@ const ROW: Record<XpRowId, { w: number; h: number; gap: number; extra: number; r
   grid: { w: 0, h: 224, gap: 14, extra: 14, radius: 14 },
 }
 const ROW_HEAD = 64
-/** Dina kanaler: den mörka ramen runt logoplattan, och plattans mått (kortet 250×160 minus ramen). */
+/** Dina kanaler: luften runt logobilden, och ytan den ryms i (kortet 250×160 minus luften). */
 const YOURS_FRAME = 11
 const YOURS_PLATE: [number, number] = [250 - 2 * YOURS_FRAME, 160 - 2 * YOURS_FRAME]
 /**
@@ -495,7 +495,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                         <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.55)' }}>{tt('channelsCount', { count: row.total ?? 0 })}</span>
                       </div>
                     ) : null}
-                    {/* Vanligt CSS-rutnät, ingen vågrät rullning; varje rad om sex är en rad i reducern. */}
+                    {/* Vanligt CSS-rutnät med FAST kolumnantal (aldrig auto-fill), ingen vågrät rullning; varje rad om XP_GRID_COLUMNS är en rad i reducern. */}
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${XP_GRID_COLUMNS}, minmax(0, 1fr))`, gap: dp(14), padding: `0 ${dp(56)}px` }}>
                       {row.items.map((item, ii) => {
                         const focused = onRow && inRows && (s.cols[ri] ?? 0) === ii
@@ -612,13 +612,14 @@ function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; ite
   }
 
   if (rowId === 'yours') {
-    // Mörk kortyta som de andra raderna; den ljusa logoplattan fyller nästan
-    // hela kortet (Jerry 2026-10-30) med en jämn mörk ram runt om. Numret som
-    // liten mörk bricka i plattans hörn, förloppet i ramens nederkant.
+    // Mörk kortyta som de andra raderna; logobilden står direkt på den, utan
+    // platta, så stor den ryms inom en jämn luft på 11 px och med rundade hörn
+    // på själva bilden (Jerry 2026-10-30). Numret som liten mörk bricka uppe
+    // till vänster, förloppet i nederkanten.
     const number = model.channelNumber(channel)
     return (
       <div data-testid="xp-yours-face" data-surface="dark" style={{ position: 'absolute', inset: 0, background: V2.noArt }}>
-        <LogoPlate channel={channel} width={YOURS_PLATE[0]} height={YOURS_PLATE[1]} radius={10} style={{ position: 'absolute', left: dp(YOURS_FRAME), top: dp(YOURS_FRAME), boxShadow: 'none' }} />
+        <LogoPlate bare channel={channel} width={YOURS_PLATE[0]} height={YOURS_PLATE[1]} radius={10} style={{ position: 'absolute', left: dp(YOURS_FRAME), top: dp(YOURS_FRAME) }} />
         {number != null ? <span data-testid="xp-yours-number" style={{ position: 'absolute', left: dp(YOURS_FRAME + 5), top: dp(YOURS_FRAME + 5), padding: `0 ${dp(6)}px`, borderRadius: dp(5), background: 'rgba(17,19,26,.78)', color: V2.text, fontSize: dp(14), fontWeight: 700, lineHeight: 1.45, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
         {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
       </div>

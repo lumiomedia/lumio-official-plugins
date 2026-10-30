@@ -25,13 +25,14 @@ import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPl
  * KANALER, LAYOUT KLASSISK (handoff v2 "Screen 1b").
  *
  * Rullande sida: topprad → spotlight (3 kolumner) → Favoriter → Fortsätt
- * titta → Alla kanaler (6 kolumner, kategorichips). Navigeringen är appens
+ * titta → Alla kanaler (5 kolumner, kategorichips). Navigeringen är appens
  * geometriska fokusmotor — inga egna pilar här. Datat är hubbens
  * (`useHubData`, delat med telefonen) och ändras inte.
  */
 
 const SPOTLIGHT_COUNT = 3
-const ALL_CHANNELS_COLUMNS = 6
+// Fem per rad som Upplevelsens rutnät (Jerry 2026-10-30: sex var för många); ALL_STEP (40) fyller jämna rader.
+const ALL_CHANNELS_COLUMNS = 5
 const NO_CHANNEL: M3uChannel = { name: '', logo: null, group: '', url: '', tvgId: null }
 
 /** Kortyta enligt README (delad med Upplevelsens rutnät). Fokus = `data-v2f="inset"`. */
