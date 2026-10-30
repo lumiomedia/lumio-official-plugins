@@ -306,7 +306,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         <HubGreeting nowMs={model.nowMs} clock={clock} />
       </div>
 
-      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: dp(hasArt ? 860 : 780), display: 'flex', flexDirection: 'column', gap: dp(14), zIndex: 3 }}>
+      {/* Texten får gå fram till förhandsrutan (eller över hela bredden utan ruta); rubriken står på en rad. */}
+      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: hasArt ? dp(1000) : heroChannel && heroItem?.kind !== 'category' ? `calc(100% - ${dp(56 + 640 + 56 + 40)}px)` : `calc(100% - ${dp(112)}px)`, display: 'flex', flexDirection: 'column', gap: dp(14), zIndex: 3 }}>
         {heroItem ? <HeroText item={heroItem} model={model} /> : null}
         {showButtons ? (
           <div data-testid="xp-hero-buttons" style={{ display: 'flex', gap: dp(12), marginTop: dp(8), alignItems: 'center' }}>
@@ -451,7 +452,7 @@ function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }
         {number ? <span style={{ fontWeight: 600, color: V2.accText, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
         {item.channel ? <span style={ellipsis}>{item.channel.name}</span> : null}
       </div>
-      <div data-testid="xp-hero-title" style={{ fontSize: dp(68), fontWeight: 700, lineHeight: 1.02, letterSpacing: '-0.01em', ...clamp2 }}>{title}</div>
+      <div data-testid="xp-hero-title" style={{ fontSize: dp(60), fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
       {meta ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(19), color: 'rgba(243,244,248,0.8)' }}>
           <span>{meta}</span>

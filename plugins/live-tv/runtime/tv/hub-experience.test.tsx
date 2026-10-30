@@ -200,4 +200,11 @@ describe('HubExperience', () => {
     expect(screen.getByTestId('xp-hero-tile')).toBeInTheDocument()
     expect(screen.getByTestId('xp-ambient').getAttribute('data-bg')).toBe(v2Ambient('slate'))
   })
+  it('herorubriken står på en rad (kortas med …) i 60 px', async () => {
+    await mount()
+    const title = screen.getByTestId('xp-hero-title')
+    expect(title.style.whiteSpace).toBe('nowrap')
+    expect(title.style.textOverflow).toBe('ellipsis')
+    expect(title.style.fontSize).toBe('60px')
+  })
 })
