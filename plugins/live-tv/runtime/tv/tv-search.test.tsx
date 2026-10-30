@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
@@ -61,6 +62,57 @@ describe('TvSearch', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/**
+ * Söket är en lodrät stapel: sökraden (fält + förslag, på TV även
+ * skärmtangentbordet) överst i full bredd, resultaten under den — inte längre
+ * en inboxad vänsterspalt med resultaten till höger.
+ */
+describe('TvSearch: sökraden överst, resultaten under', () => {
+  const searchProps = { pageId: 'live-tv-browse', params: { view: 'search' }, onNavigate: () => {}, onOpenDetails: () => {} } as unknown as ComponentProps<typeof LiveTvTvShell>
+  const expectStacked = () => {
+    const root = screen.getByTestId('search-view-root')
+    const top = screen.getByTestId('search-top')
+    const results = screen.getByTestId('search-results')
+    // Ingen sidopanel kvar.
+    expect(screen.queryByTestId('search-query-col')).toBeNull()
+    // Sökraden kommer före resultaten i dokumentordning …
+    expect(top.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // … de är syskon i samma stapel, och stapeln är lodrät.
+    expect(top.parentElement).toBe(results.parentElement)
+    expect(top.parentElement).toBe(root)
+    expect(root.style.flexDirection).toBe('column')
+    // Resultaten innehåller filterchipsen och sektionerna, sökraden gör det inte.
+    expect(within(results).getByTestId('search-scope-all')).toBeInTheDocument()
+    expect(within(results).getByTestId('search-channels')).toBeInTheDocument()
+    expect(within(results).getByTestId('search-programmes')).toBeInTheDocument()
+    expect(within(top).queryByTestId('search-channels')).toBeNull()
+    return { top, results }
+  }
+
+  it('TV: fält, förslag och skärmtangentbord i sökraden; exakt en data-init', async () => {
+    render(<LiveTvTvShell {...searchProps} />)
+    await flushLiveTvIndex()
+    const { top, results } = expectStacked()
+    expect(top.querySelector('[data-live-tv-keyboard]')).not.toBeNull()
+    expect(results.querySelector('[data-live-tv-keyboard]')).toBeNull()
+    fireEvent.click(screen.getByText('g'))
+    await settle()
+    expect(within(top).getAllByTestId('search-suggestion').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
+  it('skrivbord: det riktiga fältet ligger i sökraden, resultaten under', async () => {
+    __setTvModeForTests(false)
+    render(<LiveTvTvShell {...searchProps} />)
+    await flushLiveTvIndex()
+    const { top } = expectStacked()
+    const input = top.querySelector('input')!
+    expect(input).not.toBeNull()
+    fireEvent.change(input, { target: { value: 'sky' } })
+    expect(within(screen.getByTestId('search-results')).getByTestId('search-channels')).toHaveTextContent('Sky Sports')
   })
 })
 

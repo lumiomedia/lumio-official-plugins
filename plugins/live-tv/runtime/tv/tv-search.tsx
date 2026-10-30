@@ -73,13 +73,31 @@ function TvSearchDesktop(props: TvViewProps) {
     first?.focus({ preventScroll: true })
   }
 
-  const outerStyle = { flex: 1, minHeight: 0, display: 'flex' } as const
-  const queryColStyle = { width: dp(760), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(40)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) } as const
-  const resultsStyle = { flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px 0 ${dp(40)}px`, display: 'flex', flexDirection: 'column', gap: dp(28) } as const
+  /**
+   * En lodrät stapel: sökraden överst i full bredd (fält, förslag och — på
+   * TV — skärmtangentbordet under förslagen), resultaten under den.
+   * Tidigare låg fältet inboxat i en 760 dp bred vänsterspalt med tom yta
+   * under sig och resultaten till höger. Hela vyn är EN rullningsyta, så den
+   * som går ▾ från tangentbordet ner i träffarna rullar sökraden ur bild i
+   * stället för att träffarna trängs i det som blir över under den.
+   * Bakgrunden målas av skalet.
+   */
+  const outerStyle = { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, gap: dp(28) } as const
+  const topStyle = { flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(14) } as const
+  // Tangentbordets tangenter är ett rutnät som fyller bredden — utsträckt
+  // över hela vyns bredd blev varje tangent orimligt bred. Fältet och
+  // förslagen tar full bredd, tangentbordet stannar vid ungefär sin gamla
+  // bredd, direkt under fältet och förslagen.
+  const keyboardStyle = { width: '100%', maxWidth: dp(900) } as const
+  // Samma element på två platser: på skrivbord ligger det riktiga fältet
+  // först med förslagen direkt under; på TV är fältet displayraden ovan och
+  // tangentbordet hamnar under förslagen. Bara den ena grenen monteras.
+  const field = <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
+  const resultsStyle = { flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(28) } as const
 
   return (
-    <div data-testid="search-view-root" style={outerStyle}>
-      <div data-testid="search-query-col" style={queryColStyle}>
+    <div data-testid="search-view-root" data-scroll="" style={outerStyle}>
+      <div data-testid="search-top" style={topStyle}>
         {tvMode ? (
           // TvKeyboard visar ingen text själv — den här raden är fältets enda
           // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
@@ -88,15 +106,15 @@ function TvSearchDesktop(props: TvViewProps) {
             {query || <span style={{ fontSize: dp(18) }}>{tt('searchPlaceholder')}</span>}
             <span aria-hidden="true" style={{ width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) }} />
           </div>
-        ) : null}
+        ) : field}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto', minHeight: dp(44) }}>
           {hints.map((hint) => (
             <div key={hint} data-testid="search-suggestion" {...station(() => setQuery(hint))} style={{ height: dp(44), minHeight: dp(44), padding: `0 ${dp(18)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), whiteSpace: 'nowrap', cursor: 'pointer' }}>{hint}</div>
           ))}
         </div>
-        <TvTextField value={query} onChange={setQuery} onSubmit={focusFirstResult} placeholder={tt('searchPlaceholder')} autoFocus />
+        {tvMode ? <div style={keyboardStyle}>{field}</div> : null}
       </div>
-      <div data-live-tv-search-results="" data-scroll="" style={resultsStyle}>
+      <div data-testid="search-results" data-live-tv-search-results="" style={resultsStyle}>
         {vodHidden ? null : (
           <div data-row="" style={{ display: 'flex', gap: dp(10) }}>
             {([['all', tt('scopeAll')], ['ch', tt('scopeChannels')], ['vod', tt('scopeVod')]] as const).map(([key, label]) => (
