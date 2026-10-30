@@ -6,6 +6,7 @@ import type { TvNav } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText, type TvStringKey } from './tv-strings'
 import { V2 } from './v2-tokens'
+import { V2FocusStyle } from './v2-ui'
 
 /**
  * DELAT MELLAN KANALERS TVÅ LAYOUTER (Klassisk och Upplevelse): hälsningen i
@@ -82,6 +83,23 @@ export function HubPlaylistPill({ model, nav, init, height, onPicked }: {
           <div data-live-tv-menu-item="" {...station(() => { setOpen(false); nav.go('settings', { tab: 'playlists' }) })} style={{ height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', fontSize: dp(17), color: 'rgba(243,244,248,0.65)', borderTop: `1px solid ${TV.line}`, marginTop: dp(4), cursor: 'pointer' }}>{tt('addPlaylist')}</div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * Inga kanaler. Kanalerna kommer ur appens index: tomt betyder "hämtar" tills
+ * sidhämtningen är klar, annars "lägg till en spellista". Utan skillnaden
+ * möttes varje kallstart av tomsidan i en halv sekund.
+ */
+export function HubEmptyState({ testId, model, nav, background }: { testId: string; model: LiveTvModel; nav: TvNav; background: string }) {
+  const { tt } = useTvText()
+  return (
+    <div data-testid={testId} style={{ flex: 1, background, color: V2.text, padding: dp(48), display: 'flex', flexDirection: 'column', gap: dp(16) }}>
+      <V2FocusStyle />
+      <div style={{ fontSize: dp(34), fontWeight: 600 }}>{model.channelsLoading ? tt('loadingChannels') : tt('emptyTitle')}</div>
+      <div style={{ fontSize: dp(20), color: TV.muted }}>{model.channelsLoading ? '' : tt('emptyBody')}</div>
+      <div {...station(() => nav.go('settings'), undefined, { 'data-init': '', 'data-v2f': 'btn' })} style={{ alignSelf: 'flex-start', height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), fontWeight: 600 }}>{tt('openSettings')}</div>
     </div>
   )
 }

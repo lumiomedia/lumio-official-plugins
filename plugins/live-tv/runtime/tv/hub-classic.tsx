@@ -20,7 +20,7 @@ import { useProgrammeArt } from './programme-art'
 import { useTint } from './tint'
 import { V2, mixHex, v2Bg } from './v2-tokens'
 import { LivePill, LogoPlate, ProgrammeArtBox, V2FocusStyle } from './v2-ui'
-import { AccentTag, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
+import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 
 /**
  * KANALER, LAYOUT KLASSISK (handoff v2 "Screen 1b").
@@ -75,19 +75,7 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
   const hold = (channel: M3uChannel, programme: EpgProgramme | null) => (el: HTMLElement) => holdMenu({ channel, programme, nav, nowMs: model.nowMs, element: el, tt, locale })
   const liveHold = (channel: M3uChannel) => hold(channel, model.nowFor(channel).now)
 
-  if (model.allChannels.length === 0) {
-    return (
-      <div data-testid="hub-classic" style={{ flex: 1, background: bg, padding: dp(48), display: 'flex', flexDirection: 'column', gap: dp(16) }}>
-        <V2FocusStyle />
-        {/* Kanalerna kommer ur appens index: tomt betyder "hämtar" tills
-            sidhämtningen är klar, annars "lägg till en spellista". Utan
-            skillnaden möttes varje kallstart av tomsidan i en halv sekund. */}
-        <div style={{ fontSize: dp(34), fontWeight: 600 }}>{model.channelsLoading ? tt('loadingChannels') : tt('emptyTitle')}</div>
-        <div style={{ fontSize: dp(20), color: TV.muted }}>{model.channelsLoading ? '' : tt('emptyBody')}</div>
-        <div {...station(() => nav.go('settings'), undefined, { 'data-init': '', 'data-v2f': 'btn' })} style={{ alignSelf: 'flex-start', height: dp(52), minHeight: dp(52), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', fontSize: dp(19), fontWeight: 600 }}>{tt('openSettings')}</div>
-      </div>
-    )
-  }
+  if (model.allChannels.length === 0) return <HubEmptyState testId="hub-classic" model={model} nav={nav} background={bg} />
 
   const recentRow = recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, 8)
   const pillInit = spotlight.length === 0 && shown.length === 0
