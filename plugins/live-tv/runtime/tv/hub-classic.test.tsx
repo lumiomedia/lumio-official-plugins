@@ -132,4 +132,9 @@ describe('HubClassic', () => {
     await mount()
     expect(screen.getByTestId('hub-classic').getAttribute('data-bg')).toContain('radial-gradient(')
   })
+  it('korten har samma mörka kortyta som Upplevelse och följer kortfärgen (Jerry 2026-10-30)', async () => {
+    const { HUB_CARD } = await import('./hub-shared')
+    const { V2 } = await import('./v2-tokens')
+    expect(HUB_CARD.background).toBe(V2.noArt)
+  })
 })

@@ -116,7 +116,8 @@ export function V2Progress({ value, height, track = 'rgba(252,252,255,.16)' }: {
 }
 
 /** Kortyta enligt README: yta 2 + 1 px kant. */
-export const HUB_CARD = { background: V2.surface2, border: '1px solid rgba(255,255,255,0.10)', overflow: 'hidden', cursor: 'pointer' } as const
+// Samma mörka kortyta som Upplevelse (följer kortfärgen i Utseende, Jerry 2026-10-30).
+export const HUB_CARD = { background: V2.noArt, border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 10px 30px rgba(0,0,0,.35)', overflow: 'hidden', cursor: 'pointer' } as const
 const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const
 
 /**
