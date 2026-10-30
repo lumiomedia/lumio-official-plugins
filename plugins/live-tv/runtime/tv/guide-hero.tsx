@@ -76,13 +76,12 @@ function clear(color: string): string {
  * 336×189 uppe till höger (OK = helskärm). Bandet målar också sidans ton:
  * `heroBase` ur bildens (annars logons) färg, blandad med bakgrunden.
  */
-export function GuideHero({ sel, model, nav, mode, onMode, clock, tint, background, sourceLabel, onOpenSource, isTv }: {
+export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sourceLabel, onOpenSource, isTv }: {
   sel: GuideSelection | null
   model: LiveTvModel
   nav: TvNav
   mode: DesktopGuideMode
   onMode(m: DesktopGuideMode): void
-  clock: ReactNode
   tint: boolean
   background: LiveBackground
   sourceLabel: string
@@ -160,7 +159,6 @@ export function GuideHero({ sel, model, nav, mode, onMode, clock, tint, backgrou
       <div style={{ position: 'relative', zIndex: 1, height: '100%', boxSizing: 'border-box', padding: `${dp(34)}px ${dp(48)}px ${dp(26)}px`, display: 'flex', flexDirection: 'column', gap: dp(10), maxWidth: channel ? `calc(100% - ${dp(336 + 48 + 24)}px)` : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), minWidth: 0 }}>
           <span style={{ fontSize: dp(30), fontWeight: 600, whiteSpace: 'nowrap' }}>{tt('guideV2Title')}</span>
-          <span data-testid="guide-clock" style={{ fontSize: dp(17), letterSpacing: '0.1em', color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>{clock}</span>
           <div data-testid="guide-mode" style={{ display: 'flex', gap: dp(4), padding: dp(4), borderRadius: 999, background: V2.surface3, border: '1px solid rgba(255,255,255,0.10)', marginLeft: dp(12), flexShrink: 0 }}>
             {segment('now', tt('modeNowSen'))}
             {segment('tl', tt('modeTabla'))}

@@ -5,7 +5,6 @@ import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetFo
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
-import { greetingKey } from './hub-shared'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -62,22 +61,14 @@ describe('HubClassic', () => {
     expect(screen.getByTestId('hub-spotlight').querySelector('[data-f]')).toHaveAttribute('data-init')
   })
 
-  it('topraden har sök, spellista, kanalguide och en hälsning efter tid på dygnet', async () => {
+  it('topraden har sök, spellista, kanalguide och värdens klocka — ingen egen hälsning (värdens klocka hälsar redan)', async () => {
     await mount()
     const top = screen.getByTestId('hub-topbar')
     expect(within(top).getByText('Search channels and programmes')).toBeInTheDocument()
     expect(within(top).getByTestId('playlist-pill')).toBeInTheDocument()
     expect(within(top).getByText('Channel guide')).toBeInTheDocument()
-    expect(within(top).getByTestId('hub-greeting').textContent).toMatch(/^Good (morning|afternoon|evening|night)$/)
-  })
-
-  it('hälsningen följer klockan', () => {
-    expect(greetingKey(6)).toBe('greetingMorning')
-    expect(greetingKey(11)).toBe('greetingMorning')
-    expect(greetingKey(12)).toBe('greetingAfternoon')
-    expect(greetingKey(17)).toBe('greetingEvening')
-    expect(greetingKey(23)).toBe('greetingNight')
-    expect(greetingKey(3)).toBe('greetingNight')
+    expect(within(top).getByTestId('hub-clock')).toBeInTheDocument()
+    expect(within(top).queryByTestId('hub-greeting')).toBeNull()
   })
 
   it('OK på en favorit öppnar kanalguiden med fokus på den kanalen', async () => {

@@ -31,7 +31,7 @@ const nav = { play: vi.fn() } as unknown as TvNav & { play: ReturnType<typeof vi
 
 const hero = (sel: GuideSelection | null, extra: Partial<Parameters<typeof GuideHero>[0]> = {}) => {
   const onMode = vi.fn()
-  render(<GuideHero sel={sel} model={model} nav={nav} mode="now" onMode={onMode} clock="15:05" tint={false} background="slate" sourceLabel="Xtream" onOpenSource={() => {}} isTv {...extra} />)
+  render(<GuideHero sel={sel} model={model} nav={nav} mode="now" onMode={onMode} tint={false} background="slate" sourceLabel="Xtream" onOpenSource={() => {}} isTv {...extra} />)
   return onMode
 }
 
@@ -129,5 +129,9 @@ describe('guideKeyAction', () => {
     expect(guideKeyAction('T')).toBe('toggle-tl')
     expect(guideKeyAction('x')).toBeNull()
     expect(guideKeyAction('Enter')).toBeNull()
+  })
+  it('ingen klocka i guidens hero (Jerry 2026-10-30)', () => {
+    hero({ channel, programme: live })
+    expect(screen.queryByTestId('guide-clock')).toBeNull()
   })
 })

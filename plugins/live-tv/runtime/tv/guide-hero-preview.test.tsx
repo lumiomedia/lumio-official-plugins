@@ -21,7 +21,7 @@ const now = Date.now()
 const channel: M3uChannel = { name: 'TV4 HD', logo: null, group: 'Underhållning', url: 'http://x/tv4', tvgId: 'tv4' }
 const live = { title: 'Silo', start: now - 60_000, stop: now + 60_000 }
 const model = { nowMs: now, channelNumber: () => 1, nowFor: () => ({ now: live, next: null, later: null }) } as unknown as LiveTvModel
-const hero = (playerOpen: boolean) => render(<GuideHero sel={{ channel, programme: live }} model={model} nav={{ play: vi.fn(), playerOpen } as unknown as TvNav} mode="now" onMode={() => {}} clock="" tint={false} background="slate" sourceLabel="" onOpenSource={() => {}} isTv />)
+const hero = (playerOpen: boolean) => render(<GuideHero sel={{ channel, programme: live }} model={model} nav={{ play: vi.fn(), playerOpen } as unknown as TvNav} mode="now" onMode={() => {}} tint={false} background="slate" sourceLabel="" onOpenSource={() => {}} isTv />)
 
 beforeEach(() => { __resetForTests(); previewProps.length = 0 })
 afterEach(cleanup)

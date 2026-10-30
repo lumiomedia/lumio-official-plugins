@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
-import { useTvClockNode } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { getTvSettings, setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
@@ -43,9 +42,8 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * N = till nu, T = växla Nu/Sen ↔ Tablå (från Kanallista → Tablå).
  */
 export function TvGuideShell({ model, nav, params }: TvViewProps) {
-  const { tt, locale } = useTvText()
+  const { tt } = useTvText()
   const isTv = useTvMode()
-  const clock = useTvClockNode(locale)
   const settings = useTvSettings()
 
   // Lokalt speglat läge, normaliserat för ytan: lagringen kan innehålla
@@ -212,7 +210,6 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
           nav={nav}
           mode={mode}
           onMode={changeMode}
-          clock={clock}
           tint={settings.heroTint}
           background={settings.liveBackground}
           sourceLabel={model.activePlaylistName ?? tt('sourceAll')}

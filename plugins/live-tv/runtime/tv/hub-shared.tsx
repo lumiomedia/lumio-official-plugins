@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
-import { useTvText, type TvStringKey } from './tv-strings'
+import { useTvText } from './tv-strings'
 import { V2 } from './v2-tokens'
 import { V2FocusStyle } from './v2-ui'
 
@@ -13,20 +13,14 @@ import { V2FocusStyle } from './v2-ui'
  * topraden och spellistpillen med sin meny. Telefonen har egna (mobile/).
  */
 
-/** Hälsningen efter tid på dygnet. SDK:t exponerar inget profilnamn — därför inget namn. */
-export function greetingKey(hour: number): TvStringKey {
-  if (hour >= 5 && hour < 12) return 'greetingMorning'
-  if (hour >= 12 && hour < 17) return 'greetingAfternoon'
-  if (hour >= 17 && hour < 22) return 'greetingEvening'
-  return 'greetingNight'
-}
 
-/** Hälsning ovanför värdens klocka, högerställd. */
-export function HubGreeting({ nowMs, clock }: { nowMs: number; clock: ReactNode }) {
-  const { tt } = useTvText()
+/**
+ * Värdens klocka, högerställd. Ingen egen hälsning: värdens klocknod hälsar
+ * redan ("God kväll Lumio"), och två rader hälsning stod på varandra.
+ */
+export function HubGreeting({ clock }: { nowMs?: number; clock: ReactNode }) {
   return (
     <div data-testid="hub-clock" style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'right' }}>
-      <div data-testid="hub-greeting" style={{ fontSize: dp(20), fontWeight: 600 }}>{tt(greetingKey(new Date(nowMs).getHours()))}</div>
       {clock}
     </div>
   )
