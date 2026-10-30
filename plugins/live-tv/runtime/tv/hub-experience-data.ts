@@ -7,14 +7,27 @@ import { startOfLocalDay, type LiveTvModel } from '../live-tv-model'
 import { useSchedules } from '../hooks/useSchedules'
 import { groupCounts } from './group-chips'
 import { FAVS_GROUP } from './tv-guide-shared'
+import { matchTitle, type SportMatch } from '../sport/sport-model'
+import { statusAt } from '../sport/sport-day-model'
+import { localDayKey, useSportDay } from '../sport/sport-epg'
 
 /**
  * RADERNA I KANALER, LAYOUT UPPLEVELSE (handoff v2 "Rows").
  *
- * Toppkortet + fem rader. Ingen tittarstatistik finns, så "Sänds nu" är
- * senast sedda + favoriter först och sedan spellistans ordning. Varje rad är
- * kapad (tusentals Xtream-kanaler ska inte ge tusentals kort), och en tom rad
- * utelämnas helt.
+ * Toppkortet + raderna. Ingen tittarstatistik finns, så "Sänds nu" är
+ * favoriter först och sedan spellistans ordning. I hemläget står kanalerna
+ * som redan ligger i Fortsätt titta INTE i Sänds nu (Jerry 2026-10-30: "dumt
+ * att de är likadana"); i kategoriläget är senast sedda kvar först. Varje rad
+ * är kapad (tusentals Xtream-kanaler ska inte ge tusentals kort), och en tom
+ * rad utelämnas helt.
+ *
+ * LIVE SPORT (Jerry 2026-10-30: "lägg till en rad för livesport här också"):
+ * direkt efter Sänds nu i hemläget. Källan är sportlägets dag
+ * (`useSportDay`, värdens lokala `/sport/day` — samma femminuterscache som
+ * sportpåminnelserna redan läser), så raden kostar inga nya leverantörsanrop
+ * och ingen tablåhämtning per kanal. Ett kort per pågående match, på den
+ * bästa kanalen bland matchens källor (favorit, senast sedd, annars första
+ * kända); en kanal visar bara en match.
  *
  * KATEGORILÄGET (Jerry 2026-10-30: "Alla ska inte vara aktiv … Alla ska visa
  * alla kanaler"): ingen chip vald = hemraderna, ofiltrerade. En vald chip
@@ -33,8 +46,10 @@ export type XpItem = {
   /** Kategori: antal kanaler. Visa fler: antal kanaler som ännu inte visas. */
   count?: number
   catchUp?: CatchUpItem
+  /** Live sport: matchens titel ("AIK - Hammarby") och liga. */
+  sport?: { title: string; league: string }
 }
-export type XpRowId = 'continue' | 'onNow' | 'yours' | 'soon' | 'explore' | 'grid'
+export type XpRowId = 'continue' | 'onNow' | 'sport' | 'yours' | 'soon' | 'explore' | 'grid'
 /** `total` = rutnätets kanaler i kategorin (bara på dess första rad, till rubriken). */
 export interface XpRow { id: XpRowId; items: XpItem[]; total?: number }
 
@@ -46,6 +61,7 @@ export const XP_GRID_STEP = 60
 
 const CONTINUE_MAX = 12
 const ON_NOW_MAX = 24
+const SPORT_MAX = 24
 const YOURS_MAX = 30
 const SOON_MAX = 20
 const SOON_WINDOW_MS = 2 * 3_600_000
@@ -69,6 +85,10 @@ export interface XpInput {
   nowMs: number
   /** Rutnätets tak i kategoriläget (default `XP_GRID_STEP`). */
   limit?: number
+  /** Sportlägets matcher i dag (Live sport); utan dem ingen rad. */
+  sport?: readonly SportMatch[]
+  /** Källans kanalnyckel → kanalen i modellen (okända källor hoppas över). */
+  channelFor?: (key: string) => M3uChannel | undefined
 }
 
 const liveItem = (prefix: string, channel: M3uChannel, nowFor: XpInput['nowFor']): XpItem =>
@@ -99,8 +119,13 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
   const favKeys = new Set(favourites.map(channelKey))
   const inChip = (c: M3uChannel) => (chip === null || chip === XP_ALL ? true : chip === FAVS_GROUP ? favKeys.has(channelKey(c)) : c.group === chip)
 
-  const onNow = take([recent, favourites, channels], inChip, ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
-  const rows = chip === null ? homeRows(input, onNow) : categoryRows(input, onNow)
+  // Hemläget: Fortsätt titta tar de senast sedda, så Sänds nu hoppar över dem.
+  const continueItems = chip === null ? [...recent.map((c) => continueItem(c, nowFor)), ...replays.map(replayItem)].slice(0, CONTINUE_MAX) : []
+  const inContinue = new Set(continueItems.filter((i) => i.kind === 'continue').map((i) => channelKey(i.channel!)))
+  const onNow = chip === null
+    ? take([favourites, channels], (c) => !inContinue.has(channelKey(c)), ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
+    : take([recent, favourites, channels], inChip, ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
+  const rows = chip === null ? homeRows(input, onNow, continueItems) : categoryRows(input, onNow)
   // Toppkortet = första kortet i Sänds nu (Jerry 2026-10-30): heron förladdar
   // och spelar det, så förhandsvisningen redan är igång när man går ner i raden.
   // Utan något som sänds: senaste reprisen, sedan första kanalen.
@@ -109,9 +134,8 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
   return { featured, rows: rows.filter((r) => r.items.length > 0) }
 }
 
-function homeRows(input: XpInput, onNow: XpItem[]): XpRow[] {
-  const { channels, favourites, recent, nowFor, replays, soon, groups, counts, nowMs } = input
-  const continueItems = [...recent.map((c) => continueItem(c, nowFor)), ...replays.map(replayItem)].slice(0, CONTINUE_MAX)
+function homeRows(input: XpInput, onNow: XpItem[], continueItems: XpItem[]): XpRow[] {
+  const { channels, favourites, nowFor, soon, groups, counts, nowMs } = input
   const yours = take([favourites, channels], () => true, YOURS_MAX).map((c) => liveItem('yours', c, nowFor))
   const upcoming = soon
     .filter(({ programme }) => programme.start > nowMs && programme.start <= nowMs + SOON_WINDOW_MS)
@@ -125,11 +149,49 @@ function homeRows(input: XpInput, onNow: XpItem[]): XpRow[] {
     .map((g): XpItem => ({ kind: 'category', key: `cat:${g}`, category: g, count: counts.get(g) ?? 0 }))
   return [
     { id: 'onNow', items: onNow },
+    { id: 'sport', items: liveSportItems(input) },
     { id: 'continue', items: continueItems },
     { id: 'yours', items: yours },
     { id: 'soon', items: upcoming },
     { id: 'explore', items: explore },
   ]
+}
+
+/**
+ * Pågående matcher (sportlägets egen statusregel, `statusAt`: repriser är
+ * aldrig live). Favoritkanalernas matcher först, sedan matcher med fler
+ * källor (större matcher sänds på fler kanaler), sedan avspark.
+ */
+function liveSportItems(input: XpInput): XpItem[] {
+  const { sport, channelFor, favourites, recent, nowFor, nowMs } = input
+  if (!sport?.length || !channelFor) return []
+  const favKeys = new Set(favourites.map(channelKey))
+  const recentKeys = new Set(recent.map(channelKey))
+  const rank = (c: M3uChannel) => (favKeys.has(channelKey(c)) ? 0 : recentKeys.has(channelKey(c)) ? 1 : 2)
+  const candidates: { match: SportMatch; channels: M3uChannel[]; best: number }[] = []
+  for (const match of sport) {
+    if (statusAt(match, nowMs) !== 'live') continue
+    const channels: M3uChannel[] = []
+    for (const source of match.sources) {
+      const channel = channelFor(source.channelKey)
+      if (channel) channels.push(channel)
+    }
+    if (channels.length === 0) continue
+    channels.sort((a, b) => rank(a) - rank(b))
+    candidates.push({ match, channels, best: rank(channels[0]!) })
+  }
+  candidates.sort((a, b) => a.best - b.best || b.match.sources.length - a.match.sources.length || a.match.start - b.match.start)
+  const used = new Set<string>()
+  const out: XpItem[] = []
+  for (const { match, channels } of candidates) {
+    if (out.length >= SPORT_MAX) break
+    const channel = channels.find((c) => !used.has(channelKey(c)))
+    if (!channel) continue
+    used.add(channelKey(channel))
+    const programme = nowFor(channel).now ?? { title: matchTitle(match), start: match.start, stop: match.stop }
+    out.push({ kind: 'live', key: `sport:${match.id}:${channelKey(channel)}`, channel, programme, sport: { title: matchTitle(match), league: match.league } })
+  }
+  return out
 }
 
 /** Sänds nu i kategorin + rutnätet. Bara de visade kanalerna blir kort (aldrig 4 000). */
@@ -166,7 +228,12 @@ export function useExperienceRows(model: LiveTvModel, chip: string | null, limit
   const soon = useMemo(() => soonChannels.flatMap((channel) => (soonSchedules[channelKey(channel)] ?? []).map((programme) => ({ channel, programme }))), [soonChannels, soonSchedules])
 
   const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  // Live sport: dagens sportdag ur värdens lokala cache, bara i hemläget.
+  const { data: sportDay } = useSportDay(chip === null ? localDayKey(model.nowMs) : null, model.nowMs)
+  const sport = sportDay?.matches
+  const byKey = model.byKey
+  const channelFor = useMemo(() => (key: string) => byKey.get(key), [byKey])
   return useMemo(() => buildExperienceRows({
-    channels: model.channels, favourites, recent, nowFor: model.nowFor, replays, soon, groups: model.groups, counts, chip, nowMs: model.nowMs, limit,
-  }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts, chip, model.nowMs, limit])
+    channels: model.channels, favourites, recent, nowFor: model.nowFor, replays, soon, groups: model.groups, counts, chip, nowMs: model.nowMs, limit, sport, channelFor,
+  }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts, chip, model.nowMs, limit, sport, channelFor])
 }

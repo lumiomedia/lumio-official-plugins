@@ -11,6 +11,12 @@ describe('v2-ui', () => {
     expect(screen.getByTestId('logo-plate')).toHaveTextContent('SS')
     expect(screen.getByTestId('logo-plate-number')).toHaveTextContent('7')
   })
+  it('logon fyller mer av plattan (Jerry 2026-10-30: "gör logorna större") men rör aldrig kanten', () => {
+    render(<LogoPlate channel={{ ...ch, logo: 'http://x/logo.png' }} width={300} height={150} />)
+    const box = screen.getByTestId('logo-plate-box')
+    expect(box.style.width).toBe('90%')
+    expect(box.style.height).toBe('84%')
+  })
   it('utan nummer ingen bricka', () => {
     render(<LogoPlate channel={ch} width={100} height={58} />)
     expect(screen.queryByTestId('logo-plate-number')).toBeNull()

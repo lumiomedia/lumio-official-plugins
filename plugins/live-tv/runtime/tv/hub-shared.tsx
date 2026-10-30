@@ -128,10 +128,12 @@ const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'elli
  * kommer från vyn; `faceHeight` ger en fast ytahöjd i stället för 16:9
  * (TV-rutnätet räknar radernas toppar).
  */
-export function ChannelGridCard({ channel, model, faceHeight, style, ...rest }: {
+export function ChannelGridCard({ channel, model, faceHeight, captionPadRight, style, ...rest }: {
   channel: M3uChannel
   model: LiveTvModel
   faceHeight?: number
+  /** Bildtexten håller undan så här långt från högerkanten (pekarens "…"-knapp nere till höger). */
+  captionPadRight?: number
   style?: CSSProperties
 } & Omit<HTMLAttributes<HTMLDivElement>, 'style'>) {
   const info = model.nowFor(channel)
@@ -147,7 +149,7 @@ export function ChannelGridCard({ channel, model, faceHeight, style, ...rest }: 
         {model.locked.has(key) ? <span style={{ position: 'absolute', bottom: dp(8), right: dp(9), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
         {info.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={3} track="rgba(0,0,0,0.35)" /></div> : null}
       </div>
-      <div style={{ padding: `${dp(10)}px ${dp(12)}px ${dp(12)}px` }}>
+      <div style={{ padding: `${dp(10)}px ${dp(captionPadRight ?? 12)}px ${dp(12)}px ${dp(12)}px` }}>
         <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
         <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
       </div>

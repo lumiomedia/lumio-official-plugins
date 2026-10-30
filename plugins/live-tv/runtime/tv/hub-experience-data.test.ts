@@ -4,6 +4,7 @@ import { FAVS_GROUP } from './tv-guide-shared'
 import type { M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
 import type { CatchUpItem } from '../catch-up'
+import type { SportMatch } from '../sport/sport-model'
 
 const now = 1_800_000_000_000
 const ch = (name: string, group: string): M3uChannel => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
@@ -38,7 +39,7 @@ describe('buildExperienceRows', () => {
     expect(ids(out)[0]).toBe('onNow')
     expect(ids(out)[1]).toBe('continue')
     expect(out.featured!.key).toBe(row(out, 'onNow').items[0]!.key)
-    expect(out.featured).toMatchObject({ kind: 'live', channel: S2 })
+    expect(out.featured).toMatchObject({ kind: 'live', channel: N1 })
     expect(row(out, 'continue').items.map((i) => i.kind)).toEqual(['continue', 'replay'])
   })
 
@@ -47,9 +48,10 @@ describe('buildExperienceRows', () => {
     expect(out.featured!.key).toBe(row(out, 'onNow').items[0]!.key)
   })
 
-  it('Sänds nu: senast sedda + favoriter först, sedan spellistans ordning', () => {
+  it('Sänds nu (hem): favoriter först, sedan spellistans ordning — utan kanalerna i Fortsätt titta (Jerry 2026-10-30: "dumt att de är likadana")', () => {
     const out = buildExperienceRows(base())
-    expect(row(out, 'onNow').items.map((i) => i.channel!.name)).toEqual(['S2', 'N1', 'S1', 'K1'])
+    expect(row(out, 'onNow').items.map((i) => i.channel!.name)).toEqual(['N1', 'S1', 'K1'])
+    expect(row(out, 'continue').items.filter((i) => i.kind === 'continue').map((i) => i.channel!.name)).toEqual(['S2'])
     expect(row(out, 'yours').items.map((i) => i.channel!.name)).toEqual(['N1', 'S1', 'S2', 'K1'])
   })
 
@@ -80,6 +82,50 @@ describe('buildExperienceRows', () => {
     const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [] }))
     expect(row(out, 'onNow').items.length).toBeLessThanOrEqual(24)
     expect(row(out, 'yours').items.length).toBeLessThanOrEqual(30)
+  })
+})
+
+describe('buildExperienceRows, Live sport', () => {
+  const src = (c: M3uChannel) => ({ channelKey: `${c.name}::${c.url}`, name: c.name, url: c.url, logo: null, group: c.group, tvgId: null, sourceId: 's', quality: null, programmeStart: now - 3_600_000, programmeStop: now + 3_600_000, liveFlag: true })
+  const match = (id: string, over: Partial<SportMatch> = {}): SportMatch => ({
+    id, kind: 'football', league: 'Allsvenskan', leagueKey: 'allsvenskan', home: `Home ${id}`, away: `Away ${id}`, homeKey: null, awayKey: null, event: null,
+    start: now - 1_800_000, stop: now + 3_600_000, status: 'live', rerun: false, round: null, venue: null, sources: [src(S1)], ...over,
+  })
+  const byKey = new Map([S1, S2, N1, K1].map((c) => [`${c.name}::${c.url}`, c]))
+  const channelFor = (key: string) => byKey.get(key)
+
+  it('raden ligger direkt efter Sänds nu och visar matcher som pågår nu, med matchtiteln', () => {
+    const out = buildExperienceRows(base({ sport: [match('a')], channelFor }))
+    expect(ids(out).slice(0, 2)).toEqual(['onNow', 'sport'])
+    expect(row(out, 'sport').items).toHaveLength(1)
+    expect(row(out, 'sport').items[0]).toMatchObject({ kind: 'live', channel: S1, sport: { title: 'Home a - Away a', league: 'Allsvenskan' } })
+  })
+
+  it('bara pågående: kommande, slutspelade och repriser hoppas över, och okända kanaler likaså', () => {
+    const out = buildExperienceRows(base({
+      channelFor,
+      sport: [
+        match('later', { start: now + 3_600_000, stop: now + 7_200_000, status: 'upcoming' }),
+        match('done', { start: now - 7_200_000, stop: now - 600_000, status: 'finished' }),
+        match('rerun', { rerun: true }),
+        match('nowhere', { sources: [{ ...src(S1), channelKey: 'missing::x' }] }),
+      ],
+    }))
+    expect(ids(out)).not.toContain('sport')
+  })
+
+  it('utelämnas utan sportdata, och i kategoriläget', () => {
+    expect(ids(buildExperienceRows(base()))).not.toContain('sport')
+    expect(ids(buildExperienceRows(base({ sport: [match('a')], channelFor, chip: 'Sport' })))).not.toContain('sport')
+  })
+
+  it('ett kort per match, favoritkanalen väljs bland källorna; en kanal visar bara en match; kapat vid 24', () => {
+    const out = buildExperienceRows(base({ channelFor, sport: [match('a', { sources: [src(S1), src(N1)] }), match('b', { sources: [src(N1)] })] }))
+    expect(row(out, 'sport').items.map((i) => i.channel!.name)).toEqual(['N1'])
+    const many = Array.from({ length: 40 }, (_, i) => ch(`X${i}`, 'Sport'))
+    const lookup = new Map(many.map((c) => [`${c.name}::${c.url}`, c]))
+    const big = buildExperienceRows(base({ channels: many, channelFor: (k) => lookup.get(k), sport: many.map((c, i) => match(`m${i}`, { sources: [src(c)] })) }))
+    expect(row(big, 'sport').items.length).toBe(24)
   })
 })
 

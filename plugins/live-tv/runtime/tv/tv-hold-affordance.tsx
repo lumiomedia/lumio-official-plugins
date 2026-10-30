@@ -20,11 +20,31 @@ const INSET_PX = 6
 const FINE_POINTER_QUERY = '(any-pointer: fine)'
 
 /**
+ * Hörnet knappen läggs i. Standard är övre höger; en station kan välja ett
+ * annat med `data-hold-corner="tl|tr|bl|br"` när det hörnet redan bär något
+ * eget (Upplevelses klocka, tagg och favorithjärta — Jerry 2026-10-30:
+ * "favoriter och menyn krockar").
+ */
+export type HoldCorner = 'tl' | 'tr' | 'bl' | 'br'
+const holdCorner = (el: HTMLElement): HoldCorner => {
+  const raw = el.getAttribute('data-hold-corner')
+  return raw === 'tl' || raw === 'bl' || raw === 'br' ? raw : 'tr'
+}
+
+/** Knappens övre vänstra hörn (designpixlar, relativt roten) för stationens rect. */
+export function holdButtonSpot(rect: { left: number; top: number; right: number; bottom: number }, corner: HoldCorner): { left: number; top: number } {
+  const left = corner === 'tl' || corner === 'bl' ? rect.left + INSET_PX : rect.right - BUTTON_PX - INSET_PX
+  const top = corner === 'bl' || corner === 'br' ? rect.bottom - BUTTON_PX - INSET_PX : rect.top + INSET_PX
+  return { left, top }
+}
+
+/**
  * EN "…"-knapp för hela skalet, inte en per kort (spec §4.1).
  *
  * `station()` sätter `data-hold=""` på varje station som har en hållhandling
  * (P2). Skalet håller EN delegerad `pointerover`-lyssnare på rotnoden och
- * flyttar en enda knapp till den hovrade stationens övre högra hörn. Därmed
+ * flyttar en enda knapp till den hovrade stationens övre högra hörn (eller
+ * hörnet stationen väljer med `data-hold-corner`). Därmed
  * får varje station med håll en synlig affordans utan att ett enda
  * anropsställe rörs, och utan att regeln "ett kort = en station" bryts på TV.
  *
@@ -81,7 +101,12 @@ export function TvHoldAffordance({ rootRef, enabled }: {
       const rect = station.getBoundingClientRect()
       const scale = tvSceneBoxScale(root) || 1
       stationRef.current = station
-      setSpot({ left: (rect.right - rootRect.left) / scale, top: (rect.top - rootRect.top) / scale })
+      setSpot(holdButtonSpot({
+        left: (rect.left - rootRect.left) / scale,
+        top: (rect.top - rootRect.top) / scale,
+        right: (rect.right - rootRect.left) / scale,
+        bottom: (rect.bottom - rootRect.top) / scale,
+      }, holdCorner(station)))
     }
 
     const onPointerOver = (event: Event) => {
@@ -157,8 +182,8 @@ export function TvHoldAffordance({ rootRef, enabled }: {
       }}
       style={{
         position: 'absolute',
-        left: dp(spot.left - BUTTON_PX - INSET_PX),
-        top: dp(spot.top + INSET_PX),
+        left: dp(spot.left),
+        top: dp(spot.top),
         width: dp(BUTTON_PX),
         height: dp(BUTTON_PX),
         borderRadius: dp(12),

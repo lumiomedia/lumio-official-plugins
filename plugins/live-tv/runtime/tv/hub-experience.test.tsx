@@ -7,6 +7,9 @@ import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 import { setTvSettings } from './tv-settings-store'
 import { v2Ambient } from './v2-tokens'
+import { TV } from './tv-ui'
+import { fxMatch, fxSource, stubSportDays } from '../sport/__sport-fixture'
+import { localDayKey } from '../sport/sport-epg'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -296,5 +299,62 @@ describe('HubExperience', () => {
     expect(tile.style.width).toBe('600px')
     expect(tile.style.height).toBe('338px')
     expect(parseInt(tile.style.top) + 338).toBeLessThan(520)
+  })
+  it('heronas reservruta: logoplattan är 380×190 (Jerry 2026-10-30: "fyll ut mitten lite mer")', async () => {
+    setTvSettings({ hubLayout: 'experience', previewEnabled: false })
+    await mount()
+    const plate = within(screen.getByTestId('xp-hero-tile')).getByTestId('logo-plate')
+    expect(plate.style.width).toBe('380px')
+    expect(plate.style.height).toBe('190px')
+  })
+  it('Dina kanaler: mörk kortyta, den ljusa logoplattan fyller kortet utom en jämn ram på 11 px, numret som bricka uppe till vänster', async () => {
+    await mount()
+    const face = within(screen.getByTestId('xp-row-yours')).getAllByTestId('xp-yours-face')[0]!
+    expect(face.getAttribute('data-surface')).toBe('dark')
+    const plate = within(face).getByTestId('logo-plate')
+    expect(plate.style.width).toBe('228px')
+    expect(plate.style.height).toBe('138px')
+    expect(plate.style.left).toBe('11px')
+    expect(plate.style.top).toBe('11px')
+    const number = within(face).getByTestId('xp-yours-number')
+    expect(number).toHaveTextContent('1')
+    expect(number.style.color).not.toBe('#6b7080')
+  })
+  it('primärknappen i heron följer appens accent (vit text)', async () => {
+    await mount()
+    const btn = screen.getByTestId('xp-hero-btn-0')
+    expect(btn.getAttribute('data-accent')).toBe('1')
+    expect(btn.style.color).toMatch(/^(#fff|rgb\(255, 255, 255\))$/)
+    if (btn.style.background) expect(btn.style.background).toContain('accent-500')
+    expect(TV.acc).toContain('accent-500')
+  })
+  it('"…"-knappen hamnar nere till höger på kort vars övre högra hörn redan är upptaget (klocka, tagg, logo)', async () => {
+    __setTvModeForTests(false)
+    await mount()
+    for (const card of within(screen.getByTestId('xp-row-onNow')).getAllByTestId('xp-card')) expect(card.getAttribute('data-hold-corner')).toBe('br')
+    for (const card of within(screen.getByTestId('xp-row-yours')).getAllByTestId('xp-card')) expect(card.getAttribute('data-hold-corner')).toBe('tr')
+  })
+  it('Sänds nu i hemläget hoppar över kanalerna i Fortsätt titta', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'channel_history_v1', [{ name: 'B', url: 'http://x/B', group: 'Sport', watchedAt: now - 60_000 }])
+    await mount()
+    expect(within(screen.getByTestId('xp-row-continue')).getAllByTestId('xp-card')[0]).toHaveTextContent('Now B')
+    const names = within(screen.getByTestId('xp-row-onNow')).getAllByTestId('xp-card').map((c) => c.textContent ?? '')
+    expect(names.some((n) => n.includes('Now B'))).toBe(false)
+    expect(names.length).toBe(2)
+  })
+  it('Live sport: raden visas efter Sänds nu när en match pågår på en kanal i listan, med matchtiteln', async () => {
+    stubSportDays({ [localDayKey(now)]: [fxMatch({ start: now - 30 * 60_000, stop: now + 60 * 60_000, sources: [fxSource('A', { programmeStart: now - 30 * 60_000, programmeStop: now + 60 * 60_000 })] })] })
+    await mount()
+    const row = await screen.findByTestId('xp-row-sport')
+    expect(within(row).getAllByTestId('xp-card')).toHaveLength(1)
+    expect(row).toHaveTextContent('AIK - Hammarby')
+    const order = Array.from(document.querySelectorAll('section[data-testid^="xp-row-"]')).map((el) => el.getAttribute('data-testid'))
+    expect(order.indexOf('xp-row-sport')).toBe(order.indexOf('xp-row-onNow') + 1)
+  })
+  it('Live sport utelämnas utan pågående matcher', async () => {
+    stubSportDays({})
+    await mount()
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    expect(screen.queryByTestId('xp-row-sport')).not.toBeInTheDocument()
   })
 })

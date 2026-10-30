@@ -30,7 +30,8 @@ export function LogoPlate({ channel, width, height, number, radius, style }: {
   return (
     <div data-testid="logo-plate" style={{ position: 'relative', width: dp(width), height: dp(height), flexShrink: 0, borderRadius: dp(r), background: V2.logoPlate, boxShadow: '0 8px 24px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...style }}>
       {logo ? (
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '78%', height: '70%' }}>
+        // Logon fyller det mesta av plattan (Jerry 2026-10-30: "gör logorna större"); lite luft kvar mot kanten.
+        <span data-testid="logo-plate-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '90%', height: '84%' }}>
           <LiveTvLogoImage src={logo} fallbackSrc={primary ? fallback : undefined} alt="" className="lumio-v2-logo-img" onError={() => setFailed(true)} />
         </span>
       ) : (

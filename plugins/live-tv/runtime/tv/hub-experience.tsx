@@ -52,13 +52,27 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
 const ROW: Record<XpRowId, { w: number; h: number; gap: number; extra: number; radius: number; poster?: boolean }> = {
   continue: { w: 420, h: 236, gap: 22, extra: 30, radius: 16 },
   onNow: { w: 440, h: 248, gap: 20, extra: 46, radius: 16, poster: true },
-  yours: { w: 250, h: 160, gap: 18, extra: 76, radius: 22 },
+  // Live sport: samma kort som Sänds nu (med matchtiteln).
+  sport: { w: 440, h: 248, gap: 20, extra: 46, radius: 16, poster: true },
+  yours: { w: 250, h: 160, gap: 18, extra: 76, radius: 16 },
   soon: { w: 380, h: 210, gap: 20, extra: 30, radius: 16 },
   explore: { w: 320, h: 180, gap: 20, extra: 30, radius: 16 },
   // Rutnätets rad (TV): kortet 160 px yta + 64 px text, 14 px mellanrum.
   grid: { w: 0, h: 224, gap: 14, extra: 14, radius: 14 },
 }
 const ROW_HEAD = 64
+/** Dina kanaler: den mörka ramen runt logoplattan, och plattans mått (kortet 250×160 minus ramen). */
+const YOURS_FRAME = 11
+const YOURS_PLATE: [number, number] = [250 - 2 * YOURS_FRAME, 160 - 2 * YOURS_FRAME]
+/**
+ * Hörnet för pekarens "…"-knapp (tv-hold-affordance, `data-hold-corner`).
+ * Korten med något i övre högra hörnet (klockan i Börjar snart, taggen i
+ * Fortsätt titta, logon på bild i Sänds nu) tar den nere till höger, där
+ * texten håller undan på skrivbordet (`HOLD_PAD`). Övriga behåller standarden.
+ */
+const HOLD_CORNER: Record<XpRowId, 'tr' | 'br'> = { continue: 'br', onNow: 'br', sport: 'br', soon: 'br', yours: 'tr', explore: 'tr', grid: 'br' }
+/** Knappens 36 px + 6 px inpass + luft: så långt håller texten undan från högerkanten på skrivbordet. */
+const HOLD_PAD = 52
 /** Rutnätskortets fasta ythöjd på TV (radernas toppar räknas; skrivbordet tar 16:9). */
 const GRID_FACE_H = 160
 
@@ -342,7 +356,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
             style={{ width: '100%', height: '100%' }}
             fallback={(
               <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(150deg, ${mixHex(tone, '#ffffff', 90)}, ${mixHex(tone, bg, 40)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .5s' }}>
-                <LogoPlate channel={heroChannel} width={300} height={150} radius={14} style={{ boxShadow: '0 12px 32px rgba(0,0,0,.35)' }} />
+                <LogoPlate channel={heroChannel} width={380} height={190} radius={16} style={{ boxShadow: '0 12px 32px rgba(0,0,0,.35)' }} />
               </div>
             )}
           >
@@ -365,7 +379,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         {heroItem ? <HeroText item={heroItem} model={model} /> : null}
         {showButtons ? (
           <div data-testid="xp-hero-buttons" style={{ display: 'flex', gap: dp(12), marginTop: dp(8), alignItems: 'center' }}>
-            {featuredBtn(0, () => activate(featured), { 'data-init': '' }, { padding: `0 ${dp(28)}px`, background: V2.text, color: V2.onLight, fontSize: dp(20), fontWeight: 700 }, <><Icons.Play size={dp(20)} />{tt(ctaKey(featured))}</>)}
+            {/* Primärknappen följer appens accent (Jerry 2026-10-30), vit text. */}
+            {featuredBtn(0, () => activate(featured), { 'data-init': '', 'data-accent': '1' }, { padding: `0 ${dp(28)}px`, background: TV.acc, color: '#fff', fontSize: dp(20), fontWeight: 700 }, <><Icons.Play size={dp(20)} />{tt(ctaKey(featured))}</>)}
             {featuredBtn(1, () => openInGuide(featured), {}, { padding: `0 ${dp(24)}px`, background: 'rgba(252,252,255,0.14)', border: '1px solid rgba(255,255,255,0.14)', boxSizing: 'border-box', fontSize: dp(20), fontWeight: 600 }, tt('guideV2Title'))}
             {featured.channel ? featuredBtn(2, () => model.togglePin(featured.channel!), { 'aria-label': tt('xpFavourite') }, { width: dp(56), background: 'rgba(252,252,255,0.14)', border: '1px solid rgba(255,255,255,0.14)', boxSizing: 'border-box', color: favourite ? TV.acc : V2.text }, <Icons.Heart size={dp(22)} filled />) : null}
             {isTv && s.zone === 'hero' ? <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.5)', marginLeft: dp(8) }}>{tt('xpHintCategories')}</span> : null}
@@ -442,13 +457,13 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                       return (
                         <div
                           key={item.key}
-                          {...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind })}
+                          {...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER[row.id] })}
                           {...pointerArm(id)}
                           onFocus={() => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows', row: ri, cols } })}
                           style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : z, cursor: 'pointer', userSelect: 'none', outline: 'none' }}
                         >
                           <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, opacity: op, boxShadow: focused && active ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s, opacity .3s`, WebkitBoxReflect: m.poster ? 'below 6px linear-gradient(transparent 72%, rgba(255,255,255,.14))' : undefined } as CSSProperties}>
-                            <CardFace rowId={row.id} item={item} model={model} lookup={native ? ii < 6 : Math.abs(d) <= 4} />
+                            <CardFace rowId={row.id} item={item} model={model} lookup={native ? ii < 6 : Math.abs(d) <= 4} holdPad={native && HOLD_CORNER[row.id] === 'br' ? HOLD_PAD : 0} />
                           </div>
                           {row.id === 'yours' && item.channel ? (
                             <div style={{ padding: `${dp(12)}px ${dp(4)}px 0`, opacity: focused ? 1 : 0.65, transition: 'opacity .3s' }}>
@@ -486,13 +501,13 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                         const focused = onRow && inRows && (s.cols[ri] ?? 0) === ii
                         const id = `r${ri}-${ii}`
                         const props = {
-                          ...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind }),
+                          ...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER.grid }),
                           ...pointerArm(id),
                           onFocus: () => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows' as const, row: ri, cols } }),
                         }
                         const style: CSSProperties = { height: native ? undefined : dp(ROW.grid.h), boxShadow: focused && active ? FOCUS_CARD : undefined, transform: focused ? 'scale(1.04)' : 'none', transition: `transform .3s ${EASE}, box-shadow .3s`, position: 'relative', zIndex: focused ? 2 : 1, outline: 'none', userSelect: 'none' }
                         if (item.kind === 'more') return <MoreCard key={item.key} remaining={item.count ?? 0} props={props} style={style} />
-                        return <ChannelGridCard key={item.key} channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} {...props} style={style} />
+                        return <ChannelGridCard key={item.key} channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} captionPadRight={native ? HOLD_PAD : undefined} {...props} style={style} />
                       })}
                     </div>
                   </section>
@@ -524,6 +539,7 @@ function MoreCard({ remaining, props, style }: { remaining: number; props: Recor
 function rowHead(id: XpRowId, chip: string | null, chipLabel: string | null, isTv: boolean, tt: TT): { title: string; sub: string | null } {
   if (id === 'continue') return { title: tt('continueWatching'), sub: tt('continueSub') }
   if (id === 'onNow') return { title: tt('spotlightOnNow'), sub: chip ? chipLabel : tt('xpOnNowSub') }
+  if (id === 'sport') return { title: tt('xpLiveSport'), sub: tt('xpLiveSportSub') }
   if (id === 'yours') {
     const hint = isTv ? tt('xpYoursSub') : null
     return { title: tt('xpYours'), sub: chip ? [chipLabel, hint].filter(Boolean).join(' · ') : hint }
@@ -540,7 +556,7 @@ function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }
   const isLive = item.kind === 'live' || item.kind === 'continue'
   const tag = item.kind === 'live' ? tt('live') : item.kind === 'continue' ? tt('tagContinue') : item.kind === 'replay' ? tt('replay') : item.kind === 'upcoming' ? tt('later') : tt('xpCategory')
   const number = item.channel ? model.channelNumber(item.channel) : null
-  const title = item.kind === 'category' ? item.category ?? '' : p?.title ?? item.channel?.name ?? ''
+  const title = item.kind === 'category' ? item.category ?? '' : item.sport?.title ?? p?.title ?? item.channel?.name ?? ''
   let meta = ''
   if (item.kind === 'category') meta = tt('channelsCount', { count: item.count ?? 0 })
   else if (item.kind === 'upcoming' && p) meta = tt('xpStartsAt', { time: formatClock(p.start, locale), min: Math.max(0, Math.round((p.start - model.nowMs) / 60_000)) })
@@ -569,11 +585,13 @@ function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }
 }
 
 /** Kortets yta per rad (README "Rows"). `lookup` = programbilden slås upp (bara nära fokus). */
-function CardFace({ rowId, item, model, lookup }: { rowId: XpRowId; item: XpItem; model: TvViewProps['model']; lookup: boolean }) {
+function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; item: XpItem; model: TvViewProps['model']; lookup: boolean; holdPad: number }) {
   const { tt, locale } = useTvText()
   const channel = item.channel ?? NO_CHANNEL
   const p = item.programme ?? null
-  const wantsArt = rowId === 'continue' || rowId === 'onNow'
+  const wantsArt = rowId === 'continue' || rowId === 'onNow' || rowId === 'sport'
+  // Texten nertill håller undan för "…"-knappen nere till höger (bara skrivbordet).
+  const textRight = (base: number) => dp(Math.max(base, holdPad))
   const { url } = useProgrammeArt(channel, item.channel && wantsArt ? p : null, { lookup: wantsArt && lookup })
   const [broken, setBroken] = useState<string | null>(null)
   const art = url !== null && broken !== url ? url : null
@@ -594,11 +612,15 @@ function CardFace({ rowId, item, model, lookup }: { rowId: XpRowId; item: XpItem
   }
 
   if (rowId === 'yours') {
+    // Mörk kortyta som de andra raderna; den ljusa logoplattan fyller nästan
+    // hela kortet (Jerry 2026-10-30) med en jämn mörk ram runt om. Numret som
+    // liten mörk bricka i plattans hörn, förloppet i ramens nederkant.
+    const number = model.channelNumber(channel)
     return (
-      <div style={{ position: 'absolute', inset: 0, background: V2.logoPlate }}>
-        <LogoPlate channel={channel} width={104} height={104} radius={14} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -54%)', background: V2.logoPlateInner, boxShadow: 'none' }} />
-        <span style={{ position: 'absolute', left: dp(12), top: dp(10), fontSize: dp(15), fontWeight: 700, color: '#6b7080', fontVariantNumeric: 'tabular-nums' }}>{model.channelNumber(channel) ?? ''}</span>
-        {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={6} track="#d9dbe3" /></div> : null}
+      <div data-testid="xp-yours-face" data-surface="dark" style={{ position: 'absolute', inset: 0, background: V2.noArt }}>
+        <LogoPlate channel={channel} width={YOURS_PLATE[0]} height={YOURS_PLATE[1]} radius={10} style={{ position: 'absolute', left: dp(YOURS_FRAME), top: dp(YOURS_FRAME), boxShadow: 'none' }} />
+        {number != null ? <span data-testid="xp-yours-number" style={{ position: 'absolute', left: dp(YOURS_FRAME + 5), top: dp(YOURS_FRAME + 5), padding: `0 ${dp(6)}px`, borderRadius: dp(5), background: 'rgba(17,19,26,.78)', color: V2.text, fontSize: dp(14), fontWeight: 700, lineHeight: 1.45, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
+        {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
       </div>
     )
   }
@@ -613,12 +635,12 @@ function CardFace({ rowId, item, model, lookup }: { rowId: XpRowId; item: XpItem
           <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.7)', minWidth: 0, ...ellipsis }}>{channel.name}</span>
           <span data-testid="xp-bell" data-on={reminded ? '1' : '0'} style={{ marginLeft: 'auto', flexShrink: 0, width: dp(36), height: dp(36), borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: reminded ? TV.acc : 'rgba(252,252,255,0.14)', color: reminded ? V2.onAcc : V2.text }}><Icons.Bell size={dp(17)} filled /></span>
         </div>
-        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(8) }}>
+        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'baseline', gap: dp(8), paddingRight: holdPad ? dp(holdPad - 20) : undefined }}>
           <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)' }}>{tt('xpSoonIn')}</span>
           <span style={{ fontSize: dp(56), fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: V2.accText }}>{mins}</span>
           <span style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.7)' }}>{tt('xpSoonMin', { time: p ? formatClock(p.start, locale) : '' })}</span>
         </div>
-        <div style={{ fontSize: dp(20), fontWeight: 700, ...ellipsis }}>{p?.title ?? ''}</div>
+        <div style={{ fontSize: dp(20), fontWeight: 700, paddingRight: holdPad ? dp(holdPad - 20) : undefined, ...ellipsis }}>{p?.title ?? ''}</div>
       </div>
     )
   }
@@ -626,16 +648,17 @@ function CardFace({ rowId, item, model, lookup }: { rowId: XpRowId; item: XpItem
   const plate = art ? null : <div style={{ position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)' }}><LogoPlate channel={channel} width={180} height={90} radius={10} /></div>
   const image = art ? <img src={art} alt="" onError={() => setBroken(art)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : null
 
-  if (rowId === 'onNow') {
+  if (rowId === 'onNow' || rowId === 'sport') {
+    const sport = item.sport
     return (
       <NoArt style={{ display: 'block' }}>
         {image}{plate}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.82))' }} />
         <span style={{ position: 'absolute', left: dp(14), top: dp(14) }}><LivePill solid label={tt('live')} /></span>
         {art ? <LogoPlate channel={channel} width={60} height={34} radius={6} style={{ position: 'absolute', right: dp(14), top: dp(14) }} /> : null}
-        <div style={{ position: 'absolute', left: dp(18), right: dp(18), bottom: dp(20), display: 'flex', flexDirection: 'column', gap: dp(4) }}>
-          <div style={{ fontSize: dp(24), fontWeight: 800, lineHeight: 1.1, ...ellipsis }}>{p?.title ?? channel.name}</div>
-          <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{channel.name}</div>
+        <div style={{ position: 'absolute', left: dp(18), right: textRight(18), bottom: dp(20), display: 'flex', flexDirection: 'column', gap: dp(4) }}>
+          <div style={{ fontSize: dp(24), fontWeight: 800, lineHeight: 1.1, ...ellipsis }}>{sport?.title ?? p?.title ?? channel.name}</div>
+          <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{sport ? `${sport.league} · ${channel.name}` : channel.name}</div>
         </div>
         {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
       </NoArt>
@@ -652,7 +675,7 @@ function CardFace({ rowId, item, model, lookup }: { rowId: XpRowId; item: XpItem
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.75))' }} />
       {art ? <LogoPlate channel={channel} width={76} height={42} radius={7} style={{ position: 'absolute', left: dp(14), top: dp(14) }} /> : null}
       <span style={{ position: 'absolute', right: dp(14), top: dp(14) }}><AccentTag>{item.kind === 'replay' ? tt('replay') : tt('tagContinue')}</AccentTag></span>
-      <div style={{ position: 'absolute', left: dp(16), right: dp(16), bottom: dp(18) }}>
+      <div style={{ position: 'absolute', left: dp(16), right: textRight(16), bottom: dp(18) }}>
         <div style={{ fontSize: dp(21), fontWeight: 700, ...ellipsis }}>{p?.title ?? channel.name}</div>
         <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{meta}</div>
       </div>
