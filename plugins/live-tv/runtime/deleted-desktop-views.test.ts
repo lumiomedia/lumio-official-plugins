@@ -22,6 +22,10 @@ const DELETED = [
   'player-schedule-overlay',
   'useBackToHub',
   'useIsMobileLayout',
+  // Guide v2 (2026-10-30): Nu/Sen, Tablå och Kanallista ersatte de här.
+  'guide-nownext-view',
+  'guide-grid-view',
+  'guide-detail-panel',
 ]
 
 // Rå källtext för hela runtime-trädet. `import.meta.glob` är vitest/vite:s egen

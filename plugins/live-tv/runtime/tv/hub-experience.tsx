@@ -141,7 +141,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   // Bakåt: från chips/rader till heron. Lagret finns bara medan det har något att göra.
   const navRef = useRef(nav)
   useEffect(() => { navRef.current = nav })
-  const claimBack = s.zone !== 'hero'
+  // Bara medan fokus står i vyn: har användaren pilat ut i rälsen hör Bakåt till skalet.
+  const claimBack = s.zone !== 'hero' && active
   useEffect(() => {
     if (!claimBack) return
     return navRef.current.pushLayer(() => { apply('back') })

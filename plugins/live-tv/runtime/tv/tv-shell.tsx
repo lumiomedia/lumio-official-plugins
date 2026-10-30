@@ -306,7 +306,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     }
     frame = window.requestAnimationFrame(() => { frame = window.requestAnimationFrame(focusInit) })
     return () => window.cancelAnimationFrame(frame)
-  }, [view, active])
+  // `hubLayout`: byts Kanalers layout medan vyn visas monteras en ny vy — samma startfokus.
+  }, [view, active, settings.hubLayout])
 
   useEffect(() => {
     if (!active || Player) return
