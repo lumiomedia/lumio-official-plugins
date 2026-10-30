@@ -119,7 +119,11 @@ export interface TvNav {
   openMenu(target: TvGlassMenuTarget): void
   channelMenu(channel: M3uChannel, element: HTMLElement, extra?: TvGlassMenuAction[]): void
   addToMultiview(channel: M3uChannel): void
-  pushLayer(close: () => void): () => void
+  /**
+   * Bakåt-lager. `allowZap`: lagret är ett vysteg (guidens Bakåt-kedja), inget
+   * öppet fönster — sifferzappen ska fungera medan det ligger kvar.
+   */
+  pushLayer(close: () => void, opts?: { allowZap?: boolean }): () => void
   toast(text: string): void
   playerOpen: boolean
 }
@@ -229,6 +233,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   const [zapDigits, setZapDigits] = useState('')
   const [toastText, setToastText] = useState<string | null>(null)
   const layersRef = useRef<Array<() => void>>([])
+  const zapThroughRef = useRef(new Set<() => void>())
   const mainRef = useRef<HTMLElement | null>(null)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const TvGlassMenu = getTvGlassMenu()
@@ -507,9 +512,13 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     })
   }, [tt, play, openChannel, addToMultiview, requestLockToggle])
 
-  const pushLayer = useCallback((close: () => void) => {
+  const pushLayer = useCallback((close: () => void, opts?: { allowZap?: boolean }) => {
     layersRef.current.push(close)
-    return () => { layersRef.current = layersRef.current.filter((c) => c !== close) }
+    if (opts?.allowZap) zapThroughRef.current.add(close)
+    return () => {
+      layersRef.current = layersRef.current.filter((c) => c !== close)
+      zapThroughRef.current.delete(close)
+    }
   }, [])
 
   const back = useCallback(() => {
@@ -627,7 +636,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     // Telefonen har inga sifferknappar för zapp (systemtangentbordet skriver i fält).
     if (!settings.numericZap || phone) return
     const onKey = (event: KeyboardEvent) => {
-      if (menu || layersRef.current.length > 0) return
+      if (menu || layersRef.current.some((close) => !zapThroughRef.current.has(close))) return
       const target = event.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
       // Värdens egna redigerbara ytor (spec §5). Sätts oavsett läge: en TV har

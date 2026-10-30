@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import * as sdk from '@/lib/plugin-sdk'
 import { __resetForTests } from '@/lib/plugin-sdk'
 import type { M3uChannel } from '../live-tv-data'
 import { __resetProgrammeArtForTests, looksLikeBroadcast, lookUpArt, normaliseTitle, useProgrammeArt } from './programme-art'
@@ -84,5 +85,45 @@ describe('programme-art', () => {
     vi.stubGlobal('fetch', vi.fn(() => ok([{ title: 'Silo', backdropUrl: 'b.jpg' }])))
     const { result } = renderHook(() => useProgrammeArt(ch('TV4'), prog('Silo'), { lookup: true }))
     await waitFor(() => expect(result.current.url).toBe('b.jpg'))
+  })
+  it('ett uppslag som hänger avbryts efter 10 s och släpper sin plats', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_res, rej) => {
+      init?.signal?.addEventListener('abort', () => rej(new Error('aborted')))
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const hung = [lookUpArt('Hang one'), lookUpArt('Hang two')]
+    const third = lookUpArt('Third')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(await Promise.all(hung)).toEqual([null, null])
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    void third
+  })
+  it('köade uppslag som ingen längre väntar på stryks, och nyaste går först', async () => {
+    const resolvers: (() => void)[] = []
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn((url: string) => { urls.push(url); return new Promise<Response>((res) => resolvers.push(() => res({ ok: true, json: () => Promise.resolve({ items: [] }) } as Response))) }))
+    void lookUpArt('Busy one'); void lookUpArt('Busy two')
+    const gone = new AbortController()
+    void lookUpArt('Left behind', { signal: gone.signal })
+    void lookUpArt('Looking now')
+    gone.abort()
+    resolvers[0]!()
+    await waitFor(() => expect(urls.length).toBe(3))
+    expect(urls[2]).toContain('Looking%20now')
+    resolvers[1]!(); resolvers[2]!()
+    await new Promise((r) => setTimeout(r, 10))
+    expect(urls.some((u) => u.includes('Left%20behind'))).toBe(false)
+  })
+  it('cachen skrivs till lagringen en gång efter en kort stund, inte per uppslag', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+    const write = vi.spyOn(sdk, 'writePluginJson')
+    vi.stubGlobal('fetch', vi.fn(() => ok([])))
+    await lookUpArt('One title'); await lookUpArt('Two title'); await lookUpArt('Three title')
+    expect(write.mock.calls.filter((c) => c[1] === 'live_tv_programme_art_v1')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(write.mock.calls.filter((c) => c[1] === 'live_tv_programme_art_v1')).toHaveLength(1)
   })
 })

@@ -116,6 +116,14 @@ describe('LiveTvTvShell', () => {
     fireEvent.click(screen.getByTestId('rail-guide'))
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide' } })
   })
+  it('nummertangent zappar också inifrån guiden (guidens Bakåt-lager blockerar inte zappen)', async () => {
+    vi.useFakeTimers()
+    mount({ view: 'guide' })
+    fireEvent.keyDown(window, { key: '2' })
+    act(() => { vi.advanceTimersByTime(1500) })
+    vi.useRealTimers()
+    await waitFor(() => expect(screen.getByTestId('player')).toHaveTextContent('B'))
+  })
   it('nummertangent zappar till listnummer och Back stänger spelaren', async () => {
     vi.useFakeTimers()
     mount()

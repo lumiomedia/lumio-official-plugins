@@ -31,16 +31,14 @@ const BLOCK_GAP = 6
 const TICK_HIDE_MS = 12 * MIN
 
 /**
- * Hämtfönstret: hela dygnet (00:00 → nästa dag 06:00) så att ◂▸ kan stega
- * program för program utan att varje 30-minutersflytt blir ett nytt anrop
- * — och utan att raderna blinkar bort medan ett nytt fönster hämtas. Står
- * visningsfönstret i morgon gäller morgondagens dygn.
+ * Hämtfönstret: i dag 00:00 → i övermorgon 00:00, ETT intervall oavsett var
+ * visningsfönstret står. ◂▸ stegar program för program utan nya anrop, och
+ * raderna blinkar aldrig bort vid dygnsgränsen — förut bytte intervallet när
+ * fönstret passerade morgondagens 06:00, tablån blev tom medan det nya
+ * hämtades och fokus föll till body. Täcker hela `clampWindow`.
  */
-function fetchRange(windowStart: number, nowMs: number): { from: number; to: number } {
-  const today = startOfLocalDay(nowMs)
-  const tomorrow = startOfLocalDay(nowMs, 1)
-  if (windowStart + TL_SPAN_MS <= tomorrow + 6 * 3_600_000) return { from: today, to: tomorrow + 6 * 3_600_000 }
-  return { from: tomorrow, to: startOfLocalDay(nowMs, 2) + 6 * 3_600_000 }
+export function timelineFetchRange(nowMs: number): { from: number; to: number } {
+  return { from: startOfLocalDay(nowMs), to: startOfLocalDay(nowMs, 2) }
 }
 
 /** Fönstrets gränser: från dagens början till och med morgondagens kväll. */
@@ -72,7 +70,7 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
   const focusProgramme = onFocusProgramme ?? onSelect
   void useRemindersVersion()
   const windowEnd = windowStart + TL_SPAN_MS
-  const { from, to } = fetchRange(windowStart, nowMs)
+  const { from, to } = timelineFetchRange(nowMs)
 
   const [visibleRows, setVisibleRows] = useState(ROWS_STEP)
   const firstCategory = useRef(true)

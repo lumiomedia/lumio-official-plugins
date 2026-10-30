@@ -153,7 +153,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   useEffect(() => { navRef.current = nav })
   useEffect(() => {
     if (!claimBack) return
-    return navRef.current.pushLayer(() => backRef.current())
+    return navRef.current.pushLayer(() => backRef.current(), { allowZap: true })
   }, [claimBack])
 
   const onKeyDownCapture = (event: ReactKeyboardEvent<HTMLDivElement>) => {

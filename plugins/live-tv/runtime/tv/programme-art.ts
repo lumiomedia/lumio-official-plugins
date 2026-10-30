@@ -24,31 +24,48 @@ import type { EpgProgramme } from '../epg/types'
 
 const STORE_KEY = 'live_tv_programme_art_v1'
 const TTL_MS = 7 * 86_400_000
-const MAX_ENTRIES = 2000
+// Litet tak: lagringen delas med allt annat i appen, och Androids
+// localStorage har redan slagit i sina 10 MiB en gång.
+const MAX_ENTRIES = 500
 const MAX_ACTIVE = 2
 const MAX_PER_MINUTE = 30
+const FETCH_TIMEOUT_MS = 10_000
+const WRITE_DELAY_MS = 2_000
 
 type Entry = { url: string | null; at: number }
 
+/** Ett uppslag per titel, delat av alla som väntar på den. */
+interface Job {
+  key: string
+  title: string
+  waiters: number
+  started: boolean
+  promise: Promise<string | null>
+  resolve: (url: string | null) => void
+}
+
 let cache: Record<string, Entry> | null = null
-const inflight = new Map<string, Promise<string | null>>()
-const queue: (() => void)[] = []
+const jobs = new Map<string, Job>()
+const queue: Job[] = []
 let active = 0
 let starts: number[] = []
 let pumpTimer: ReturnType<typeof setTimeout> | null = null
+let writeTimer: ReturnType<typeof setTimeout> | null = null
 
 export function __resetProgrammeArtForTests(): void {
   cache = null
-  inflight.clear()
+  jobs.clear()
   queue.length = 0
   active = 0
   starts = []
   if (pumpTimer) clearTimeout(pumpTimer)
+  if (writeTimer) clearTimeout(writeTimer)
   pumpTimer = null
+  writeTimer = null
 }
 
 export function normaliseTitle(title: string): string {
-  return title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  return title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
 const BROADCAST_TITLE = /\b(live|news|nyheter|nachrichten|noticias|journal|highlights?|vs|v|day \d+|dag \d+|matchday|round \d+)\b/
@@ -73,6 +90,7 @@ function cached(key: string): Entry | undefined {
   return hit && Date.now() - hit.at < TTL_MS ? hit : undefined
 }
 
+/** Minnet direkt, lagringen samlat: en skrivning per skur av uppslag. */
 function remember(key: string, url: string | null): void {
   const all = store()
   all[key] = { url, at: Date.now() }
@@ -81,63 +99,92 @@ function remember(key: string, url: string | null): void {
     keys.sort((a, b) => all[a]!.at - all[b]!.at)
     for (const k of keys.slice(0, keys.length - MAX_ENTRIES)) delete all[k]
   }
-  writePluginJson(LIVE_TV_PLUGIN_ID, STORE_KEY, all)
+  if (writeTimer) return
+  writeTimer = setTimeout(() => {
+    writeTimer = null
+    writePluginJson(LIVE_TV_PLUGIN_ID, STORE_KEY, store())
+  }, WRITE_DELAY_MS)
 }
 
-/** Släpper fram köade uppslag så länge båda taken tillåter; väntar annars på att minutfönstret glider. */
+/**
+ * Släpper fram köade uppslag så länge båda taken tillåter — NYASTE först:
+ * den som bläddrar vill ha bilden för titeln hen står på nu, inte för den hen
+ * lämnade för en halv minut sedan.
+ */
 function pump(): void {
   const now = Date.now()
   starts = starts.filter((t) => now - t < 60_000)
   while (queue.length > 0 && active < MAX_ACTIVE && starts.length < MAX_PER_MINUTE) {
+    const job = queue.pop()!
     active++
     starts.push(now)
-    queue.shift()!()
+    job.started = true
+    void run(job)
   }
   if (queue.length > 0 && active < MAX_ACTIVE && starts.length >= MAX_PER_MINUTE && !pumpTimer) {
     pumpTimer = setTimeout(() => { pumpTimer = null; pump() }, starts[0]! + 60_000 - now)
   }
 }
 
-function slot(): Promise<() => void> {
-  return new Promise((resolve) => {
-    queue.push(() => resolve(() => { active--; pump() }))
-    pump()
-  })
-}
-
 type MediaItem = { title?: unknown; searchTitles?: unknown; backdropUrl?: unknown }
 
-async function fetchArt(title: string, key: string): Promise<string | null> {
-  const release = await slot()
+async function run(job: Job): Promise<void> {
+  // Ett anrop som aldrig svarar får inte hålla en av två platser för alltid.
+  const abort = new AbortController()
+  const timer = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS)
+  let url: string | null = null
   try {
-    const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(title)}`)
-    if (!res.ok) return null
-    const data = (await res.json()) as { items?: MediaItem[] }
-    const items = Array.isArray(data.items) ? data.items : []
-    const match = items.find((item) => {
-      const titles = [item.title, ...(Array.isArray(item.searchTitles) ? item.searchTitles : [])]
-      return titles.some((t) => typeof t === 'string' && normaliseTitle(t) === key)
-    })
-    const url = match && typeof match.backdropUrl === 'string' && match.backdropUrl ? match.backdropUrl : null
-    remember(key, url)
-    return url
+    const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}`, { signal: abort.signal })
+    if (res.ok) {
+      const data = (await res.json()) as { items?: MediaItem[] }
+      const items = Array.isArray(data.items) ? data.items : []
+      const match = items.find((item) => {
+        const titles = [item.title, ...(Array.isArray(item.searchTitles) ? item.searchTitles : [])]
+        return titles.some((t) => typeof t === 'string' && normaliseTitle(t) === job.key)
+      })
+      url = match && typeof match.backdropUrl === 'string' && match.backdropUrl ? match.backdropUrl : null
+      remember(job.key, url)
+    }
   } catch {
-    return null
+    // Nätfel och tidsgräns sparas inte — nästa visning får försöka igen.
   } finally {
-    release()
+    clearTimeout(timer)
+    jobs.delete(job.key)
+    job.resolve(url)
+    active--
+    pump()
   }
 }
 
-/** TMDb-bilden för en titel: cache → pågående uppslag → nytt uppslag i kön. */
-export function lookUpArt(title: string): Promise<string | null> {
+/**
+ * TMDb-bilden för en titel: cache → pågående uppslag → nytt uppslag i kön.
+ * `signal`: den som väntar har gått vidare. Väntar ingen annan och har
+ * uppslaget inte startat stryks det ur kön — det kostar ingen plats i taket.
+ */
+export function lookUpArt(title: string, opts: { signal?: AbortSignal } = {}): Promise<string | null> {
   const key = normaliseTitle(title)
   const hit = cached(key)
   if (hit) return Promise.resolve(hit.url)
-  const pending = inflight.get(key)
-  if (pending) return pending
-  const p = fetchArt(title, key).finally(() => inflight.delete(key))
-  inflight.set(key, p)
-  return p
+  let job = jobs.get(key)
+  if (!job) {
+    let resolve!: (url: string | null) => void
+    const promise = new Promise<string | null>((r) => { resolve = r })
+    job = { key, title, waiters: 0, started: false, promise, resolve }
+    jobs.set(key, job)
+    queue.push(job)
+  }
+  const current = job
+  current.waiters++
+  opts.signal?.addEventListener('abort', () => {
+    current.waiters--
+    if (current.waiters > 0 || current.started) return
+    const at = queue.indexOf(current)
+    if (at >= 0) queue.splice(at, 1)
+    jobs.delete(current.key)
+    current.resolve(null)
+  }, { once: true })
+  pump()
+  return current.promise
 }
 
 /**
@@ -156,9 +203,9 @@ export function useProgrammeArt(channel: M3uChannel, programme: EpgProgramme | n
   useEffect(() => {
     if (!wanted || title === null) return
     if (found?.title === title) return
-    let alive = true
-    void lookUpArt(title).then((url) => { if (alive) setFound({ title, url }) })
-    return () => { alive = false }
+    const gone = new AbortController()
+    void lookUpArt(title, { signal: gone.signal }).then((url) => { if (!gone.signal.aborted) setFound({ title, url }) })
+    return () => gone.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, title])
   if (icon) return { url: icon }

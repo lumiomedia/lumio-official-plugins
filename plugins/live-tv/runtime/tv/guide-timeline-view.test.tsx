@@ -181,4 +181,11 @@ describe('GuideTimelineView (skrivbordsappen)', () => {
     expect(screen.getByTestId('guide-timeline-view')).toBeInTheDocument()
     expect(screen.getByTestId('guide-timeline-view').textContent).not.toMatch(/OK =/)
   })
+  it('hämtar ett enda intervall som täcker hela fönstrets räckvidd (ingen omhämtning vid dygnsgränsen)', async () => {
+    const { timelineFetchRange } = await import('./guide-timeline-view')
+    const { startOfLocalDay } = await import('../live-tv-model')
+    const t = Date.now()
+    expect(timelineFetchRange(t)).toEqual({ from: startOfLocalDay(t), to: startOfLocalDay(t, 2) })
+    expect(timelineFetchRange(t + 3_600_000).from).toBe(startOfLocalDay(t + 3_600_000))
+  })
 })
