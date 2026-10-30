@@ -128,4 +128,8 @@ describe('LiveTvLibraryFrame omklick', () => {
     expect(props.onNavigate).not.toHaveBeenCalled()
     expect(props.onExit).not.toHaveBeenCalled()
   })
+  it('ramen har v2-bakgrunden (Jerry 2026-10-30)', () => {
+    render(<LiveTvLibraryFrame {...{ ...base, platform: 'desktop' as const, onNavigate: vi.fn() }} />)
+    expect(document.querySelector('[data-live-tv-frame-bg]')!.getAttribute('data-live-tv-frame-bg')).toBe('#161a23')
+  })
 })

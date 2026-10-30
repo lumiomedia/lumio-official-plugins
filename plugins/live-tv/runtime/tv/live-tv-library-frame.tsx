@@ -9,6 +9,7 @@ import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { getActivePlaylistId, useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { TV } from './tv-ui'
+import { v2Bg } from './v2-tokens'
 import { LIVE_TV_BROWSE_PAGE_ID } from '../live-tv-shell'
 import { getLiveTvLists } from '../live-tv-data'
 import { listVodCategories } from '../vod-client'
@@ -137,8 +138,10 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
       </>
     )
   }
+  // v2-tonen även runt Hem (Jerry 2026-10-30), samma val som i Utseende.
+  const frameBg = v2Bg(settings.liveBackground)
   return (
-    <div ref={rootRef} style={{ height: '100%', display: 'flex', background: TV.bg, color: TV.text, fontFamily: TV.font }}>
+    <div ref={rootRef} data-live-tv-frame-bg={frameBg} style={{ height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font }}>
       <TvRail active="home" isTv={isTv} narrow={narrow} labels={settings.railLabels && !narrow} onSelect={select} />
     </div>
   )

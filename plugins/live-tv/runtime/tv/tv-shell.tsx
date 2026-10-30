@@ -164,7 +164,7 @@ const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
 }
 
 /** Vyerna som målas i v2-tonen (Kanaler, guiden och deras grannar i rälsen). */
-const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings'])
+const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search'])
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 const ZAP_TIMEOUT_MS = 1500
