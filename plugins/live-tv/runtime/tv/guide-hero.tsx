@@ -17,6 +17,7 @@ import { LivePill } from './v2-ui'
 import { useTint } from './tint'
 import { useProgrammeArt } from './programme-art'
 import { LivePreviewArt } from './live-preview-art'
+import { CutoutLayer } from './cutout-layer'
 
 /** Herobandets höjd (handoff "Screen 2 / Layout") — samma med och utan bild. */
 export const GUIDE_HERO_H = 276
@@ -131,23 +132,23 @@ export function GuideHero({ sel, model, nav, mode, onMode, clock, tint, backgrou
       {/* Sidans ton: bandets färg rakt ner till 276 px och sedan ut i
           bakgrunden vid 640 px. Ligger UNDER listan (zIndex 0); listan
           ritas ovanpå med genomskinliga ytor. */}
-      <div aria-hidden="true" data-testid="guide-hero-base" data-base={base} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), background: `linear-gradient(180deg, ${base} 0px, ${base} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)`, transition: 'background .4s', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
+      <CutoutLayer testId="guide-hero-base" data={{ 'data-base': base }} background={`linear-gradient(180deg, ${base} 0px, ${base} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)`} style={{ inset: 'auto', left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), transition: 'background .4s', zIndex: 0 }} />
+      <CutoutLayer background="transparent" style={{ overflow: 'hidden', zIndex: 0 }}>
         {art ? (
           <>
             <img data-testid="guide-hero-art" src={art} alt="" style={{ position: 'absolute', top: 0, right: 0, width: '66%', height: '100%', objectFit: 'cover' }} />
             <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, ${base} 0%, ${base} 30%, ${clear(base)} 66%), linear-gradient(0deg, ${base} 0%, ${clear(base)} 40%)` }} />
           </>
         ) : null}
-      </div>
+      </CutoutLayer>
 
       {channel ? (
         <div
           data-testid="guide-hero-preview"
           {...station(() => nav.play({ channel }), undefined, { 'data-v2f': 'btn' })}
-          style={{ position: 'absolute', right: dp(48), top: dp(34), width: dp(336), height: dp(189), borderRadius: dp(14), overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 18px 48px rgba(0,0,0,.45)', boxSizing: 'border-box', zIndex: 2, cursor: 'pointer', background: 'repeating-linear-gradient(135deg,#1b1e27 0 10px,#22262f 10px 20px)' }}
+          style={{ position: 'absolute', right: dp(48), top: dp(34), width: dp(336), height: dp(189), borderRadius: dp(14), overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 18px 48px rgba(0,0,0,.45)', boxSizing: 'border-box', zIndex: 2, cursor: 'pointer' }}
         >
-          <LivePreviewArt channel={channel} live={channelLive} enabled={previewEnabled} height={dp(189)} radius={dp(14)} style={{ width: '100%' }}>
+          <LivePreviewArt channel={channel} live={channelLive} enabled={previewEnabled && !nav.playerOpen} height={dp(189)} radius={dp(14)} style={{ width: '100%' }}>
             <span style={{ position: 'absolute', left: dp(14), bottom: dp(12) }}><LivePill /></span>
             <span style={{ position: 'absolute', right: dp(12), bottom: dp(12), fontSize: dp(14), color: V2.text2, maxWidth: '60%', ...ellipsis }}>
               {number !== null ? `${number} · ${channel.name}` : channel.name}

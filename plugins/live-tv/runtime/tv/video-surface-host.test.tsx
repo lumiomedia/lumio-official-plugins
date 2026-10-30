@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cleanup, render, waitFor } from '@testing-library/react'
 import { useRef } from 'react'
 
@@ -11,7 +11,7 @@ import { useRef } from 'react'
  * rev därför bara den senaste, och multivyns övriga rutor fortsatte spela
  * bakom spelaren. Det är precis det anroparen ber om att slippa.
  */
-const opened = vi.hoisted(() => [] as Array<{ destroyed: boolean }>)
+const opened = vi.hoisted(() => [] as Array<{ destroyed: boolean; boundsAfterDestroy: number }>)
 const closeAllAux = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/plugin-sdk', async () => {
@@ -22,12 +22,12 @@ vi.mock('@/lib/plugin-sdk', async () => {
     isAndroidTauriEnv: false,
     getVideoSurfaceCapabilities: () => ({ maxSurfaces: 3 }),
     createVideoSurface: () => {
-      const entry = { destroyed: false }
+      const entry = { destroyed: false, boundsAfterDestroy: 0 }
       opened.push(entry)
       return {
         open: async () => {},
         close: async () => {},
-        setBounds: () => {},
+        setBounds: () => { if (entry.destroyed) entry.boundsAfterDestroy++ },
         setMuted: async () => {},
         onState: () => () => {},
         destroy: async () => { entry.destroyed = true },
@@ -78,5 +78,17 @@ describe('useVideoSurface på värdens fleryte-API', () => {
     await releaseAllSurfaces()
     // Ytor som pluginet aldrig såg (värdens egna) städas bara av värden.
     expect(closeAllAux).toHaveBeenCalledTimes(1)
+  })
+
+  it('en riven yta flyttas aldrig igen (värden svarar "no such surface", appen kraschade)', async () => {
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 10, width: 100, height: 56, right: 110, bottom: 66, x: 10, y: 10, toJSON: () => ({}) } as DOMRect)
+    onTestFinished(() => rect.mockRestore())
+    render(<Probe name="A" onHandle={() => {}} />)
+    await waitFor(() => expect(opened).toHaveLength(1))
+    await releaseAllSurfaces()
+    window.dispatchEvent(new Event('resize'))
+    document.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 400))
+    expect(opened[0]!.boundsAfterDestroy).toBe(0)
   })
 })

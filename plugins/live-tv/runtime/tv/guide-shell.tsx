@@ -19,6 +19,7 @@ import { GuideHero, useDebouncedSelection } from './guide-hero'
 import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
 import { guideKeyAction } from './guide-keys'
 import { V2, v2Bg } from './v2-tokens'
+import { CutoutLayer } from './cutout-layer'
 import { V2FocusStyle } from './v2-ui'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
@@ -199,9 +200,11 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
       data-guide-mode={mode}
       data-window-start={String(windowStart)}
       onKeyDownCapture={onKeyDownCapture}
-      style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: v2Bg(settings.liveBackground), color: V2.text, overflow: 'hidden' }}
+      style={{ position: 'relative', isolation: 'isolate', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, color: V2.text, overflow: 'hidden' }}
     >
       <V2FocusStyle />
+      {/* Sidans ton med hål åt förhandsrutan (mpv ritar under webbvyn). */}
+      <CutoutLayer background={v2Bg(settings.liveBackground)} style={{ zIndex: -1 }} />
       <div onFocusCapture={() => setInCats(false)} style={{ flexShrink: 0 }}>
         <GuideHero
           sel={heroSelection}

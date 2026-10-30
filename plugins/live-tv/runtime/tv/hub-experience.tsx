@@ -20,6 +20,8 @@ import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
 import { AccentTag, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 import { useExperienceRows, type XpItem, type XpRowId } from './hub-experience-data'
 import { xpInitial, xpNavReduce, xpNormalise, type XpKey, type XpNavState } from './hub-experience-nav'
+import { CutoutLayer } from './cutout-layer'
+import { LivePreviewArt } from './live-preview-art'
 
 /**
  * KANALER, LAYOUT UPPLEVELSE (handoff v2 "Screen 1 – Live TV Hem v3").
@@ -217,9 +219,11 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const heroProgramme = heroItem?.programme ?? null
   const { url: art } = useProgrammeArt(heroChannel ?? NO_CHANNEL, heroChannel ? heroProgramme : null, { lookup: heroChannel !== null })
   const logo = heroChannel ? getLiveTvLogoSrc(heroChannel.logo) ?? getLiveTvLogoSrc(heroChannel.logoFallback) : null
-  const imageTone = useTint(art ?? logo, settings.heroTint && heroChannel !== null)
+  // Upplevelse har ALLTID sin tonade bakgrund (Jerry 2026-10-30: "behåll gradient på experience");
+  // "Färgton från bild" gäller guiden och Klassisk.
+  const imageTone = useTint(art ?? logo, heroChannel !== null)
   const tone = heroItem?.kind === 'category' ? categoryTint(heroItem.category ?? '') : imageTone
-  const ambient = settings.heroTint && heroItem ? `radial-gradient(${dp(1500)}px ${dp(900)}px at 70% 10%, ${mixHex(tone, bg, 75)}, ${bg} 75%)` : bg
+  const ambient = heroItem ? `radial-gradient(${dp(1500)}px ${dp(900)}px at 70% 10%, ${mixHex(tone, bg, 75)}, ${bg} 75%)` : bg
 
   if (model.allChannels.length === 0 || !featured) return <HubEmptyState testId="hub-experience" model={model} nav={nav} background={bg} />
 
@@ -259,19 +263,35 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         const to = e.relatedTarget as Node | null
         if (to && !rootRef.current?.contains(to)) ownsFocus.current = false
       }}
-      style={{ position: 'relative', flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden', background: bg, color: V2.text, fontSize: dp(22), lineHeight: 1.3 }}
+      style={{ position: 'relative', isolation: 'isolate', flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden', color: V2.text, fontSize: dp(22), lineHeight: 1.3 }}
     >
       <V2FocusStyle />
-      <div data-testid="xp-ambient" style={{ position: 'absolute', inset: 0, background: ambient, transition: 'background .6s ease' }} />
+      {/* Hål åt förhandsrutan: mpv ritar videon under webbvyn. */}
+      <CutoutLayer testId="xp-ambient" background={ambient} style={{ zIndex: -1, transition: 'background .6s ease' }} />
       {hasArt ? (
         <div style={{ position: 'absolute', top: 0, right: 0, width: '72%', height: dp(640), WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 42%)', maskImage: 'linear-gradient(90deg, transparent 0%, #000 42%)' }}>
           <div data-testid="xp-hero-art" style={{ position: 'absolute', inset: 0, background: `url("${art}") center / cover no-repeat`, transition: 'background .5s', WebkitMaskImage: 'linear-gradient(180deg, #000 50%, transparent 100%)', maskImage: 'linear-gradient(180deg, #000 50%, transparent 100%)' }} />
         </div>
       ) : heroChannel && heroItem?.kind !== 'category' ? (
         // Utan bild: tonad ruta med logoplattan (döljs för kategorier).
-        <div data-testid="xp-hero-tile" style={{ position: 'absolute', right: dp(56), top: dp(120), width: dp(640), height: dp(360), borderRadius: dp(20), overflow: 'hidden', zIndex: 2, background: `linear-gradient(150deg, ${mixHex(tone, '#ffffff', 90)}, ${mixHex(tone, bg, 40)})`, border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .5s' }}>
-          <LogoPlate channel={heroChannel} width={300} height={150} radius={14} style={{ boxShadow: '0 12px 32px rgba(0,0,0,.35)' }} />
-          {heroProgress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={heroProgress} height={5} track="rgba(0,0,0,0.4)" /></div> : null}
+        // Handoffens "liveström, tyst": kanalen spelar ljudlöst i rutan när den
+        // sänder; annars (och medan spelaren är öppen) tonad ruta med logoplattan.
+        <div data-testid="xp-hero-tile" style={{ position: 'absolute', right: dp(56), top: dp(120), width: dp(640), height: dp(360), borderRadius: dp(20), overflow: 'hidden', zIndex: 2, border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,.5)', boxSizing: 'border-box' }}>
+          <LivePreviewArt
+            channel={heroChannel}
+            live={heroIsLive}
+            enabled={settings.previewEnabled && !nav.playerOpen}
+            height={dp(360)}
+            radius={dp(20)}
+            style={{ width: '100%', height: '100%' }}
+            fallback={(
+              <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(150deg, ${mixHex(tone, '#ffffff', 90)}, ${mixHex(tone, bg, 40)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .5s' }}>
+                <LogoPlate channel={heroChannel} width={300} height={150} radius={14} style={{ boxShadow: '0 12px 32px rgba(0,0,0,.35)' }} />
+              </div>
+            )}
+          >
+            {heroProgress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={heroProgress} height={5} track="rgba(0,0,0,0.4)" /></div> : null}
+          </LivePreviewArt>
         </div>
       ) : null}
 

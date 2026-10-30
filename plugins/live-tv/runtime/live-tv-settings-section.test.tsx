@@ -85,7 +85,7 @@ describe('LiveTvSettingsSection', () => {
     fireEvent.click(within(screen.getByTestId('lt-live-background')).getByTestId('lt-live-background-night'))
     expect(getTvSettings().liveBackground).toBe('night')
     fireEvent.click(screen.getByRole('switch', { name: 'Colour from image' }))
-    expect(getTvSettings().heroTint).toBe(false)
+    expect(getTvSettings().heroTint).toBe(true)
   })
   it('Strömbyte: växel på och Byt automatiskt efter 5 s som standard, båda sparas', () => {
     render(<LiveTvSettingsSection />)

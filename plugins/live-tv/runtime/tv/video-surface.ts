@@ -362,7 +362,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     const sync = () => {
       const rect = measure(rectRef.current)
       if (!rect) return
-      if (setBounds) setBounds(rect)
+      // En stängd yta flyttas aldrig: värden har redan rivit den och svarar
+      // "no such surface" — ett avvisat löfte ingen fångar, och appens
+      // felskärm tog över (Jerry 2026-10-30, guidens hero).
+      if (setBounds && !spent) setBounds(rect)
       if (cutoutLive) registerSurfaceCutout(cutoutKey, { ...rect, radius: cornerRadius(rectRef.current) })
     }
 

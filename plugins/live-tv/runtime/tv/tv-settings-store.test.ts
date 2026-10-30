@@ -24,7 +24,7 @@ describe('tv-settings-store', () => {
       groupOrder: 'playlist',
       hubLayout: 'classic',
       guideCategoryLayout: 'column',
-      heroTint: true,
+      heroTint: false,
       liveBackground: 'slate',
     })
     expect(getGuideMode()).toBe('now')
@@ -110,6 +110,6 @@ describe('tv-settings-store', () => {
     setTvSettings({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
     expect(getTvSettings()).toMatchObject({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { hubLayout: 'x', guideCategoryLayout: 1, heroTint: 'yes', liveBackground: 'pink' })
-    expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'column', heroTint: true, liveBackground: 'slate' })
+    expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'column', heroTint: false, liveBackground: 'slate' })
   })
 })

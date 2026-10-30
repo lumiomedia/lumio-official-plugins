@@ -26,7 +26,7 @@ import type { M3uChannel } from '../live-tv-data'
 import { ChannelArt } from './tv-ui'
 import { useVideoSurface } from './video-surface'
 
-export function LivePreviewArt({ channel, live, enabled, height, aspect, radius, children, style }: {
+export function LivePreviewArt({ channel, live, enabled, height, aspect, radius, children, style, fallback }: {
   channel: M3uChannel | null
   /** Kanalen sänder just nu. Utan program finns inget att visa. */
   live: boolean
@@ -37,6 +37,8 @@ export function LivePreviewArt({ channel, live, enabled, height, aspect, radius,
   radius?: number
   children?: ReactNode
   style?: CSSProperties
+  /** Det som ritas när ingen video spelar. Standard: `ChannelArt`. */
+  fallback?: ReactNode
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const wanted = Boolean(channel) && live && enabled
@@ -70,7 +72,7 @@ export function LivePreviewArt({ channel, live, enabled, height, aspect, radius,
         ...style,
       }}
     >
-      {showsVideo ? null : (
+      {showsVideo ? null : fallback !== undefined ? fallback : (
         <ChannelArt channel={channel} height={height} aspect={aspect} radius={radius} style={{ position: 'absolute', inset: 0, height: '100%', borderRadius: 'inherit' }} />
       )}
       {children}

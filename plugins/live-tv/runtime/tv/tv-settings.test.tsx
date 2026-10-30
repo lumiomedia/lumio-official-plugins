@@ -158,8 +158,9 @@ describe('TvSettingsView', () => {
     for (const id of ['setting-guideCategoryLayout', 'setting-heroTint', 'setting-liveBackground']) expect(screen.getByTestId(id)).toHaveAttribute('data-f')
     fireEvent.click(screen.getByTestId('setting-guideCategoryLayout'))
     expect(getTvSettings().guideCategoryLayout).toBe('chips')
+    // Färgtonen är av som standard (Jerry 2026-10-30); OK slår på den.
     fireEvent.click(screen.getByTestId('setting-heroTint'))
-    expect(getTvSettings().heroTint).toBe(false)
+    expect(getTvSettings().heroTint).toBe(true)
     fireEvent.click(screen.getByTestId('setting-liveBackground'))
     expect(getTvSettings().liveBackground).toBe('graphite')
   })

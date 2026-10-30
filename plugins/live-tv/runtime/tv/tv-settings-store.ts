@@ -87,7 +87,8 @@ const DEFAULTS: TvSettings = {
   groupOrder: DEFAULT_GROUP_ORDER,
   hubLayout: 'classic',
   guideCategoryLayout: 'column',
-  heroTint: true,
+  // Av som standard: Jerry vill inte ha en tonad gradient bakom Live TV (2026-10-30).
+  heroTint: false,
   liveBackground: 'slate',
 }
 
