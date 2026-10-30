@@ -11,8 +11,8 @@ describe('v2-tokens', () => {
     expect(v2Bg('graphite')).toBe('#1b1b1f')
     expect(v2Bg('night')).toBe('#0f1219')
   })
-  it('logoplattan är ljus', () => {
-    expect(V2.logoPlate).toBe('#f3f4f8')
+  it('logoplattan är helvit, så logor med vit ruta smälter in (Jerry 2026-10-30)', () => {
+    expect(V2.logoPlate).toBe('#ffffff')
   })
   it('den gemensamma bakgrunden: neutral radiell ton uppe till höger mot sidtonen (Jerry 2026-10-30)', () => {
     const a = v2Ambient('slate')

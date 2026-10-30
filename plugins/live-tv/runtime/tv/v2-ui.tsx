@@ -10,7 +10,7 @@ import { FOCUS_BTN, FOCUS_INSET, V2 } from './v2-tokens'
 type LogoChannel = Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>
 
 /**
- * Den ljusa logoplattan (handoff v2): riktiga logor på `#f3f4f8` med luft runt,
+ * Den vita logoplattan (handoff v2, helvit sedan 2026-10-30): riktiga logor på `#ffffff` med luft runt,
  * initialer som reserv. Kanalnumret ligger som en liten mörk bricka i plattans
  * övre vänstra hörn — aldrig över själva logon.
  */

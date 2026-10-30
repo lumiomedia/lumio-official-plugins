@@ -15,8 +15,59 @@ import { getLiveTvLists } from '../live-tv-data'
 import { listVodCategories } from '../vod-client'
 import { getVodMode } from '../vod-data'
 import { isDesktopTauri } from './guide-surface'
+import { darkTone, useImageTone, type Rgb } from '../sport/backdrop'
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
+
+/**
+ * HERONS BILD PÅ APPENS HEM (glasrälsen, Jerry 2026-10-30).
+ *
+ * Värden lägger <main> till höger om rälsen (padding = ramens inset), så
+ * karusellens bild ligger aldrig bakom rälsen — glaset har inget att visa
+ * igenom. Tonen hämtas därför ur bilden: den aktiva sliden i appens
+ * hero-karusell (hero-carousel.tsx). Prickarna bär `data-active="1"` i samma
+ * ordning som sliderna; utan prickar (en enda slide) gäller den första.
+ */
+export function readHomeHeroImage(doc: Document): string | null {
+  const slides = doc.querySelectorAll<HTMLElement>('.hero-carousel-slide')
+  if (slides.length === 0) return null
+  const dots = Array.from(doc.querySelectorAll<HTMLElement>('.hero-carousel-dot'))
+  const index = Math.max(0, dots.findIndex((dot) => dot.getAttribute('data-active') === '1'))
+  const slide = slides[index] ?? slides[0]!
+  const layer = slide.querySelector<HTMLElement>('.hero-slide-media [style*="background-image"]')
+  const match = layer?.style.backgroundImage.match(/url\(["']?([^"')]+)["']?\)/)
+  return match?.[1] ?? null
+}
+
+/**
+ * Följer heron medan Hem visas. Karusellen byter slide genom prickarnas
+ * `data-active` och nya slides monteras som nya noder — bara de två
+ * ändringarna lyssnas på (inte style, som React skriver om hela tiden), och
+ * läsningen samlas till en per bildruta.
+ */
+function useHomeHeroImage(enabled: boolean): string | null {
+  const [url, setUrl] = useState<string | null>(() => (enabled && typeof document !== 'undefined' ? readHomeHeroImage(document) : null))
+  useEffect(() => {
+    if (!enabled || typeof MutationObserver === 'undefined') { setUrl(null); return }
+    let frame = 0
+    const read = () => { frame = 0; setUrl(readHomeHeroImage(document)) }
+    read()
+    const observer = new MutationObserver(() => { if (!frame) frame = requestAnimationFrame(read) })
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-active'] })
+    return () => { observer.disconnect(); if (frame) cancelAnimationFrame(frame) }
+  }, [enabled])
+  return url
+}
+
+const GLASS_BLUR = 'blur(24px) saturate(140%)'
+
+function hexRgb(color: string): Rgb | null {
+  const h = color.trim().replace('#', '')
+  if (!/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h)) return null
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
+  const n = parseInt(full, 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
 
 /**
  * Telefonens flikrad med samma Bibliotek-villkor som tv-shell.tsx (VOD-kategorier
@@ -87,8 +138,13 @@ function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' 
 export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onInsetBottom }: LibraryFrameProps) {
   const settings = useTvSettings()
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const tvMode = useTvMode()
   const isTv = platform === 'tv'
   const phone = platform === 'phone'
+  // Glaset bara på skrivbordet: oskärpan är för tung för Mi Box/Shield, och telefonen har ingen räls.
+  const glass = platform === 'desktop' && !tvMode
+  const heroImage = useHomeHeroImage(glass)
+  const heroTone = useImageTone(heroImage, glass)
   const narrow = useNarrowSurface(rootRef) && !isTv
   const select = (key: RailKey | 'hub' | 'guide' | 'sport' | 'search' | 'library' | 'home') => {
     if (key === 'back') { onExit(); return }
@@ -141,12 +197,42 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
   // v2-tonen även runt Hem (Jerry 2026-10-30), samma val som i Utseende.
   // Egen bakgrundsfärg går före förvalet; variablerna ger rälsen samma meny/kortfärg som i skalet.
   const frameBg = liveColors(settings).bg
+  /*
+    GLASRÄLSEN (Jerry 2026-10-30: "glasversion av sidomenyn som tar färgen från
+    heron"). Heron står till höger om rälsen (se readHomeHeroImage), så färgen
+    kommer ur bildens medelton — mörkad så vit text läses — som en genomskinlig
+    yta som tonar ner mot sidtonen. Oskärpan gör ändå nytta där appen lägger en
+    bakgrund över hela bredden (egen bakgrundsbild, plugin-hero: det globala
+    lagret i media-explorer går under rälsen). Utan hero: sidtonen.
+    Rälsens egen yta (`--lt-rail`) blir genomskinlig så glaset syns.
+  */
+  const bgRgb = hexRgb(frameBg)
+  const tint: Rgb | null = heroTone ? darkTone(heroTone) : bgRgb
+  const glassStyle: CSSProperties | null = glass ? {
+    background: undefined,
+    backgroundColor: tint ? `rgba(${tint[0]},${tint[1]},${tint[2]},0.55)` : 'rgba(22,26,35,0.45)',
+    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.04), ${bgRgb ? `rgba(${bgRgb[0]},${bgRgb[1]},${bgRgb[2]},0.45)` : 'rgba(22,26,35,0.45)'})`,
+    backdropFilter: GLASS_BLUR,
+    WebkitBackdropFilter: GLASS_BLUR,
+    transition: 'background-color 600ms ease',
+    ['--lt-rail' as string]: 'transparent',
+  } : null
   return (
-    <div ref={rootRef} data-live-tv-frame-bg={frameBg} style={{ ...(liveColorVars(settings) as CSSProperties), height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font }}>
+    <div
+      ref={rootRef}
+      data-live-tv-frame-bg={frameBg}
+      data-live-tv-frame-glass={glass ? '1' : undefined}
+      // happy-dom tappar backdrop-filter; attributen gör glaset testbart.
+      data-live-tv-frame-blur={glass ? GLASS_BLUR : undefined}
+      data-live-tv-frame-tint={glass && tint ? `rgb(${tint[0]},${tint[1]},${tint[2]})` : undefined}
+      style={{ ...(liveColorVars(settings) as CSSProperties), height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font, ...glassStyle }}
+    >
       {/* Appens sidbakgrund bor på `.bg-mesh` (spa/src/index.css). Ramen finns bara
           medan Live TV:s Hem visas, så regeln följer med den och försvinner när man
-          lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30). */}
-      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; }`}</style>
+          lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30).
+          Detaljsidans flytande Hem-pill (media-details-panel.tsx, [data-details-home])
+          göms samma tid: rälsen har redan Hem. */}
+      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; }`}</style>
       <TvRail active="home" isTv={isTv} narrow={narrow} labels={settings.railLabels && !narrow} onSelect={select} />
     </div>
   )

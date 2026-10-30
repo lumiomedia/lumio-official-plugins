@@ -27,7 +27,8 @@ export const V2 = {
   liveText: '#fecdd3',
   liveDot: '#fb7185',
   liveSolid: 'rgba(251,113,133,0.9)',
-  logoPlate: '#f3f4f8',
+  /** Helvit (Jerry 2026-10-30): logor levereras ofta som en vit rektangel — på en ljusgrå platta syntes den som en ruta. */
+  logoPlate: '#ffffff',
   logoPlateInner: '#e3e5ec',
   logoText: '#3a3f4c',
   /** Kortytan utan bild. Följer den egna meny/kortfärgen via `--lt-card` (satt på skalets rot). */

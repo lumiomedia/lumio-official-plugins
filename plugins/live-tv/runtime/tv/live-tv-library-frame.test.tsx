@@ -5,11 +5,17 @@ vi.mock('../vod-client', async (orig) => ({
   ...(await orig<object>()),
   listVodCategories: async () => { vodState.calls++; return { categories: [], total: vodState.total, known: true, importing: false } },
 }))
+const toneState = vi.hoisted(() => ({ tones: {} as Record<string, [number, number, number]>, asked: [] as Array<string | null> }))
+vi.mock('../sport/backdrop', async (orig) => ({
+  ...(await orig<object>()),
+  useImageTone: (src: string | null, wanted: boolean) => { toneState.asked.push(wanted ? src : null); return wanted && src ? toneState.tones[src] ?? null : null },
+}))
 vi.mock('../live-tv-model', async (orig) => ({
   ...(await orig<object>()),
   useLiveTvModel: () => { vodState.modelCalls++; throw new Error('modellen ska inte monteras i ramen') },
 }))
-import { LiveTvLibraryFrame } from './live-tv-library-frame'
+import { LiveTvLibraryFrame, readHomeHeroImage } from './live-tv-library-frame'
+import { act } from '@testing-library/react'
 import { __resetForTests } from '@/lib/plugin-sdk'
 import { setTvSettings } from './tv-settings-store'
 
@@ -147,14 +153,112 @@ describe('LiveTvLibraryFrame omklick', () => {
 
 describe('LiveTvLibraryFrame egna färger', () => {
   afterEach(() => { cleanup(); __resetForTests() })
-  it('egen bakgrund i ramen och .bg-mesh; rälsens variabel på ramens rot', () => {
+  it('egen bakgrund i ramen och .bg-mesh; rälsens variabel på ramens rot (TV — skrivbordets glas gör rälsen genomskinlig)', () => {
     setTvSettings({ liveBgColor: '#203040', liveSurfaceColor: '#405060' })
-    render(<LiveTvLibraryFrame {...{ ...base, platform: 'desktop' as const, onNavigate: vi.fn() }} />)
+    render(<LiveTvLibraryFrame {...{ ...base, platform: 'tv' as const, onNavigate: vi.fn() }} />)
     const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
     expect(frame.getAttribute('data-live-tv-frame-bg')).toBe('#203040')
     expect(frame.style.getPropertyValue('--lt-rail')).toContain('#405060')
     const css = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
     expect(css).toContain('background-color: #203040')
   })
+  it('skrivbord: glaset utan hero tonas av den egna bakgrundsfärgen', () => {
+    setTvSettings({ liveBgColor: '#203040', liveSurfaceColor: '#405060' })
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.getAttribute('data-live-tv-frame-tint')).toBe('rgb(32,48,64)')
+  })
 })
 
+
+describe('LiveTvLibraryFrame detaljsidans Hem-pill', () => {
+  afterEach(cleanup)
+  it('appens flytande Hem-knapp ([data-details-home]) göms bara medan ramen är monterad — rälsen har Hem', () => {
+    const { unmount } = render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const css = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
+    expect(css).toMatch(/\[data-details-home\]\s*\{\s*display:\s*none !important/)
+    unmount()
+    const after = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
+    expect(after).not.toContain('[data-details-home]')
+  })
+})
+
+/** Appens hero-karusell som den ser ut i DOM:en (hero-carousel.tsx): slides med bildlager + prickar med data-active. */
+function mountHero(urls: string[], active: number): HTMLElement {
+  const root = document.createElement('div')
+  root.setAttribute('data-testid', 'fake-hero')
+  for (const url of urls) {
+    const slide = document.createElement('div')
+    slide.className = 'hero-carousel-slide'
+    const media = document.createElement('div')
+    media.className = 'hero-slide-media'
+    const img = document.createElement('div')
+    img.style.backgroundImage = `url("${url}")`
+    media.appendChild(img)
+    slide.appendChild(media)
+    root.appendChild(slide)
+  }
+  urls.forEach((_, i) => {
+    const dot = document.createElement('button')
+    dot.className = 'hero-carousel-dot'
+    if (i === active) dot.setAttribute('data-active', '1')
+    root.appendChild(dot)
+  })
+  document.body.appendChild(root)
+  return root
+}
+
+describe('LiveTvLibraryFrame glasräls på Hem (Jerry 2026-10-30)', () => {
+  afterEach(() => { cleanup(); document.querySelectorAll('[data-testid="fake-hero"]').forEach((n) => n.remove()); toneState.tones = {}; toneState.asked = [] })
+  it('heron läses ur den aktiva sliden; utan prickar den första; utan hero null', () => {
+    expect(readHomeHeroImage(document)).toBeNull()
+    const one = mountHero(['http://x/a.jpg'], -1)
+    expect(readHomeHeroImage(document)).toBe('http://x/a.jpg')
+    one.remove()
+    mountHero(['http://x/a.jpg', 'http://x/b.jpg', 'http://x/c.jpg'], 1)
+    expect(readHomeHeroImage(document)).toBe('http://x/b.jpg')
+  })
+  it('skrivbord: rälsen är glas (genomskinlig, oskärpa) och tonas av heron', () => {
+    toneState.tones['http://x/b.jpg'] = [200, 40, 40]
+    mountHero(['http://x/a.jpg', 'http://x/b.jpg'], 1)
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.getAttribute('data-live-tv-frame-glass')).toBe('1')
+    expect(frame.getAttribute('data-live-tv-frame-blur')).toBe('blur(24px) saturate(140%)')
+    // Tonen mörkas (darkTone) så vit text läses; rälsens egen yta blir genomskinlig.
+    expect(frame.getAttribute('data-live-tv-frame-tint')).toMatch(/^rgb\(\d+,\d+,\d+\)$/)
+    expect(frame.style.backgroundColor).toMatch(/^rgba\(/)
+    expect(frame.style.getPropertyValue('--lt-rail')).toBe('transparent')
+  })
+  it('skrivbord utan hero: glaset står kvar, tonat av sidtonen', () => {
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.getAttribute('data-live-tv-frame-glass')).toBe('1')
+    expect(frame.getAttribute('data-live-tv-frame-tint')).toBe('rgb(22,26,35)')
+  })
+  it('heron byter slide → tonen följer med', async () => {
+    toneState.tones['http://x/a.jpg'] = [10, 120, 10]
+    toneState.tones['http://x/b.jpg'] = [10, 10, 160]
+    const hero = mountHero(['http://x/a.jpg', 'http://x/b.jpg'], 0)
+    render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    const first = frame.getAttribute('data-live-tv-frame-tint')
+    await act(async () => {
+      const dots = hero.querySelectorAll('.hero-carousel-dot')
+      dots[0]!.removeAttribute('data-active')
+      dots[1]!.setAttribute('data-active', '1')
+      await new Promise((r) => setTimeout(r, 50))
+    })
+    await waitFor(() => expect(frame.getAttribute('data-live-tv-frame-tint')).not.toBe(first))
+    expect(toneState.asked).toContain('http://x/b.jpg')
+  })
+  it('TV: rälsen förblir solid (oskärpa är för tungt på Mi Box/Shield) och heron provas inte', () => {
+    mountHero(['http://x/a.jpg'], 0)
+    render(<LiveTvLibraryFrame {...base} platform="tv" />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.hasAttribute('data-live-tv-frame-glass')).toBe(false)
+    expect(frame.style.background).toBeTruthy()
+    expect(frame.style.getPropertyValue('--lt-rail')).not.toBe('transparent')
+    expect(toneState.asked.every((s) => s === null)).toBe(true)
+  })
+})

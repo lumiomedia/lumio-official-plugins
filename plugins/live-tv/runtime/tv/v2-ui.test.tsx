@@ -17,6 +17,12 @@ describe('v2-ui', () => {
     expect(box.style.width).toBe('90%')
     expect(box.style.height).toBe('84%')
   })
+  it('plattan är helvit med rundade hörn (Jerry 2026-10-30)', () => {
+    render(<LogoPlate channel={{ ...ch, logo: 'http://x/logo.png' }} width={100} height={58} radius={8} />)
+    const plate = screen.getByTestId('logo-plate')
+    expect(plate.style.background).toMatch(/^(#ffffff|rgb\(255, 255, 255\))$/)
+    expect(plate.style.borderRadius).toBe('8px')
+  })
   it('utan nummer ingen bricka', () => {
     render(<LogoPlate channel={ch} width={100} height={58} />)
     expect(screen.queryByTestId('logo-plate-number')).toBeNull()
