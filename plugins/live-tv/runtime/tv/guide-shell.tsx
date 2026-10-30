@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { useTvClockNode } from './tv-ui'
@@ -8,27 +8,37 @@ import { useTvText } from './tv-strings'
 import { getTvSettings, setGuideMode, setTvSettings, useGuideMode, useTvSettings } from './tv-settings-store'
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
 import { guideWindowStart } from './epg-grid-geometry'
-import { startOfLocalDay } from '../live-tv-model'
 import { FAVS_GROUP, MORE_GROUPS, useGuideGroups } from './tv-guide-shared'
 import { groupCounts } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
-import { GuideControlRow } from './guide-control-row'
 import { GuideGridView } from './guide-grid-view'
 import { GuideNowNextView } from './guide-nownext-view'
+import { GuideHero, useDebouncedSelection } from './guide-hero'
+import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
+import { guideKeyAction } from './guide-keys'
+import { V2, v2Bg } from './v2-tokens'
+import { V2FocusStyle } from './v2-ui'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
- * Den städade guidens skal (spec §1): äger läge, källa/kategori, dag,
- * fönsterstart, markering och panelerna, ritar kontrollraden och sedan EN
- * av tre vyer med allt som props. Lägesbyte byter bara rendering — källa,
- * kategori, dag och markering behålls.
+ * Kanalguide v2:s skal (handoff "Screen 2", spec "Guiden"): äger läge,
+ * källa/kategori, fönsterstart och markering, ritar heron (rubrik, segment,
+ * källpill, fokuserat program, förhandsvisning), kategorikolumnen eller
+ * chippen och EN av tre vyer. Lägesbyte byter bara rendering — källa,
+ * kategori och markering behålls.
  *
  * Importerar ALDRIG `tv-guide.tsx` (som importerar hit): vyerna hämtar sina
- * typer ur `guide-types.ts`. Grid är `GuideGridView` (Task 3), Now / Next
- * är `GuideNowNextView` (Task 4, bannern styrs av `settings.nowNextDetails`),
- * Tablå (`timeline`) är samma `GuideGridView` utan detaljpanelen (Jerry
- * 2026-09-17) — samma täthet och nu-position, hela bredden åt spåret.
+ * typer ur `guide-types.ts`.
+ *
+ * Bakåt (handoff "Guide navigation"): (1) står fönstret eller fokus inte på
+ * "nu" → till nu; (2) annars, står fokus inte i kategorierna → dit; (3)
+ * annars släpps trycket till TV-skalet, som lämnar guiden. Lagret
+ * registreras bara medan steg 1 eller 2 gäller, så Bakåt aldrig tar två
+ * steg på ett tryck — och en öppen panel/meny (registrerad senare, överst)
+ * stänger först.
+ *
+ * N = till nu, T = växla Nu/Sen ↔ Tablå (från Kanallista → Tablå).
  */
 export function TvGuideShell({ model, nav, params }: TvViewProps) {
   const { tt, locale } = useTvText()
@@ -36,48 +46,22 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   const clock = useTvClockNode(locale)
   const settings = useTvSettings()
 
-  // Lokalt speglat läge, normaliserat för ytan (spec "Beslut", Lagring):
-  // lagringen kan innehålla telefonens/LAN:s nycklar, och skrivbord/TV
-  // skriver bara sina tre. Skrivningen notifierar inte den egna instansen
-  // (samma mönster som `TvGuide`), därav spegeln.
+  // Lokalt speglat läge, normaliserat för ytan: lagringen kan innehålla
+  // telefonens/LAN:s nycklar, och skrivbord/TV skriver bara sina tre.
+  // Skrivningen notifierar inte den egna instansen, därav spegeln.
   const storedMode = useGuideMode()
   const [mode, setMode] = useState<DesktopGuideMode>(() => desktopGuideMode(storedMode))
   useEffect(() => { setMode(desktopGuideMode(storedMode)) }, [storedMode])
-
-  /**
-   * Lägesstack + lager: Bakåt tar ETT läge tillbaka i stället för att lämna
-   * guiden (kopierat från `TvGuide`, se resonemanget där). Refar håller
-   * effekten still trots att `nav`/`popMode` byter identitet varje minut.
-   */
-  const [modeStack, setModeStack] = useState<DesktopGuideMode[]>([])
   const changeMode = (next: DesktopGuideMode) => {
     if (next === mode) return
-    setModeStack((stack) => [...stack, mode])
     setGuideMode(next)
     setMode(next)
   }
-  const popMode = () => {
-    const prev = modeStack[modeStack.length - 1]
-    if (prev === undefined) return
-    setModeStack((stack) => stack.slice(0, -1))
-    setGuideMode(prev)
-    setMode(prev)
-  }
-  const navRef = useRef(nav)
-  useEffect(() => { navRef.current = nav })
-  const popRef = useRef(popMode)
-  useEffect(() => { popRef.current = popMode })
-  const claimBack = modeStack.length > 0
-  useEffect(() => {
-    if (!claimBack) return
-    return navRef.current.pushLayer(() => popRef.current())
-  }, [claimBack, modeStack.length])
 
   // Kategori lagras (`guideCategory`); en lagrad grupp som inte längre finns
   // i modellen faller tillbaka till Alla i stället för att ge en tom vy.
-  //
-  // Mot ALLA grupper, inte de kapade chippen: en grupp vald ur "Alla grupper"
-  // ligger ofta bortom taket och hade annars nollats direkt.
+  // Mot ALLA grupper, inte de kapade posterna: en grupp vald ur "Alla
+  // grupper" ligger ofta bortom taket och hade annars nollats direkt.
   const category = useMemo(() => {
     const stored = settings.guideCategory
     if (stored === null) return null
@@ -86,9 +70,8 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   }, [settings.guideCategory, model.groups, model.favouriteChannels.length])
   const groups = useGuideGroups(model, tt, category)
 
-  // `params.group` (hubbens kategorikort och djuplänkar) skriver kategorin
-  // EN gång vid inträde — `'all'` = Alla — precis som den gamla guiden läste
-  // den. Bara vid montering: därefter äger panelen (och lagringen) valet.
+  // `params.group` (hubbens kategorikort och djuplänkar) skriver kategorin EN
+  // gång vid inträde — `'all'` = Alla. Därefter äger kolumnen valet.
   const groupParam = params.group
   useEffect(() => {
     if (!groupParam) return
@@ -96,94 +79,159 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     if (next !== getTvSettings().guideCategory) setTvSettings({ guideCategory: next })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  // `params.channel` (Klassisks favoriter): vyn ger den kanalen startfokus.
+  const focusChannelKey = params.channel ?? null
 
-  const [dayOffset, setDayOffset] = useState<0 | 1>(0)
-  // Fönsterstart är VY-state och ENDA källan till Grids axel: halvtimmes-
-  // justerad vid inträde och vid Nu, Imorgons 06:00 vid dagbyte, klickad
-  // halvtimme från Timeline. Dagen härleds aldrig om fönstret i efterhand —
-  // förut låg Imorgon fastnaglad på 06:00 och Timeline → Grid struntade i
-  // den klickade tiden så fort man stod på Imorgon.
+  // Fönsterstart är VY-state (halvtimmesjusterad vid inträde och vid Nu);
+  // Tablån flyttar den med ◂▸ förbi kanten.
   const [windowStart, setWindowStart] = useState(() => guideWindowStart(model.nowMs))
   const [selection, setSelection] = useState<GuideSelection | null>(null)
-  const [panel, setPanel] = useState<'source' | 'category' | 'groups' | null>(null)
-  // Kategoriknappen, fångad när väljaren öppnas: "Alla grupper" öppnar
-  // grupplistan UR väljaren, och då är väljarens rad redan borta när
-  // grupplistan monteras — fokus ska tillbaka hit, inte till body.
-  const categoryOpenerRef = useRef<HTMLElement | null>(null)
+  const heroSelection = useDebouncedSelection(selection)
+  const [panel, setPanel] = useState<'source' | 'groups' | null>(null)
+  // Kategoriposten som öppnade grupplistan: fokus tillbaka hit när den stängs.
+  const groupsOpenerRef = useRef<HTMLElement | null>(null)
 
-  // Markeringen följer raden: byter man källa, kategori eller dag är raden
-  // borta ur vyn, så markeringen nollas. Lägesbyte behåller den (spec §1).
-  const changeDay = (d: 0 | 1) => {
-    setDayOffset(d)
-    setWindowStart(d === 1 ? startOfLocalDay(model.nowMs, 1) + 6 * 3_600_000 : guideWindowStart(model.nowMs))
-    setSelection(null)
-  }
-  // `nowTick` räknas upp även när fönstret redan står på dagens halvtimme:
-  // Grid scrollar till nu-linjen på VARJE Nu-tryck, inte bara när state byts.
+  // `nowTick` räknas upp på varje Nu (N, Bakåt steg 1): vyerna flyttar då
+  // fokus till den markerade kanalens pågående program.
   const [nowTick, setNowTick] = useState(0)
-  const jumpToNow = () => { setDayOffset(0); setWindowStart(guideWindowStart(model.nowMs)); setNowTick((n) => n + 1) }
-  // Källväljaren: Alla + modellens spellistor, med antal.
+  const jumpToNow = () => {
+    setWindowStart(guideWindowStart(model.nowMs))
+    setSelection((sel) => (sel ? { channel: sel.channel, programme: model.nowFor(sel.channel).now } : sel))
+    setNowTick((n) => n + 1)
+  }
+
   const sourceOptions: ChoiceOption[] = useMemo(() => [
     { key: null, label: tt('sourceAll'), count: model.allChannels.length },
     ...model.playlists.map((p) => ({ key: p.id, label: p.name, count: p.count })),
   ], [model.allChannels.length, model.playlists, tt])
-  // Kategoriväljaren: `useGuideGroups`-listan med antal per grupp. Sista
-  // posten är "Alla grupper (N)" när grupperna inte ryms — den öppnar den
-  // sökbara grupplistan i stället för att sätta en kategori.
+  // Kategorierna med antal. Sista posten är "Alla grupper (N)" när grupperna
+  // inte ryms — den öppnar den sökbara grupplistan.
   const perGroup = useMemo(() => groupCounts(model.channels), [model.channels])
-  const categoryOptions: ChoiceOption[] = useMemo(() => groups.map((g) => ({
+  const categoryItems: GuideCategoryItem[] = useMemo(() => groups.map((g) => ({
     key: g.key,
-    label: g.key === null ? tt('categoryAll') : g.label,
+    label: g.label,
     count: g.key === null ? model.channels.length : g.key === FAVS_GROUP ? model.favouriteChannels.length : g.key === MORE_GROUPS ? undefined : perGroup.get(g.key) ?? 0,
-  })), [groups, perGroup, model.channels.length, model.favouriteChannels.length, tt])
-  const categoryLabel = category === null ? tt('categoryAll') : groups.find((g) => g.key === category)?.label ?? tt('categoryAll')
-  const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length
+  })), [groups, perGroup, model.channels.length, model.favouriteChannels.length])
+  const categoryLabel = category === null ? tt('categoryAll') : groups.find((g) => g.key === category)?.label ?? category
+  const pickCategory = (key: string | null) => {
+    if (key === MORE_GROUPS) {
+      groupsOpenerRef.current = document.activeElement as HTMLElement | null
+      setPanel('groups')
+      return
+    }
+    setTvSettings({ guideCategory: key })
+    setSelection(null)
+  }
 
-  // Vyernas gemensamma props: fönstret rakt ur state (se `windowStart`).
-  const viewProps: GuideViewProps = { model, nav, category, dayOffset, windowStart, nowTick, selection, onSelect: setSelection, isTv }
+  // Var fokus står: kategorierna (kolumn/chips) eller resten (hero, vy).
+  const catsRef = useRef<HTMLDivElement | null>(null)
+  const [inCats, setInCats] = useState(false)
+  const focusCategories = (): boolean => {
+    const root = catsRef.current
+    const target = root?.querySelector<HTMLElement>('[data-selected][data-f]') ?? root?.querySelector<HTMLElement>('[data-f]') ?? null
+    if (!target) return false
+    target.focus()
+    setInCats(true)
+    return true
+  }
+  const columnLayout = settings.guideCategoryLayout === 'column'
+  const onLeftEdge = () => (columnLayout ? focusCategories() : false)
 
+  // Bakåt-kedjan (se filhuvudet).
+  const nowStart = guideWindowStart(model.nowMs)
+  const programme = selection?.programme ?? null
+  const focusAtNow = programme === null || (programme.start <= model.nowMs && programme.stop > model.nowMs)
+  const atNow = windowStart === nowStart && focusAtNow
+  const claimBack = !atNow || !inCats
+  const backRef = useRef<() => void>(() => {})
+  backRef.current = () => {
+    if (!atNow) { jumpToNow(); return }
+    focusCategories()
+  }
+  const navRef = useRef(nav)
+  useEffect(() => { navRef.current = nav })
+  useEffect(() => {
+    if (!claimBack) return
+    return navRef.current.pushLayer(() => backRef.current())
+  }, [claimBack])
+
+  const onKeyDownCapture = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (panel !== null || event.metaKey || event.ctrlKey || event.altKey) return
+    const target = event.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+    const action = guideKeyAction(event.key)
+    if (!action) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (action === 'now') jumpToNow()
+    else changeMode(mode === 'tl' ? 'now' : 'tl')
+  }
+
+  const viewProps: GuideViewProps = {
+    model,
+    nav,
+    category,
+    categoryLabel,
+    dayOffset: 0,
+    windowStart,
+    nowTick,
+    selection,
+    onSelect: setSelection,
+    onFocusProgramme: setSelection,
+    onLeftEdge,
+    focusChannelKey,
+    onWindowStart: setWindowStart,
+    isTv,
+    mode,
+  }
+  // TILLFÄLLIGT (Task 5): vyerna byts mot v2-vyerna i Task 6–8.
   const view = mode === 'now'
-    ? <GuideNowNextView {...viewProps} details={settings.nowNextDetails} />
-    : <GuideGridView {...viewProps} detailPanel={mode === 'list'} />
+    ? <GuideNowNextView {...viewProps} details={false} />
+    : <GuideGridView {...viewProps} detailPanel={false} />
+
+  const categories = { items: categoryItems, value: category, onPick: pickCategory }
 
   return (
-    <div data-testid="guide-shell" data-guide-mode={mode} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <GuideControlRow
-        mode={mode}
-        onMode={changeMode}
-        sourceLabel={model.activePlaylistName ?? tt('sourceAll')}
-        sourceCount={model.channels.length}
-        onOpenSource={() => setPanel('source')}
-        categoryLabel={categoryLabel}
-        categoryCount={categoryCount}
-        onOpenCategory={() => { categoryOpenerRef.current = document.activeElement as HTMLElement | null; setPanel('category') }}
-        dayOffset={dayOffset}
-        onDay={changeDay}
-        onNow={jumpToNow}
-        details={settings.nowNextDetails}
-        onDetails={() => setTvSettings({ nowNextDetails: !settings.nowNextDetails })}
-        clock={clock}
-      />
-      <div data-testid="guide-content" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {view}
+    <div
+      data-testid="guide-shell"
+      data-guide-mode={mode}
+      data-window-start={String(windowStart)}
+      onKeyDownCapture={onKeyDownCapture}
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: v2Bg(settings.liveBackground), color: V2.text, overflow: 'hidden' }}
+    >
+      <V2FocusStyle />
+      <div onFocusCapture={() => setInCats(false)} style={{ flexShrink: 0 }}>
+        <GuideHero
+          sel={heroSelection}
+          model={model}
+          nav={nav}
+          mode={mode}
+          onMode={changeMode}
+          clock={clock}
+          tint={settings.heroTint}
+          background={settings.liveBackground}
+          sourceLabel={model.activePlaylistName ?? tt('sourceAll')}
+          onOpenSource={() => setPanel('source')}
+          isTv={isTv}
+        />
+      </div>
+      {columnLayout ? null : (
+        <div ref={catsRef} onFocusCapture={() => setInCats(true)} style={{ flexShrink: 0, position: 'relative', zIndex: 1 }}>
+          <GuideCategoryChips {...categories} />
+        </div>
+      )}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8, padding: '0 48px', position: 'relative', zIndex: 1 }}>
+        {columnLayout ? (
+          <div ref={catsRef} onFocusCapture={() => setInCats(true)} style={{ display: 'flex', minHeight: 0 }}>
+            <GuideCategoryColumn {...categories} />
+          </div>
+        ) : null}
+        <div data-testid="guide-content" onFocusCapture={() => setInCats(false)} style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {view}
+        </div>
       </div>
       {panel === 'source' ? (
         <TvChoicePanel nav={nav} title={tt('pickSource')} options={sourceOptions} value={model.activePlaylistId} onPick={(key) => { model.setActivePlaylist(key); setSelection(null) }} onClose={() => setPanel(null)} />
-      ) : null}
-      {panel === 'category' ? (
-        <TvChoicePanel
-          nav={nav}
-          title={tt('pickCategory')}
-          options={categoryOptions}
-          value={category}
-          onPick={(key) => {
-            if (key === MORE_GROUPS) { setPanel('groups'); return }
-            setTvSettings({ guideCategory: key }); setSelection(null)
-          }}
-          // Väljarens stängning körs EFTER onPick: har "Alla grupper" just
-          // bytt till grupplistan får den stå kvar.
-          onClose={() => setPanel((current) => (current === 'category' ? null : current))}
-        />
       ) : null}
       {panel === 'groups' ? (
         <TvGroupPanel
@@ -191,7 +239,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
           groups={model.groups}
           counts={perGroup}
           value={category}
-          opener={categoryOpenerRef.current}
+          opener={groupsOpenerRef.current}
           onPick={(group) => { setTvSettings({ guideCategory: group }); setSelection(null) }}
           onClose={() => setPanel(null)}
         />

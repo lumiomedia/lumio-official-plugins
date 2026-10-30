@@ -121,6 +121,9 @@ describe('Startvyn (inställningen)', () => {
   it('Bakåt från en annan vy landar på startvyn', () => {
     setTvSettings({ startView: 'favs' })
     const { onNavigate } = mount({ view: 'guide' })
+    // Guide v2: första Bakåt tar fokus till kategorikolumnen, nästa lämnar guiden.
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onNavigate).not.toHaveBeenCalled()
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'favs' } })
   })

@@ -5,7 +5,7 @@ import { getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { LiveTvLogoImage } from '../live-tv-logo-image'
 import { initialsOf } from '../live-tv-ui'
 import { dp } from './tv-ui'
-import { V2 } from './v2-tokens'
+import { FOCUS_BTN, FOCUS_INSET, V2 } from './v2-tokens'
 
 type LogoChannel = Pick<M3uChannel, 'name' | 'logo' | 'logoFallback'>
 
@@ -83,5 +83,22 @@ export function ProgrammeArtBox({ url, channel, plate, height, radius, children,
       )}
       {children}
     </div>
+  )
+}
+
+/**
+ * v2-fokusringen (handoff "Focus"): stationer med `data-v2f="inset"` (guidens
+ * celler, tätt packade) eller `data-v2f="btn"` (segment, chips, pills) får
+ * accentringen som box-shadow i stället för appens outline. Samma grind som
+ * `TvFocusStyle`: ingen ring när fokus kom från pekaren.
+ */
+export function V2FocusStyle() {
+  const on = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"])'
+  return (
+    <style>{`
+[data-live-tv-tv-root] [data-v2f][data-f] { outline: none !important; }
+${on} [data-v2f="inset"][data-f]:focus, ${on} [data-v2f="inset"][data-f][data-fcur="1"] { box-shadow: ${FOCUS_INSET} !important; }
+${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="1"] { box-shadow: ${FOCUS_BTN} !important; }
+`}</style>
   )
 }

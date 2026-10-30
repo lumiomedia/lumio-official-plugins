@@ -299,11 +299,11 @@ describe('TvGuideStandard (LAN/fjärr) fjärrhjälp (borttagen, Jerrys uppföljn
  * ritas bredvid.
  */
 describe('TvGuide: ny yta (newGuide → TvGuideShell)', () => {
-  it('TV-läget grenar till skalet: kontrollrad, inga gamla spellistkolumner', async () => {
+  it('TV-läget grenar till skalet: hero, inga gamla spellistkolumner', async () => {
     __setTvModeForTests(true)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
     await mount()
-    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
+    expect(screen.getByTestId('guide-hero')).toBeInTheDocument()
     expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
     expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
   })
@@ -311,7 +311,7 @@ describe('TvGuide: ny yta (newGuide → TvGuideShell)', () => {
   it('skrivbordsappen (Tauri, inte TV-läge) grenar också till skalet — utan toppband och förhandsvisning', async () => {
     __setDesktopTauriEnvForTests(true)
     await mount()
-    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
+    expect(screen.getByTestId('guide-hero')).toBeInTheDocument()
     expect(screen.queryByTestId('guide-headline')).not.toBeInTheDocument()
     expect(screen.queryByText(/OK = fullscreen/)).not.toBeInTheDocument()
   })

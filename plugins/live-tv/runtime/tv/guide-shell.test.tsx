@@ -4,15 +4,17 @@ import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, wri
 import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getActivePlaylistId, getGuideMode, getTvSettings } from './tv-settings-store'
+import { guideWindowStart } from './epg-grid-geometry'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
 
 /**
- * Guidens nya skal (spec §1): kontrollraden är den ENDA raden över
- * innehållet, läget normaliseras per yta, käll- och kategorival går via
- * `TvChoicePanel` och skrivs till samma lagring som förut.
+ * Kanalguide v2:s skal (handoff "Screen 2", spec "Guiden"): hero med
+ * segment och källpill, kategorikolumn eller chips, N/T-tangenterna och
+ * Bakåt-kedjan nu → kategorier → lämna. Vyerna själva testas i sina egna
+ * sviter.
  */
 const now = Date.now()
 const ch = (name: string, group: string, tvgId: string | null = null) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId })
@@ -26,7 +28,7 @@ const cache: EpgCacheEntry = {
   fetchedAt: now, sources: ['http://x/epg'],
 }
 
-afterEach(() => { cleanup(); __setDesktopTauriEnvForTests(false) })
+afterEach(() => { cleanup(); __setDesktopTauriEnvForTests(false); vi.useRealTimers() })
 beforeEach(() => {
   __resetForTests()
   __setTvModeForTests(true)
@@ -42,220 +44,180 @@ const mount = async (params: Record<string, string> = { view: 'guide' }) => {
   return onNavigate
 }
 
+const shell = () => screen.getByTestId('guide-shell')
 const activeMode = () => screen.getByTestId('guide-mode').querySelector('[data-active]')?.textContent
+const column = () => screen.getByTestId('guide-category-column')
+const cat = (label: string) => within(document.body).getAllByTestId('guide-cat').find((el) => el.textContent?.startsWith(label))!
+const press = (key: string) => fireEvent.keyDown(window, { key })
+const leftGuide = (onNavigate: ReturnType<typeof vi.fn>) => onNavigate.mock.calls.some((call) => (call[0] as { params: Record<string, string> }).params.view === 'hub')
+const block = (title: string) => screen.getAllByTestId('grid-block').find((el) => el.textContent?.includes(title))!
 
-describe('TvGuideShell (TV-läge)', () => {
-  it('lagrat playlists normaliseras till Grid som aktivt segment', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'playlists')
+describe('TvGuideShell v2 (TV-läge)', () => {
+  it('hero med segmentet (tre stationer), kategorikolumn och exakt en [data-init]', async () => {
     await mount()
-    expect(activeMode()).toBe('Grid')
-    expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
-  })
-
-  it('lagrat tl normaliseras till Now / Next som aktivt segment', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
-    await mount()
-    expect(activeMode()).toBe('Now / Next')
-    expect(screen.queryByTestId('now-line')).not.toBeInTheDocument()
-  })
-
-  it('lägesbyte skriver det nya läget och Bakåt poppar tillbaka', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'grid')
-    const onNavigate = await mount()
-    // Grid-platshållaren (dagens TvGuideGrid) har ett eget segment med samma
-    // etikett — kontrollradens är det som gäller.
-    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Timeline'))
-    expect(getGuideMode()).toBe('timeline')
-    expect(activeMode()).toBe('Timeline')
-    // Ett tryck = ett läge tillbaka, utan att lämna guiden.
-    fireEvent.keyDown(window, { key: 'Escape' })
-    expect(getGuideMode()).toBe('grid')
-    expect(activeMode()).toBe('Grid')
-    expect(onNavigate).not.toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'hub' } })
-  })
-
-  it('två byten kräver två Bakåt — ett läge per tryck — och sedan lämnar Bakåt guiden', async () => {
-    // Flyttat från den gamla TV-sviten i `tv-guide.test.tsx` (Jerry, riktig
-    // TV, plugin 0.5.0): lägesbytet är en navigering INNE i guiden.
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'grid')
-    const onNavigate = await mount()
-    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Timeline'))
-    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Now / Next'))
-    expect(getGuideMode()).toBe('nownext')
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    expect(activeMode()).toBe('Timeline')
-    expect(getGuideMode()).toBe('timeline')
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    expect(activeMode()).toBe('Grid')
-    expect(getGuideMode()).toBe('grid')
-    expect(onNavigate).not.toHaveBeenCalled()
-    // Stacken är tom: nästa Bakåt lämnar guiden som förut.
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    expect(onNavigate).toHaveBeenCalledTimes(1)
-    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
-  })
-
-  it('utan lägesbyte i sessionen lämnar Bakåt guiden direkt', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
-    const onNavigate = await mount()
-    fireEvent.keyDown(window, { key: 'Backspace' })
-    expect(onNavigate).toHaveBeenCalledTimes(1)
-    expect((onNavigate.mock.calls[0][0] as { params: Record<string, string> }).params.view).toBe('hub')
-  })
-
-  it('en lagrad kategori som inte längre finns faller tillbaka till Alla i stället för en tom vy', async () => {
-    // Motsvarigheten till den gamla guidens `params.group`-validering: här
-    // lagras kategorin (`guideCategory`) och kan ha överlevt en borttagen lista.
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Nonexistent' })
-    await mount()
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('All categories')
-    // Fyra kanaler i två listor: A (tablå) som rad, B/C/D som kollapsade rader sist.
-    expect(screen.getAllByTestId('nownext-row')).toHaveLength(1)
-    expect(screen.getAllByTestId('nownext-empty-row')).toHaveLength(3)
+    expect(screen.getByTestId('guide-hero')).toBeInTheDocument()
+    expect(screen.getByTestId('guide-mode').querySelectorAll('[data-f]')).toHaveLength(3)
+    expect(shell()).toHaveAttribute('data-guide-mode', 'now')
+    expect(column()).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-category-chips')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guide-control-row')).not.toBeInTheDocument()
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
 
-  it('params.group = all nollar en lagrad kategori vid inträde (hubbens kort, djuplänkar)', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
+  it('lagrade lägen normaliseras: playlists → Kanallista, grid → Tablå, nownext → Nu / Sen', async () => {
+    for (const [stored, mode, label] of [['playlists', 'list', 'Channel list'], ['grid', 'tl', 'Timeline'], ['nownext', 'now', 'Now / Next']] as const) {
+      writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', stored)
+      await mount()
+      expect(shell()).toHaveAttribute('data-guide-mode', mode)
+      expect(activeMode()).toBe(label)
+      cleanup()
+    }
+  })
+
+  it('guideCategoryLayout = chips → chipsraden och ingen kolumn', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategoryLayout: 'chips' })
+    await mount()
+    expect(screen.getByTestId('guide-category-chips')).toBeInTheDocument()
+    expect(screen.queryByTestId('guide-category-column')).not.toBeInTheDocument()
+  })
+
+  it('segmentet skriver läget; T växlar Nu/Sen ↔ Tablå och från Kanallista till Tablå', async () => {
+    await mount()
+    fireEvent.click(screen.getByTestId('guide-mode-list'))
+    expect(getGuideMode()).toBe('list')
+    fireEvent.keyDown(shell(), { key: 't' })
+    expect(shell()).toHaveAttribute('data-guide-mode', 'tl')
+    fireEvent.keyDown(shell(), { key: 'T' })
+    expect(shell()).toHaveAttribute('data-guide-mode', 'now')
+    fireEvent.keyDown(shell(), { key: 't' })
+    expect(shell()).toHaveAttribute('data-guide-mode', 'tl')
+    expect(getGuideMode()).toBe('tl')
+  })
+
+  it('N hoppar till nu: fönstret = guideWindowStart(nu) och fokuserat framtida program byts mot det pågående', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
+    await mount()
+    act(() => { block('Now A').focus() })
+    act(() => { block('Next A').focus() })
+    fireEvent.keyDown(block('Next A'), { key: 'n' })
+    expect(shell()).toHaveAttribute('data-window-start', String(guideWindowStart(Date.now())))
+    // Markeringen är tillbaka på nu: Bakåt tar då kategoristeget, inte nu-steget.
+    press('Escape')
+    expect(column().contains(document.activeElement)).toBe(true)
+  })
+
+  it('Bakåt: framtida fokus → nu, sedan kategorierna, sedan lämnas guiden — ett steg per tryck', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
+    const onNavigate = await mount()
+    act(() => { block('Next A').focus() })
+    press('Escape')
+    expect(column().contains(document.activeElement)).toBe(false)
+    expect(leftGuide(onNavigate)).toBe(false)
+    press('Escape')
+    expect(column().contains(document.activeElement)).toBe(true)
+    expect(leftGuide(onNavigate)).toBe(false)
+    press('Escape')
+    expect(leftGuide(onNavigate)).toBe(true)
+  })
+
+  it('Bakåt från en kanal på nu tar kategorierna först, sedan lämnas guiden', async () => {
+    const onNavigate = await mount()
+    act(() => { (document.querySelector('[data-init]') as HTMLElement).focus() })
+    press('Backspace')
+    expect(column().contains(document.activeElement)).toBe(true)
+    expect(onNavigate).not.toHaveBeenCalled()
+    press('Backspace')
+    expect(leftGuide(onNavigate)).toBe(true)
+  })
+
+  it('heron byter titel först 300 ms efter att fokus flyttat', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
+    await mount()
+    act(() => { block('Now A').focus() })
+    expect(screen.getByTestId('guide-hero-title')).toHaveTextContent('Now A')
+    vi.useFakeTimers()
+    act(() => { block('Next A').focus() })
+    act(() => { vi.advanceTimersByTime(290) })
+    expect(screen.getByTestId('guide-hero-title')).toHaveTextContent('Now A')
+    act(() => { vi.advanceTimersByTime(10) })
+    expect(screen.getByTestId('guide-hero-title')).toHaveTextContent('Next A')
+  })
+
+  it('kategorikolumnen: OK på Sport skriver guideCategory och markerar posten', async () => {
+    await mount()
+    expect(cat('All')).toHaveAttribute('data-selected')
+    expect(cat('Sport')).toHaveTextContent('2')
+    fireEvent.click(cat('Sport'))
+    expect(getTvSettings().guideCategory).toBe('Sport')
+    expect(cat('Sport')).toHaveAttribute('data-selected')
+  })
+
+  it('en lagrad kategori som inte längre finns faller tillbaka till Alla', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Nonexistent' })
+    await mount()
+    expect(cat('All')).toHaveAttribute('data-selected')
+  })
+
+  it('params.group = all nollar, params.group = News skriver kategorin vid inträde', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Sport' })
     await mount({ view: 'guide', group: 'all' })
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('All categories')
     expect(getTvSettings().guideCategory).toBeNull()
-  })
-
-  it('params.group = News skriver kategorin vid inträde', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'nownext')
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'Sport' })
+    cleanup()
     await mount({ view: 'guide', group: 'News' })
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('News')
     expect(getTvSettings().guideCategory).toBe('News')
-    expect(screen.getAllByTestId('nownext-empty-row')).toHaveLength(1)
+    expect(cat('News')).toHaveAttribute('data-selected')
   })
 
-  it('källknappen öppnar panelen; valet skrivs till aktiv spellista och panelen stängs', async () => {
+  it('fler än tolv grupper: "All groups (N)" öppnar grupplistan, valet skrivs; en lagrad grupp bortom taket står kvar', async () => {
+    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
+    seedLiveTvIndex()
     await mount()
+    expect(within(column()).queryByText('G013')).not.toBeInTheDocument()
+    fireEvent.click(cat('All groups (20)'))
+    fireEvent.click(within(screen.getByTestId('group-picker')).getByTestId('group-row-G017'))
+    expect(getTvSettings().guideCategory).toBe('G017')
+    expect(screen.queryByTestId('group-picker')).not.toBeInTheDocument()
+    expect(cat('G017')).toHaveAttribute('data-selected')
+  })
+
+  it('källpillen öppnar panelen; valet skrivs till aktiv spellista och Bakåt stänger utan att lämna', async () => {
+    const onNavigate = await mount()
     const source = screen.getByTestId('guide-source')
     expect(source).toHaveTextContent('All playlists')
     fireEvent.click(source)
-    const panel = screen.getByTestId('choice-panel')
-    expect(panel).toBeInTheDocument()
-    // Alla + de två listorna, med antal.
     expect(screen.getByTestId('choice-row-All playlists')).toHaveTextContent('4')
-    expect(screen.getByTestId('choice-row-Xtream')).toHaveTextContent('3')
-    expect(screen.getByTestId('choice-row-M3U')).toHaveTextContent('1')
+    press('Escape')
+    expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
+    expect(leftGuide(onNavigate)).toBe(false)
+    fireEvent.click(screen.getByTestId('guide-source'))
     fireEvent.click(screen.getByTestId('choice-row-Xtream'))
     expect(getActivePlaylistId()).toBe('l1')
     expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
     expect(screen.getByTestId('guide-source')).toHaveTextContent('Xtream')
   })
 
-  it('kategoriknappen öppnar panelen; valet skrivs till guideCategory', async () => {
+  it('N/T fångas inte medan en panel är öppen', async () => {
     await mount()
-    const category = screen.getByTestId('guide-category')
-    expect(category).toHaveTextContent('All categories')
-    fireEvent.click(category)
-    expect(screen.getByTestId('choice-row-Sport')).toHaveTextContent('2')
-    fireEvent.click(screen.getByTestId('choice-row-Sport'))
-    expect(getTvSettings().guideCategory).toBe('Sport')
-    expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('Sport')
-  })
-
-  it('fler än tolv grupper: "All groups (N)" sist i väljaren öppnar grupplistan, valet skrivs till guideCategory', async () => {
-    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
-    seedLiveTvIndex()
-    await mount()
-    fireEvent.click(screen.getByTestId('guide-category'))
-    expect(screen.queryByTestId('choice-row-G013')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('choice-row-All groups (20)'))
-    expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
-    fireEvent.click(within(screen.getByTestId('group-picker')).getByTestId('group-row-G017'))
-    expect(getTvSettings().guideCategory).toBe('G017')
-    expect(screen.queryByTestId('group-picker')).not.toBeInTheDocument()
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('G017')
-  })
-
-  it('en lagrad kategori bortom chiptaket står kvar (nollas inte till Alla)', async () => {
-    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
-    seedLiveTvIndex()
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'G019' })
-    await mount()
-    expect(screen.getByTestId('guide-category')).toHaveTextContent('G019')
-  })
-
-  it('Bakåt stänger en öppen panel utan att lämna guiden', async () => {
-    const onNavigate = await mount()
     fireEvent.click(screen.getByTestId('guide-source'))
-    expect(screen.getByTestId('choice-panel')).toBeInTheDocument()
-    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
-    expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
-    expect(onNavigate).not.toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'hub' } })
-  })
-
-  it('ingen förhandsvisning, och kontrollraden är enda syskonet före innehållet', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'now')
-    await mount()
-    expect(screen.queryByText(/OK = fullscreen/)).not.toBeInTheDocument()
-    const row = screen.getByTestId('guide-control-row')
-    const shell = row.parentElement!
-    expect(shell.firstElementChild).toBe(row)
-    expect(row.nextElementSibling).toBe(screen.getByTestId('guide-content'))
-    expect(shell.children).toHaveLength(2)
-  })
-
-  it('Detaljer-toggeln i Now / Next skriver nowNextDetails', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'now')
-    await mount()
-    expect(getTvSettings().nowNextDetails).toBe(true)
-    fireEvent.click(screen.getByTestId('guide-details'))
-    expect(getTvSettings().nowNextDetails).toBe(false)
-  })
-
-  it('Tablå = Grid utan detaljpanel: ingen zoomväxel, inget guide-detail-panel', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'timeline')
-    await mount()
-    expect(screen.queryByText('2 h')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('guide-detail-panel')).not.toBeInTheDocument()
-    expect(screen.getByTestId('grid-scroll')).toBeInTheDocument()
+    fireEvent.keyDown(shell(), { key: 't' })
+    expect(shell()).toHaveAttribute('data-guide-mode', 'now')
   })
 })
 
-describe('TvGuideShell (skrivbordsappen, inte TV)', () => {
+describe('TvGuideShell v2 (skrivbordsappen, inte TV)', () => {
   beforeEach(() => {
     __setTvModeForTests(false)
     __setDesktopTauriEnvForTests(true)
   })
 
-  it('renderar samma skal med kontrollrad och utan OK = …-text', async () => {
-    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', 'tl')
-    await mount()
-    expect(screen.getByTestId('guide-control-row')).toBeInTheDocument()
-    expect(activeMode()).toBe('Now / Next')
-    expect(screen.queryByText(/OK = /)).not.toBeInTheDocument()
-    expect(screen.queryByTestId('playlists-column')).not.toBeInTheDocument()
-  })
-
-  it('lägesbyte skriver bara de nya nycklarna', async () => {
-    await mount()
-    fireEvent.click(within(screen.getByTestId('guide-mode')).getByText('Timeline'))
-    expect(getGuideMode()).toBe('timeline')
-  })
-
-  it('inga TV-rester på skrivbordet: ingen "OK = …"/"håll OK" i något av de tre lägena', async () => {
-    // Spec §5: `OK = …`-strängarna (okWatch, okRemind, previewLabel/Frame,
-    // allChannelsSub) renderas bara när `isTv`. På TV får de finnas; här
-    // (skrivbordsappen) får inte ett enda läge bära dem — inte heller med
-    // Detaljer-bannern på, som är det enda stället som liknar det gamla toppbandet.
-    for (const stored of ['grid', 'nownext', 'timeline'] as const) {
+  it('samma skal, och inga "OK = …"/"håll OK" i något av de tre lägena', async () => {
+    for (const stored of ['now', 'tl', 'list'] as const) {
       writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_guide_mode_v1', stored)
-      writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { nowNextDetails: true })
       await mount()
-      const shell = screen.getByTestId('guide-shell')
-      expect(shell).toHaveAttribute('data-guide-mode', stored)
-      expect(shell.textContent).not.toMatch(/OK =|hold OK|håll OK/)
+      expect(shell()).toHaveAttribute('data-guide-mode', stored)
+      expect(screen.getByTestId('guide-hero')).toBeInTheDocument()
+      expect(shell().textContent).not.toMatch(/OK =|hold OK|håll OK/)
       cleanup()
     }
   })

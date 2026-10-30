@@ -105,6 +105,9 @@ describe('LiveTvTvShell', () => {
   })
   it('Back på guiden navigerar till hubben', () => {
     const { onNavigate } = mount({ view: 'guide' })
+    // Guide v2: första Bakåt tar fokus till kategorikolumnen, nästa lämnar guiden.
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onNavigate).not.toHaveBeenCalled()
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'hub' } })
   })
