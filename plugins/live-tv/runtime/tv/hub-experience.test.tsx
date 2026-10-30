@@ -207,4 +207,11 @@ describe('HubExperience', () => {
     expect(title.style.textOverflow).toBe('ellipsis')
     expect(title.style.fontSize).toBe('60px')
   })
+  it('heronas förhandsruta är 720×405 och slutar ovanför chipsen (520 px)', async () => {
+    await mount()
+    const tile = screen.getByTestId('xp-hero-tile')
+    expect(tile.style.width).toBe('720px')
+    expect(tile.style.height).toBe('405px')
+    expect(parseInt(tile.style.top) + 405).toBeLessThan(520)
+  })
 })
