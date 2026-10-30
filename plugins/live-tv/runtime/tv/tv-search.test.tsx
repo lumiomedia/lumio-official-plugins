@@ -160,7 +160,7 @@ describe('TvSearch: mindre affischer, programträffar som guiderader', () => {
   it('VOD-affischen är ≈ 80 % av den gamla bredden (130 → 104) och behåller 2:3', () => {
     render(<VodHit item={{ key: 'k', title: 'Alien', year: 1979, posterUrl: null } as never} onOpen={() => {}} />)
     const hit = screen.getByTestId('search-vod-hit')
-    expect(hit.style.width).toBe(`${dp(104)}px`)
+    expect(hit.style.width).toBe(`${dp(170)}px`) // större postrar = färre i raden (Jerry 2026-10-30)
     expect(screen.getByTestId('search-vod-poster').style.aspectRatio).toBe('2 / 3')
     expect(hit).toHaveTextContent('Alien')
     expect(hit).toHaveTextContent('1979')
