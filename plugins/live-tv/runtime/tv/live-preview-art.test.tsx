@@ -24,4 +24,17 @@ describe('LivePreviewArt', () => {
     render(<LivePreviewArt channel={channel} live enabled fallback={<div data-testid="fb" />} />)
     expect(screen.queryByTestId('fb')).toBeNull()
   })
+  it('visar en spinner medan strömmen startar, inte när den spelar eller saknas', () => {
+    handle.ready = false; handle.live = true; handle.failed = false
+    const { unmount } = render(<LivePreviewArt channel={channel} live enabled />)
+    expect(screen.getByTestId('preview-spinner')).toBeInTheDocument()
+    unmount()
+    handle.ready = true
+    const second = render(<LivePreviewArt channel={channel} live enabled />)
+    expect(screen.queryByTestId('preview-spinner')).toBeNull()
+    second.unmount()
+    handle.ready = false
+    render(<LivePreviewArt channel={channel} live enabled={false} />)
+    expect(screen.queryByTestId('preview-spinner')).toBeNull()
+  })
 })

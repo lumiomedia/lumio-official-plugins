@@ -99,6 +99,7 @@ export function V2FocusStyle() {
 [data-live-tv-tv-root] [data-v2f][data-f] { outline: none !important; }
 ${on} [data-v2f="inset"][data-f]:focus, ${on} [data-v2f="inset"][data-f][data-fcur="1"] { box-shadow: ${FOCUS_INSET} !important; }
 ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="1"] { box-shadow: ${FOCUS_BTN} !important; }
+.lumio-xp-strip::-webkit-scrollbar { display: none; }
 `}</style>
   )
 }

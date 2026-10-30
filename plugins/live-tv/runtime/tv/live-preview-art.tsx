@@ -53,6 +53,9 @@ export function LivePreviewArt({ channel, live, enabled, height, aspect, radius,
   // bara tills ytan finns: en live-kanal tar sekunder att starta, och under
   // tiden stod rutan svart (Jerry 2026-10-30).
   const showsVideo = wanted && surface.live && surface.ready && !surface.failed
+  // Strömmen startar (ytan finns, ingen bild än): en liten spinner visar att
+  // något händer — en live-kanal tar ett par sekunder (Jerry 2026-10-30).
+  const starting = wanted && surface.live && !surface.ready && !surface.failed
 
   if (!channel) return null
   return (
@@ -78,6 +81,12 @@ export function LivePreviewArt({ channel, live, enabled, height, aspect, radius,
       {showsVideo ? null : fallback !== undefined ? fallback : (
         <ChannelArt channel={channel} height={height} aspect={aspect} radius={radius} style={{ position: 'absolute', inset: 0, height: '100%', borderRadius: 'inherit' }} />
       )}
+      {starting ? (
+        <span data-testid="preview-spinner" aria-hidden="true" style={{ position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: '50%', background: 'rgba(17,19,26,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+          <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
+          <span style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
+        </span>
+      ) : null}
       {children}
     </div>
   )

@@ -169,18 +169,29 @@ describe('HubExperience', () => {
     // Blur ritar om vyn, och ritningen tar tillbaka fokus till zonens station.
     expect((document.activeElement as HTMLElement).hasAttribute('data-xp')).toBe(true)
   })
-  it('skrivbord: musfokus (hovring) flyttar inte raderna — inget kedjehopp under pekaren', async () => {
+  it('skrivbord: raderna scrollar som appens hemrader — inbyggd rullning, inga transformer, klick aktiverar', async () => {
     __setTvModeForTests(false)
     await mount()
+    expect(screen.getByTestId('xp-rows-viewport').style.overflowY).toBe('auto')
     const track = screen.getByTestId('xp-rows-track')
-    const before = track.style.transform
+    expect(track.style.transform).toBe('')
+    for (const strip of screen.getAllByTestId('xp-row-strip')) {
+      expect(strip.style.overflowX).toBe('auto')
+      expect(strip.style.transform).toBe('')
+    }
+    // Hovring (musfokus) flyttar ingenting.
     const cards = screen.getAllByTestId('xp-card')
-    const later = cards[cards.length - 1]!
-    act(() => { later.focus() })
-    expect(track.style.transform).toBe(before)
-    // Ett klick på skrivbordet aktiverar direkt (hovring har redan gett fokus).
+    act(() => { cards[cards.length - 1]!.focus() })
+    expect(track.style.transform).toBe('')
     const live = cards.find((c) => c.getAttribute('data-kind') === 'live')!
     act(() => { fireEvent.pointerDown(live); fireEvent.click(live) })
     await vi.waitFor(() => expect(screen.getByTestId('player')).toBeInTheDocument())
+  })
+  it('TV: stegvisa rader enligt handoffen (fokuserad rad överst)', async () => {
+    await mount()
+    focusInit()
+    const track = screen.getByTestId('xp-rows-track')
+    press('ArrowDown'); press('ArrowDown'); press('ArrowDown')
+    expect(track.style.transform).toMatch(/translateY\(-[1-9]/)
   })
 })
