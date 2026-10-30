@@ -169,4 +169,18 @@ describe('HubExperience', () => {
     // Blur ritar om vyn, och ritningen tar tillbaka fokus till zonens station.
     expect((document.activeElement as HTMLElement).hasAttribute('data-xp')).toBe(true)
   })
+  it('skrivbord: musfokus (hovring) flyttar inte raderna — inget kedjehopp under pekaren', async () => {
+    __setTvModeForTests(false)
+    await mount()
+    const track = screen.getByTestId('xp-rows-track')
+    const before = track.style.transform
+    const cards = screen.getAllByTestId('xp-card')
+    const later = cards[cards.length - 1]!
+    act(() => { later.focus() })
+    expect(track.style.transform).toBe(before)
+    // Ett klick på skrivbordet aktiverar direkt (hovring har redan gett fokus).
+    const live = cards.find((c) => c.getAttribute('data-kind') === 'live')!
+    act(() => { fireEvent.pointerDown(live); fireEvent.click(live) })
+    await vi.waitFor(() => expect(screen.getByTestId('player')).toBeInTheDocument())
+  })
 })

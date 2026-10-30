@@ -106,6 +106,15 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 
   // Senaste värden för lager-/tangenthanterarna (de registreras sällan).
   const rootRef = useRef<HTMLDivElement | null>(null)
+  /**
+   * VAD SOM SYNS (rad överst, kolumnläge, 3D-vinklar) följer tangenter, fjärr
+   * och hjul — men på skrivbordet INTE musens fokus. Hovring ger fokus; förut
+   * flyttade det raden till toppen, ett annat kort hamnade under pekaren, fick
+   * fokus i sin tur, och raderna hoppade i en kedja (Jerry 2026-10-30). På TV
+   * följer vyn fokus som förut.
+   */
+  const [viewState, setView] = useState<{ row: number; cols: number[] }>(() => ({ row: s.row, cols: s.cols }))
+  const view = isTv ? { row: s.row, cols: s.cols } : { row: Math.min(viewState.row, Math.max(0, rows.length - 1)), cols: viewState.cols }
   const live = useRef({ s, dims })
   live.current = { s, dims }
   const focusAt = (st: XpNavState) => {
@@ -146,6 +155,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     if (next === cur) return false
     pendingFocus.current = next
     setNav(next)
+    setView({ row: next.row, cols: next.cols })
     return true
   }
 
@@ -172,14 +182,23 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     event.stopPropagation()
   }
 
-  // Hjulet stegar raderna (skrivbord), högst ett steg per 250 ms.
+  // Hjulet stegar raderna (skrivbord): en verklig rörelse krävs (styrplattor
+  // skickar strömmar av små händelser) och högst ett steg per 350 ms.
   const wheelAt = useRef(0)
+  const wheelSum = useRef({ sum: 0, at: 0 })
   const onWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    if (Math.abs(event.deltaY) < 4 || Date.now() - wheelAt.current < 250) return
-    wheelAt.current = Date.now()
+    const now = Date.now()
+    const acc = wheelSum.current
+    if (now - acc.at > 200) acc.sum = 0
+    acc.at = now
+    acc.sum += event.deltaY
+    if (Math.abs(acc.sum) < 80 || now - wheelAt.current < 350) return
+    const down = acc.sum > 0
+    acc.sum = 0
+    wheelAt.current = now
     const cur = live.current.s
-    if (cur.zone !== 'rows') { if (event.deltaY > 0) { apply('down'); if (live.current.s.zone === 'chips') apply('down') } return }
-    apply(event.deltaY > 0 ? 'down' : 'up')
+    if (cur.zone !== 'rows') { if (down) { apply('down'); if (live.current.s.zone === 'chips') apply('down') } return }
+    apply(down ? 'down' : 'up')
   }
 
   // Mus (handoffen): första klicket fokuserar, andra aktiverar. Pekarnedtrycket
@@ -189,6 +208,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const guarded = (id: string, run: () => void) => () => {
     const arm = armRef.current
     armRef.current = null
+    // Skrivbordet: hovring har redan gett fokus, så ett klick aktiverar.
+    if (!isTv) { run(); return }
     if (arm && arm.id === id && !arm.focused) {
       rootRef.current?.querySelector<HTMLElement>(`[data-xp="${id}"]`)?.focus({ preventScroll: true })
       return
@@ -339,13 +360,14 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       </div>
 
       <div onWheel={onWheel} style={{ position: 'absolute', left: 0, right: 0, top: dp(596), bottom: 0, overflow: 'hidden', zIndex: 2 }}>
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(-${dp(tops[s.row] ?? 0)}px)`, transition: `transform .45s ${EASE}` }}>
+        <div data-testid="xp-rows-track" style={{ position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(-${dp(tops[view.row] ?? 0)}px)`, transition: `transform .45s ${EASE}` }}>
           {rows.map((row, ri) => {
             const m = ROW[row.id]
-            const col = s.cols[ri] ?? 0
+            const col = view.cols[ri] ?? 0
+            const focusCol = s.cols[ri] ?? 0
             const onRow = ri === s.row
             const inRows = s.zone === 'rows'
-            const opacity = ri < s.row ? 0 : onRow ? (inRows ? 1 : 0.8) : 0.55
+            const opacity = ri < view.row ? 0 : onRow ? (inRows ? 1 : 0.8) : ri === view.row ? 0.8 : 0.55
             const { title, sub } = rowHead(row.id, chip, chipItems.find((c) => c.key === chip)?.label ?? null, isTv, tt)
             return (
               <section key={row.id} data-testid={`xp-row-${row.id}`} style={{ height: dp(ROW_HEAD + m.h + m.extra), opacity, transition: 'opacity .35s' }}>
@@ -357,7 +379,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                   <div style={{ display: 'flex', gap: dp(m.gap), transform: `translateX(-${dp(Math.max(0, col - (m.poster ? 2 : 1)) * (m.w + m.gap))}px)`, transition: `transform .4s ${EASE}`, transformStyle: 'preserve-3d' }}>
                     {row.items.map((item, ii) => {
                       const d = ii - col
-                      const focused = onRow && d === 0 && inRows
+                      const focused = onRow && ii === focusCol && inRows
                       const id = `r${ri}-${ii}`
                       let tf = 'none'
                       let op = 1
