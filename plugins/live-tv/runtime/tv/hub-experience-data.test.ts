@@ -33,18 +33,18 @@ const ids = (out: ReturnType<typeof buildExperienceRows>) => out.rows.map((r) =>
 const row = (out: ReturnType<typeof buildExperienceRows>, id: string) => out.rows.find((r) => r.id === id)!
 
 describe('buildExperienceRows', () => {
-  it('toppkortet är senast sedda kanalen och upprepas inte i Fortsätt titta', () => {
+  it('Sänds nu ligger först och dess första kort är toppkortet — förhandsvisningen är redan igång när man går ner (Jerry 2026-10-30)', () => {
     const out = buildExperienceRows(base())
-    expect(out.featured).toMatchObject({ kind: 'continue', channel: S2 })
-    const keys = row(out, 'continue').items.map((i) => i.key)
-    expect(keys).not.toContain(out.featured!.key)
-    expect(row(out, 'continue').items.map((i) => i.kind)).toEqual(['replay'])
+    expect(ids(out)[0]).toBe('onNow')
+    expect(ids(out)[1]).toBe('continue')
+    expect(out.featured!.key).toBe(row(out, 'onNow').items[0]!.key)
+    expect(out.featured).toMatchObject({ kind: 'live', channel: S2 })
+    expect(row(out, 'continue').items.map((i) => i.kind)).toEqual(['continue', 'replay'])
   })
 
-  it('utan senast sedda blir första reprisen toppkort, och raden utan den töms och utelämnas', () => {
+  it('toppkortet följer Sänds nu även utan senast sedda', () => {
     const out = buildExperienceRows(base({ recent: [] }))
-    expect(out.featured).toMatchObject({ kind: 'replay', channel: S1 })
-    expect(ids(out)).not.toContain('continue')
+    expect(out.featured!.key).toBe(row(out, 'onNow').items[0]!.key)
   })
 
   it('Sänds nu: senast sedda + favoriter först, sedan spellistans ordning', () => {

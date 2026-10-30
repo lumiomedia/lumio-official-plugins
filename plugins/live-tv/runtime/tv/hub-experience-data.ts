@@ -81,19 +81,14 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
   const favKeys = new Set(favourites.map(channelKey))
   const inChip = (c: M3uChannel) => (chip === null ? true : chip === FAVS_GROUP ? favKeys.has(channelKey(c)) : c.group === chip)
 
-  // Toppkortet: senast sedda (Fortsätt) → senaste reprisen → första favoriten → första kanalen.
-  const featured: XpItem | null = recent[0]
-    ? continueItem(recent[0], nowFor)
-    : replays[0]
-      ? replayItem(replays[0])
-      : favourites[0] ?? channels[0]
-        ? liveItem('live', (favourites[0] ?? channels[0])!, nowFor)
-        : null
-
-  const continueItems = [...recent.map((c) => continueItem(c, nowFor)), ...replays.map(replayItem)]
-    .filter((item) => item.key !== featured?.key)
-    .slice(0, CONTINUE_MAX)
   const onNow = take([recent, favourites, channels], inChip, ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
+  // Toppkortet = första kortet i Sänds nu (Jerry 2026-10-30): heron förladdar
+  // och spelar det, så förhandsvisningen redan är igång när man går ner i raden.
+  // Utan något som sänds: senaste reprisen, sedan första kanalen.
+  const featured: XpItem | null = onNow[0]
+    ?? (replays[0] ? replayItem(replays[0]) : channels[0] ? liveItem('live', channels[0], nowFor) : null)
+
+  const continueItems = [...recent.map((c) => continueItem(c, nowFor)), ...replays.map(replayItem)].slice(0, CONTINUE_MAX)
   const yours = take([favourites, channels], inChip, YOURS_MAX).map((c) => liveItem('yours', c, nowFor))
   const upcoming = soon
     .filter(({ programme }) => programme.start > nowMs && programme.start <= nowMs + SOON_WINDOW_MS)
@@ -107,8 +102,8 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
     .map((g): XpItem => ({ kind: 'category', key: `cat:${g}`, category: g, count: counts.get(g) ?? 0 }))
 
   const rows: XpRow[] = [
-    { id: 'continue', items: continueItems },
     { id: 'onNow', items: onNow },
+    { id: 'continue', items: continueItems },
     { id: 'yours', items: yours },
     { id: 'soon', items: upcoming },
     { id: 'explore', items: explore },
