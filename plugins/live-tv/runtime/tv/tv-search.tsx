@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
-import { channelKey } from '../live-tv-data'
+import { channelKey, type M3uChannel } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
-import { ChannelArt, TV, dp, station } from './tv-ui'
+import { TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
@@ -16,6 +16,7 @@ import { useVodPage } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
 import type { VodItem } from '../vod-client'
 import type { ProgrammeSearchHit } from '../hooks/useProgrammeSearch'
+import type { EpgProgramme } from '../epg/types'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
 import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_ROW_GAP, GUIDE_ROW_H, GuideChannelCellV2, accentMix, ellipsis } from './guide-nowsen-view'
@@ -160,20 +161,9 @@ function TvSearchDesktop(props: TvViewProps) {
         <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}><span style={{ fontSize: dp(24), fontWeight: 600 }}>{tt('searchChannels')}</span><span style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{tt('hits', { count: channels.length })}</span></div>
           {query && channels.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(18) }}>{model.channelsLoading ? tt('loadingChannels') : tt('noResults')}</div> : null}
-          {channels.map((channel) => {
-            const info = model.nowFor(channel)
-            return (
-              <div key={channelKey(channel)} {...station(() => nav.go('guide', { channel: channelKey(channel) }), (el) => nav.channelMenu(channel, el))} style={{ height: dp(80), minHeight: dp(80), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
-                <span style={{ width: dp(44), fontSize: dp(16), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{model.channelNumber(channel) ?? ''}</span>
-                <ChannelArt channel={channel} style={{ width: dp(76), height: dp(50), flexShrink: 0 }} radius={dp(8)} />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: dp(20), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-                  <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now ? `${tt('colNow')}: ${info.now.title}` : tt('noProgramme')}</div>
-                </div>
-                <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.5)' }}>{channel.group}</span>
-              </div>
-            )
-          })}
+          {channels.map((channel) => (
+            <ChannelHit key={channelKey(channel)} channel={channel} model={model} nav={nav} />
+          ))}
         </section>
         ) : null}
         {showChannels ? (
@@ -204,29 +194,73 @@ function ProgrammeHit({ hit, model, nav }: { hit: ProgrammeSearchHit; model: Liv
   const { tt, locale } = useTvText()
   const { channel, programme } = hit
   const { nowMs } = model
-  const live = programmeState(programme, nowMs) === 'live'
   const props = station(
     () => nav.go('guide', { channel: channelKey(channel) }),
     (element) => holdMenu({ channel, programme, nav, nowMs, element, tt, locale }),
     { 'data-v2f': 'inset', 'data-testid': 'search-programme-cell' },
   )
   return (
-    <div data-testid="search-programme-hit" style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), minHeight: dp(GUIDE_ROW_H), flexShrink: 0 }}>
+    <div data-testid="search-programme-hit" style={hitRowStyle}>
       <GuideChannelCellV2 channel={channel} model={model} selected={false} />
-      <div {...props} style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dp(6), boxSizing: 'border-box', cursor: 'pointer', background: live ? accentMix(18) : V2.surface3 }}>
-        <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{programme.title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(15), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>
-          <span data-testid="search-programme-time" style={{ flexShrink: 0 }}>{`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}</span>
-          {live ? (
-            <>
-              <div style={{ flex: 1, maxWidth: dp(320), height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
-                <div data-testid="search-programme-progress" style={{ height: '100%', width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: ACCENT }} />
-              </div>
-              <span style={{ flexShrink: 0, fontSize: dp(14) }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((programme.stop - nowMs) / 60_000)) })}</span>
-            </>
-          ) : null}
-        </div>
-      </div>
+      <SearchProgrammeCell programme={programme} nowMs={nowMs} stationProps={props} />
+    </div>
+  )
+}
+
+/**
+ * En kanalträff i samma form (Jerry 2026-10-30): guidens kanalcell och en
+ * programcell för det som sänds NU, med "Sen …" på tidsraden när nästa
+ * program är känt. Utan tablå blir cellen neutral med "ingen
+ * programinformation". OK går till guiden fokuserad på kanalen, håll ger
+ * kanalmenyn som förut — träffen är en kanal, inte ett program.
+ */
+function ChannelHit({ channel, model, nav }: { channel: M3uChannel; model: LiveTvModel; nav: TvNav }) {
+  const { tt, locale } = useTvText()
+  const info = model.nowFor(channel)
+  const props = station(
+    () => nav.go('guide', { channel: channelKey(channel) }),
+    (element) => nav.channelMenu(channel, element),
+    { 'data-v2f': 'inset', 'data-testid': 'search-channel-now-cell' },
+  )
+  const next = info.now && info.next ? `${tt('next')} ${info.next.title} · ${formatClock(info.next.start, locale)}` : null
+  return (
+    <div data-testid="search-channel-hit" style={hitRowStyle}>
+      <GuideChannelCellV2 channel={channel} model={model} selected={false} />
+      <SearchProgrammeCell programme={info.now} nowMs={model.nowMs} stationProps={props} next={next} />
+    </div>
+  )
+}
+
+const hitRowStyle = { display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), minHeight: dp(GUIDE_ROW_H), flexShrink: 0 } as const
+
+/**
+ * Programcellen som båda träfftyperna delar. `programme` null = ingen tablå:
+ * neutral cell med "ingen programinformation".
+ */
+function SearchProgrammeCell({ programme, nowMs, stationProps, next = null }: { programme: EpgProgramme | null | undefined; nowMs: number; stationProps: ReturnType<typeof station>; next?: string | null }) {
+  const { tt, locale } = useTvText()
+  const live = programme ? programmeState(programme, nowMs) === 'live' : false
+  return (
+    <div {...stationProps} style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dp(6), boxSizing: 'border-box', cursor: 'pointer', background: live ? accentMix(18) : V2.surface3 }}>
+      {programme ? (
+        <>
+          <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{programme.title}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(15), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums', minWidth: 0 }}>
+            <span data-testid="search-programme-time" style={{ flexShrink: 0 }}>{`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}</span>
+            {live ? (
+              <>
+                <div style={{ flex: 1, maxWidth: dp(320), minWidth: dp(60), height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
+                  <div data-testid="search-programme-progress" style={{ height: '100%', width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: ACCENT }} />
+                </div>
+                <span style={{ flexShrink: 0, fontSize: dp(14) }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((programme.stop - nowMs) / 60_000)) })}</span>
+              </>
+            ) : null}
+            {next ? <span data-testid="search-channel-next" style={{ marginLeft: 'auto', paddingLeft: dp(12), minWidth: 0, fontSize: dp(14), color: 'rgba(243,244,248,0.5)', ...ellipsis }}>{next}</span> : null}
+          </div>
+        </>
+      ) : (
+        <div style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)', ...ellipsis }}>{tt('noProgramme')}</div>
+      )}
     </div>
   )
 }

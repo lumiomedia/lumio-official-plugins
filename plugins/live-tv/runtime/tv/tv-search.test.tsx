@@ -193,3 +193,67 @@ describe('TvSearch: mindre affischer, programträffar som guiderader', () => {
     expect(hit).toHaveTextContent(/30 min/)
   })
 })
+
+/**
+ * Jerry 2026-10-30: kanalträffarna ("Kanaler") ska också se ut som guiden —
+ * kanalcell till vänster, programcell för det som sänds NU till höger.
+ */
+describe('TvSearch: kanalträffar som guiderader', () => {
+  // Filens delade fixtur är osorterad och överlappande — nu/nästa-uppslaget
+  // söker binärt och kräver en sorterad tablå.
+  beforeEach(() => {
+    seedLiveTvIndex({ cache: { index: { 'sky.tv': [{ title: 'Golf Live', start: now - 30 * 60_000, stop: now + 30 * 60_000 }, { title: 'Golf Tonight', start: now + 30 * 60_000, stop: now + 90 * 60_000 }] }, fetchedAt: now, sources: [] } })
+  })
+  const shellProps = (onNavigate: () => void = () => {}) => ({ pageId: 'live-tv-browse', params: { view: 'search' }, onNavigate, onOpenDetails: () => {} }) as unknown as ComponentProps<typeof LiveTvTvShell>
+  const channelHit = (name: string) => within(screen.getByTestId('search-channels')).getByText(name).closest('[data-testid="search-channel-hit"]') as HTMLElement
+
+  it('kanalcell + nu-cell med tidsintervall, förlopp och "min kvar" när något sänds', async () => {
+    render(<LiveTvTvShell {...shellProps()} />)
+    fireEvent.click(screen.getByText('s'))
+    fireEvent.click(screen.getByText('k'))
+    fireEvent.click(screen.getByText('y'))
+    await flushLiveTvIndex()
+    await settle()
+    const hit = channelHit('Sky Sports')
+    expect(hit).not.toBeNull()
+    expect(within(hit).getByTestId('guide-channel-v2')).toBeInTheDocument()
+    expect(within(hit).getByTestId('logo-plate')).toBeInTheDocument()
+    const cell = within(hit).getByTestId('search-channel-now-cell')
+    expect(cell.getAttribute('data-v2f')).toBe('inset')
+    expect(cell).toHaveTextContent('Golf Live')
+    expect(within(hit).getByTestId('search-programme-time').textContent).toMatch(/\d{2}.\d{2}–\d{2}.\d{2}/)
+    const bar = within(hit).getByTestId('search-programme-progress')
+    expect(parseInt(bar.style.width, 10)).toBeGreaterThanOrEqual(45)
+    expect(parseInt(bar.style.width, 10)).toBeLessThanOrEqual(55)
+    expect(hit).toHaveTextContent(/30 min/)
+    expect(within(hit).getByTestId('search-channel-next')).toHaveTextContent('Golf Tonight')
+    expect(hit.style.height).toBe(`${dp(76)}px`)
+    expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
+  })
+
+  it('kanal utan tablå: neutral cell med "ingen programinformation"', async () => {
+    render(<LiveTvTvShell {...shellProps()} />)
+    fireEvent.click(screen.getByText('e'))
+    fireEvent.click(screen.getByText('s'))
+    fireEvent.click(screen.getByText('p'))
+    await flushLiveTvIndex()
+    await settle()
+    const hit = channelHit('ESPN')
+    const cell = within(hit).getByTestId('search-channel-now-cell')
+    expect(cell).toHaveTextContent('No programme information')
+    expect(within(hit).queryByTestId('search-programme-time')).toBeNull()
+    expect(within(hit).queryByTestId('search-programme-progress')).toBeNull()
+  })
+
+  it('OK på nu-cellen öppnar guiden fokuserad på kanalen', async () => {
+    const onNavigate = vi.fn()
+    render(<LiveTvTvShell {...shellProps(onNavigate)} />)
+    fireEvent.click(screen.getByText('e'))
+    fireEvent.click(screen.getByText('s'))
+    fireEvent.click(screen.getByText('p'))
+    await flushLiveTvIndex()
+    await settle()
+    fireEvent.click(within(channelHit('ESPN')).getByTestId('search-channel-now-cell'))
+    expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'guide', channel: expect.stringContaining('ESPN') }) }))
+  })
+})
