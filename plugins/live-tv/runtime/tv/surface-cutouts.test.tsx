@@ -102,7 +102,7 @@ describe('TV-skalets bakgrund', () => {
   it('utan hål: bakgrunden sitter på roten och ingen bakgrundsplatta ritas', () => {
     mount()
     const root = document.querySelector('[data-live-tv-tv-root]') as HTMLElement
-    expect(root.style.background).toBe('#000')
+    expect(root.style.background).toBe('#161a23') // v2-tonen (Jerry 2026-10-30)
     expect(document.querySelector('[data-live-tv-backdrop]')).toBeNull()
   })
 
@@ -113,7 +113,7 @@ describe('TV-skalets bakgrund', () => {
     expect(root.style.background).toBe('transparent')
     const backdrop = document.querySelector('[data-live-tv-backdrop]') as HTMLElement
     expect(backdrop).not.toBeNull()
-    expect(backdrop.style.background).toBe('#000')
+    expect(backdrop.style.background).toBe('#161a23')
     expect(backdrop.style.pointerEvents).toBe('none')
     expect(backdrop.style.clipPath).toContain('evenodd')
     expect(backdrop.style.clipPath).toContain('M120 80H520V305H120Z')

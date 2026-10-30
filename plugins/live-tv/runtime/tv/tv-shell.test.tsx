@@ -160,4 +160,13 @@ describe('LiveTvTvShell: data-live-tv-desktop (skrivbordsappen, Task 0)', () => 
     mount()
     expect(document.querySelector('[data-live-tv-tv-root]')).not.toHaveAttribute('data-live-tv-desktop')
   })
+  it('Bibliotek, Multivy, Favoriter och Inställningar har v2-bakgrunden; sporten är kvar svart', () => {
+    for (const view of ['library', 'multi', 'favs', 'settings', 'hub', 'guide']) {
+      mount({ view })
+      expect(document.querySelector('[data-live-tv-tv-root]')!.getAttribute('data-bg')).toBe('#161a23')
+      cleanup()
+    }
+    mount({ view: 'sport' })
+    expect(document.querySelector('[data-live-tv-tv-root]')!.getAttribute('data-bg')).toBe('#000')
+  })
 })

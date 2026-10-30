@@ -14,6 +14,7 @@ import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText, type TvStringKey } from './tv-strings'
 import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
+import { v2Bg } from './v2-tokens'
 import { TvRail, shellRailActive } from './tv-rail'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
@@ -52,7 +53,7 @@ import { shellToastStyle } from './shell-toast'
  * rätt tal inuti den. Samma fälla som en gång gjorde HTML-ytans fixed-portal
  * dubbelskalad, se `video-surface.ts`.
  */
-function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
+function SurfaceBackdrop({ cutouts, background }: { cutouts: SurfaceCutout[]; background: string }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [clip, setClip] = useState<string>(() => cutoutClipPath([]))
   useLayoutEffect(() => {
@@ -79,7 +80,7 @@ function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
       ref={ref}
       data-live-tv-backdrop=""
       aria-hidden="true"
-      style={{ position: 'fixed', inset: 0, background: TV.bg, pointerEvents: 'none', zIndex: -1, clipPath: clip, WebkitClipPath: clip }}
+      style={{ position: 'fixed', inset: 0, background, pointerEvents: 'none', zIndex: -1, clipPath: clip, WebkitClipPath: clip }}
     />
   )
 }
@@ -162,6 +163,9 @@ const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
   indexing: 'vodHomeIndexing', failed: 'vodHomeRetrying', waiting: 'vodHomeIndexing',
 }
 
+/** Vyerna som målas i v2-tonen (Kanaler, guiden och deras grannar i rälsen). */
+const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings'])
+
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 const ZAP_TIMEOUT_MS = 1500
 
@@ -218,6 +222,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   const startView = resolveStartView(settings.startView, vodHidden)
   const rootView: TvView = startRootView(settings.startView, vodHidden)
   const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params, rootView)
+  // v2-tonen bakom Live TV:s egna vyer (Jerry 2026-10-30: "samma bakgrund som de nya"); sport, kanalsidan och spelaren förblir svarta.
+  const shellBg = V2_BG_VIEWS.has(view) ? v2Bg(settings.liveBackground) : TV.bg
   const viewParams = useMemo(() => params ?? {}, [params])
   const viewParamsRef = useRef(viewParams)
   viewParamsRef.current = viewParams
@@ -764,9 +770,10 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       // `data-live-tv-desktop`: skrivbordets CSS-krok (tunn fokuskant i
       // stället för glöden, se `TvFocusStyle`) — bara i skrivbordsappen.
       {...(desktopSurface ? { 'data-live-tv-desktop': '1' } : {})}
-      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : TV.bg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
+      data-bg={shellBg}
+      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : shellBg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
-      {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
+      {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} background={shellBg} /> : null}
       <TvFocusStyle />
       {phone || sportOnly || (view === 'multi' && mvFull) ? null : (
         <TvRail
