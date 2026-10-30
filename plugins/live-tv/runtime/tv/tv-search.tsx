@@ -148,7 +148,7 @@ function TvSearchDesktop(props: TvViewProps) {
             {query && vod.items.length === 0 ? (
               <div style={{ color: TV.dim, fontSize: dp(18) }}>{vod.loading ? tt('libraryLoading') : tt('noResults')}</div>
             ) : null}
-            <div data-row="" style={{ display: 'flex', gap: dp(12), overflowX: 'auto', paddingBottom: dp(4) }}>
+            <div data-row="" style={{ display: 'flex', gap: dp(POSTER_GAP), overflowX: 'auto', paddingBottom: dp(4) }}>
               {vod.items.map((item) => (
                 // Samma väg som Biblioteket och hubbens rad: Live TV:s egen
                 // detaljvy, inte appens sida.
@@ -269,9 +269,18 @@ function SearchProgrammeCell({ programme, nowMs, stationProps, next = null }: { 
  * En VOD-träff i söket: liten affisch, titel och år. 104 dp bred (≈ 80 % av
  * de tidigare 130 — Jerry 2026-10-30: "lite mindre affischer"), 2:3.
  */
+/**
+ * Postrarna i sökraden: en ANDEL av radens bredd, inte fasta pixlar — 7,5 syns
+ * (halvan i kanten visar att raden går att rulla) både i TV:ns 1920-scen och i
+ * ett skrivbordsfönster av vilken bredd som helst (Jerry 2026-10-30: "för många
+ * i rad … tänk på att TV-läge kanske inte är fasta pixlar").
+ */
+export const SEARCH_POSTERS_VISIBLE = 7.5
+const POSTER_GAP = 12
+
 export function VodHit({ item, onOpen }: { item: VodItem; onOpen: () => void }) {
   return (
-    <div data-testid="search-vod-hit" {...station(onOpen)} style={{ width: dp(136), flexShrink: 0, cursor: 'pointer' }}>
+    <div data-testid="search-vod-hit" data-visible={SEARCH_POSTERS_VISIBLE} {...station(onOpen)} style={{ width: `calc((100% - ${dp(POSTER_GAP) * (SEARCH_POSTERS_VISIBLE - 0.5)}px) / ${SEARCH_POSTERS_VISIBLE})`, flexShrink: 0, cursor: 'pointer' }}>
       <div data-testid="search-vod-poster" style={{ position: 'relative', aspectRatio: '2 / 3', borderRadius: dp(10), border: `1px solid ${TV.lineCard}`, background: TV.s07, overflow: 'hidden' }}>
         {item.posterUrl ? (
           <img src={item.posterUrl} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />

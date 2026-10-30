@@ -8,7 +8,7 @@ import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 import { LiveTvTvShell } from './tv-shell'
-import { VodHit } from './tv-search'
+import { SEARCH_POSTERS_VISIBLE, VodHit } from './tv-search'
 import { dp } from './tv-ui'
 
 const now = Date.now()
@@ -157,10 +157,12 @@ describe('TvSearch på telefon: grenar till TvSearchPhone', () => {
  */
 describe('TvSearch: mindre affischer, programträffar som guiderader', () => {
   const shellProps = { pageId: 'live-tv-browse', params: { view: 'search' }, onNavigate: () => {}, onOpenDetails: () => {} } as unknown as ComponentProps<typeof LiveTvTvShell>
-  it('VOD-affischen är 136 bred (3–4 färre i raden än 104) och behåller 2:3', () => {
+  it('VOD-affischen tar en andel av raden — 7,5 synliga oavsett bredd (TV-scen och fönster) — och behåller 2:3', () => {
     render(<VodHit item={{ key: 'k', title: 'Alien', year: 1979, posterUrl: null } as never} onOpen={() => {}} />)
     const hit = screen.getByTestId('search-vod-hit')
-    expect(hit.style.width).toBe(`${dp(136)}px`) // större postrar = färre i raden (Jerry 2026-10-30)
+    // happy-dom tappar calc() i inline-stilar; andelen läses ur attributet.
+    expect(hit.getAttribute('data-visible')).toBe(String(SEARCH_POSTERS_VISIBLE))
+    expect(SEARCH_POSTERS_VISIBLE).toBe(7.5)
     expect(screen.getByTestId('search-vod-poster').style.aspectRatio).toBe('2 / 3')
     expect(hit).toHaveTextContent('Alien')
     expect(hit).toHaveTextContent('1979')
