@@ -49,7 +49,10 @@ export function LivePreviewArt({ channel, live, enabled, height, aspect, radius,
     // lista, inte uppspelning. Ljudet hör till spelaren.
     { muted: true, audio: false, enabled: wanted },
   )
-  const showsVideo = wanted && surface.live && !surface.failed
+  // Reservbilden ligger kvar tills FÖRSTA BILDRUTAN är ritad (`ready`), inte
+  // bara tills ytan finns: en live-kanal tar sekunder att starta, och under
+  // tiden stod rutan svart (Jerry 2026-10-30).
+  const showsVideo = wanted && surface.live && surface.ready && !surface.failed
 
   if (!channel) return null
   return (
