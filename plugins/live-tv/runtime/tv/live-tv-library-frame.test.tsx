@@ -132,4 +132,13 @@ describe('LiveTvLibraryFrame omklick', () => {
     render(<LiveTvLibraryFrame {...{ ...base, platform: 'desktop' as const, onNavigate: vi.fn() }} />)
     expect(document.querySelector('[data-live-tv-frame-bg]')!.getAttribute('data-live-tv-frame-bg')).toBe('#161a23')
   })
+  it('appens sidbakgrund (.bg-mesh) får v2-tonen bara medan ramen är monterad', () => {
+    const { unmount } = render(<LiveTvLibraryFrame {...{ ...base, platform: 'desktop' as const, onNavigate: vi.fn() }} />)
+    const css = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
+    expect(css).toContain('.bg-mesh')
+    expect(css).toContain('#161a23')
+    unmount()
+    const after = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
+    expect(after).not.toContain('.bg-mesh')
+  })
 })

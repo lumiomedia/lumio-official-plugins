@@ -142,6 +142,10 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
   const frameBg = v2Bg(settings.liveBackground)
   return (
     <div ref={rootRef} data-live-tv-frame-bg={frameBg} style={{ height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font }}>
+      {/* Appens sidbakgrund bor på `.bg-mesh` (spa/src/index.css). Ramen finns bara
+          medan Live TV:s Hem visas, så regeln följer med den och försvinner när man
+          lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30). */}
+      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; }`}</style>
       <TvRail active="home" isTv={isTv} narrow={narrow} labels={settings.railLabels && !narrow} onSelect={select} />
     </div>
   )
