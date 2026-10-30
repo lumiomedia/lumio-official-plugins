@@ -1,6 +1,8 @@
 export interface EpgProgramme {
   title: string
   description?: string
+  /** XMLTV:s `<icon src>` när appen och källan har den (äldre appar skickar inget). */
+  icon?: string
   start: number
   stop: number
 }
