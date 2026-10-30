@@ -14,7 +14,7 @@ import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText, type TvStringKey } from './tv-strings'
 import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
-import { v2Bg } from './v2-tokens'
+import { liveColorVars, liveColors } from './v2-tokens'
 import { TvRail, shellRailActive } from './tv-rail'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
@@ -223,7 +223,10 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   const rootView: TvView = startRootView(settings.startView, vodHidden)
   const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params, rootView)
   // v2-tonen bakom Live TV:s egna vyer (Jerry 2026-10-30: "samma bakgrund som de nya"); sport, kanalsidan och spelaren förblir svarta.
-  const shellBg = V2_BG_VIEWS.has(view) ? v2Bg(settings.liveBackground) : TV.bg
+  // En egen bakgrundsfärg (Utseende) går före Skiffer/Grafit/Natt. Färgerna läggs
+  // också som CSS-variabler på roten (`--lt-bg/--lt-card/--lt-rail`) så att
+  // kort och ikonrad i alla vyer följer utan att färgen skickas runt.
+  const shellBg = V2_BG_VIEWS.has(view) ? liveColors(settings).bg : TV.bg
   const viewParams = useMemo(() => params ?? {}, [params])
   const viewParamsRef = useRef(viewParams)
   viewParamsRef.current = viewParams
@@ -771,7 +774,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       // stället för glöden, se `TvFocusStyle`) — bara i skrivbordsappen.
       {...(desktopSurface ? { 'data-live-tv-desktop': '1' } : {})}
       data-bg={shellBg}
-      style={{ display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : shellBg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
+      style={{ ...(liveColorVars(settings) as CSSProperties), display: 'flex', position: 'relative', height: '100%', minHeight: 0, background: hasCutouts ? 'transparent' : shellBg, color: TV.text, fontFamily: TV.font, fontSize: phone ? 15 : dp(22), lineHeight: phone ? 1.4 : 1.3, ...(hasCutouts ? { zIndex: 0 } : null) }}
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} background={shellBg} /> : null}
       <TvFocusStyle />

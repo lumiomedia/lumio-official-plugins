@@ -17,7 +17,7 @@ import { useGroupPicker } from './tv-group-picker'
 import { holdMenu } from './programme-actions'
 import { useProgrammeArt } from './programme-art'
 import { useTint } from './tint'
-import { V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
+import { V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
 import { LivePill, LogoPlate, ProgrammeArtBox, V2FocusStyle } from './v2-ui'
 import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 
@@ -68,8 +68,8 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
   const { url: leadArt } = useProgrammeArt(lead ?? NO_CHANNEL, lead ? leadNow : null, { lookup: lead !== null })
   const leadLogo = lead ? getLiveTvLogoSrc(lead.logo) ?? getLiveTvLogoSrc(lead.logoFallback) : null
   const tone = useTint(leadArt ?? leadLogo, settings.heroTint && lead !== null)
-  const bg = v2Bg(settings.liveBackground)
-  const background = settings.heroTint && lead ? `radial-gradient(${dp(1400)}px ${dp(700)}px at 20% 0%, ${mixHex(tone, bg, 38)}, ${bg} 70%)` : v2Ambient(settings.liveBackground)
+  const bg = liveColors(settings).bg
+  const background = settings.heroTint && lead ? `radial-gradient(${dp(1400)}px ${dp(700)}px at 20% 0%, ${mixHex(tone, bg, 38)}, ${bg} 70%)` : v2Ambient(bg)
 
   const hold = (channel: M3uChannel, programme: EpgProgramme | null) => (el: HTMLElement) => holdMenu({ channel, programme, nav, nowMs: model.nowMs, element: el, tt, locale })
   const liveHold = (channel: M3uChannel) => hold(channel, model.nowFor(channel).now)

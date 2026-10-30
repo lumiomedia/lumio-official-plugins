@@ -1,5 +1,6 @@
 import { TV } from './tv-ui'
 import type { LiveBackground } from './v2-settings'
+import type { TvSettings } from './tv-settings-store'
 
 /**
  * FÄRGERNA I KANALGUIDE V2 OCH KANALER (handoff `design_handoff_live_tv 2`, README "Colours").
@@ -29,7 +30,10 @@ export const V2 = {
   logoPlate: '#f3f4f8',
   logoPlateInner: '#e3e5ec',
   logoText: '#3a3f4c',
-  noArt: 'linear-gradient(180deg,#2b3142,#242938)',
+  /** Kortytan utan bild. Följer den egna meny/kortfärgen via `--lt-card` (satt på skalets rot). */
+  noArt: 'var(--lt-card, linear-gradient(180deg,#2b3142,#242938))',
+  /** Ikonradens yta, samma mönster (`--lt-rail`). */
+  railSurface: 'var(--lt-rail, linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02)))',
   menuBg: 'rgba(58,59,66,0.96)',
   menuLine: 'rgba(255,255,255,0.10)',
   scrim: 'rgba(0,0,0,0.6)',
@@ -39,8 +43,35 @@ export const V2 = {
 
 const BACKGROUNDS: Record<LiveBackground, string> = { slate: '#161a23', graphite: '#1b1b1f', night: '#0f1219' }
 
-export function v2Bg(bg: LiveBackground): string {
-  return BACKGROUNDS[bg]
+/** Sidtonen för ett förval — eller en färdig hexton (egen bakgrundsfärg), som returneras orörd. */
+export function v2Bg(bg: LiveBackground | string): string {
+  return (BACKGROUNDS as Record<string, string>)[bg] ?? bg
+}
+
+/** Meny/kortfärgens standard som en enda färg (färgväljarens startvärde) — kortens övre ton i dag. */
+export const LIVE_SURFACE_DEFAULT = '#2b3142'
+const DEFAULT_CARD = 'linear-gradient(180deg,#2b3142,#242938)'
+const DEFAULT_RAIL = 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))'
+
+export type LiveColorSettings = Pick<TvSettings, 'liveBackground' | 'liveBgColor' | 'liveSurfaceColor'>
+
+/**
+ * DE TVÅ EGNA FÄRGERNA, uträknade (Jerry 2026-10-30). Standard = dagens
+ * utseende exakt. En egen meny/kortfärg ger korten en gradient som mörknar
+ * nedåt och ikonraden en svag tvåstegsgradient av samma färg. `mixHex` i
+ * stället för `color-mix` — gamla TV-webbvyer saknar det.
+ */
+export function liveColors(settings: LiveColorSettings): { bg: string; card: string; rail: string } {
+  const bg = settings.liveBgColor ?? v2Bg(settings.liveBackground)
+  const c = settings.liveSurfaceColor
+  if (!c) return { bg, card: DEFAULT_CARD, rail: DEFAULT_RAIL }
+  return { bg, card: `linear-gradient(180deg, ${c}, ${mixHex(c, '#000000', 88)})`, rail: `linear-gradient(180deg, ${c}, ${mixHex(c, '#000000', 92)})` }
+}
+
+/** Samma färger som CSS-variabler för skalets (och Hem-ramens) rot; `V2.noArt`/`V2.railSurface` läser dem. */
+export function liveColorVars(settings: LiveColorSettings): Record<'--lt-bg' | '--lt-card' | '--lt-rail', string> {
+  const { bg, card, rail } = liveColors(settings)
+  return { '--lt-bg': bg, '--lt-card': card, '--lt-rail': rail }
 }
 
 function rgbOf(hex: string): [number, number, number] {
@@ -65,7 +96,7 @@ export function mixHex(a: string, b: string, aPct: number): string {
  * Jerry valde 2026-10-30 ("så här på guide samt channel, även när det finns
  * ett förhandsfönster"). Den tonas inte av logor eller programbilder.
  */
-export function v2Ambient(bg: LiveBackground): string {
+export function v2Ambient(bg: LiveBackground | string): string {
   const base = v2Bg(bg)
   return `radial-gradient(1500px 900px at 70% 10%, ${mixHex(V2.categoryTints.other, base, 75)}, ${base} 75%)`
 }

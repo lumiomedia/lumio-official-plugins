@@ -26,6 +26,8 @@ describe('tv-settings-store', () => {
       guideCategoryLayout: 'column',
       heroTint: false,
       liveBackground: 'slate',
+      liveBgColor: null,
+      liveSurfaceColor: null,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
@@ -111,5 +113,17 @@ describe('tv-settings-store', () => {
     expect(getTvSettings()).toMatchObject({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { hubLayout: 'x', guideCategoryLayout: 1, heroTint: 'yes', liveBackground: 'pink' })
     expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'column', heroTint: false, liveBackground: 'slate' })
+  })
+  it('egna färger: null som standard, bara #rrggbb sparas (gemener), null återställer', () => {
+    expect(getTvSettings()).toMatchObject({ liveBgColor: null, liveSurfaceColor: null })
+    setTvSettings({ liveBgColor: '#AABBCC', liveSurfaceColor: '#123456' })
+    expect(getTvSettings()).toMatchObject({ liveBgColor: '#aabbcc', liveSurfaceColor: '#123456' })
+    for (const bad of ['red', '#abc', '#12345g', 'url(x)', 5, '#1234567', ' #123456']) {
+      writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { liveBgColor: bad, liveSurfaceColor: bad })
+      expect(getTvSettings()).toMatchObject({ liveBgColor: null, liveSurfaceColor: null })
+    }
+    setTvSettings({ liveBgColor: '#203040', liveBackground: 'night' })
+    setTvSettings({ liveBgColor: null })
+    expect(getTvSettings()).toMatchObject({ liveBgColor: null, liveBackground: 'night' })
   })
 })

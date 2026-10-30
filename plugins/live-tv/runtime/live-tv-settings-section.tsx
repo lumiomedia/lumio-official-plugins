@@ -10,7 +10,7 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
-import { LtCard, LtChoiceRow, LtCollapsible, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useLtAccordion, useLtNarrow, useToast } from './settings-ui'
+import { LtCard, LtChoiceRow, LtCollapsible, LtColorRow, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useLtAccordion, useLtNarrow, useToast } from './settings-ui'
 import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
   applyM3uUrls,
@@ -53,7 +53,8 @@ import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
 import { FALLBACK_AFTER_OPTIONS, setTvSettings, useTvSettings, type FallbackAfterS } from './tv/tv-settings-store'
 import { START_VIEWS, startViewLabelKey } from './tv/start-view'
-import { GUIDE_CATEGORY_LAYOUTS, HUB_LAYOUTS, LIVE_BACKGROUNDS, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey } from './tv/v2-settings'
+import { GUIDE_CATEGORY_LAYOUTS, HUB_LAYOUTS, LIVE_BACKGROUNDS, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, sanitizeHexColor } from './tv/v2-settings'
+import { LIVE_SURFACE_DEFAULT, v2Bg } from './tv/v2-tokens'
 import { GROUP_ORDERS, groupOrderLabelKey, sanitizeGroupOrder } from './group-order'
 import { useTvText } from './tv/tv-strings'
 
@@ -369,6 +370,25 @@ function DesktopPage() {
             options={LIVE_BACKGROUNDS.map((key) => ({ key, label: tt(liveBackgroundLabelKey(key)) }))}
             value={tvSettings.liveBackground}
             onChange={(liveBackground) => setTvSettings({ liveBackground })}
+          />
+          {/* De två egna färgerna (Jerry 2026-10-30): standard = dagens utseende, Återställ går tillbaka. */}
+          <LtColorRow
+            testId="lt-bg-color"
+            label={tt('settingLiveBgColor')}
+            value={tvSettings.liveBgColor ?? v2Bg(tvSettings.liveBackground)}
+            isDefault={tvSettings.liveBgColor === null}
+            onChange={(hex) => setTvSettings({ liveBgColor: sanitizeHexColor(hex) })}
+            onReset={() => setTvSettings({ liveBgColor: null })}
+            resetLabel={tt('colourReset')}
+          />
+          <LtColorRow
+            testId="lt-surface-color"
+            label={tt('settingLiveSurfaceColor')}
+            value={tvSettings.liveSurfaceColor ?? LIVE_SURFACE_DEFAULT}
+            isDefault={tvSettings.liveSurfaceColor === null}
+            onChange={(hex) => setTvSettings({ liveSurfaceColor: sanitizeHexColor(hex) })}
+            onReset={() => setTvSettings({ liveSurfaceColor: null })}
+            resetLabel={tt('colourReset')}
           />
           {/* Strömbytet när kanalen hackar (Jerry 2026-10-14). Sparas i samma lager som TV:ns och telefonens rader. */}
           <LtToggleRow first={false} testId="lt-stream-fallback" label={tt('settingStreamFallback')} desc={tt('settingStreamFallbackHint')} checked={tvSettings.streamFallback} onChange={(streamFallback) => setTvSettings({ streamFallback })} />

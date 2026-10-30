@@ -5,7 +5,7 @@ import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/p
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
 import { DEFAULT_GROUP_ORDER, sanitizeGroupOrder, type GroupOrder } from '../group-order'
-import { sanitizeGuideCategoryLayout, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
+import { sanitizeGuideCategoryLayout, sanitizeHexColor, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -68,6 +68,10 @@ export interface TvSettings {
   heroTint: boolean
   /** Bakgrundstonen i Kanaler och guiden (Skiffer/Grafit/Natt). `TV.bg` rörs inte. */
   liveBackground: LiveBackground
+  /** Egen bakgrundsfärg (`#rrggbb`) som går före `liveBackground`; `null` = förvalet gäller. */
+  liveBgColor: string | null
+  /** Egen färg på ikonraden och korten (`#rrggbb`); `null` = dagens utseende. */
+  liveSurfaceColor: string | null
 }
 
 const DEFAULTS: TvSettings = {
@@ -90,6 +94,8 @@ const DEFAULTS: TvSettings = {
   // Av som standard: Jerry vill inte ha en tonad gradient bakom Live TV (2026-10-30).
   heroTint: false,
   liveBackground: 'slate',
+  liveBgColor: null,
+  liveSurfaceColor: null,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -115,6 +121,8 @@ function sanitize(raw: unknown): TvSettings {
     guideCategoryLayout: sanitizeGuideCategoryLayout(r.guideCategoryLayout),
     heroTint: typeof r.heroTint === 'boolean' ? r.heroTint : DEFAULTS.heroTint,
     liveBackground: sanitizeLiveBackground(r.liveBackground),
+    liveBgColor: sanitizeHexColor(r.liveBgColor),
+    liveSurfaceColor: sanitizeHexColor(r.liveSurfaceColor),
   }
 }
 

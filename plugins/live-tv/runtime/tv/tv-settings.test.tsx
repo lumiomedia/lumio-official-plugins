@@ -5,6 +5,7 @@ import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, getLiveTvLists, getM3uUrls, getXtreamLogins, isChannelInLiveTvList, type LiveTvList, type XtreamLogin } from '../live-tv-data'
 import { getLockedChannelKeys } from '../channel-locks'
 import { getTvSettings, getGuideMode } from './tv-settings-store'
+import { LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES } from './v2-settings'
 
 import { __resetPhoneFormForTests } from '../phone-form'
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
@@ -163,6 +164,25 @@ describe('TvSettingsView', () => {
     expect(getTvSettings().heroTint).toBe(true)
     fireEvent.click(screen.getByTestId('setting-liveBackground'))
     expect(getTvSettings().liveBackground).toBe('graphite')
+  })
+  it('Utseende: egna färger via palett — raden öppnar paletten, OK på en ruta skriver, Återställ nollar', () => {
+    mount()
+    for (const [key, list] of [['liveBgColor', LIVE_BG_SWATCHES], ['liveSurfaceColor', LIVE_SURFACE_SWATCHES]] as const) {
+      const row = screen.getByTestId(`setting-${key}`)
+      expect(row).toHaveAttribute('data-f')
+      expect(screen.queryByTestId(`setting-${key}-swatch-${list[2]}`)).toBeNull()
+      fireEvent.click(row)
+      const swatch = screen.getByTestId(`setting-${key}-swatch-${list[2]}`)
+      expect(swatch).toHaveAttribute('data-f')
+      fireEvent.click(swatch)
+      expect(getTvSettings()[key]).toBe(list[2])
+      const reset = screen.getByTestId(`setting-${key}-reset`)
+      expect(reset).toHaveAttribute('data-f')
+      fireEvent.click(reset)
+      expect(getTvSettings()[key]).toBeNull()
+    }
+    expect(LIVE_BG_SWATCHES.length).toBeGreaterThanOrEqual(8)
+    expect(LIVE_SURFACE_SWATCHES.length).toBeGreaterThanOrEqual(8)
   })
   it('Utseende: strömbytets två rader finns under Beteende och skriver till lagret', () => {
     mount()

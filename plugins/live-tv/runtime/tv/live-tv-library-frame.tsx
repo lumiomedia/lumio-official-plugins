@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTvMode, type LibraryFrameProps } from '@/lib/plugin-sdk'
 import { TvRail, type RailKey } from './tv-rail'
 import { MobileCloseButton } from './mobile/mobile-header'
@@ -9,7 +9,7 @@ import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { getActivePlaylistId, useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { TV } from './tv-ui'
-import { v2Bg } from './v2-tokens'
+import { liveColorVars, liveColors } from './v2-tokens'
 import { LIVE_TV_BROWSE_PAGE_ID } from '../live-tv-shell'
 import { getLiveTvLists } from '../live-tv-data'
 import { listVodCategories } from '../vod-client'
@@ -139,9 +139,10 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
     )
   }
   // v2-tonen även runt Hem (Jerry 2026-10-30), samma val som i Utseende.
-  const frameBg = v2Bg(settings.liveBackground)
+  // Egen bakgrundsfärg går före förvalet; variablerna ger rälsen samma meny/kortfärg som i skalet.
+  const frameBg = liveColors(settings).bg
   return (
-    <div ref={rootRef} data-live-tv-frame-bg={frameBg} style={{ height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font }}>
+    <div ref={rootRef} data-live-tv-frame-bg={frameBg} style={{ ...(liveColorVars(settings) as CSSProperties), height: '100%', display: 'flex', background: frameBg, color: TV.text, fontFamily: TV.font }}>
       {/* Appens sidbakgrund bor på `.bg-mesh` (spa/src/index.css). Ramen finns bara
           medan Live TV:s Hem visas, så regeln följer med den och försvinner när man
           lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30). */}

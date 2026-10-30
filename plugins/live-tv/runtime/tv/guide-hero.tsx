@@ -83,7 +83,8 @@ export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sou
   mode: DesktopGuideMode
   onMode(m: DesktopGuideMode): void
   tint: boolean
-  background: LiveBackground
+  /** Sidtonen: ett förval eller en färdig hexton (egen bakgrundsfärg). */
+  background: LiveBackground | string
   sourceLabel: string
   onOpenSource(): void
   isTv: boolean

@@ -4,6 +4,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, BROWSE_BACK_EVENT, LIBRARY_STUB, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { TV_SETTINGS_KEY, setTvSettings } from './tv-settings-store'
+import { liveColors } from './v2-tokens'
 
 // Fix round 1 (Task 16-review): spelaren äger Back helt medan den är öppen —
 // skalet står numera tillbaka (se tv-shell.tsx: `if (active) return` i dess
@@ -170,3 +172,33 @@ describe('LiveTvTvShell: data-live-tv-desktop (skrivbordsappen, Task 0)', () => 
     expect(document.querySelector('[data-live-tv-tv-root]')!.getAttribute('data-bg')).toBe('#000')
   })
 })
+
+describe('Egna färger (bakgrund + meny/kort, Jerry 2026-10-30)', () => {
+  const root = () => document.querySelector('[data-live-tv-tv-root]') as HTMLElement
+  it('standard: roten bär dagens färger som CSS-variabler', () => {
+    mount({ view: 'hub' })
+    const c = liveColors({ liveBackground: 'slate', liveBgColor: null, liveSurfaceColor: null })
+    expect(root().style.getPropertyValue('--lt-bg')).toBe(c.bg)
+    expect(root().style.getPropertyValue('--lt-card')).toBe(c.card)
+    expect(root().style.getPropertyValue('--lt-rail')).toBe(c.rail)
+  })
+  it('egen bakgrund: data-bg och --lt-bg följer, sporten förblir svart', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { liveBgColor: '#203040', liveBackground: 'night' })
+    mount({ view: 'guide' })
+    expect(root().getAttribute('data-bg')).toBe('#203040')
+    expect(root().style.getPropertyValue('--lt-bg')).toBe('#203040')
+    cleanup()
+    mount({ view: 'sport' })
+    expect(root().getAttribute('data-bg')).toBe('#000')
+  })
+  it('egen meny/kortfärg: rälsen målas med den, och ändringen gäller utan omstart', () => {
+    mount({ view: 'hub' })
+    // happy-dom släpper var() i style; data-bg visar vad rälsen målar med.
+    expect(screen.getByTestId('tv-rail').getAttribute('data-bg')).toContain('var(--lt-rail')
+    act(() => { setTvSettings({ liveSurfaceColor: '#405060', liveBgColor: '#102030' }) })
+    expect(root().style.getPropertyValue('--lt-rail')).toContain('#405060')
+    expect(root().style.getPropertyValue('--lt-card')).toContain('#405060')
+    expect(root().getAttribute('data-bg')).toBe('#102030')
+  })
+})
+

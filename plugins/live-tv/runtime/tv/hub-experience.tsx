@@ -15,7 +15,7 @@ import { holdMenu, okAction } from './programme-actions'
 import { useProgrammeArt } from './programme-art'
 import { useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
-import { FOCUS_BTN, FOCUS_CARD, V2, mixHex, v2Ambient, v2Bg } from './v2-tokens'
+import { FOCUS_BTN, FOCUS_CARD, V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
 import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
 import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 import { XP_ALL, XP_GRID_COLUMNS, XP_GRID_STEP, useExperienceRows, type XpItem, type XpRow, type XpRowId } from './hub-experience-data'
@@ -95,7 +95,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const isTv = useTvMode()
   const clock = useTvClockNode(locale)
   void useRemindersVersion()
-  const bg = v2Bg(settings.liveBackground)
+  const bg = liveColors(settings).bg
 
   // null = ingen chip vald (hemraderna); XP_ALL = "Alla" vald.
   const [chip, setChip] = useState<string | null>(null)
@@ -291,7 +291,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const imageTone = useTint(art ?? logo, heroChannel !== null)
   const tone = heroItem?.kind === 'category' ? categoryTint(heroItem.category ?? '') : imageTone
   // Samma neutrala gradient oavsett hero (Jerry 2026-10-30) — tonen ovan färgar bara reservrutan.
-  const ambient = v2Ambient(settings.liveBackground)
+  const ambient = v2Ambient(bg)
 
   if (model.allChannels.length === 0 || !featured) return <HubEmptyState testId="hub-experience" model={model} nav={nav} background={bg} />
 
@@ -629,7 +629,7 @@ function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; ite
     const reminded = item.channel && p ? isReminded(item.channel, p) : false
     const mins = p ? Math.max(0, Math.round((p.start - model.nowMs) / 60_000)) : 0
     return (
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(160deg, ${mixHex('#2b3142', '#262b38', 70)}, #20242f)`, padding: `${dp(18)}px ${dp(20)}px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: dp(4) }}>
+      <div style={{ position: 'absolute', inset: 0, background: `var(--lt-card, linear-gradient(160deg, ${mixHex('#2b3142', '#262b38', 70)}, #20242f))`, padding: `${dp(18)}px ${dp(20)}px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(10) }}>
           <LogoPlate channel={channel} width={60} height={34} radius={6} />
           <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.7)', minWidth: 0, ...ellipsis }}>{channel.name}</span>

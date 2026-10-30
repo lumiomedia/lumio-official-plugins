@@ -18,7 +18,7 @@ import { GuideListView } from './guide-list-view'
 import { GuideHero, useDebouncedSelection } from './guide-hero'
 import { GuideCategoryChips, GuideCategoryColumn, type GuideCategoryItem } from './guide-categories'
 import { guideKeyAction } from './guide-keys'
-import { V2, v2Bg } from './v2-tokens'
+import { V2, liveColors } from './v2-tokens'
 import { CutoutLayer } from './cutout-layer'
 import { V2FocusStyle } from './v2-ui'
 import type { GuideSelection, GuideViewProps } from './guide-types'
@@ -216,7 +216,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     >
       <V2FocusStyle />
       {/* Slät sidton (ingen gradient utan bild, Jerry 2026-10-30) med hål åt förhandsrutan (mpv ritar under webbvyn). */}
-      <CutoutLayer testId="guide-bg" data={{ 'data-bg': v2Bg(settings.liveBackground) }} background={v2Bg(settings.liveBackground)} style={{ zIndex: -1 }} />
+      <CutoutLayer testId="guide-bg" data={{ 'data-bg': liveColors(settings).bg }} background={liveColors(settings).bg} style={{ zIndex: -1 }} />
       <div onFocusCapture={() => setInCats(false)} style={{ flexShrink: 0 }}>
         <GuideHero
           sel={heroSelection}
@@ -225,7 +225,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
           mode={mode}
           onMode={changeMode}
           tint={settings.heroTint}
-          background={settings.liveBackground}
+          background={liveColors(settings).bg}
           sourceLabel={model.activePlaylistName ?? tt('sourceAll')}
           onOpenSource={() => setPanel('source')}
           isTv={isTv}

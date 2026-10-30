@@ -87,6 +87,27 @@ describe('LiveTvSettingsSection', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Colour from image' }))
     expect(getTvSettings().heroTint).toBe(true)
   })
+  it('Egna färger: färgväljaren visar dagens färg, skriver lagret och Återställ nollar', () => {
+    render(<LiveTvSettingsSection />)
+    const bgRow = screen.getByTestId('lt-bg-color')
+    const bgInput = within(bgRow).getByLabelText('Background colour') as HTMLInputElement
+    expect(bgInput.type).toBe('color')
+    expect(bgInput.value).toBe('#161a23')
+    expect(within(bgRow).getByTestId('lt-bg-color-reset')).toBeDisabled()
+    fireEvent.change(bgInput, { target: { value: '#335577' } })
+    expect(getTvSettings().liveBgColor).toBe('#335577')
+    expect(within(bgRow).getByTestId('lt-bg-color-reset')).not.toBeDisabled()
+    fireEvent.click(within(bgRow).getByTestId('lt-bg-color-reset'))
+    expect(getTvSettings().liveBgColor).toBeNull()
+
+    const cardRow = screen.getByTestId('lt-surface-color')
+    const cardInput = within(cardRow).getByLabelText('Menu and card colour') as HTMLInputElement
+    expect(cardInput.value).toBe('#2b3142')
+    fireEvent.change(cardInput, { target: { value: '#445566' } })
+    expect(getTvSettings().liveSurfaceColor).toBe('#445566')
+    fireEvent.click(within(cardRow).getByTestId('lt-surface-color-reset'))
+    expect(getTvSettings().liveSurfaceColor).toBeNull()
+  })
   it('Strömbyte: växel på och Byt automatiskt efter 5 s som standard, båda sparas', () => {
     render(<LiveTvSettingsSection />)
     const toggle = screen.getByRole('switch', { name: 'Suggest another source when the channel stutters' })

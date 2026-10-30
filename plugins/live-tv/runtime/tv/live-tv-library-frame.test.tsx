@@ -10,6 +10,8 @@ vi.mock('../live-tv-model', async (orig) => ({
   useLiveTvModel: () => { vodState.modelCalls++; throw new Error('modellen ska inte monteras i ramen') },
 }))
 import { LiveTvLibraryFrame } from './live-tv-library-frame'
+import { __resetForTests } from '@/lib/plugin-sdk'
+import { setTvSettings } from './tv-settings-store'
 
 const base = { onNavigate: vi.fn(), onExit: vi.fn(), onInset: vi.fn() }
 
@@ -142,3 +144,17 @@ describe('LiveTvLibraryFrame omklick', () => {
     expect(after).not.toContain('.bg-mesh')
   })
 })
+
+describe('LiveTvLibraryFrame egna färger', () => {
+  afterEach(() => { cleanup(); __resetForTests() })
+  it('egen bakgrund i ramen och .bg-mesh; rälsens variabel på ramens rot', () => {
+    setTvSettings({ liveBgColor: '#203040', liveSurfaceColor: '#405060' })
+    render(<LiveTvLibraryFrame {...{ ...base, platform: 'desktop' as const, onNavigate: vi.fn() }} />)
+    const frame = document.querySelector('[data-live-tv-frame-bg]') as HTMLElement
+    expect(frame.getAttribute('data-live-tv-frame-bg')).toBe('#203040')
+    expect(frame.style.getPropertyValue('--lt-rail')).toContain('#405060')
+    const css = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '').join('\n')
+    expect(css).toContain('background-color: #203040')
+  })
+})
+

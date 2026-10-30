@@ -269,6 +269,42 @@ export function LtChoiceRow<K extends string>({ label, desc, options, value, onC
   )
 }
 
+/**
+ * Färgraden: en inbyggd färgväljare med dagens färg och Återställ bredvid
+ * (Jerry 2026-10-30). Återställ är avstängd när färgen redan är standard.
+ */
+export function LtColorRow({ label, desc, value, isDefault, onChange, onReset, resetLabel, first = false, testId }: {
+  label: string
+  desc?: string
+  /** Färgen som visas (`#rrggbb`) — standardfärgen när inget eget val finns. */
+  value: string
+  isDefault: boolean
+  onChange: (value: string) => void
+  onReset: () => void
+  resetLabel: string
+  first?: boolean
+  testId?: string
+}) {
+  return (
+    <div data-testid={testId} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 20px', borderTop: rowSeparator(first), padding: '17px 0' }}>
+      <div style={{ minWidth: 0, flex: '1 1 16rem' }}>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.35, color: UI.text }}>{label}</p>
+        {desc ? <p style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.5, color: UI.muted, maxWidth: '56ch' }}>{desc}</p> : null}
+      </div>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          type="color"
+          aria-label={label}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          style={{ width: 44, height: 28, padding: 0, borderRadius: 7, borderWidth: 1, borderStyle: 'solid', borderColor: UI.line, background: 'transparent', cursor: 'pointer' }}
+        />
+        <LtBtn testId={testId ? `${testId}-reset` : undefined} disabled={isDefault} onClick={onReset}>{resetLabel}</LtBtn>
+      </div>
+    </div>
+  )
+}
+
 /** Textfältet: radie 7, ingen ram, grund 0.055 (dialogens namnfält använder `dark`). */
 export function LtInput({ value, onChange, placeholder, title, onEnter, mono = false, dark = false, secret = false, testId, style, autoFocus }: {
   value: string

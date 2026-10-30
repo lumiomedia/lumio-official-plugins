@@ -14,7 +14,8 @@ import { SportKeySettingsTv } from '../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../sport/sport-backdrop-settings'
 import { SportSpoilerSettingsTv } from '../sport/sport-spoiler-settings'
 import { nextStartView, startViewLabelKey } from './start-view'
-import { guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, nextGuideCategoryLayout, nextHubLayout, nextLiveBackground } from './v2-settings'
+import { LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, nextGuideCategoryLayout, nextHubLayout, nextLiveBackground } from './v2-settings'
+import { LIVE_SURFACE_DEFAULT, v2Bg } from './v2-tokens'
 
 type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'sport' | 'help'
 const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'sport', 'help']
@@ -113,6 +114,8 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Row testId="setting-guideCategoryLayout" label={tt('settingGuideCategories')} right={tt(guideCategoryLayoutLabelKey(settings.guideCategoryLayout))} onOk={() => setTvSettings({ guideCategoryLayout: nextGuideCategoryLayout(settings.guideCategoryLayout) })} />
         <Row testId="setting-heroTint" label={tt('settingHeroTint')} right={<Toggle on={settings.heroTint} />} onOk={() => setTvSettings({ heroTint: !settings.heroTint })} />
         <Row testId="setting-liveBackground" label={tt('settingLiveBackground')} right={tt(liveBackgroundLabelKey(settings.liveBackground))} onOk={() => setTvSettings({ liveBackground: nextLiveBackground(settings.liveBackground) })} />
+        <ColourRow settingKey="liveBgColor" label={tt('settingLiveBgColor')} value={settings.liveBgColor} fallback={v2Bg(settings.liveBackground)} swatches={LIVE_BG_SWATCHES} tt={tt} />
+        <ColourRow settingKey="liveSurfaceColor" label={tt('settingLiveSurfaceColor')} value={settings.liveSurfaceColor} fallback={LIVE_SURFACE_DEFAULT} swatches={LIVE_SURFACE_SWATCHES} tt={tt} />
       </section>
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
         <Heading>{tt('behaviour')}</Heading>
@@ -129,3 +132,46 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
     </>
   )
 }
+
+/**
+ * EN EGEN FÄRG PÅ TV (Jerry 2026-10-30). En färgväljare går inte att styra med
+ * fjärren, så raden fäller ut en palett med mörka toner: OK på en ruta sparar
+ * den (gäller direkt), Återställ går tillbaka till standard. OK på raden
+ * fäller ihop paletten igen. Alla delar är stationer.
+ */
+function ColourRow({ settingKey, label, value, fallback, swatches, tt }: {
+  settingKey: 'liveBgColor' | 'liveSurfaceColor'
+  label: string
+  value: string | null
+  /** Färgen som gäller när inget eget val finns. */
+  fallback: string
+  swatches: readonly string[]
+  tt: TT
+}) {
+  const [open, setOpen] = useState(false)
+  const shown = value ?? fallback
+  const dot = (color: string, size: number) => <span style={{ width: dp(size), height: dp(size), borderRadius: 999, background: color, border: '1px solid rgba(255,255,255,0.25)', flexShrink: 0 }} />
+  return (
+    <>
+      <Row testId={`setting-${settingKey}`} label={label} right={<>{value ? value : tt('colourDefault')}{dot(shown, 26)}</>} onOk={() => setOpen((o) => !o)} />
+      {open ? (
+        <div data-testid={`setting-${settingKey}-palette`} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: dp(12), padding: `${dp(4)}px ${dp(18)}px ${dp(8)}px` }}>
+          {swatches.map((hex) => (
+            <div
+              key={hex}
+              {...station(() => setTvSettings({ [settingKey]: hex }), undefined, { 'data-testid': `setting-${settingKey}-swatch-${hex}`, 'aria-label': hex, ...(hex === shown ? { 'data-current': '' } : {}) })}
+              style={{ width: dp(52), height: dp(52), minHeight: dp(52), borderRadius: 999, background: hex, border: `${dp(3)}px solid ${hex === shown ? TV.text : 'rgba(255,255,255,0.18)'}`, boxSizing: 'border-box', cursor: 'pointer' }}
+            />
+          ))}
+          <div
+            {...station(() => setTvSettings({ [settingKey]: null }), undefined, { 'data-testid': `setting-${settingKey}-reset` })}
+            style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(22)}px`, borderRadius: 999, background: TV.s06, border: `1px solid ${TV.lineCard}`, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer', opacity: value ? 1 : 0.55 }}
+          >
+            {tt('colourReset')}
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
