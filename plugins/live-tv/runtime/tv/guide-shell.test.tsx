@@ -5,6 +5,7 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { getActivePlaylistId, getGuideMode, getTvSettings } from './tv-settings-store'
 import { guideWindowStart } from './epg-grid-geometry'
+import { v2Bg } from './v2-tokens'
 import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
@@ -220,5 +221,12 @@ describe('TvGuideShell v2 (skrivbordsappen, inte TV)', () => {
       expect(shell().textContent).not.toMatch(/OK =|hold OK|håll OK/)
       cleanup()
     }
+  })
+})
+
+describe('guidens bakgrund', () => {
+  it('slät sidton utan gradient (bilden har sin egen övertoning i heron)', async () => {
+    await mount()
+    expect(screen.getByTestId('guide-bg').getAttribute('data-bg')).toBe(v2Bg('slate'))
   })
 })
