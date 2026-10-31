@@ -10,13 +10,17 @@ import { MIcons } from './mobile-icons'
  * titeln och delar rad med den. Sidluften är sidans vanliga `PAD` — se noten
  * vid `padding` nedan om varför värdens menychip inte reserveras plats här.
  */
-/** Den runda glass-X:en som lämnar Live TV. Delas av sidhuvudet och den inramade VOD-hemmet. */
+/**
+ * Den runda glass-X:en som lämnar Live TV. Delas av sidhuvudet och den inramade VOD-hemmet.
+ * Samma glas som VLC-bubblan bredvid (vitt 8 % + blur 12 px, ingen kant) — Jerry 2026-10-31,
+ * provat live på iPhone.
+ */
 export function MobileCloseButton({ onClose }: { onClose?: () => void }) {
   const { tt } = useTvText()
   return (
     <div
       {...station(onClose ?? (() => {}), undefined, { 'aria-label': tt('closeLiveTv'), 'data-testid': 'header-close' })}
-      style={{ width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV.glass, border: `1px solid ${MT.line14}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+      style={{ width: 40, height: 40, minHeight: 40, borderRadius: 999, background: 'rgba(252,252,255,0.08)', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)', border: '1px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
     >
       <MIcons.X />
     </div>
