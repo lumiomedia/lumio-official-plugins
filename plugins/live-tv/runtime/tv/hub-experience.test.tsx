@@ -82,6 +82,25 @@ describe('HubExperience', () => {
     expect(screen.getByTestId('xp-hero-buttons')).toBeInTheDocument()
   })
 
+  it('Android-fjärrens Bakåt (värden skickar lumio-tv-open-menu, ingen tangent) tar också raderna till heron', async () => {
+    // Värdens bakåtbrygga (lib/android-back-button.ts) ser ingen "öppen yta" i Live TV och ber om
+    // menyn i stället för att skicka Escape — på Mi Box S gjorde Bakåt då ingenting (Jerry 2026-10-31).
+    const hostMenu = vi.fn()
+    window.addEventListener('lumio-tv-open-menu', hostMenu)
+    try {
+      await mount()
+      focusInit()
+      press('ArrowDown'); press('ArrowDown')
+      expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-0')
+      act(() => { window.dispatchEvent(new CustomEvent('lumio-tv-open-menu')) })
+      expect(document.activeElement).toBe(screen.getByTestId('xp-hero-btn-0'))
+      // Skalet äger Bakåt medan Live TV visas: värdens meny öppnas inte samtidigt.
+      expect(hostMenu).not.toHaveBeenCalled()
+    } finally {
+      window.removeEventListener('lumio-tv-open-menu', hostMenu)
+    }
+  })
+
   it('tomma rader utelämnas (ingen historik, inga repriser → ingen Fortsätt titta)', async () => {
     await mount()
     expect(screen.queryByTestId('xp-row-continue')).not.toBeInTheDocument()

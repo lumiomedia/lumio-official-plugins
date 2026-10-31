@@ -167,6 +167,8 @@ const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
 const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search'])
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
+/** Värdens Android-bakåtbrygga ber om menyn med den här händelsen när den inte ser någon öppen yta. */
+const HOST_OPEN_MENU_EVENT = 'lumio-tv-open-menu'
 const ZAP_TIMEOUT_MS = 1500
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV } from './tv-rail'
@@ -616,6 +618,33 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [back, menu, phone, active, Player, pending])
+
+  // ANDROID-FJÄRRENS BAKÅT (Mi Box S, Jerry 2026-10-31: "Bakåt — till toppen"
+  // gjorde ingenting). Tangenten når aldrig webbvyn: aktiviteten frågar
+  // värdens brygga (lib/android-back-button.ts), som bara skickar Escape när
+  // den ser en "öppen yta" (spelare, detaljsida, panel, dialog). Live TV är
+  // ingen sådan, så bryggan bad om menyn (`lumio-tv-open-menu`) — och i Live TV
+  // finns ingen värdmeny som svarar. Medan skalet syns tar det därför emot
+  // den begäran som Bakåt: samma Escape som bryggan skickar för öppna ytor,
+  // på det fokuserade elementet, så hela den vanliga kedjan (lager, spelare,
+  // PIN-grind, vyer, till sist ut ur Live TV) gäller oförändrad. Capture på
+  // window går före värdens egen lyssnare, som stoppas — annars hade värdens
+  // meny öppnats ovanpå samtidigt.
+  useEffect(() => {
+    if (phone) return
+    const onOpenMenu = (event: Event) => {
+      const root = rootRef.current
+      if (!root || !root.isConnected || root.getClientRects().length === 0) return
+      event.stopImmediatePropagation()
+      const active = document.activeElement
+      const target = active instanceof HTMLElement && active !== document.body ? active : document.body
+      for (const type of ['keydown', 'keyup'] as const) {
+        target.dispatchEvent(new KeyboardEvent(type, { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }))
+      }
+    }
+    window.addEventListener(HOST_OPEN_MENU_EVENT, onOpenMenu, true)
+    return () => window.removeEventListener(HOST_OPEN_MENU_EVENT, onOpenMenu, true)
+  }, [phone])
 
   // Nummertangenter: favoriter 1–N först, sedan listnummer.
   const favourites = model.favouriteChannels
