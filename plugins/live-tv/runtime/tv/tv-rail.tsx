@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
+import { cloneElement, isValidElement, type CSSProperties, type ReactNode } from 'react'
 import { useTvText } from './tv-strings'
 import { TV, belowTitleBar, dp, station, Icons } from './tv-ui'
 import type { TvView } from './tv-shell'
@@ -36,6 +36,9 @@ const RAIL_W_NARROW = 64
  */
 const RAIL_ITEM_WIDE = 108
 const RAIL_ITEM_WIDE_H = 84
+const RAIL_ITEM_TV_H = 92
+const RAIL_ICON_TV = 34
+const RAIL_LABEL_TV = 20
 /** Utan etiketter (inställningen `railLabels` av): den gamla raden — 104/84 bred med 60×60-poster. */
 const RAIL_W_TV_COMPACT = 104
 const RAIL_W_DESKTOP_COMPACT = 84
@@ -80,6 +83,10 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
   const { tt } = useTvText()
   const railWidth = isTv ? (railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT) : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT
   const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT
+  // TV (Jerry 2026-10-31, provat live på Mi Boxen): samma bredd, större text och
+  // ikoner, ingen L-bricka — platsen går till posterna.
+  const tvBig = isTv && !narrow
+  const itemHeight = railLabels ? (tvBig ? RAIL_ITEM_TV_H : RAIL_ITEM_WIDE_H) : railItemSize
 
   /**
    * Alla poster delar radens mått och utseende (smalläget följer med av sig
@@ -103,12 +110,12 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
       <div
         key={item.key}
         {...station(() => onSelect(item.key), undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label, ...(activeItem ? { 'data-current': '' } : {}) })}
-        style={{ width: dp(railItemSize), height: dp(railLabels ? RAIL_ITEM_WIDE_H : railItemSize), borderRadius: dp(railLabels ? 18 : 16), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: dp(5), cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.62)', ...extraStyle }}
+        style={{ width: dp(railItemSize), height: dp(itemHeight), borderRadius: dp(railLabels ? 18 : 16), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: dp(5), cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.62)', ...extraStyle }}
       >
-        {item.icon}
+        {tvBig && isValidElement<{ size?: number }>(item.icon) ? cloneElement(item.icon, { size: dp(RAIL_ICON_TV) }) : item.icon}
         {/* Etiketten under ikonen — bara när raden är bred nog. */}
         {!railLabels ? null : (
-          <span data-live-tv-rail-label="" style={{ fontSize: dp(15), fontWeight: 600, lineHeight: 1.1, maxWidth: '100%', padding: `0 ${dp(6)}px`, boxSizing: 'border-box', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span data-live-tv-rail-label="" style={{ fontSize: dp(tvBig ? RAIL_LABEL_TV : 15), fontWeight: 600, lineHeight: 1.1, maxWidth: '100%', padding: `0 ${dp(6)}px`, boxSizing: 'border-box', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {item.label}
           </span>
         )}
@@ -126,7 +133,7 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
             yta går den bort tillsammans med luften ovanför — posterna ska nå
             ner i skärmen, inte trängas under en logotyp. */}
-        {narrow ? null : (
+        {narrow || tvBig ? null : (
           <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
         )}
         {/* Bakåt-pilen i ikonraden lämnar Live TV DIREKT (Jerry 2026-09-17) —
