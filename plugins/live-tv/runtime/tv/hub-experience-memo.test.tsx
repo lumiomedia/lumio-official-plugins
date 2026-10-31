@@ -50,7 +50,10 @@ const press = (key: string) => act(() => { fireEvent.keyDown(document.activeElem
 describe('Upplevelse: korten ritas inte om vid en fokusflytt', () => {
   it('▸ i en rad bygger bara om ett fåtal kort, inte alla', async () => {
     const props = { pageId: 'live-tv-browse', params: {}, onNavigate: () => {}, onOpenDetails: () => {} } as unknown as ComponentProps<typeof LiveTvTvShell>
-    render(<LiveTvTvShell {...props} />)
+    const out = render(<LiveTvTvShell {...props} />)
+    // Värden ritar om hela pluginträdet vid varje fokusbyte (uppmätt på Mi Box S: 8 commits per tryck);
+    // modellen blir då ett nytt objekt. Samma sak här: skalet ritas om efter varje tryck.
+    const hostRerender = () => act(() => { out.rerender(<LiveTvTvShell {...props} />) })
     await flushLiveTvIndex()
     act(() => { document.querySelector<HTMLElement>('[data-init]')!.focus() })
     press('ArrowDown'); press('ArrowDown')
@@ -59,8 +62,8 @@ describe('Upplevelse: korten ritas inte om vid en fokusflytt', () => {
     const total = document.querySelectorAll('[data-xp^="r"]').length
     expect(total).toBeGreaterThan(30)
     built.n = 0
-    press('ArrowRight')
-    press('ArrowDown')
+    press('ArrowRight'); hostRerender()
+    press('ArrowDown'); hostRerender()
     await act(async () => { await new Promise((r) => setTimeout(r, 400)) })
     // Två flyttar: kortet fokus lämnar, kortet det landar på och de som byter synlighet/uppslag.
     expect(built.n).toBeLessThan(total / 2)

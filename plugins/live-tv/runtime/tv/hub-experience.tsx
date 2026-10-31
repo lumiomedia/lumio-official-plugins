@@ -4,6 +4,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSPr
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded } from '../reminders'
+import type { NowNextLater } from '../epg/types'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { Icons, TV, dp, station, useTvClockNode } from './tv-ui'
@@ -17,7 +18,7 @@ import { useLatest, useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
 import { FOCUS_BTN, FOCUS_CARD, V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
 import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
-import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
+import { AccentTag, ChannelGridCardView, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 import { XP_ALL, XP_GRID_COLUMNS, XP_GRID_STEP, useExperienceRows, type XpItem, type XpRow, type XpRowId } from './hub-experience-data'
 import { xpInitial, xpNavReduce, xpNormalise, type XpKey, type XpNavState } from './hub-experience-nav'
 import { CutoutLayer } from './cutout-layer'
@@ -465,7 +466,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                           hidden={!native && ii < col}
                           native={native}
                           lookup={native ? ii < 6 : Math.abs(ii - col) <= 4}
-                          model={model}
+                          nowMs={model.nowMs}
+                          number={row.id === 'yours' && item.channel ? model.channelNumber(item.channel) : null}
                           api={cardApi}
                         />
                       )
@@ -495,7 +497,24 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${XP_GRID_COLUMNS}, minmax(0, 1fr))`, gap: dp(14), padding: `0 ${dp(56)}px` }}>
                       {row.items.map((item, ii) => {
                         const focused = onRow && inRows && (s.cols[ri] ?? 0) === ii
-                        return <XpGridCard key={item.key} item={item} ri={ri} ii={ii} focused={focused} ring={focused && active} native={native} model={model} api={cardApi} />
+                        const gridKey = item.channel ? channelKey(item.channel) : ''
+                        return (
+                          <XpGridCard
+                            key={item.key}
+                            item={item}
+                            ri={ri}
+                            ii={ii}
+                            focused={focused}
+                            ring={focused && active}
+                            native={native}
+                            info={item.channel ? model.nowFor(item.channel) : null}
+                            number={item.channel ? model.channelNumber(item.channel) : null}
+                            pinned={model.pinnedSet.has(gridKey)}
+                            locked={model.locked.has(gridKey)}
+                            nowMs={model.nowMs}
+                            api={cardApi}
+                          />
+                        )
                       })}
                     </div>
                   </section>
@@ -513,14 +532,18 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 type TT = (key: TvStringKey, vars?: Record<string, string | number>) => string
 
 /** Ett kort i kategorins rutnät, memoiserat som `XpCard`. */
-const XpGridCard = memo(function XpGridCard({ item, ri, ii, focused, ring, native, model, api }: {
+const XpGridCard = memo(function XpGridCard({ item, ri, ii, focused, ring, native, info, number, pinned, locked, nowMs, api }: {
   item: XpItem
   ri: number
   ii: number
   focused: boolean
   ring: boolean
   native: boolean
-  model: TvViewProps['model']
+  info: NowNextLater | null
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  nowMs: number
   api: { readonly current: XpCardApi }
 }): JSX.Element {
   const id = `r${ri}-${ii}`
@@ -531,7 +554,7 @@ const XpGridCard = memo(function XpGridCard({ item, ri, ii, focused, ring, nativ
   }
   const style: CSSProperties = { height: native ? undefined : dp(ROW.grid.h), boxShadow: ring ? FOCUS_CARD : undefined, transform: focused ? 'scale(1.04)' : 'none', transition: `transform .3s ${EASE}, box-shadow .3s`, position: 'relative', zIndex: focused ? 2 : 1, outline: 'none', userSelect: 'none' }
   if (item.kind === 'more') return <MoreCard remaining={item.count ?? 0} props={props} style={style} />
-  return <ChannelGridCard channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} captionPadRight={native ? HOLD_PAD : undefined} {...props} style={style} />
+  return <ChannelGridCardView channel={item.channel!} info={info} number={number} pinned={pinned} locked={locked} nowMs={nowMs} faceHeight={native ? undefined : GRID_FACE_H} captionPadRight={native ? HOLD_PAD : undefined} {...props} style={style} />
 })
 
 /** Visa fler sist i rutnätet: samma kortyta som kanalerna, "Visa 60 fler" + antal kvar. */
@@ -607,7 +630,7 @@ interface XpCardApi {
  * huvudtråd på en Mi Box S. Nu ritas bara kort vars fokus, synlighet eller
  * uppslag ändras; hanterarna går via `api`-refen.
  */
-const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden, native, lookup, model, api }: {
+const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden, native, lookup, nowMs, number, api }: {
   rowId: XpRowId
   item: XpItem
   ri: number
@@ -619,7 +642,14 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
   hidden: boolean
   native: boolean
   lookup: boolean
-  model: TvViewProps['model']
+  /**
+   * Primitiva värden i stället för modellen: värden ritar om hela pluginträdet
+   * vid varje fokusbyte (8 commits per pil-tryck uppmätt) och modellen är ett
+   * nytt objekt varje gång — med den som prop hade memo aldrig hållit.
+   */
+  nowMs: number
+  /** Kanalnumret (bara Dina kanaler visar det). */
+  number: number | null
   api: { readonly current: XpCardApi }
 }): JSX.Element {
   const m = ROW[rowId]
@@ -635,7 +665,7 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
       style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none' }}
     >
       <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, opacity: hidden ? 0 : undefined, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s, opacity .3s` }}>
-        <CardFace rowId={rowId} item={item} model={model} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} />
+        <CardFace rowId={rowId} item={item} nowMs={nowMs} number={number} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} />
       </div>
       {rowId === 'yours' && item.channel ? (
         <div style={{ padding: `${dp(12)}px ${dp(4)}px 0`, opacity: hidden ? 0 : focused ? 1 : 0.65, transition: 'opacity .3s' }}>
@@ -648,7 +678,7 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
 })
 
 /** Kortets yta per rad (README "Rows"). `lookup` = programbilden slås upp (bara nära fokus). */
-const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; item: XpItem; model: TvViewProps['model']; lookup: boolean; holdPad: number }) {
+const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, holdPad }: { rowId: XpRowId; item: XpItem; nowMs: number; number: number | null; lookup: boolean; holdPad: number }) {
   const { tt, locale } = useTvText()
   const channel = item.channel ?? NO_CHANNEL
   const p = item.programme ?? null
@@ -658,7 +688,7 @@ const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }:
   const { url } = useProgrammeArt(channel, item.channel && wantsArt ? p : null, { lookup: wantsArt && lookup })
   const [broken, setBroken] = useState<string | null>(null)
   const art = url !== null && broken !== url ? url : null
-  const progress = p && p.start <= model.nowMs && p.stop > model.nowMs ? progressOf(p.start, p.stop, model.nowMs) : null
+  const progress = p && p.start <= nowMs && p.stop > nowMs ? progressOf(p.start, p.stop, nowMs) : null
 
   if (rowId === 'explore') {
     const tint = categoryTint(item.category ?? '')
@@ -679,7 +709,6 @@ const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }:
     // platta, så stor den ryms inom en jämn luft på 11 px och med rundade hörn
     // på själva bilden (Jerry 2026-10-30). Numret som liten mörk bricka uppe
     // till vänster, förloppet i nederkanten.
-    const number = model.channelNumber(channel)
     return (
       <div data-testid="xp-yours-face" data-surface="dark" style={{ position: 'absolute', inset: 0, background: V2.noArt }}>
         <LogoPlate bare channel={channel} width={YOURS_PLATE[0]} height={YOURS_PLATE[1]} radius={10} style={{ position: 'absolute', left: dp(YOURS_FRAME), top: dp(YOURS_FRAME) }} />
@@ -691,7 +720,7 @@ const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }:
 
   if (rowId === 'soon') {
     const reminded = item.channel && p ? isReminded(item.channel, p) : false
-    const mins = p ? Math.max(0, Math.round((p.start - model.nowMs) / 60_000)) : 0
+    const mins = p ? Math.max(0, Math.round((p.start - nowMs) / 60_000)) : 0
     return (
       <div style={{ position: 'absolute', inset: 0, background: `var(--lt-card, linear-gradient(160deg, ${mixHex('#2b3142', '#262b38', 70)}, #20242f))`, padding: `${dp(18)}px ${dp(20)}px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(10) }}>
@@ -732,7 +761,7 @@ const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }:
   // Fortsätt titta (Fortsätt / Repris).
   const meta = item.kind === 'replay' && p
     ? `${channel.name} · ${formatClock(p.start, locale)}`
-    : p ? `${channel.name} · ${tt('minutesLeft', { min: Math.max(0, Math.round((p.stop - model.nowMs) / 60_000)) })}` : channel.name
+    : p ? `${channel.name} · ${tt('minutesLeft', { min: Math.max(0, Math.round((p.stop - nowMs) / 60_000)) })}` : channel.name
   return (
     <NoArt style={{ display: 'block' }}>
       {image}{plate}

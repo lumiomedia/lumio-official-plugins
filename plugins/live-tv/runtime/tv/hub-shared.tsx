@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, t
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { progressOf } from '../live-tv-ui'
 import { qualityFromName, type LiveTvModel } from '../live-tv-model'
+import type { NowNextLater } from '../epg/types'
 import type { TvNav } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
@@ -129,7 +130,7 @@ const ellipsis = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'elli
  * kommer från vyn; `faceHeight` ger en fast ytahöjd i stället för 16:9
  * (TV-rutnätet räknar radernas toppar).
  */
-export function ChannelGridCard({ channel, model, faceHeight, captionPadRight, style, ...rest }: {
+export function ChannelGridCard({ channel, model, ...rest }: {
   channel: M3uChannel
   model: LiveTvModel
   faceHeight?: number
@@ -137,22 +138,35 @@ export function ChannelGridCard({ channel, model, faceHeight, captionPadRight, s
   captionPadRight?: number
   style?: CSSProperties
 } & Omit<HTMLAttributes<HTMLDivElement>, 'style'>) {
-  const info = model.nowFor(channel)
-  const number = model.channelNumber(channel)
   const key = channelKey(channel)
+  return <ChannelGridCardView channel={channel} info={model.nowFor(channel)} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} nowMs={model.nowMs} {...rest} />
+}
+
+/** Samma kort med primitiva props (för memoiserade rutnät: modellen är ett nytt objekt varje rendering). */
+export function ChannelGridCardView({ channel, info, number, pinned, locked, nowMs, faceHeight, captionPadRight, style, ...rest }: {
+  channel: M3uChannel
+  info: NowNextLater | null
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  nowMs: number
+  faceHeight?: number
+  captionPadRight?: number
+  style?: CSSProperties
+} & Omit<HTMLAttributes<HTMLDivElement>, 'style'>) {
   return (
     <div {...rest} style={{ ...HUB_CARD, borderRadius: dp(14), display: 'flex', flexDirection: 'column', ...style }}>
       <div style={{ position: 'relative', width: '100%', ...(faceHeight ? { height: dp(faceHeight), flexShrink: 0 } : { aspectRatio: '16 / 9' }), background: V2.noArt }}>
         {/* Logoplattan inramad 30 px runt om, 18 px nedtill (README 5). */}
         <LogoPlate channel={channel} width={0} height={84} radius={8} style={{ position: 'absolute', left: dp(30), right: dp(30), top: dp(30), bottom: dp(18), width: 'auto', height: 'auto', boxShadow: 'none' }} />
         <span style={{ position: 'absolute', top: dp(6), left: dp(8), fontSize: dp(13), fontWeight: 600, color: 'rgba(243,244,248,0.8)', fontVariantNumeric: 'tabular-nums' }}>{number ?? ''}</span>
-        {model.pinnedSet.has(key) ? <span style={{ position: 'absolute', top: dp(8), right: dp(9), color: TV.acc }}><Icons.Heart size={dp(16)} filled /></span> : null}
-        {model.locked.has(key) ? <span style={{ position: 'absolute', bottom: dp(8), right: dp(9), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
-        {info.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={3} track="rgba(0,0,0,0.35)" /></div> : null}
+        {pinned ? <span style={{ position: 'absolute', top: dp(8), right: dp(9), color: TV.acc }}><Icons.Heart size={dp(16)} filled /></span> : null}
+        {locked ? <span style={{ position: 'absolute', bottom: dp(8), right: dp(9), color: 'rgba(243,244,248,0.55)' }}><Icons.Lock size={dp(16)} /></span> : null}
+        {info?.now ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progressOf(info.now.start, info.now.stop, nowMs)} height={3} track="rgba(0,0,0,0.35)" /></div> : null}
       </div>
       <div style={{ padding: `${dp(10)}px ${dp(captionPadRight ?? 12)}px ${dp(12)}px ${dp(12)}px` }}>
         <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
+        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info?.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
       </div>
     </div>
   )
