@@ -11,6 +11,7 @@ import { revealedReplayScore, scoreHidden } from '../score-model'
 import { useSpoilerVersion } from '../couch/spoiler'
 import { hasPhonePresence, onPresenceChanged } from '../couch/presence'
 import { SportIcons } from '../sport-icons'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 /*
   Spoilerkromen i spelaren (handoff 2b, skärmdump 13). Två delar:
@@ -69,7 +70,7 @@ export function playedWhen(kickoff: number, now: number, locale: string, tt: (k:
   const day = localDayKey(kickoff)
   if (day === localDayKey(now)) return `${tt('sportToday')} ${time}`
   if (day === localDayKey(now - 86_400_000)) return `${tt('sportYesterday')} ${time}`
-  return `${new Date(kickoff).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\.$/, '')} ${time}`
+  return `${cachedDateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(kickoff)).replace(/\.$/, '')} ${time}`
 }
 
 export function PlayerReplayInfo({ match, ps, nowMs, locale }: { match: SportMatch; ps: PS; nowMs: number; locale: string }) {

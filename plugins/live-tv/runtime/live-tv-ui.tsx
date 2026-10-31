@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LiveTvLogoImage } from './live-tv-logo-image'
 import { getLiveTvLogoSrc, type M3uChannel } from './live-tv-data'
+import { clockFormat } from './intl-cache'
 
 /**
  * Gemensamma byggstenar för Live TV-vyerna, ritade efter handoffens mått men
@@ -54,7 +55,7 @@ export function progressOf(start: number, stop: number, nowMs: number): number {
 }
 
 export function formatClock(ms: number, locale: string): string {
-  return new Date(ms).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  return clockFormat(locale).format(ms)
 }
 
 /* ---------- Taggar och knappar ---------- */

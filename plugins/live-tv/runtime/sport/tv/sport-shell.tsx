@@ -29,6 +29,7 @@ import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
 import { SportPages, useSportPages } from '../team-page/sport-pages'
 import { SPORT_FOCUS_CSS, focusAttr, sportCardStyle } from '../surface'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 const NO_MATCHES: SportMatch[] = []
 
@@ -237,7 +238,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           </div>
           <span data-testid="sport-day-label" style={{ minWidth: dp(170), display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: dp(10), padding: `0 ${dp(6)}px` }}>
             <span style={{ fontSize: dp(20), fontWeight: 700 }}>{dayLabel(offset)}</span>
-            <span style={{ fontSize: dp(17), color: TV.muted }}>{new Date(dayStartMs(day) + 12 * 3_600_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            <span style={{ fontSize: dp(17), color: TV.muted }}>{cachedDateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(dayStartMs(day) + 12 * 3_600_000))}</span>
           </span>
           <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < MAX_OFFSET ? ((o + 1) as DayOffset) : o)), undefined, { 'data-f-left': '[data-testid="sport-day-prev"]', 'data-f-down': BODY_FIRST })} aria-label={tt('sportDayNext')} title={tt('sportDayNext')} aria-disabled={offset >= MAX_OFFSET ? 'true' : 'false'} style={stepBtn(offset < MAX_OFFSET)}>
             <SportIcons.Chevron size={dp(22)} />

@@ -1,6 +1,7 @@
 // runtime/sport/day-plan.ts
 import type { ProviderId, SportsProvider } from './provider'
 import type { SportKind } from './sport-model'
+import { cachedDateTimeFormat } from '../intl-cache'
 
 /** `provider`: ligans källa (ligans id är källans). */
 export interface LeagueRef { sport: SportKind; leagueId: string; season: string; provider?: ProviderId }
@@ -49,14 +50,14 @@ export function plannedPerSport(calls: PlannedCall[]): Map<SportKind, number> {
 }
 
 function ymd(ms: number, tz: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(ms))
+  const parts = cachedDateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(ms))
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00'
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
 /** Tidszonens förskjutning (ms) vid en tidpunkt, utan bibliotek. */
 function offsetMs(ms: number, tz: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(new Date(ms))
+  const parts = cachedDateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(new Date(ms))
   const n = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0)
   return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - Math.floor(ms / 1000) * 1000
 }

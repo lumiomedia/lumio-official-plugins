@@ -7,6 +7,7 @@ import { matchesFollow, rankedSources, statusAt } from '../sport-day-model'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { matchTitle, type SportMatch } from '../sport-model'
 import type { SportFollow, SportOverrides, SportSettings } from '../sport-store'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 /*
   TV-HERON FÖR ETT SPORTKORT.
@@ -46,7 +47,7 @@ export function whenText(m: SportMatch, now: number, locale: string, tt: TT): st
   const today = localDayKey(now)
   if (day === today) return time
   if (day === shiftDay(today, 1)) return tt('sportTomorrowAt', { time })
-  return `${new Date(m.start).toLocaleDateString(locale, { weekday: 'short' })} ${time}`
+  return `${cachedDateTimeFormat(locale, { weekday: 'short' }).format(new Date(m.start))} ${time}`
 }
 
 /**

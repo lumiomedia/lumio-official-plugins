@@ -13,6 +13,7 @@ import { ellipsis, rowCard, type U } from '../match-info/match-info-parts'
 import { focusAttr } from '../surface'
 import { fixtureScoreHidden } from '../score-model'
 import { useSpoilerVersion } from '../couch/spoiler'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 /*
   Lag- och ligasidans byggstenar. Samma skala (`u`) som matchinfon: TV och
@@ -27,7 +28,7 @@ export function fixtureWhen(f: Pick<TeamFixture, 'kickoff' | 'dateOnly'>, ctx: P
   const time = formatClock(f.kickoff, ctx.locale)
   const day = localDayKey(f.kickoff)
   const tomorrow = localDayKey(ctx.now + 86_400_000)
-  const date = new Date(f.kickoff).toLocaleDateString(ctx.locale, { weekday: 'short', day: 'numeric', month: 'short' })
+  const date = cachedDateTimeFormat(ctx.locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(f.kickoff))
   if (f.dateOnly) return day === localDayKey(ctx.now) ? ctx.tt('sportToday') : day === tomorrow ? ctx.tt('sportTomorrow') : date
   if (day === localDayKey(ctx.now)) return ctx.tt('sportTodayAt', { time })
   if (day === tomorrow) return ctx.tt('sportTomorrowAt', { time })

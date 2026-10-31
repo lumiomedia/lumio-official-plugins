@@ -18,6 +18,7 @@ import { MobileHeader } from './mobile-header'
 import { MobileLogo } from './mobile-logo'
 import { MobileChips } from './mobile-chips'
 import { PhoneGuideModeBar, type PhoneGuideMode } from './guide-phone'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 /** Startantal rader och steget per Visa fler — samma tal som skrivbordet. */
 const MAX_ROWS = 80
@@ -85,7 +86,7 @@ export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps
   useEffect(() => { if (hasRows) scrollToNow() }, [hasRows])
 
   const isLive = (programme: EpgProgramme) => programme.start <= nowMs && programme.stop > nowMs
-  const dateLabel = new Date(nowMs).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
+  const dateLabel = cachedDateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(nowMs))
 
   return (
     <div data-testid="grid-phone" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>

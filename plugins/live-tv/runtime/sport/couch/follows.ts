@@ -7,6 +7,7 @@ import { matchesFollow, statusAt, type FollowCandidate } from '../sport-day-mode
 import { localDayKey } from '../sport-epg'
 import { matchTitle, SPORT_KINDS, type SportKind, type SportMatch } from '../sport-model'
 import { followAlert, isFollowing, teamKeysMatch, type SportFollow, type SportSettings } from '../sport-store'
+import { cachedDateTimeFormat } from '../../intl-cache'
 
 /** Soffläge: Följ lag (handoff 2h och 2i). Telefonen frågar alltid TV:n; källan nås bara härifrån. */
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
@@ -17,7 +18,7 @@ const HITS_MAX = 30
 /** Från den här timmen heter en match idag "Ikväll". */
 const EVENING_HOUR = 17
 
-const clock = (ms: number, locale: string) => new Date(ms).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+const clock = (ms: number, locale: string) => cachedDateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(ms))
 const capital = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1)
 
 function nextFor(f: SportFollow, matches: SportMatch[], now: number): SportMatch | null {
@@ -30,7 +31,7 @@ function whenText(start: number, now: number, tt: TT, locale: string): string {
   const time = clock(start, locale)
   if (localDayKey(start) === localDayKey(now)) return new Date(start).getHours() >= EVENING_HOUR ? tt('couchFollowTonight', { time }) : tt('sportTodayAt', { time })
   if (localDayKey(start) === localDayKey(now + 86_400_000)) return tt('sportTomorrowAt', { time })
-  return tt('couchFollowDayAt', { day: capital(new Date(start).toLocaleDateString(locale, { weekday: 'long' })), time })
+  return tt('couchFollowDayAt', { day: capital(cachedDateTimeFormat(locale, { weekday: 'long' }).format(new Date(start))), time })
 }
 
 /**

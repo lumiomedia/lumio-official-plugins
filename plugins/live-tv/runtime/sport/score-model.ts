@@ -2,6 +2,7 @@ import type { TvStringKey } from '../tv/tv-strings'
 import type { SportMatch } from './sport-model'
 import { getSportSettings, teamKeysMatch } from './sport-store'
 import { hiddenOnTv, keyHiddenOnTv, keyProtected, spoilerProtected } from './couch/spoiler'
+import { cachedDateTimeFormat } from '../intl-cache'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
@@ -66,7 +67,7 @@ export function replayScoreText(m: SportMatch): string | null {
 /** "Spelades lör 10 okt" — originalmatchens datum. */
 export function playedOnText(m: SportMatch, tt: TT, locale: string): string | null {
   if (!m.rerun || !m.replayOf) return null
-  const date = new Date(m.replayOf.kickoff).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\.$/, '')
+  const date = cachedDateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(m.replayOf.kickoff)).replace(/\.$/, '')
   return tt('sportPlayedOn', { date })
 }
 

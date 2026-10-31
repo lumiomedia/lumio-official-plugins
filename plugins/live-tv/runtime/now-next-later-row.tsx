@@ -5,6 +5,7 @@ import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import type { EpgProgramme } from './epg/types'
 import type { M3uChannel } from './live-tv-data'
+import { cachedDateTimeFormat } from './intl-cache'
 
 interface Props {
   channel: M3uChannel
@@ -13,7 +14,7 @@ interface Props {
 }
 
 function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return cachedDateTimeFormat([], { hour: '2-digit', minute: '2-digit' }).format(new Date(ms))
 }
 
 function Card({

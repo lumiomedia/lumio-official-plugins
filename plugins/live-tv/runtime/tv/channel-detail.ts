@@ -11,6 +11,7 @@ import { sliceSchedule } from '../epg/lookup'
 import { useSchedules } from '../hooks/useSchedules'
 import type { TvNav } from './tv-shell'
 import { useTvText } from './tv-strings'
+import { cachedDateTimeFormat } from '../intl-cache'
 
 /**
  * Delad av skrivbordets `tv-channel.tsx` och telefonens
@@ -133,7 +134,7 @@ export function useChannelDetail(model: LiveTvModel, nav: TvNav, params: Record<
 
   const dayLabel = (offset: number) => {
     const d = new Date(model.nowMs + offset * DAY_MS)
-    return { top: offset === 0 ? tt('today') : offset === -1 ? tt('yesterday') : offset === 1 ? tt('tomorrow') : d.toLocaleDateString(locale, { weekday: 'short' }), bottom: d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) }
+    return { top: offset === 0 ? tt('today') : offset === -1 ? tt('yesterday') : offset === 1 ? tt('tomorrow') : cachedDateTimeFormat(locale, { weekday: 'short' }).format(d), bottom: cachedDateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(d) }
   }
 
   return {
