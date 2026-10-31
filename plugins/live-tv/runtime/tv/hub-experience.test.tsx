@@ -6,7 +6,7 @@ import { flushLiveTvIndex, seedLiveTvIndex } from '../../src/__test-stubs__/live
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 import type { EpgCacheEntry } from '../epg/types'
 import { setTvSettings } from './tv-settings-store'
-import { v2Ambient } from './v2-tokens'
+import { V2, v2Ambient } from './v2-tokens'
 import { TV } from './tv-ui'
 import { fxMatch, fxSource, stubSportDays } from '../sport/__sport-fixture'
 import { localDayKey } from '../sport/sport-epg'
@@ -68,7 +68,7 @@ describe('HubExperience', () => {
     expect(screen.queryByTestId('xp-legend')).not.toBeInTheDocument()
   })
 
-  it('▼▼ når raderna; tangentlegenden ersätter knapparna, Bakåt tar fokus tillbaka till heron', async () => {
+  it('▼▼ når raderna; knapparna döljs (ingen tangentlegend sedan 2026-10-31), Bakåt tar fokus tillbaka till heron', async () => {
     await mount()
     focusInit()
     press('ArrowDown')
@@ -76,7 +76,7 @@ describe('HubExperience', () => {
     press('ArrowDown')
     expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-0')
     expect(screen.queryByTestId('xp-hero-buttons')).not.toBeInTheDocument()
-    expect(screen.getByTestId('xp-legend')).toHaveTextContent('Hold OK')
+    expect(screen.queryByTestId('xp-legend')).not.toBeInTheDocument()
     act(() => { fireEvent.keyDown(window, { key: 'Backspace' }) })
     expect(document.activeElement).toBe(screen.getByTestId('xp-hero-btn-0'))
     expect(screen.getByTestId('xp-hero-buttons')).toBeInTheDocument()
@@ -388,17 +388,49 @@ describe('HubExperience', () => {
       expect(px(live, 'height')).toBe('30px')
       expect(px(live, 'fontSize')).toBe('15px')
     })
-    it('legenden står också nertill i heron', async () => {
+    it('i raderna: ingen legend; herons text står nertill, 48 px ovanför knapparnas nederkant', async () => {
       await mount()
       focusInit()
+      expect(screen.getByTestId('xp-hero').style.justifyContent).toBe('')
       press('ArrowDown'); press('ArrowDown')
-      expect(px(screen.getByTestId('xp-legend'), 'marginTop')).toBe('auto')
+      expect(screen.queryByTestId('xp-legend')).not.toBeInTheDocument()
+      const hero = screen.getByTestId('xp-hero')
+      expect(hero.style.justifyContent).toBe('flex-end')
+      expect(hero.style.paddingBottom).toBe('48px')
+      expect(hero.style.boxSizing).toBe('border-box')
+      expect(hero.style.height).toBe('334px')
     })
-    it('chippen 50 höga, 19 px; den fokuserade chipen står alltid FÖRST i raden', async () => {
+    it('raderna börjar på 620 (44 px under chipraden)', async () => {
+      await mount()
+      expect(screen.getByTestId('xp-rows-viewport').style.top).toBe('620px')
+    })
+    it('chipraden: 12 px vänsterluft, går ut till högerkanten, 21 px text', async () => {
+      await mount()
+      const chips = screen.getByTestId('xp-chips')
+      expect(chips.style.right).toBe('0px')
+      expect(chips.style.paddingLeft).toBe('12px')
+      expect(chips.style.paddingRight).toBe('0px')
+      expect(screen.getByTestId('xp-chip-Sport').style.fontSize).toBe('21px')
+    })
+    it('hjärtat i heron är vitt även som favorit', async () => {
+      await mount()
+      const heart = screen.getByTestId('xp-hero-btn-2')
+      expect(heart.getAttribute('data-favourite')).toBe('1')
+      expect(heart.style.color).toBe(V2.text)
+    })
+    it('Utforska-korten 380×210 som Börjar snart; raden räknas med de måtten', async () => {
+      await mount()
+      const row = screen.getByTestId('xp-row-explore')
+      const card = within(row).getAllByTestId('xp-card')[0]!
+      expect(card.style.width).toBe('380px')
+      expect((card.firstElementChild as HTMLElement).style.height).toBe('210px')
+      expect(row.style.height).toBe(`${64 + 210 + 72}px`)
+    })
+    it('chippen 50 höga, 21 px; den fokuserade chipen står alltid FÖRST i raden', async () => {
       await mount()
       const chip = screen.getByTestId('xp-chip-Sport')
       expect(px(chip, 'height')).toBe('50px')
-      expect(px(chip, 'fontSize')).toBe('19px')
+      expect(px(chip, 'fontSize')).toBe('21px')
       focusInit()
       press('ArrowDown')
       const track = screen.getByTestId('xp-chips-track')
@@ -435,7 +467,7 @@ describe('HubExperience', () => {
     it('jämnt 72 px mellan raderna: varje sektion är rubrik 64 + kort + 72; stegen ▼ följer de verkliga höjderna', async () => {
       await mount()
       const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-testid^="xp-row-"]'))
-      const h: Record<string, number> = { onNow: 248, sport: 248, continue: 236, yours: 236, soon: 210, explore: 180 }
+      const h: Record<string, number> = { onNow: 248, sport: 248, continue: 236, yours: 236, soon: 210, explore: 210 }
       for (const sec of sections) {
         const id = sec.getAttribute('data-testid')!.replace('xp-row-', '')
         expect(sec.style.height).toBe(`${64 + h[id]! + 72}px`)
