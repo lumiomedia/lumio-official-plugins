@@ -10,13 +10,13 @@ import { createLivePoller, type LivePoller, type LiveTarget } from './live-polle
 import { diffGoals, emitGoals, type Score } from './goal-events'
 import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
-import { fixtureMatchKey, foldTeamKey, mergeLinked, relevantMatches } from './merge'
+import { TeamIndex, fixtureMatchKey, mergeLinked, relevantMatches, sameTeams } from './merge'
 import { coverageFor, providerFor } from './providers'
 import { fillFrom, findSameMatch, keepFilled, lacksDetail } from './detail-fill'
 import { isPlanned, useEveningPlan } from './evening-plan'
 import { ESPN_SLUG_BY_LEAGUE, espnRecent, setEspnFocus } from './espn'
 import { followState } from './sport-day-model'
-import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, sportsCompatible, teamKeysMatch, useFollows, useOverrides } from './sport-store'
+import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, sportsCompatible, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { noteReplays } from './couch/spoiler'
@@ -171,20 +171,19 @@ export class ResultsController {
   probeReplays(epg: readonly SportMatch[], date: string): void {
     const espnBudget = this.router.budget('espn')
     if (!espnBudget) return
+    // Dagens fixturer indexeras en gång per sport (se TeamIndex i merge.ts):
+    // varje tablåmatch mot alla fixturer kostade ~2 s per öppning på Mi Box.
+    const indexes = new Map<SportKind, TeamIndex>()
     for (const m of epg) {
       if (m.rerun || !m.homeKey || !m.awayKey) continue
       const target = ESPN_SLUG_BY_LEAGUE[m.leagueKey]
       if (!target || !sportsCompatible(target.sport, m.kind)) continue
-      if (!this.days.has(this.dayKey(target.sport, date))) continue
-      const today = this.fixtures(target.sport, date)
-      const playsToday = today.some((f) => {
-        const h = foldTeamKey(f.home.name)
-        const a = foldTeamKey(f.away.name)
-        return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
-      })
-      if (playsToday) continue
       const key = `${target.sport}|${target.slug}|${date}`
       if (this.recentAsked.has(key)) continue
+      if (!this.days.has(this.dayKey(target.sport, date))) continue
+      let index = indexes.get(target.sport)
+      if (!index) { index = new TeamIndex(this.fixtures(target.sport, date)); indexes.set(target.sport, index) }
+      if (index.candidates(m).some((f) => sameTeams(m, f))) continue
       this.recentAsked.add(key)
       void espnBudget.run('day', target.sport, espnRecent(target.sport, target.slug, date, this.tz)).then((res) => {
         if (!res.data?.length) return

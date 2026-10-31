@@ -125,7 +125,7 @@ export function teamTokens(key: string): string[] {
  * vid varje öppning. Indexet slår upp fixturer vars lag delar ett indexord med
  * sändningens hemmalag; ordningen bevaras så att sorteringen ger samma svar.
  */
-class TeamIndex {
+export class TeamIndex {
   private byToken = new Map<string, number[]>()
   constructor(private fixtures: Fixture[]) {
     fixtures.forEach((f, i) => {
@@ -136,7 +136,7 @@ class TeamIndex {
       }
     })
   }
-  candidates(m: SportMatch): Fixture[] {
+  candidates(m: Pick<SportMatch, 'homeKey'>): Fixture[] {
     if (!m.homeKey) return []
     const hits = new Set<number>()
     for (const t of teamTokens(m.homeKey)) for (const i of this.byToken.get(t) ?? []) hits.add(i)
@@ -144,7 +144,7 @@ class TeamIndex {
   }
 }
 
-function sameTeams(m: SportMatch, f: Fixture): boolean {
+export function sameTeams(m: Pick<SportMatch, 'homeKey' | 'awayKey'>, f: Fixture): boolean {
   const [h, a] = keysOf(f)
   return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
 }
