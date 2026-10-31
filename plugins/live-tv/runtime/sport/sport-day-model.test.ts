@@ -3,6 +3,7 @@ import {
   clashes, crestColor, featuredMatch, followCandidates, followState, headerSummary, leagueColor, nextMatchFor,
   nextOnYourChannels, pickMultiviewKeys, rankedSources, splitSections, sportCounts, statusAt, teamRing,
   timelineAxis, timelineRows, mergeLane, blockShowsLabel, visibleMatches, playerMatchGroups, matchdayStrip, replayMatches,
+  laneBudget, windowFor, windowStart,
 } from './sport-day-model'
 import { heroStatusLine, matchStatusLabel, playedOnText, replayScoreText, scoreText, showsScore } from './score-model'
 import { HOUR, MIN, fxDay, fxMatch, fxSource } from './__sport-fixture'
@@ -211,5 +212,38 @@ describe('repriser: egen grupp sist, aldrig live', () => {
     expect(replayScoreText(nhl)).toBeNull()
     expect(playedOnText(airing, tt as never, 'sv-SE')).toBe('Spelades lör 10 okt')
     expect(playedOnText(nhl, tt as never, 'sv-SE')).toBeNull()
+  })
+})
+
+/* Matchdagen på TV (Jerry 2026-10-31): tio timmar i taget, högst tre rader per
+   liga, avslutade matcher för sig. */
+describe('matchdagens fönster och rader', () => {
+  const day = Date.UTC(2026, 9, 31)
+  const axis = { start: day, end: day + 24 * HOUR, hours: [] as number[] }
+  it('fönstret börjar två timmar före nu (hel timme) och håller sig inom axeln', () => {
+    expect(windowStart(axis, day + 13 * HOUR + 20 * MIN)).toBe(day + 11 * HOUR)
+    expect(windowStart(axis, day + HOUR)).toBe(day)
+    expect(windowStart(axis, day + 23 * HOUR)).toBe(day + 14 * HOUR)
+  })
+  it('en kort axel visas hel', () => {
+    expect(windowStart({ start: day + 15 * HOUR, end: day + 21 * HOUR }, day + 20 * HOUR)).toBe(day + 15 * HOUR)
+  })
+  it('ett block utanför fönstret flyttar fönstret så att blocket står två timmar in', () => {
+    const start = day + 11 * HOUR
+    expect(windowFor(axis, start, day + 22 * HOUR)).toBe(day + 14 * HOUR)
+    expect(windowFor(axis, start, day + 12 * HOUR)).toBe(start)
+    expect(windowFor(axis, start, day + 9 * HOUR + 30 * MIN)).toBe(day + 7 * HOUR)
+  })
+  it('avslutade matcher lämnar raderna; högst tre rader, resten räknas', () => {
+    const t = day + 13 * HOUR
+    const ms = [
+      fxMatch({ id: 'f1', leagueKey: 'nhl', start: t - 5 * HOUR, stop: t - 3 * HOUR }),
+      ...[0, 1, 2, 3, 4].map((i) => fxMatch({ id: `u${i}`, leagueKey: 'nhl', start: t + HOUR, stop: t + 3 * HOUR })),
+    ]
+    const [row] = timelineRows(ms)
+    const b = laneBudget(row, t, 3)
+    expect(b.finished.map((m) => m.id)).toEqual(['f1'])
+    expect(b.lanes).toHaveLength(3)
+    expect(b.more.map((m) => m.id)).toEqual(['u3', 'u4'])
   })
 })

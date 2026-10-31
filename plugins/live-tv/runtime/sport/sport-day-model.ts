@@ -139,6 +139,49 @@ export function timelineRows(matches: SportMatch[]): TimelineRow[] {
   return [...rows.values()]
 }
 
+/**
+ * MATCHDAGENS FÖNSTER (Jerry 2026-10-31: "hela sidan är otydlig"). Hela dygnet
+ * på en skärmbredd gav smala remsor; tidslinjen visar tio timmar i taget och
+ * flyttas i sidled när fokus går utanför.
+ */
+export const WINDOW_HOURS = 10
+const WINDOW = WINDOW_HOURS * HOUR
+const LEAD = 2 * HOUR
+
+function clampWindow(axis: { start: number; end: number }, start: number): number {
+  return Math.max(axis.start, Math.min(start, axis.end - WINDOW))
+}
+
+/** Fönstrets början: två timmar före nu (hel timme), inom axeln. */
+export function windowStart(axis: { start: number; end: number }, now: number): number {
+  return clampWindow(axis, Math.floor(now / HOUR) * HOUR - LEAD)
+}
+
+/** Fönstret som visar tidpunkten `t`: oförändrat om den syns, annars med `t` två timmar in. */
+export function windowFor(axis: { start: number; end: number }, current: number, t: number): number {
+  if (t >= current && t <= current + WINDOW - LEAD) return current
+  return clampWindow(axis, Math.floor(t / HOUR) * HOUR - LEAD)
+}
+
+/**
+ * En ligas rader: avslutade matcher står för sig (kompakt rad med resultat),
+ * resten packas i högst `maxLanes` rader; det som inte får plats räknas i `more`.
+ */
+export function laneBudget(row: TimelineRow, now: number, maxLanes = 3): { lanes: SportMatch[][]; more: SportMatch[]; finished: SportMatch[] } {
+  const all = row.lanes.flat().sort((a, b) => a.start - b.start)
+  const finished = all.filter((m) => statusAt(m, now) === 'finished')
+  const lanes: SportMatch[][] = []
+  const more: SportMatch[] = []
+  for (const m of all) {
+    if (statusAt(m, now) === 'finished') continue
+    const lane = lanes.find((l) => (l[l.length - 1]?.stop ?? 0) <= m.start)
+    if (lane) lane.push(m)
+    else if (lanes.length < maxLanes) lanes.push([m])
+    else more.push(m)
+  }
+  return { lanes, more, finished }
+}
+
 const MERGE_GAP_MS = 5 * MIN
 
 /** Angränsande block med samma titel (<= 5 min mellan) blir ett — F1-raden fylls annars av småbitar. */

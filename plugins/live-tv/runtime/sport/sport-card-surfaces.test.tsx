@@ -57,7 +57,9 @@ describe('Sports kortyta: allt delar samma bakgrund', () => {
   it('matchdagen: hero (med accentglöd ovanpå), nästa-ruta och tidslinje', () => {
     render(<SportMatchday ctx={fakeCtx({ now })} matches={all} dayFrom={dayFrom} />)
     expect(bg(screen.getByTestId('sport-next'))).toBe(MARK)
-    expect(bg(screen.getByTestId('sport-timeline'))).toBe(MARK)
+    // Tidslinjen: rubriken (som står kvar överst) och varje liga bär kortytan.
+    expect(bg(screen.getByTestId('sport-timeline-head'))).toBe(MARK)
+    expect(bg(screen.getAllByTestId('sport-timeline-row')[0])).toBe(MARK)
     // Heron lägger glöden som översta lager och kortytan som botten (inte en egen vit 7 %-färg).
     expect(screen.getByTestId('sport-hero').getAttribute('style') ?? '').not.toContain('252, 252, 255')
   })

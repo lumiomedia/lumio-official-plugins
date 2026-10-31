@@ -45,7 +45,9 @@ describe('Matchdag', () => {
     expect(timeline).toHaveTextContent('Champions League')
     expect(timeline).toHaveTextContent('Premier League')
     expect(screen.getByTestId('sport-block-live').getAttribute('data-status')).toBe('live')
-    expect(screen.getByTestId('sport-block-done').getAttribute('data-status')).toBe('finished')
+    // Avslutade matcher står i ligans resultatrad, inte som block (Jerry 2026-10-31).
+    expect(screen.queryByTestId('sport-block-done')).toBeNull()
+    expect(screen.getByTestId('sport-ended-done')).toBeTruthy()
     expect(screen.getByTestId('sport-block-n1').getAttribute('data-status')).toBe('upcoming')
     fireEvent.click(screen.getByTestId('sport-block-n3'))
     expect(ctx.openMatch).toHaveBeenCalledWith(next3)
