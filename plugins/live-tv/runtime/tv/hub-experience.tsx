@@ -345,6 +345,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     >
       <V2FocusStyle />
       {/* Den aktiva radens övriga kort dämpas (TV). I CSS och inte per kort: ett radbyte ritar då inte om alla kort. */}
+      {/* Radkorten bär sin ring på rutan; skalets fokusregel (samma prefix → samma specificitet + attributet) ska inte rita en till runt bildtexten. */}
+      <style>{':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-xp-face-ring][data-f]:focus, :root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-xp-face-ring][data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important }'}</style>
       {/* Mörkning med en överliggande yta, inte opacity: på Mi Box S ritades kort med opacity < 1 förskjutna och krympta. */}
       <style>{'[data-testid="xp-row-strip"][data-dim="1"] > [data-xp]:not([data-xp-focused]) > :first-child::after { content: ""; position: absolute; inset: 0; background: rgba(12,14,20,.2); pointer-events: none; z-index: 5 }'}</style>
       {/* Hål åt förhandsrutan: mpv ritar videon under webbvyn. */}
@@ -663,6 +665,9 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
       onPointerDownCapture={(e) => api.current.arm(id, e.currentTarget)}
       onFocus={() => api.current.focusCard(ri, ii)}
       data-xp-focused={focused ? '1' : undefined}
+      // Ringen ritas på rutan (FOCUS_CARD nedan); skalets ring runt hela stationen
+      // (ruta + bildtext i Dina kanaler) stängs av för radkorten — annars dubbla ramar.
+      data-xp-face-ring=""
       style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none', visibility: hidden ? 'hidden' : undefined }}
     >
       <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s` }}>

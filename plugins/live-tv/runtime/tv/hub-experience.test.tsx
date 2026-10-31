@@ -332,6 +332,17 @@ describe('HubExperience', () => {
       expect(css).not.toMatch(/rotateY|preserve-3d|box-reflect|perspective/)
     }
   })
+  it('Dina kanaler: fokusringen bara runt rutan — skalets ring runt ruta + bildtext stängs av för radkorten (Jerry 2026-10-31)', async () => {
+    await mount()
+    const rowCards = within(screen.getByTestId('xp-row-yours')).getAllByTestId('xp-card')
+    for (const card of rowCards) expect(card).toHaveAttribute('data-xp-face-ring')
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
+    const rule = css.split('}').find((r) => r.includes('[data-xp-face-ring][data-f]:focus'))!
+    expect(rule).toMatch(/outline: none !important/)
+    expect(rule).toMatch(/box-shadow: none !important/)
+    // Samma prefix som skalets fokusregel, så specificiteten räcker.
+    expect(rule).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]')
+  })
   it('bakgrunden är den gemensamma neutrala gradienten även när heron visar en kanal med förhandsruta', async () => {
     await mount()
     expect(screen.getByTestId('xp-hero-tile')).toBeInTheDocument()
