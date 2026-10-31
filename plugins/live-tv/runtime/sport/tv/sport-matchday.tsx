@@ -176,6 +176,13 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
     if (m.stop > winStart + 30 * MIN && m.start < winStart + span - HOUR) return
     setOffset(windowFor(axis, winStart, m.start))
   }
+  // Blocket klipps mot fönstret, så att texten står i den synliga delen och inte
+  // försvinner till vänster om ett block som började före fönstret.
+  const clip = (m: SportMatch) => {
+    const from = Math.max(m.start, winStart)
+    const to = Math.min(m.stop, winStart + span)
+    return { left: pct(from), width: Math.max(pct(to) - pct(from), 1.5), showLabel: blockShowsLabel(to - from, span) }
+  }
   const toggle = (key: string) => setExpanded((cur) => { const next = new Set(cur); if (next.has(key)) next.delete(key); else next.add(key); return next })
   // MATCHDAGEN (Jerry 2026-10-31): bakgrund bara bakom rubriken och tidsaxeln,
   // som står kvar överst när sidan rullar — så att klockslagen syns vid varje
@@ -211,7 +218,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
                   {laneIndex === lastLane && (budget.more.length > 0 || open) && laneIndex > 0 ? <MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /> : null}
                 </div>
                 <div style={{ position: 'relative', flex: 1, height: dp(50), background: TV.s05, borderRadius: dp(8), overflow: 'hidden' }}>
-                  {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} showLabel={blockShowsLabel(m.stop - m.start, span)} onFocus={() => reveal(m)} />)}
+                  {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} {...clip(m)} onFocus={() => reveal(m)} />)}
                   {nowInside ? <div aria-hidden="true" style={{ position: 'absolute', top: 0, bottom: 0, left: `${pct(ctx.now)}%`, width: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
                 </div>
               </div>
