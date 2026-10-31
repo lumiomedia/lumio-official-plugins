@@ -152,6 +152,15 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
   const tvMode = useTvMode()
   const isTv = platform === 'tv'
   const phone = platform === 'phone'
+  // "Dölj första raden" för Live TV:s Hem — eget val, skilt från appens. Appens
+  // scen (tv-home-stage.tsx) läser attributet medan ramen visas (Jerry 2026-10-31).
+  useEffect(() => {
+    if (!isTv) return
+    const root = document.documentElement
+    if (settings.heroFull) root.dataset.ltHeroFull = '1'
+    else delete root.dataset.ltHeroFull
+    return () => { delete root.dataset.ltHeroFull }
+  }, [isTv, settings.heroFull])
   // Herotonen på skrivbord OCH TV (Jerry 2026-10-30); telefonen har ingen räls.
   // Oskärpan (och den suddiga bildkopian) bara på skrivbordet — för tung för Mi Box/Shield.
   const glass = !phone

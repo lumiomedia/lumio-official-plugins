@@ -80,6 +80,8 @@ export interface TvSettings {
   remoteKeys: RemoteBinding[]
   /** Dölj sidomenyn på TV: rälsen glider fram med vänster vid kanten (tv-rail.tsx). */
   railHidden: boolean
+  /** Dölj första raden på Live TV:s Hem (TV) — eget val, skilt från appens (tv-home-stage läser data-lt-hero-full). */
+  heroFull: boolean
 }
 
 const DEFAULTS: TvSettings = {
@@ -107,6 +109,7 @@ const DEFAULTS: TvSettings = {
   hubRows: sanitizeHubRows(undefined),
   remoteKeys: sanitizeRemoteBindings(undefined),
   railHidden: false,
+  heroFull: false,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -137,6 +140,7 @@ function sanitize(raw: unknown): TvSettings {
     hubRows: sanitizeHubRows(r.hubRows),
     remoteKeys: sanitizeRemoteBindings(r.remoteKeys),
     railHidden: typeof r.railHidden === 'boolean' ? r.railHidden : DEFAULTS.railHidden,
+    heroFull: typeof r.heroFull === 'boolean' ? r.heroFull : DEFAULTS.heroFull,
   }
 }
 

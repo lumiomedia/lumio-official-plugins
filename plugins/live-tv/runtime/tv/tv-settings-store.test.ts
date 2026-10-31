@@ -33,6 +33,7 @@ describe('tv-settings-store', () => {
       hubRows: BUILTIN_HUB_ROWS.map((id) => ({ id, hidden: false })),
       remoteKeys: DEFAULT_REMOTE_BINDINGS,
       railHidden: false,
+      heroFull: false,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()

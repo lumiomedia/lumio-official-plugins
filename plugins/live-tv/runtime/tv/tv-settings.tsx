@@ -10,7 +10,6 @@ import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, us
 import { ContentTab, EpgTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { HubRowsSection } from './hub-rows-settings'
 import { RemoteTab } from './remote-settings'
-import { useHostHeroFull } from './host-hero-full'
 import { ChannelOverridesSection } from './channel-overrides-settings'
 import { groupOrderLabelKey, nextGroupOrder } from '../group-order'
 import { TvSettingsPhone } from './mobile/settings-phone'
@@ -112,7 +111,6 @@ type TT = ReturnType<typeof useTvText>['tt']
 
 function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
   const guideMode = useGuideMode()
-  const heroFull = useHostHeroFull()
   const tvMode = sdk.useTvMode()
   const [accent, setAccentState] = useState(() => (hasAccent ? accentApi.getAccent!() : ''))
   // Den städade guiden (skrivbord/TV, spec "Beslut", Lägen) har tre lägen i
@@ -174,7 +172,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Row testId="setting-railLabels" label={tt('settingRailLabels')} right={<Toggle on={settings.railLabels} />} onOk={() => setTvSettings({ railLabels: !settings.railLabels })} />
         {/* Bara TV: på skrivbordet (Mac/Windows) är rälsen alltid framme (Jerry 2026-10-31). */}
         {tvMode ? <Row testId="setting-railHidden" label={tt('settingRailHidden')} right={<Toggle on={settings.railHidden} />} onOk={() => setTvSettings({ railHidden: !settings.railHidden })} /> : null}
-        {heroFull && tvMode ? <Row testId="setting-heroFull" label={tt('settingHeroFull')} right={<Toggle on={heroFull.on} />} onOk={() => heroFull.set(!heroFull.on)} /> : null}
+        {tvMode ? <Row testId="setting-heroFull" label={tt('settingHeroFull')} right={<Toggle on={settings.heroFull} />} onOk={() => setTvSettings({ heroFull: !settings.heroFull })} /> : null}
         <Row testId="setting-bannerHideMs" label={tt('settingBannerHide')} right={settings.bannerHideMs === 0 ? tt('never') : tt('seconds', { s: settings.bannerHideMs / 1000 })} onOk={() => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) })} />
         <Row testId="setting-streamFallback" label={tt('settingStreamFallback')} right={<Toggle on={settings.streamFallback} />} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
         <Row testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
