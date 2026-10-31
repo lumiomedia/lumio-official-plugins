@@ -88,7 +88,7 @@ describe('Kanalväljaren i Sports utseende', () => {
 })
 
 describe('Kanalväljaren på TV: minimimått och tydliga chips', () => {
-  it('chips ≥ 22 text och ≥ 56 höga, vald fylld ljus pill; radens titel ≥ 24 och sekundärtext ≥ 20', async () => {
+  it('chips ≥ 22 text och ≥ 56 höga, vald pill i accentfärg; radens titel ≥ 24 och sekundärtext ≥ 20', async () => {
     mountSport({}, { days: { [today]: [live, later] } })
     await screen.findByTestId('sport-hero')
     fireEvent.click(screen.getByTestId('page-tab-matches'))
@@ -102,7 +102,7 @@ describe('Kanalväljaren på TV: minimimått och tydliga chips', () => {
       expect(parseFloat(c.style.minHeight)).toBeGreaterThanOrEqual(56)
     }
     const on = chips.find((c) => c.getAttribute('data-chip-on') === '1')!
-    expect(on.style.background).toBe('#f3f4f8')
+    expect(on.style.background).not.toBe('#f3f4f8') // accent (Jerry 2026-10-31; happy-dom kastar var())
     const row = within(picker).getByTestId('picker-row-A')
     const sizes = Array.from(row.querySelectorAll<HTMLElement>('div')).map((d) => parseFloat(d.style.fontSize)).filter(Number.isFinite)
     expect(sizes).toEqual([24, 20])

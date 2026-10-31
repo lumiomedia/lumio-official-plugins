@@ -20,7 +20,8 @@ import { displayTitle } from '../display-title'
 function sportChip(on: boolean, big: boolean): CSSProperties {
   return {
     height: dp(big ? 56 : 46), minHeight: dp(big ? 56 : 46), padding: `0 ${dp(big ? 24 : 20)}px`, fontSize: dp(big ? 22 : 18), fontWeight: on ? 700 : 600, boxSizing: 'border-box',
-    ...(on ? { background: TV.text, color: '#12152a', border: `1px solid ${TV.text}` } : { background: 'var(--sport-card-bg, rgba(252,252,255,0.12))', color: TV.text, border: `1px solid ${TV.lineCard}` }),
+    // Vald i accent; ovalda med en ljus slöja över kortytan så att de syns mot lådan (Jerry 2026-10-31).
+    ...(on ? { background: TV.acc, color: '#fff', border: `1px solid ${TV.acc}` } : { background: 'linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.12)), var(--sport-card-bg, rgba(252,252,255,0.12))', color: TV.text, border: `1px solid ${TV.lineStrong}` }),
   }
 }
 
