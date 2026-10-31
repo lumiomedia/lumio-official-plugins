@@ -84,13 +84,13 @@ export function ReplayPill({ u, ctx, testId = 'replay-pill' }: { u: U; ctx: Spor
   )
 }
 
-/** Lagets följ-pill under märket: orange hjärta + "Följer" / "Följ". */
+/** Lagets följ-pill under märket: vitt hjärta (Jerry 2026-10-31) + "Följer" / "Följ". */
 export function FollowPill({ u, testId, on, name, ctx, onToggle }: { u: U; testId: string; on: boolean; name: string; ctx: SportCtx; onToggle: () => void }) {
   const label = on ? ctx.tt('sportFollowingName', { name }) : ctx.tt('sportFollowName', { name })
   return (
     <div data-testid={testId} {...station(onToggle)} aria-pressed={on ? 'true' : 'false'} aria-label={label} title={label}
       style={{ display: 'inline-flex', alignItems: 'center', gap: u(6), height: u(36), padding: `0 ${u(14)}px`, borderRadius: 999, cursor: 'pointer', fontSize: u(15), fontWeight: 700, background: on ? TV.accMix(20) : TV.s10, color: on ? TV.accText : TV.text, border: `1px solid ${on ? TV.accMix(50) : TV.lineCard}`, boxSizing: 'border-box' }}>
-      <span style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={u(16)} filled={on} /></span>
+      <span style={{ color: '#fff', display: 'inline-flex' }}><SportIcons.Heart size={u(16)} filled={on} /></span>
       {on ? ctx.tt('sportFollowing') : ctx.tt('sportFollow')}
     </div>
   )

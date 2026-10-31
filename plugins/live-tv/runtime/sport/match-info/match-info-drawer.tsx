@@ -105,7 +105,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
         ) : <span data-testid="mc-context" style={{ flex: 1, minWidth: 0, fontSize: u(17), color: TV.muted, ...ellipsis }}>{context}</span>}
         {match.leagueKey ? (
           <IconBtn u={u} testId="mc-follow-league" on={fs.league} label={fs.league ? ctx.tt('sportFollowingName', { name: match.league }) : ctx.tt('sportFollowName', { name: match.league })} onPress={() => toggleFollow({ sport: match.kind, kind: 'league', key: match.leagueKey, name: match.league })}>
-            <SportIcons.Heart size={u(20)} filled={fs.league} />
+            <span style={{ color: '#fff', display: 'inline-flex' }}><SportIcons.Heart size={u(20)} filled={fs.league} /></span>
           </IconBtn>
         ) : null}
         {bell}
