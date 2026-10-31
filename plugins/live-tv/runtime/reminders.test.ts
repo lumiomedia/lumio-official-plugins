@@ -8,6 +8,7 @@ import {
   getReminders,
   isReminded,
   markReminderNotified,
+  reminderId,
   removeReminder,
   __resetShownRemindersForTests,
   startReminderScheduler,
@@ -69,5 +70,53 @@ describe('dubbla påminnelser (synk mellan enheter)', () => {
     expect(shown).toEqual(['Manchester City - PSG'])
     stop()
     vi.useRealTimers()
+  })
+})
+
+describe('påminnelsecachen (guiden frågar per block)', () => {
+  beforeEach(() => writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, []))
+
+  /** Lagrat värde som räknar hur många gånger listan läses (stubben ger tillbaka samma objekt). */
+  const countingStore = (list: unknown[]) => {
+    let reads = 0
+    const proxy = new Proxy(list, { get(target, prop, receiver) { if (prop === '0') reads++; return Reflect.get(target, prop, receiver) } })
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, proxy)
+    return () => reads
+  }
+
+  it('läser och tolkar lagringen en gång per synkront pass, inte per anrop', async () => {
+    toggleReminder(channel, prog(60), NOW)
+    const stored = getReminders(NOW)
+    await Promise.resolve()
+    const reads = countingStore(stored)
+    for (let i = 0; i < 200; i++) isReminded(channel, prog(i))
+    expect(reads()).toBe(1)
+    expect(isReminded(channel, prog(60))).toBe(true)
+  })
+
+  it('en skrivning från en annan vy (lagringshändelsen) syns direkt', () => {
+    expect(isReminded(channel, prog(60))).toBe(false)
+    const other = { ...channel, name: 'SVT2', url: 'http://x/svt2' }
+    toggleReminder(other, prog(30), NOW)
+    const list = getReminders(NOW)
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [...list, { ...list[0], id: reminderId(channel, prog(60)), start: prog(60).start }])
+    expect(isReminded(channel, prog(60))).toBe(true)
+  })
+
+  it('en tyst skrivning (utan händelse) syns i nästa pass', async () => {
+    expect(isReminded(channel, prog(60))).toBe(false)
+    toggleReminder(channel, prog(60), NOW)
+    const list = getReminders(NOW)
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [], { emitChange: false })
+    await Promise.resolve()
+    expect(isReminded(channel, prog(60))).toBe(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list, { emitChange: false })
+    await Promise.resolve()
+    expect(isReminded(channel, prog(60))).toBe(true)
+  })
+
+  it('en påminnelse vars program är långt förbi räknas inte', () => {
+    toggleReminder(channel, prog(-60), NOW)
+    expect(isReminded(channel, prog(-60))).toBe(false)
   })
 })

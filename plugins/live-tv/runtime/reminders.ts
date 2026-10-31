@@ -65,17 +65,39 @@ function sanitize(raw: unknown): Reminder[] {
   return out.sort((left, right) => left.start - right.start)
 }
 
+/**
+ * Tolkad lista + id-uppslag. Guiden frågar `isReminded` för varje block vid
+ * varje fokusflytt (238 block på en Mi Box S) — förut läste och tolkade varje
+ * fråga hela lagringen. Cachen gäller det pågående synkrona passet (en
+ * rendering) och släpps i nästa mikrouppgift, så en skrivning som inte
+ * annonserats (synk, profilbyte) syns senast i nästa pass. Egna skrivningar
+ * och lagringshändelsen för nyckeln släpper den direkt.
+ */
+let parsed: { list: Reminder[]; byId: Map<string, Reminder> } | null = null
+const dropParsed = (): void => { parsed = null }
+
+function load(): { list: Reminder[]; byId: Map<string, Reminder> } {
+  if (parsed) return parsed
+  const list = sanitize(readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, []))
+  parsed = { list, byId: new Map(list.map((r) => [r.id, r])) }
+  // Samma lyssnare varje gång: lägg till är idempotent (Set / addEventListener).
+  onPluginStorageChanged(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, dropParsed)
+  void Promise.resolve().then(dropParsed)
+  return parsed
+}
+
 export function getReminders(now: number = Date.now()): Reminder[] {
-  return sanitize(readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now)
+  return load().list.filter((r) => r.start + REMINDER_GRACE_MS > now)
 }
 
 function write(list: Reminder[]): void {
+  dropParsed()
   writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list)
 }
 
 export function isReminded(channel: Pick<M3uChannel, 'name' | 'url'>, programme: Pick<EpgProgramme, 'start'>): boolean {
-  const id = reminderId(channel, programme)
-  return getReminders().some((r) => r.id === id)
+  const r = load().byId.get(reminderId(channel, programme))
+  return r !== undefined && r.start + REMINDER_GRACE_MS > Date.now()
 }
 
 export function toggleReminder(channel: M3uChannel, programme: EpgProgramme, now: number = Date.now()): Reminder[] {
