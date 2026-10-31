@@ -7,6 +7,8 @@ import { startOfLocalDay, type LiveTvModel } from '../live-tv-model'
 import { useSchedules } from '../hooks/useSchedules'
 import { groupCounts } from './group-chips'
 import { FAVS_GROUP } from './tv-guide-shared'
+import { listIdOf, type HubRowPref } from './hub-rows'
+import { useTvSettings } from './tv-settings-store'
 import { matchTitle, type SportMatch } from '../sport/sport-model'
 import { statusAt } from '../sport/sport-day-model'
 import { titleKey } from '../display-title'
@@ -52,7 +54,11 @@ export type XpItem = {
 }
 export type XpRowId = 'continue' | 'onNow' | 'sport' | 'yours' | 'soon' | 'explore' | 'grid'
 /** `total` = rutnätets kanaler i kategorin (bara på dess första rad, till rubriken). */
-export interface XpRow { id: XpRowId; items: XpItem[]; total?: number }
+/**
+ * `key`: radens unika nyckel när `id` inte räcker — en egen listrad ritas som
+ * Dina kanaler (`id: 'yours'`) men heter `list:<id>`. `title`: listans namn.
+ */
+export interface XpRow { id: XpRowId; items: XpItem[]; total?: number; key?: string; title?: string }
 
 /** Chipvärdet för "Alla" i kategoriläget (`null` = ingen chip vald, hemraderna). */
 export const XP_ALL = '__xp_all'
@@ -94,6 +100,10 @@ export interface XpInput {
   sport?: readonly SportMatch[]
   /** Källans kanalnyckel → kanalen i modellen (okända källor hoppas över). */
   channelFor?: (key: string) => M3uChannel | undefined
+  /** Hemradernas ordning och synlighet (`hub-rows.ts`); utan den dagens ordning. */
+  hubRows?: readonly HubRowPref[]
+  /** Användarens egna listor (kanalerna redan uppslagna i modellen). */
+  lists?: readonly { id: string; name: string; channels: readonly M3uChannel[] }[]
 }
 
 const liveItem = (prefix: string, channel: M3uChannel, nowFor: XpInput['nowFor']): XpItem =>
@@ -162,7 +172,7 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
   const onNow = chip === null
     ? takeLive([favourites, channels], (c) => !inContinue.has(channelKey(c)), ON_NOW_MAX, nowFor, favKeys).map((c) => liveItem('now', c, nowFor))
     : takeLive([recent, favourites, channels], inChip, ON_NOW_MAX, nowFor, favKeys).map((c) => liveItem('now', c, nowFor))
-  const rows = chip === null ? homeRows(input, onNow, continueItems) : categoryRows(input, onNow)
+  const rows = chip === null ? orderHomeRows(input, homeRows(input, onNow, continueItems)) : categoryRows(input, onNow)
   // Toppkortet = första kortet i Sänds nu (Jerry 2026-10-30): heron förladdar
   // och spelar det, så förhandsvisningen redan är igång när man går ner i raden.
   // Utan något som sänds: senaste reprisen, sedan första kanalen.
@@ -194,6 +204,32 @@ function homeRows(input: XpInput, onNow: XpItem[], continueItems: XpItem[]): XpR
     { id: 'soon', items: upcoming },
     { id: 'explore', items: explore },
   ]
+}
+
+/**
+ * Hemraderna i användarens ordning (Jerry 2026-10-31): dolda rader bort, egna
+ * listor som rader med listans kanaler i listans ordning, ritade som Dina
+ * kanaler. En borttagen eller tom lista ger ingen rad.
+ */
+function orderHomeRows(input: XpInput, built: XpRow[]): XpRow[] {
+  if (!input.hubRows) return built
+  const byId = new Map(built.map((r) => [r.id as string, r]))
+  const lists = new Map((input.lists ?? []).map((l) => [l.id, l]))
+  const out: XpRow[] = []
+  for (const pref of input.hubRows) {
+    if (pref.hidden) continue
+    const listId = listIdOf(pref.id)
+    if (listId) {
+      const list = lists.get(listId)
+      if (!list) continue
+      const items = take([list.channels], () => true, YOURS_MAX).map((c) => liveItem(pref.id, c, input.nowFor))
+      out.push({ id: 'yours', key: pref.id, title: list.name, items })
+      continue
+    }
+    const row = byId.get(pref.id)
+    if (row) out.push(row)
+  }
+  return out
 }
 
 /**
@@ -278,7 +314,12 @@ export function useExperienceRows(model: LiveTvModel, chip: string | null, limit
   const sport = sportDay?.matches
   const byKey = model.byKey
   const channelFor = useMemo(() => (key: string) => byKey.get(key), [byKey])
+  // Egna listor som hemrader: listans sparade kanaler slås upp i modellen (aktuell ström/logga).
+  const { hubRows } = useTvSettings()
+  const lists = useMemo(() => model.lists
+    .filter((l) => l.kind === 'custom')
+    .map((l) => ({ id: l.id, name: l.label || l.name, channels: (l.channels ?? []).map((c) => byKey.get(channelKey(c)) ?? model.byUrl.get(c.url) ?? c) })), [model.lists, byKey, model.byUrl])
   return useMemo(() => buildExperienceRows({
-    channels: model.channels, favourites, recent, nowFor: model.nowFor, replays, soon, groups: model.groups, counts, chip, nowMs: model.nowMs, limit, sport, channelFor,
-  }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts, chip, model.nowMs, limit, sport, channelFor])
+    channels: model.channels, favourites, recent, nowFor: model.nowFor, replays, soon, groups: model.groups, counts, chip, nowMs: model.nowMs, limit, sport, channelFor, hubRows, lists,
+  }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts, chip, model.nowMs, limit, sport, channelFor, hubRows, lists])
 }

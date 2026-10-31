@@ -8,6 +8,7 @@ import { useRowNeighbours } from '../sport/row-nav'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 import { ContentTab, EpgTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
+import { HubRowsSection } from './hub-rows-settings'
 import { groupOrderLabelKey, nextGroupOrder } from '../group-order'
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
@@ -157,6 +158,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <ColourRow settingKey="liveBgColor" label={tt('settingLiveBgColor')} value={settings.liveBgColor} fallback={v2Bg(settings.liveBackground)} swatches={LIVE_BG_SWATCHES} tt={tt} />
         <ColourRow settingKey="liveSurfaceColor" label={tt('settingLiveSurfaceColor')} value={settings.liveSurfaceColor} fallback={LIVE_SURFACE_DEFAULT} swatches={LIVE_SURFACE_SWATCHES} tt={tt} />
       </section>
+      <HubRowsSection rows={settings.hubRows} tt={tt} />
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
         <Heading>{tt('behaviour')}</Heading>
         <Row testId="setting-previewEnabled" label={tt('settingPreview')} right={<Toggle on={settings.previewEnabled} />} onOk={() => setTvSettings({ previewEnabled: !settings.previewEnabled })} />

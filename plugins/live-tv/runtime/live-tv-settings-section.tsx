@@ -57,6 +57,7 @@ import { GUIDE_CATEGORY_LAYOUTS, HUB_LAYOUTS, LIVE_BACKGROUNDS, guideCategoryLay
 import { LIVE_SURFACE_DEFAULT, v2Bg } from './tv/v2-tokens'
 import { GROUP_ORDERS, groupOrderLabelKey, sanitizeGroupOrder } from './group-order'
 import { useTvText } from './tv/tv-strings'
+import { HubRowsDesktop } from './tv/hub-rows-settings'
 
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
@@ -356,6 +357,7 @@ function DesktopPage() {
             value={tvSettings.hubLayout}
             onChange={(hubLayout) => setTvSettings({ hubLayout })}
           />
+          <HubRowsDesktop rows={tvSettings.hubRows} tt={tt} />
           <LtChoiceRow
             testId="lt-guide-categories"
             label={tt('settingGuideCategories')}

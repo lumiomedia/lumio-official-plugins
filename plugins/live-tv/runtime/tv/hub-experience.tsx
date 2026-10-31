@@ -469,9 +469,11 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
             const onRow = ri === s.row
             const inRows = s.zone === 'rows'
             const opacity = native ? 1 : ri < s.row ? 0 : onRow ? (inRows ? 1 : 0.8) : 0.55
-            const { title, sub } = rowHead(row.id, chip, chipLabel, isTv, tt)
+            // En egen listrad ritas som Dina kanaler men har listans namn som rubrik.
+            const head = rowHead(row.id, chip, chipLabel, isTv, tt)
+            const { title, sub } = row.title ? { title: row.title, sub: head.sub } : head
             return (
-              <section key={row.id} data-testid={`xp-row-${row.id}`} style={{ height: dp(ROW_HEAD + m.h + rowTail(row.id, isTv)), opacity, transition: 'opacity .35s' }}>
+              <section key={row.key ?? row.id} data-testid={`xp-row-${row.key ?? row.id}`} style={{ height: dp(ROW_HEAD + m.h + rowTail(row.id, isTv)), opacity, transition: 'opacity .35s' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14), padding: `0 ${dp(56)}px`, height: dp(50) }}>
                   <span style={{ fontSize: dp(isTv ? 28 : 26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{title}</span>
                   {sub ? <span style={{ fontSize: dp(isTv ? 20 : 17), color: 'rgba(243,244,248,0.55)' }}>{sub}</span> : null}

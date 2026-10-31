@@ -260,8 +260,10 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
           medan Live TV:s Hem visas, så regeln följer med den och försvinner när man
           lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30).
           Detaljsidans flytande Hem-pill (media-details-panel.tsx, [data-details-home])
-          göms samma tid: rälsen har redan Hem. */}
-      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; }`}</style>
+          göms samma tid: rälsen har redan Hem. Bibliotekschipsen (Filmer, Serier,
+          Sök; home-rows.tsx [data-library-nav]) får herons pilknappars glasstil:
+          mörk botten, ljus toning, kant överst (Jerry 2026-10-31). */}
+      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; } [data-library-nav] { border-radius: 9999px !important; background-color: rgba(0,0,0,0.35) !important; background-image: linear-gradient(rgba(255,255,255,0.16), rgba(255,255,255,0.04)) !important; border-color: transparent !important; color: #fff !important; font-weight: 600 !important; } [data-library-nav]:not(:focus):not([data-fcur="1"]) { box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.22) !important; } [data-library-nav][data-current] { background-image: linear-gradient(rgba(255,255,255,0.30), rgba(255,255,255,0.10)) !important; }`}</style>
       <TvRail active="home" isTv={isTv} narrow={narrow} labels={settings.railLabels && !narrow} onSelect={select} />
     </div>
   )

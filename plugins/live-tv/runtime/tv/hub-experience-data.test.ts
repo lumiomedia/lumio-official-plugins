@@ -215,3 +215,29 @@ describe('buildExperienceRows, kategoriläge (vald chip)', () => {
     expect(grid(out).flatMap((l) => l.items).filter((i) => i.kind === 'live')).toHaveLength(120)
   })
 })
+
+/* Jerry 2026-10-31: egna listor som rader, och raderna i den ordning användaren valt. */
+describe('hemraderna enligt inställningen', () => {
+  it('ordning och dolda rader följer hubRows; listraden visar listans kanaler med listans namn', () => {
+    const hubRows = [
+      { id: 'yours', hidden: false },
+      { id: 'list:L1', hidden: false },
+      { id: 'onNow', hidden: false },
+      { id: 'sport', hidden: true },
+      { id: 'continue', hidden: true },
+      { id: 'soon', hidden: false },
+      { id: 'explore', hidden: true },
+    ]
+    const out = buildExperienceRows(base({ hubRows, lists: [{ id: 'L1', name: 'Jerrys favoriter', channels: [K1, S1] }] }))
+    expect(out.rows.map((r) => r.key ?? r.id)).toEqual(['yours', 'list:L1', 'onNow', 'soon'])
+    const listRow = out.rows[1]!
+    expect(listRow.id).toBe('yours')
+    expect(listRow.title).toBe('Jerrys favoriter')
+    expect(listRow.items.map((i) => i.channel!.name)).toEqual(['K1', 'S1'])
+  })
+  it('en borttagen lista och en tom lista ger ingen rad', () => {
+    const hubRows = [{ id: 'list:gone', hidden: false }, { id: 'list:empty', hidden: false }, { id: 'onNow', hidden: false }]
+    const out = buildExperienceRows(base({ hubRows, lists: [{ id: 'empty', name: 'Tom', channels: [] }] }))
+    expect(out.rows.some((r) => r.key?.startsWith('list:'))).toBe(false)
+  })
+})
