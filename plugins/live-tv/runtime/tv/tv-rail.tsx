@@ -1,6 +1,6 @@
 'use client'
 
-import { cloneElement, isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { onTvFocusEdge } from '@/lib/plugin-sdk'
 import { useTvSettings } from './tv-settings-store'
 import { useTvText } from './tv-strings'
@@ -101,6 +101,13 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
   const overlay = useTvSettings().railHidden && isTv && !narrow
   const navRef = useRef<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
+  const focusPendingRef = useRef(false)
+  const focusCurrent = () => {
+    focusPendingRef.current = false
+    const rail = navRef.current
+    const target = rail?.querySelector<HTMLElement>('[data-current]') ?? rail?.querySelector<HTMLElement>('[data-f]')
+    target?.focus({ preventScroll: true })
+  }
   useEffect(() => {
     if (!overlay) return
     return onTvFocusEdge((dir, meta) => {
@@ -108,13 +115,18 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
       const rail = navRef.current
       if (!rail || rail.contains(document.activeElement)) return
       meta?.claim?.()
+      focusPendingRef.current = true
       setOpen(true)
-      window.requestAnimationFrame(() => {
-        const target = rail.querySelector<HTMLElement>('[data-current]') ?? rail.querySelector<HTMLElement>('[data-f]')
-        target?.focus({ preventScroll: true })
-      })
+      // Redan öppen (ingen ny rendering): fokus direkt.
+      if (!rail.hasAttribute('inert')) focusCurrent()
     })
   }, [overlay])
+  // Fokus först när raden ritats om utan `inert` — en inert station tar inte
+  // fokus, och på Mi Boxen hann en rAF före commit ibland.
+  useLayoutEffect(() => {
+    if (!open || !focusPendingRef.current) return
+    focusCurrent()
+  }, [open])
   // Fälls in när fokus landar utanför rälsen. På dokumentet och inte som
   // onBlur på raden: i Hem-ramen (live-tv-library-frame) kom inget blur när
   // motorn flyttade fokus till heron (uppmätt på Mi Box S).
