@@ -97,7 +97,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
   const context = [followed ? ctx.tt('sportYouFollow') : null, match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(' · ')
   return (
     <div data-testid="sport-hero" style={{ ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV.accMix(14)}, transparent), ${SPORT_CARD_BG}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(17), color: TV.muted }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(21), color: TV.muted }}>
         {st === 'live' ? <Tag variant="live">{ctx.tt('live')}</Tag> : null}
         <span>{context}</span>
       </div>
@@ -131,7 +131,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
           </div>
         ) : null}
         <div data-testid="sport-hero-mc" {...station(() => ctx.openMatch(match))} style={secondaryBtn}>{ctx.tt('sportMatchCenter')}</div>
-        {match.resultOnly ? <ResultOnlyTag /> : match.sources.length > 0 ? <span style={{ fontSize: dp(16), color: '#86efac' }}>{ctx.tt('sportSources', { n: match.sources.length })}</span> : null}
+        {match.resultOnly ? <ResultOnlyTag /> : match.sources.length > 0 ? <span style={{ fontSize: dp(19), color: '#86efac' }}>{ctx.tt('sportSources', { n: match.sources.length })}</span> : null}
       </div>
     </div>
   )
@@ -139,7 +139,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
 
 function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[] }) {
   return (
-    <div data-testid="sport-next" style={{ ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+    <div data-testid="sport-next" style={{ ...sportCardStyle, width: dp(600), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <span style={overline}>{ctx.tt('sportNextOnChannels')}</span>
       {matches.map((m) => {
         const best = rankedSources(m, ctx.overrides)[0]
@@ -147,8 +147,8 @@ function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[]
           <div key={m.id} data-testid="sport-next-row" data-match-id={m.id} {...station(() => ctx.openMatch(m), () => ctx.toggleRemind(m))} style={{ display: 'flex', alignItems: 'center', gap: dp(14), padding: `${dp(12)}px ${dp(14)}px`, borderRadius: dp(12), background: TV.s08, border: `1px solid ${TV.line}`, cursor: 'pointer' }}>
             <span style={{ fontSize: dp(24), fontWeight: 700, flexShrink: 0 }}>{formatClock(m.start, ctx.locale)}</span>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-              <div style={{ fontSize: dp(15), color: TV.dim, ...ellipsis }}>{best?.name ?? ''}</div>
+              <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+              <div style={{ fontSize: dp(18), color: TV.dim, ...ellipsis }}>{best?.name ?? ''}</div>
             </div>
             {ctx.isReminded(m) ? <span data-testid="next-reminded" style={{ display: 'inline-flex', color: TV.accText }}><SportIcons.Bell size={dp(20)} /></span> : null}
           </div>
