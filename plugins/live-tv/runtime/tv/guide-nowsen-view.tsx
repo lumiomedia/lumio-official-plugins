@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme, NowNextLater } from '../epg/types'
 import type { LiveTvModel } from '../live-tv-model'
@@ -36,18 +36,34 @@ export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden
  */
 export function GuideChannelCellV2({ channel, model, selected }: { channel: M3uChannel; model: LiveTvModel; selected: boolean }): JSX.Element {
   const key = channelKey(channel)
+  return <ChannelCellV2 channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} selected={selected} />
+}
+
+/** Kanalcellen med bara primitiva props, så en memoiserad rad inte ritar om den i onödan. */
+export const ChannelCellV2 = memo(function ChannelCellV2({ channel, number, pinned, locked, selected }: { channel: M3uChannel; number: number | null; pinned: boolean; locked: boolean; selected: boolean }): JSX.Element {
   const meta = [channel.group, qualityFromName(channel.name)].filter(Boolean).join(' · ')
   return (
     <div data-testid="guide-channel-v2" style={{ width: dp(GUIDE_CHANNEL_W), flexShrink: 0, borderRadius: dp(GUIDE_CELL_RADIUS), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(14)}px`, boxSizing: 'border-box', background: selected ? V2.surface4 : V2.surface2 }}>
-      <LogoPlate channel={channel} width={76} height={48} number={model.channelNumber(channel)} radius={8} />
+      <LogoPlate channel={channel} width={76} height={48} number={number} radius={8} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
         {meta ? <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)', ...ellipsis }}>{meta}</div> : null}
       </div>
-      {model.pinnedSet.has(key) ? <span data-testid="guide-channel-fav" style={{ color: ACCENT, flexShrink: 0 }}><Icons.Heart size={dp(18)} filled /></span> : null}
-      {model.locked.has(key) ? <span style={{ color: 'rgba(243,244,248,0.45)', flexShrink: 0 }}><Icons.Lock size={dp(18)} /></span> : null}
+      {pinned ? <span data-testid="guide-channel-fav" style={{ color: ACCENT, flexShrink: 0 }}><Icons.Heart size={dp(18)} filled /></span> : null}
+      {locked ? <span style={{ color: 'rgba(243,244,248,0.45)', flexShrink: 0 }}><Icons.Lock size={dp(18)} /></span> : null}
     </div>
   )
+})
+
+/**
+ * Det en memoiserad rad behöver av vyn, i en ref: raden får samma objekt
+ * varje rendering (ingen omritning för nya closures) och läser alltid de
+ * senaste värdena när en tangent eller ett fokus faktiskt sker.
+ */
+export function useLatest<T>(value: T): { readonly current: T } {
+  const ref = useRef(value)
+  ref.current = value
+  return ref
 }
 
 /** Påminnelser bor i lagringen: en räknare ritar om när de ändras (även från andra vyer). */
@@ -140,7 +156,7 @@ export function GuideNowSenView({ model, nav, category, categoryLabel, selection
   const { tt, locale } = useTvText()
   const { nowMs } = model
   const focusProgramme = onFocusProgramme ?? onSelect
-  void useRemindersVersion()
+  const remindersVersion = useRemindersVersion()
 
   const { channels: modelChannels, favouriteChannels, nowFor } = model
   const channels = useMemo(() => filterByGroup({ channels: modelChannels, favouriteChannels }, category), [modelChannels, favouriteChannels, category])
@@ -179,22 +195,7 @@ export function GuideNowSenView({ model, nav, category, categoryLabel, selection
 
   const nothing = rows.length === 0 || (model.epgLoading && !rows.some((row) => row.info))
 
-  const cellProps = (sel: GuideSelection, init: boolean, leftEdge: boolean, extra: Record<string, string> = {}) => {
-    const props = station(
-      () => { focusProgramme(sel); okAction({ channel: sel.channel, programme: sel.programme, nav, nowMs })() },
-      (element) => holdMenu({ channel: sel.channel, programme: sel.programme, nav, nowMs, element, tt, locale }),
-      { 'data-v2f': 'inset', ...extra, ...(init ? { 'data-init': '' } : {}) },
-    )
-    return {
-      ...withPointerLeave(leftEdge ? withLeftEdge(props, onLeftEdge) : props, hover.leave),
-      onFocus: () => focusProgramme(sel),
-      onPointerEnter: hover.enter ? () => hover.enter?.(sel) : undefined,
-    }
-  }
-
-  const bell = (channel: M3uChannel, programme: EpgProgramme) => (isReminded(channel, programme)
-    ? <span data-testid="nowsen-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span>
-    : null)
+  const api = useLatest<NowSenApi>({ focusProgramme, nav, nowMs, tt, locale, onLeftEdge, hover })
 
   return (
     <div ref={rootRef} data-testid="guide-nowsen-view" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -214,42 +215,23 @@ export function GuideNowSenView({ model, nav, category, categoryLabel, selection
           </div>
         ) : rows.map(({ channel, info }, index) => {
           const key = channelKey(channel)
-          const selected = selectedKey === key
-          const init = index === initIndex
           return (
-            <div key={key} data-testid="nowsen-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
-              <GuideChannelCellV2 channel={channel} model={model} selected={selected} />
-              {info?.now ? (
-                <>
-                  <div data-testid="nowsen-now" data-now-station="" {...cellProps({ channel, programme: info.now }, init, true)} style={{ ...cellBase, flex: `${WEIGHTS[0]} 1 0%`, gap: dp(8), background: selected ? accentMix(18) : V2.surface3 }}>
-                    <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
-                      <div style={{ flex: 1, height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: ACCENT }} />
-                      </div>
-                      <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.6)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((info.now.stop - nowMs) / 60_000)) })}</span>
-                    </div>
-                  </div>
-                  {[info.next, info.later].map((programme, i) => {
-                    const testId = i === 0 ? 'nowsen-next' : 'nowsen-later'
-                    const style: CSSProperties = { ...cellBase, flex: `${WEIGHTS[i + 1]} 1 0%`, background: selected ? V2.surface3 : V2.surface1 }
-                    if (!programme) return <div key={testId} data-testid={testId} style={{ ...style, cursor: 'default' }} />
-                    return (
-                      <div key={testId} data-testid={testId} {...cellProps({ channel, programme }, false, false)} style={style}>
-                        <div style={{ fontSize: dp(19), color: i === 0 ? V2.text : V2.text2, ...ellipsis }}>{programme.title}</div>
-                        <div style={{ fontSize: dp(15), color: i === 0 ? 'rgba(243,244,248,0.55)' : 'rgba(243,244,248,0.5)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
-                          {formatClock(programme.start, locale)}{bell(channel, programme)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </>
-              ) : (
-                <div data-testid="nowsen-empty" data-now-station="" {...cellProps({ channel, programme: null }, init, true)} style={{ ...cellBase, flex: `${WEIGHTS[0] + WEIGHTS[1] + WEIGHTS[2]} 1 0%`, background: V2.surface1, fontSize: dp(17), color: 'rgba(243,244,248,0.45)' }}>
-                  <span style={ellipsis}>{tt('noEpgRow')}</span>
-                </div>
-              )}
-            </div>
+            <NowSenRow
+              key={key}
+              channel={channel}
+              rowKey={key}
+              info={info}
+              selected={selectedKey === key}
+              init={index === initIndex}
+              number={model.channelNumber(channel)}
+              pinned={model.pinnedSet.has(key)}
+              locked={model.locked.has(key)}
+              nowMs={nowMs}
+              locale={locale}
+              remindersVersion={remindersVersion}
+              hoverEnabled={hover.enter !== undefined}
+              api={api}
+            />
           )
         })}
       </div>
@@ -260,3 +242,83 @@ export function GuideNowSenView({ model, nav, category, categoryLabel, selection
     </div>
   )
 }
+
+interface NowSenApi {
+  focusProgramme(sel: GuideSelection): void
+  nav: TvNav
+  nowMs: number
+  tt: ReturnType<typeof useTvText>['tt']
+  locale: string
+  onLeftEdge?(): boolean
+  hover: { enter?: (sel: GuideSelection) => void; leave?: () => void }
+}
+
+/** EN rad i Nu/Sen, memoiserad (se `TimelineRow`): en fokusflytt ritar om två rader, inte alla. */
+const NowSenRow = memo(function NowSenRow({ channel, rowKey: key, info, selected, init, number, pinned, locked, nowMs, locale, hoverEnabled, api }: {
+  channel: M3uChannel
+  rowKey: string
+  info: NowNextLater | null
+  selected: boolean
+  init: boolean
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  nowMs: number
+  locale: string
+  /** Bara för att rita om när påminnelser ändras. */
+  remindersVersion: number
+  hoverEnabled: boolean
+  api: { readonly current: NowSenApi }
+}): JSX.Element {
+  const { tt } = useTvText()
+  const cellProps = (sel: GuideSelection, cellInit: boolean, leftEdge: boolean) => {
+    const props = station(
+      () => { const a = api.current; a.focusProgramme(sel); okAction({ channel: sel.channel, programme: sel.programme, nav: a.nav, nowMs: a.nowMs })() },
+      (element) => { const a = api.current; holdMenu({ channel: sel.channel, programme: sel.programme, nav: a.nav, nowMs: a.nowMs, element, tt: a.tt, locale: a.locale }) },
+      { 'data-v2f': 'inset', ...(cellInit ? { 'data-init': '' } : {}) },
+    )
+    return {
+      ...withPointerLeave(leftEdge ? withLeftEdge(props, () => api.current.onLeftEdge?.() ?? false) : props, hoverEnabled ? () => api.current.hover.leave?.() : undefined),
+      onFocus: () => api.current.focusProgramme(sel),
+      onPointerEnter: hoverEnabled ? () => api.current.hover.enter?.(sel) : undefined,
+    }
+  }
+  const bell = (programme: EpgProgramme) => (isReminded(channel, programme)
+    ? <span data-testid="nowsen-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span>
+    : null)
+  return (
+    <div data-testid="nowsen-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
+      <ChannelCellV2 channel={channel} number={number} pinned={pinned} locked={locked} selected={selected} />
+      {info?.now ? (
+        <>
+          <div data-testid="nowsen-now" data-now-station="" {...cellProps({ channel, programme: info.now }, init, true)} style={{ ...cellBase, flex: `${WEIGHTS[0]} 1 0%`, gap: dp(8), background: selected ? accentMix(18) : V2.surface3 }}>
+            <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
+              <div style={{ flex: 1, height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: ACCENT }} />
+              </div>
+              <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.6)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((info.now.stop - nowMs) / 60_000)) })}</span>
+            </div>
+          </div>
+          {[info.next, info.later].map((programme, i) => {
+            const testId = i === 0 ? 'nowsen-next' : 'nowsen-later'
+            const style: CSSProperties = { ...cellBase, flex: `${WEIGHTS[i + 1]} 1 0%`, background: selected ? V2.surface3 : V2.surface1 }
+            if (!programme) return <div key={testId} data-testid={testId} style={{ ...style, cursor: 'default' }} />
+            return (
+              <div key={testId} data-testid={testId} {...cellProps({ channel, programme }, false, false)} style={style}>
+                <div style={{ fontSize: dp(19), color: i === 0 ? V2.text : V2.text2, ...ellipsis }}>{programme.title}</div>
+                <div style={{ fontSize: dp(15), color: i === 0 ? 'rgba(243,244,248,0.55)' : 'rgba(243,244,248,0.5)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
+                  {formatClock(programme.start, locale)}{bell(programme)}
+                </div>
+              </div>
+            )
+          })}
+        </>
+      ) : (
+        <div data-testid="nowsen-empty" data-now-station="" {...cellProps({ channel, programme: null }, init, true)} style={{ ...cellBase, flex: `${WEIGHTS[0] + WEIGHTS[1] + WEIGHTS[2]} 1 0%`, background: V2.surface1, fontSize: dp(17), color: 'rgba(243,244,248,0.45)' }}>
+          <span style={ellipsis}>{tt('noEpgRow')}</span>
+        </div>
+      )}
+    </div>
+  )
+})

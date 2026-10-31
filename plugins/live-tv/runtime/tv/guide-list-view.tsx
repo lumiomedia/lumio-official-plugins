@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme, NowNextLater } from '../epg/types'
 import { formatClock, progressOf } from '../live-tv-ui'
@@ -12,7 +12,7 @@ import { holdMenu, okAction } from './programme-actions'
 import { filterByGroup } from './tv-guide-shared'
 import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import { V2 } from './v2-tokens'
-import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, GuideChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
+import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, ChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useLatest, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /** Programkortens kolumn (handoff "Kanallista"). */
@@ -111,7 +111,7 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
     return true
   }
 
-  const nowCellStyle: CSSProperties = { flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', gap: dp(20), boxSizing: 'border-box', cursor: 'pointer' }
+  const api = useLatest<ListApi>({ focusProgramme, nav, nowMs, tt, locale, onLeftEdge, hover, focusCard })
 
   return (
     <div ref={rootRef} data-testid="guide-list-view" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -131,42 +131,21 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
             </div>
           ) : rows.map(({ channel, info }, index) => {
             const key = channelKey(channel)
-            const selected = selectedKey === key
-            const sel: GuideSelection = { channel, programme: info?.now ?? null }
-            const props = onKeys(
-              withLeftEdge(station(
-                () => { focusProgramme(sel); okAction({ channel, programme: sel.programme, nav, nowMs })() },
-                (element) => holdMenu({ channel, programme: sel.programme, nav, nowMs, element, tt, locale }),
-                { 'data-v2f': 'inset', ...(index === initIndex ? { 'data-init': '' } : {}) },
-              ), onLeftEdge),
-              (k) => (k === 'ArrowRight' ? focusCard(0) : false),
-            )
             return (
-              <div key={key} data-testid="list-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
-                <GuideChannelCellV2 channel={channel} model={model} selected={selected} />
-                <div
-                  data-testid="list-now"
-                  data-now-station=""
-                  {...withPointerLeave(props, hover.leave)}
-                  onFocus={() => focusProgramme(sel)}
-                  onPointerEnter={hover.enter ? () => hover.enter?.(sel) : undefined}
-                  style={{ ...nowCellStyle, background: selected ? V2.surface4 : V2.surface2 }}
-                >
-                  {info?.now ? (
-                    <>
-                      <div style={{ minWidth: 0, flex: 1, fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
-                      <div style={{ width: dp(150), flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(6), alignItems: 'flex-end' }}>
-                        <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((info.now.stop - nowMs) / 60_000)) })}</span>
-                        <div style={{ width: '100%', height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: ACCENT }} />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <span style={{ minWidth: 0, fontSize: dp(17), color: 'rgba(243,244,248,0.45)', ...ellipsis }}>{tt('noEpgRow')}</span>
-                  )}
-                </div>
-              </div>
+              <ListRow
+                key={key}
+                channel={channel}
+                rowKey={key}
+                info={info}
+                selected={selectedKey === key}
+                init={index === initIndex}
+                number={model.channelNumber(channel)}
+                pinned={model.pinnedSet.has(key)}
+                locked={model.locked.has(key)}
+                nowMs={nowMs}
+                hoverEnabled={hover.enter !== undefined}
+                api={api}
+              />
             )
           })}
         </div>
@@ -231,3 +210,69 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
     </div>
   )
 }
+
+const nowCellStyle: CSSProperties = { flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', gap: dp(20), boxSizing: 'border-box', cursor: 'pointer' }
+
+interface ListApi {
+  focusProgramme(sel: GuideSelection): void
+  nav: TvNav
+  nowMs: number
+  tt: ReturnType<typeof useTvText>['tt']
+  locale: string
+  onLeftEdge?(): boolean
+  hover: { enter?: (sel: GuideSelection) => void; leave?: () => void }
+  focusCard(index: number): boolean
+}
+
+/** EN rad i Kanallistan, memoiserad (se `TimelineRow`): en fokusflytt ritar om två rader, inte alla. */
+const ListRow = memo(function ListRow({ channel, rowKey: key, info, selected, init, number, pinned, locked, nowMs, hoverEnabled, api }: {
+  channel: M3uChannel
+  rowKey: string
+  info: NowNextLater | null
+  selected: boolean
+  init: boolean
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  nowMs: number
+  hoverEnabled: boolean
+  api: { readonly current: ListApi }
+}): JSX.Element {
+  const { tt } = useTvText()
+  const sel: GuideSelection = { channel, programme: info?.now ?? null }
+  const props = onKeys(
+    withLeftEdge(station(
+      () => { const a = api.current; a.focusProgramme(sel); okAction({ channel, programme: sel.programme, nav: a.nav, nowMs: a.nowMs })() },
+      (element) => { const a = api.current; holdMenu({ channel, programme: sel.programme, nav: a.nav, nowMs: a.nowMs, element, tt: a.tt, locale: a.locale }) },
+      { 'data-v2f': 'inset', ...(init ? { 'data-init': '' } : {}) },
+    ), () => api.current.onLeftEdge?.() ?? false),
+    (k) => (k === 'ArrowRight' ? api.current.focusCard(0) : false),
+  )
+  return (
+    <div data-testid="list-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
+      <ChannelCellV2 channel={channel} number={number} pinned={pinned} locked={locked} selected={selected} />
+      <div
+        data-testid="list-now"
+        data-now-station=""
+        {...withPointerLeave(props, hoverEnabled ? () => api.current.hover.leave?.() : undefined)}
+        onFocus={() => api.current.focusProgramme(sel)}
+        onPointerEnter={hoverEnabled ? () => api.current.hover.enter?.(sel) : undefined}
+        style={{ ...nowCellStyle, background: selected ? V2.surface4 : V2.surface2 }}
+      >
+        {info?.now ? (
+          <>
+            <div style={{ minWidth: 0, flex: 1, fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
+            <div style={{ width: dp(150), flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(6), alignItems: 'flex-end' }}>
+              <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((info.now.stop - nowMs) / 60_000)) })}</span>
+              <div style={{ width: '100%', height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: ACCENT }} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <span style={{ minWidth: 0, fontSize: dp(17), color: 'rgba(243,244,248,0.45)', ...ellipsis }}>{tt('noEpgRow')}</span>
+        )}
+      </div>
+    </div>
+  )
+})

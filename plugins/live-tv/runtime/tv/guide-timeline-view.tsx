@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
 import { startOfLocalDay } from '../live-tv-model'
@@ -15,7 +15,7 @@ import { useGridRows } from './grid-rows'
 import { filterByGroup } from './tv-guide-shared'
 import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import { V2 } from './v2-tokens'
-import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, GuideChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
+import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, ChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useLatest, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 const MIN = 60_000
@@ -68,7 +68,7 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
   const { tt, locale } = useTvText()
   const { nowMs } = model
   const focusProgramme = onFocusProgramme ?? onSelect
-  void useRemindersVersion()
+  const remindersVersion = useRemindersVersion()
   const windowEnd = windowStart + TL_SPAN_MS
   const { from, to } = timelineFetchRange(nowMs)
 
@@ -98,13 +98,12 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
   const allRows = useMemo(() => [...rows.map((r) => r.channel), ...withoutEpg], [rows, withoutEpg])
   const focusIndex = focusChannelKey ? allRows.findIndex((c) => channelKey(c) === focusChannelKey) : -1
   const initIndex = focusIndex >= 0 ? focusIndex : 0
-  const isLive = (p: EpgProgramme) => p.start <= nowMs && p.stop > nowMs
 
   // Startblocket i startraden: det pågående, annars fönstrets första.
   const initChannel = allRows[initIndex] ?? null
   const initKey = initChannel ? channelKey(initChannel) : null
   const initEntries = initKey ? lanes.get(initKey)?.entries ?? [] : []
-  const initProgramme = (initEntries.find((e) => isLive(e.programme)) ?? initEntries[0])?.programme ?? null
+  const initProgramme = (initEntries.find((e) => e.programme.start <= nowMs && e.programme.stop > nowMs) ?? initEntries[0])?.programme ?? null
   useAutoSelection(selection, nothing || !initChannel ? null : { channel: initChannel, programme: initProgramme }, focusProgramme)
 
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -163,22 +162,8 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
     return true
   }
 
-  const keys = (props: StationProps, onArrow: (key: string, el: HTMLElement) => boolean): StationProps => {
-    const base = props.onKeyDown as ((event: ReactKeyboardEvent<HTMLElement>) => void) | undefined
-    return {
-      ...props,
-      onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
-        if (event.key.startsWith('Arrow') && onArrow(event.key, event.currentTarget)) {
-          event.preventDefault()
-          event.stopPropagation()
-          return
-        }
-        base?.(event)
-      },
-    }
-  }
+  const api = useLatest<TlApi>({ focusProgramme, nav, nowMs, tt, locale, step, vertical, onLeftEdge, hover })
 
-  const visibleMid = (p: EpgProgramme) => (Math.max(p.start, windowStart) + Math.min(p.stop, windowEnd)) / 2
   const nowIn = nowMs >= windowStart && nowMs < windowEnd
   const nowFrac = (nowMs - windowStart) / TL_SPAN_MS
   const ticks = [0, 1, 2, 3].map((i) => windowStart + i * TICK_MS)
@@ -217,85 +202,28 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
             </div>
           ) : allRows.map((channel, rowIndex) => {
             const key = channelKey(channel)
-            const lane = lanes.get(key)
             const selected = selectedKey === key
             const rowInit = rowIndex === initIndex
             return (
-              <div key={key} data-testid="tl-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
-                <GuideChannelCellV2 channel={channel} model={model} selected={selected} />
-                {lane && lane.entries.length > 0 ? (
-                  <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-                    {lane.entries.map(({ box, programme }) => {
-                      const sel: GuideSelection = { channel, programme }
-                      const live = isLive(programme)
-                      const past = programme.stop <= nowMs
-                      const focused = selected && selection?.programme?.start === programme.start
-                      const reminded = !live && !past && isReminded(channel, programme)
-                      const props = keys(
-                        station(
-                          () => { focusProgramme(sel); okAction({ channel, programme, nav, nowMs })() },
-                          (element) => holdMenu({ channel, programme, nav, nowMs, element, tt, locale }),
-                          { 'data-v2f': 'inset', ...(rowInit && programme === initProgramme ? { 'data-init': '' } : {}) },
-                        ),
-                        (k, el) => (k === 'ArrowRight' ? step(channel, programme, 1)
-                          : k === 'ArrowLeft' ? step(channel, programme, -1)
-                            : vertical(el, visibleMid(programme), k === 'ArrowDown' ? 1 : -1)),
-                      )
-                      const background = live ? (focused ? accentMix(34) : 'rgba(252,252,255,0.13)') : focused ? V2.surface5 : V2.surface2
-                      const style: CSSProperties = { position: 'absolute', top: 0, bottom: 0, left: `${box.left}%`, width: `calc(${box.width}% - ${BLOCK_GAP}px)`, minWidth: dp(4), boxSizing: 'border-box', borderRadius: dp(10), padding: box.shape === 'marker' ? 0 : `${dp(12)}px ${dp(16)}px`, background, overflow: 'hidden', whiteSpace: 'nowrap', cursor: 'pointer' }
-                      return (
-                        <div
-                          key={programme.start}
-                          data-testid="tl-block"
-                          data-tl-block=""
-                          data-key={key}
-                          data-start={String(programme.start)}
-                          data-stop={String(programme.stop)}
-                          data-left={String(Math.round(box.left * 100) / 100)}
-                          data-width={String(Math.round(box.width * 100) / 100)}
-                          data-past={past ? '' : undefined}
-                          {...(live ? { 'data-now-station': '' } : {})}
-                          title={`${programme.title} ${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}
-                          {...withPointerLeave(props, hover.leave)}
-                          onFocus={() => focusProgramme(sel)}
-                          onPointerEnter={hover.enter ? () => hover.enter?.(sel) : undefined}
-                          style={style}
-                        >
-                          {box.shape === 'marker' ? <span /> : (
-                            <div style={{ opacity: past ? 0.6 : undefined }}>
-                              <div style={{ fontSize: dp(19), fontWeight: live ? 600 : 400, ...ellipsis }}>{programme.title}</div>
-                              {box.shape === 'full' ? (
-                                <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
-                                  {`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}
-                                  {reminded ? <span data-testid="tl-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span> : null}
-                                </div>
-                              ) : reminded ? <span data-testid="tl-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span> : null}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    data-testid="tl-empty"
-                    data-now-station=""
-                    {...withPointerLeave(keys(
-                      withLeftEdge(station(
-                        () => { focusProgramme({ channel, programme: null }); nav.play({ channel }) },
-                        (element) => holdMenu({ channel, programme: null, nav, nowMs, element, tt, locale }),
-                        { 'data-v2f': 'inset', ...(rowInit ? { 'data-init': '' } : {}) },
-                      ), onLeftEdge),
-                      (k, el) => (k === 'ArrowUp' || k === 'ArrowDown' ? vertical(el, nowIn ? nowMs : windowStart + TL_SPAN_MS / 2, k === 'ArrowDown' ? 1 : -1) : false),
-                    ), hover.leave)}
-                    onFocus={() => focusProgramme({ channel, programme: null })}
-                    onPointerEnter={hover.enter ? () => hover.enter?.({ channel, programme: null }) : undefined}
-                    style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', background: V2.surface1, fontSize: dp(17), color: 'rgba(243,244,248,0.45)', cursor: 'pointer', boxSizing: 'border-box' }}
-                  >
-                    <span style={ellipsis}>{tt('noEpgRow')}</span>
-                  </div>
-                )}
-              </div>
+              <TimelineRow
+                key={key}
+                channel={channel}
+                rowKey={key}
+                entries={lanes.get(key)?.entries ?? null}
+                selected={selected}
+                focusedStart={selected ? selection?.programme?.start ?? null : null}
+                init={rowInit}
+                initStart={rowInit ? initProgramme?.start ?? null : null}
+                number={model.channelNumber(channel)}
+                pinned={model.pinnedSet.has(key)}
+                locked={model.locked.has(key)}
+                nowMs={nowMs}
+                windowStart={windowStart}
+                locale={locale}
+                remindersVersion={remindersVersion}
+                hoverEnabled={hover.enter !== undefined}
+                api={api}
+              />
             )
           })}
         </div>
@@ -307,3 +235,142 @@ export function GuideTimelineView({ model, nav, category, categoryLabel, windowS
     </div>
   )
 }
+
+interface TlApi {
+  focusProgramme(sel: GuideSelection): void
+  nav: TvNav
+  nowMs: number
+  tt: ReturnType<typeof useTvText>['tt']
+  locale: string
+  step(channel: M3uChannel, programme: EpgProgramme, dir: 1 | -1): boolean
+  vertical(origin: HTMLElement, anchor: number, dir: 1 | -1): boolean
+  onLeftEdge?(): boolean
+  hover: { enter?: (sel: GuideSelection) => void; leave?: () => void }
+}
+
+/** Pilar till `onArrow`; tar den tangenten stoppas den, annars får stationen den. */
+function withArrows(props: StationProps, onArrow: (key: string, el: HTMLElement) => boolean): StationProps {
+  const base = props.onKeyDown as ((event: ReactKeyboardEvent<HTMLElement>) => void) | undefined
+  return {
+    ...props,
+    onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
+      if (event.key.startsWith('Arrow') && onArrow(event.key, event.currentTarget)) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      base?.(event)
+    },
+  }
+}
+
+/**
+ * EN rad i Tablån, memoiserad: props är primitiva eller stabila (raden,
+ * fönstrets block, `api`-refen), så en fokusflytt ritar bara om raden
+ * markeringen lämnar och raden den landar på. På en Mi Box S ritade varje
+ * pil-tryck förut om alla 80 rader och 238 block (~2 s huvudtråd).
+ */
+const TimelineRow = memo(function TimelineRow({ channel, rowKey: key, entries, selected, focusedStart, init, initStart, number, pinned, locked, nowMs, windowStart, locale, hoverEnabled, api }: {
+  channel: M3uChannel
+  rowKey: string
+  entries: EpgRowEntry<EpgProgramme>[] | null
+  selected: boolean
+  focusedStart: number | null
+  init: boolean
+  initStart: number | null
+  number: number | null
+  pinned: boolean
+  locked: boolean
+  nowMs: number
+  windowStart: number
+  locale: string
+  /** Bara för att rita om när påminnelser ändras (klockan i blocken). */
+  remindersVersion: number
+  hoverEnabled: boolean
+  api: { readonly current: TlApi }
+}): JSX.Element {
+  const { tt } = useTvText()
+  const windowEnd = windowStart + TL_SPAN_MS
+  const nowIn = nowMs >= windowStart && nowMs < windowEnd
+  const visibleMid = (p: EpgProgramme) => (Math.max(p.start, windowStart) + Math.min(p.stop, windowEnd)) / 2
+  const leave = hoverEnabled ? () => api.current.hover.leave?.() : undefined
+  const enter = (sel: GuideSelection) => (hoverEnabled ? () => api.current.hover.enter?.(sel) : undefined)
+  return (
+    <div data-testid="tl-row" data-guide-v2-row="" data-key={key} data-selected={selected ? '' : undefined} style={{ display: 'flex', gap: dp(GUIDE_ROW_GAP), height: dp(GUIDE_ROW_H), flexShrink: 0 }}>
+      <ChannelCellV2 channel={channel} number={number} pinned={pinned} locked={locked} selected={selected} />
+      {entries && entries.length > 0 ? (
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          {entries.map(({ box, programme }) => {
+            const sel: GuideSelection = { channel, programme }
+            const live = programme.start <= nowMs && programme.stop > nowMs
+            const past = programme.stop <= nowMs
+            const focused = selected && focusedStart === programme.start
+            const reminded = !live && !past && isReminded(channel, programme)
+            const props = withArrows(
+              station(
+                () => { const a = api.current; a.focusProgramme(sel); okAction({ channel, programme, nav: a.nav, nowMs: a.nowMs })() },
+                (element) => { const a = api.current; holdMenu({ channel, programme, nav: a.nav, nowMs: a.nowMs, element, tt: a.tt, locale: a.locale }) },
+                { 'data-v2f': 'inset', ...(init && programme.start === initStart ? { 'data-init': '' } : {}) },
+              ),
+              (k, el) => (k === 'ArrowRight' ? api.current.step(channel, programme, 1)
+                : k === 'ArrowLeft' ? api.current.step(channel, programme, -1)
+                  : api.current.vertical(el, visibleMid(programme), k === 'ArrowDown' ? 1 : -1)),
+            )
+            const background = live ? (focused ? accentMix(34) : 'rgba(252,252,255,0.13)') : focused ? V2.surface5 : V2.surface2
+            const style: CSSProperties = { position: 'absolute', top: 0, bottom: 0, left: `${box.left}%`, width: `calc(${box.width}% - ${BLOCK_GAP}px)`, minWidth: dp(4), boxSizing: 'border-box', borderRadius: dp(10), padding: box.shape === 'marker' ? 0 : `${dp(12)}px ${dp(16)}px`, background, overflow: 'hidden', whiteSpace: 'nowrap', cursor: 'pointer' }
+            const span = `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`
+            return (
+              <div
+                key={programme.start}
+                data-testid="tl-block"
+                data-tl-block=""
+                data-key={key}
+                data-start={String(programme.start)}
+                data-stop={String(programme.stop)}
+                data-left={String(Math.round(box.left * 100) / 100)}
+                data-width={String(Math.round(box.width * 100) / 100)}
+                data-past={past ? '' : undefined}
+                {...(live ? { 'data-now-station': '' } : {})}
+                title={`${programme.title} ${span}`}
+                {...withPointerLeave(props, leave)}
+                onFocus={() => api.current.focusProgramme(sel)}
+                onPointerEnter={enter(sel)}
+                style={style}
+              >
+                {box.shape === 'marker' ? <span /> : (
+                  <div style={{ opacity: past ? 0.6 : undefined }}>
+                    <div style={{ fontSize: dp(19), fontWeight: live ? 600 : 400, ...ellipsis }}>{programme.title}</div>
+                    {box.shape === 'full' ? (
+                      <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
+                        {span}
+                        {reminded ? <span data-testid="tl-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span> : null}
+                      </div>
+                    ) : reminded ? <span data-testid="tl-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(14)} filled /></span> : null}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div
+          data-testid="tl-empty"
+          data-now-station=""
+          {...withPointerLeave(withArrows(
+            withLeftEdge(station(
+              () => { const a = api.current; a.focusProgramme({ channel, programme: null }); a.nav.play({ channel }) },
+              (element) => { const a = api.current; holdMenu({ channel, programme: null, nav: a.nav, nowMs: a.nowMs, element, tt: a.tt, locale: a.locale }) },
+              { 'data-v2f': 'inset', ...(init ? { 'data-init': '' } : {}) },
+            ), () => api.current.onLeftEdge?.() ?? false),
+            (k, el) => (k === 'ArrowUp' || k === 'ArrowDown' ? api.current.vertical(el, nowIn ? nowMs : windowStart + TL_SPAN_MS / 2, k === 'ArrowDown' ? 1 : -1) : false),
+          ), leave)}
+          onFocus={() => api.current.focusProgramme({ channel, programme: null })}
+          onPointerEnter={enter({ channel, programme: null })}
+          style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', background: V2.surface1, fontSize: dp(17), color: 'rgba(243,244,248,0.45)', cursor: 'pointer', boxSizing: 'border-box' }}
+        >
+          <span style={ellipsis}>{tt('noEpgRow')}</span>
+        </div>
+      )}
+    </div>
+  )
+})
