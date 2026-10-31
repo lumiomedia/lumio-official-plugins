@@ -17,7 +17,7 @@ type TT = (key: TvStringKey, vars?: Record<string, string | number>) => string
 
 const KEY_LABEL: Record<string, TvStringKey> = {
   ColorF0Red: 'keyRed', ColorF1Green: 'keyGreen', ColorF2Yellow: 'keyYellow', ColorF3Blue: 'keyBlue',
-  Info: 'keyInfo', Guide: 'keyGuide', ContextMenu: 'keyMenu', MediaLast: 'keyLast',
+  Info: 'keyInfo', Guide: 'keyGuide', ContextMenu: 'keyMenu', MediaLast: 'keyLast', BrowserSearch: 'keySearch',
   'media:rewind': 'keyRewind', 'media:fastforward': 'keyFastForward', 'media:next': 'keyNext', 'media:previous': 'keyPrevious',
   ArrowLeft: 'keyLeft', ArrowRight: 'keyRight', ArrowUp: 'keyUp', ArrowDown: 'keyDown',
 }
@@ -25,7 +25,7 @@ const KEY_DOT: Record<string, string> = { ColorF0Red: '#e5484d', ColorF1Green: '
 
 export const REMOTE_ACTION_LABEL: Record<Exclude<RemoteAction, 'none'>, TvStringKey> = {
   lastChannel: 'actLastChannel', guide: 'actGuide', miniGuide: 'actMiniGuide', menu: 'actMenu', info: 'actInfo', favourite: 'actFavourite',
-  multiview: 'actMultiview', playPause: 'actPlayPause', channelUp: 'actChannelUp', channelDown: 'actChannelDown', search: 'actSearch',
+  multiview: 'actMultiview', playPause: 'actPlayPause', channelUp: 'actChannelUp', channelDown: 'actChannelDown', search: 'actSearch', voiceSearch: 'actVoiceSearch',
   favourites: 'actFavourites', sport: 'actSport', home: 'actHome',
 }
 

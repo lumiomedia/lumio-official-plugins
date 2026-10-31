@@ -259,3 +259,36 @@ describe('TvSearch: kanalträffar som guiderader', () => {
     expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ view: 'guide', channel: expect.stringContaining('ESPN') }) }))
   })
 })
+
+describe('Röstsökning', () => {
+  const shellProps = (params: Record<string, string>) => ({ pageId: 'live-tv-browse', params, onNavigate: () => {}, onOpenDetails: () => {} }) as unknown as ComponentProps<typeof LiveTvTvShell>
+  const setHost = (sdk: Record<string, unknown> | undefined) => {
+    (window as unknown as { __lumioPluginRuntime?: unknown }).__lumioPluginRuntime = sdk ? { sdk } : undefined
+  }
+  afterEach(() => setHost(undefined))
+
+  it('utan röst på enheten syns ingen mikrofon', async () => {
+    render(<LiveTvTvShell {...shellProps({ view: 'search' })} />)
+    await settle()
+    expect(screen.queryByTestId('search-voice')).toBeNull()
+  })
+
+  it('mikrofonen: det som sades blir frågan', async () => {
+    const listenForVoice = vi.fn(async () => 'sky')
+    setHost({ voiceAvailable: async () => true, listenForVoice })
+    render(<LiveTvTvShell {...shellProps({ view: 'search' })} />)
+    await settle()
+    fireEvent.click(screen.getByTestId('search-voice'))
+    await settle()
+    expect(listenForVoice).toHaveBeenCalledWith(expect.objectContaining({ lang: expect.any(String) }))
+    expect(within(screen.getByTestId('search-top')).getByText('sky')).toBeInTheDocument()
+  })
+
+  it('fjärrens Sök-knapp (voice-nyckel i adressen) börjar lyssna direkt', async () => {
+    const listenForVoice = vi.fn(async () => null)
+    setHost({ voiceAvailable: async () => true, listenForVoice })
+    render(<LiveTvTvShell {...shellProps({ view: 'search', voice: '123' })} />)
+    await settle()
+    expect(listenForVoice).toHaveBeenCalledTimes(1)
+  })
+})

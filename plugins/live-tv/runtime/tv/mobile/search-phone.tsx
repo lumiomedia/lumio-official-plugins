@@ -5,7 +5,8 @@ import { channelKey } from '../../live-tv-data'
 import { startOfLocalDay } from '../../live-tv-model'
 import { formatClock } from '../../live-tv-ui'
 import type { TvViewProps } from '../tv-shell'
-import { station } from '../tv-ui'
+import { Icons, station } from '../tv-ui'
+import { listenVoice, useVoiceAvailable } from '../voice'
 import { useTvText } from '../tv-strings'
 import { searchChannels, suggestions } from '../tv-search-logic'
 import { useProgrammeSearch } from '../../hooks/useProgrammeSearch'
@@ -31,6 +32,9 @@ export function TvSearchPhone({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const [query, setQuery] = useState('')
   const [focused, setFocused] = useState(false)
+  // Röstsökning (Android): systemets röstdialog fyller fältet.
+  const canVoice = useVoiceAvailable()
+  const speak = async () => { const text = await listenVoice(locale, tt('voicePrompt')); if (text) setQuery(text) }
 
   // Samma dags-fönster som skrivbordet: den globala EPG-listan, inte
   // `model.epgListId` — appen kan ha en tablå även utan EPG-URL i lagringen.
@@ -75,6 +79,11 @@ export function TvSearchPhone({ model, nav }: TvViewProps) {
             outline: 'none', fontFamily: MT.font, boxSizing: 'border-box',
           }}
         />
+        {canVoice ? (
+          <div data-testid="search-voice" aria-label={tt('voiceSearch')} {...station(() => { void speak() })} style={{ width: 44, height: 44, minHeight: 44, flexShrink: 0, borderRadius: 999, background: MT.s10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: MT.text, cursor: 'pointer' }}>
+            <Icons.Mic size={22} />
+          </div>
+        ) : null}
         <div data-testid="search-cancel" {...station(() => nav.back())} style={{ minHeight: 44, flexShrink: 0, display: 'flex', alignItems: 'center', fontSize: 15, cursor: 'pointer' }}>{tt('cancel')}</div>
       </div>
 

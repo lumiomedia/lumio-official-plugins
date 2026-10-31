@@ -15,12 +15,12 @@
 
 export type RemoteAction =
   | 'none' | 'lastChannel' | 'guide' | 'miniGuide' | 'menu' | 'info' | 'favourite'
-  | 'multiview' | 'playPause' | 'channelUp' | 'channelDown' | 'search' | 'favourites' | 'sport' | 'home'
+  | 'multiview' | 'playPause' | 'channelUp' | 'channelDown' | 'search' | 'voiceSearch' | 'favourites' | 'sport' | 'home'
 
 /** I den ordning åtgärderna visas i väljaren. */
 export const REMOTE_ACTIONS: readonly RemoteAction[] = [
   'none', 'lastChannel', 'guide', 'miniGuide', 'menu', 'info', 'favourite', 'multiview',
-  'playPause', 'channelUp', 'channelDown', 'search', 'favourites', 'sport', 'home',
+  'playPause', 'channelUp', 'channelDown', 'search', 'voiceSearch', 'favourites', 'sport', 'home',
 ]
 
 export interface RemoteBinding { key: string; short: RemoteAction; long: RemoteAction }
@@ -31,7 +31,7 @@ export const MEDIA_REMOTE_KEYS: readonly string[] = ['media:rewind', 'media:fast
 /** Knapparna som alltid visas i inställningarna, i den ordningen. */
 export const PRESET_REMOTE_KEYS: readonly string[] = [
   'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue',
-  'Info', 'Guide', 'ContextMenu', 'MediaLast',
+  'Info', 'Guide', 'ContextMenu', 'MediaLast', 'BrowserSearch',
   ...MEDIA_REMOTE_KEYS,
   ...DPAD_REMOTE_KEYS,
 ]
@@ -41,6 +41,8 @@ const DEFAULT_SHORT: Partial<Record<string, RemoteAction>> = {
   Guide: 'guide',
   ContextMenu: 'menu',
   MediaLast: 'lastChannel',
+  // Fjärrens Sök-knapp (MainActivity skickar den som BrowserSearch).
+  BrowserSearch: 'voiceSearch',
   // Dagens beteende i spelaren (live-tv-player.tsx): nästa/föregående zappar.
   'media:next': 'channelUp',
   'media:previous': 'channelDown',

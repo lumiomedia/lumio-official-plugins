@@ -476,6 +476,7 @@ const sw = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinec
 const svg = (size: number, children: ReactNode, fill?: boolean) => createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', ...sw, fill: fill ? 'currentColor' : 'none' }, children)
 export const Icons = {
   Search: ({ size = dp(26) }: IconProps) => svg(size, <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>),
+  Mic: ({ size = dp(26) }: IconProps) => svg(size, <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" /></>),
   Home: ({ size = dp(26) }: IconProps) => svg(size, <><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v10h14V10" /></>),
   Tv: ({ size = dp(26) }: IconProps) => svg(size, <><rect x="3" y="5" width="18" height="13" rx="2" /><path d="M8 21h8" /></>),
   SquaresFour: ({ size = dp(26) }: IconProps) => svg(size, <><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>),

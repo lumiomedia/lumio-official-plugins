@@ -799,6 +799,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
         case 'guide':
         case 'miniGuide': leave('guide'); return
         case 'search': leave('search'); return
+        // En ny nyckel varje gång: sökvyn börjar lyssna även om den redan är öppen.
+        case 'voiceSearch': setActive(null); go('search', { voice: String(Date.now()) }); return
         case 'favourites': leave('favs'); return
         case 'sport': leave('sport'); return
         case 'home': leave(rootView); return

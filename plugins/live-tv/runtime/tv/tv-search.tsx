@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { startOfLocalDay } from '../live-tv-model'
 import { formatClock, progressOf } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
-import { TV, dp, station } from './tv-ui'
+import { Icons, TV, dp, station } from './tv-ui'
+import { listenVoice, useVoiceAvailable } from './voice'
 import { useTvText } from './tv-strings'
 import { TvTextField } from './tv-text-entry'
 import { searchChannels, suggestions } from './tv-search-logic'
@@ -82,6 +83,30 @@ function TvSearchDesktop(props: TvViewProps) {
   }
 
   /**
+   * RÖSTSÖKNING (Jerry 2026-10-31). Mikrofonen syns bara när enheten har en
+   * röstdialog (Android). Det som sades blir frågan, och fokus går till första
+   * träffen när svaren hunnit komma. `?voice=<nyckel>` (fjärrens Sök-knapp, se
+   * remote-keys.ts) börjar lyssna direkt — en ny nyckel per tryck.
+   */
+  const canVoice = useVoiceAvailable()
+  const [listening, setListening] = useState(false)
+  const speak = useCallback(async () => {
+    setListening(true)
+    const text = await listenVoice(locale, tt('voicePrompt'))
+    setListening(false)
+    if (!text) return
+    setQuery(text)
+    window.setTimeout(focusFirstResult, 400)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale, tt])
+  const voiceStartedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!params.voice || !canVoice || voiceStartedRef.current === params.voice) return
+    voiceStartedRef.current = params.voice
+    void speak()
+  }, [params.voice, canVoice, speak])
+
+  /**
    * En lodrät stapel: sökraden överst i full bredd (fält, förslag och — på
    * TV — skärmtangentbordet under förslagen), resultaten under den.
    * Tidigare låg fältet inboxat i en 760 dp bred vänsterspalt med tom yta
@@ -110,9 +135,21 @@ function TvSearchDesktop(props: TvViewProps) {
           // TvKeyboard visar ingen text själv — den här raden är fältets enda
           // display i TV-läge. Utanför TV visar `TvTextField`s riktiga
           // <input> texten själv, så raden hade bara dublett:at den.
-          <div style={{ height: dp(64), borderRadius: dp(14), background: TV.s10, display: 'flex', alignItems: 'center', padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : 'rgba(243,244,248,0.5)' }}>
-            {query || <span style={{ fontSize: dp(18) }}>{tt('searchPlaceholder')}</span>}
-            <span aria-hidden="true" style={{ width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) }} />
+          <div style={{ display: 'flex', gap: dp(12), alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: 0, height: dp(64), borderRadius: dp(14), background: TV.s10, display: 'flex', alignItems: 'center', padding: `0 ${dp(20)}px`, fontSize: dp(28), color: query ? TV.text : 'rgba(243,244,248,0.5)' }}>
+              {listening ? <span style={{ fontSize: dp(20), color: TV.text }}>{tt('voiceListening')}</span> : query || <span style={{ fontSize: dp(18) }}>{tt('searchPlaceholder')}</span>}
+              <span aria-hidden="true" style={{ width: 2, height: dp(32), background: TV.acc, marginLeft: dp(4) }} />
+            </div>
+            {canVoice ? (
+              <div
+                data-testid="search-voice"
+                aria-label={tt('voiceSearch')}
+                {...station(() => { void speak() })}
+                style={{ height: dp(64), minHeight: dp(64), padding: `0 ${dp(22)}px`, borderRadius: 999, background: listening ? TV.acc : TV.s10, color: TV.text, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), flexShrink: 0, cursor: 'pointer' }}
+              >
+                <Icons.Mic size={dp(26)} />{tt('voiceSearch')}
+              </div>
+            ) : null}
           </div>
         ) : field}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto', minHeight: dp(44) }}>
