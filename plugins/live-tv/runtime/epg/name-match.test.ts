@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildNameToTvgIdIndex, normalizeTvgId, resolveTvgId } from './name-match'
+import { buildNameToTvgIdIndex, normalizeChannelName, normalizeTvgId, resolveTvgId } from './name-match'
 
 describe('EPG name matching', () => {
   it('normalizes epgshare bracket-prefixed HD ids to channel-name stems', () => {
@@ -54,5 +54,20 @@ describe('EPG name matching', () => {
     })
 
     expect(resolveTvgId(null, 'TV3 FHD SE', index)).toBe('tv3.se.provider-specific')
+  })
+})
+
+/* Diakritiska tecken viks i stället för att strykas (Jerry 2026-10-31, listan från konkurrenten):
+   "Ålesund" och "Alesund" ska ge samma stam, och å/ä/ö får inte bara försvinna. */
+describe('normalizeChannelName viker diakritiska tecken', () => {
+  it('å/ä/ö och andra accenter blir sina grundbokstäver', () => {
+    expect(normalizeChannelName('Sjuan Ålesund')).toBe(normalizeChannelName('Sjuan Alesund'))
+    expect(normalizeChannelName('Café Télé')).toBe('cafetele')
+    expect(normalizeChannelName('Søndag Æble')).toBe('sondagaeble')
+    expect(normalizeChannelName('TV Öresund')).toBe('tvoresund')
+  })
+  it('regionorden tas bort även när de skrivs med å/ä/ö', () => {
+    expect(normalizeChannelName('SVT1 Skåne')).toBe(normalizeChannelName('SVT1'))
+    expect(normalizeChannelName('SVT1 Väst')).toBe(normalizeChannelName('SVT1'))
   })
 })

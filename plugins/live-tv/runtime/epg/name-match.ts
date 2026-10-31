@@ -21,9 +21,20 @@ const TVG_ID_SEPARATOR_RE = /[._/@()[\]-]+/g
 const TVG_ID_QUALITY_SUFFIX_RE = /\b([a-z0-9]+?)(?:fhd|uhd|hd|sd|4k)\b/g
 
 /** Normalize a free-form channel name to its likely tvg-id stem. */
+/**
+ * Diakritiska tecken viks till grundbokstaven (å→a, ö→o, é→e, ø→o, æ→ae, ß→ss)
+ * i stället för att strykas av NON_ALNUM_RE: "Ålesund" och "Alesund" ska ge
+ * samma stam, och `\b` i regionmönstren fungerar bara på ASCII.
+ */
+function foldDiacritics(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ø/g, 'o').replace(/æ/g, 'ae').replace(/œ/g, 'oe').replace(/ß/g, 'ss').replace(/đ/g, 'd').replace(/ł/g, 'l')
+}
+
 export function normalizeChannelName(name: string): string {
-  return name
-    .toLowerCase()
+  return foldDiacritics(name.toLowerCase())
     .replace(COUNTRY_TAG_RE, ' ')
     .replace(COUNTRY_BARE_RE, ' ')
     .replace(QUALITY_RE, ' ')
