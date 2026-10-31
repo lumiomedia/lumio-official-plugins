@@ -22,7 +22,7 @@ describe('tv-settings-store', () => {
       streamFallback: true,
       streamFallbackAfterS: 5,
       groupOrder: 'playlist',
-      hubLayout: 'classic',
+      hubLayout: 'experience',
       guideCategoryLayout: 'column',
       heroTint: false,
       liveBackground: 'slate',
@@ -108,11 +108,11 @@ describe('tv-settings-store', () => {
     expect(getTvSettings().timelineZoom).toBe('day')
     expect(getTvSettings().nowNextDetails).toBe(true)
   })
-  it('v2-utseendet: Klassisk, kolumn, färgton på och Skiffer som standard; ogiltigt faller tillbaka', () => {
-    setTvSettings({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
-    expect(getTvSettings()).toMatchObject({ hubLayout: 'experience', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
+  it('v2-utseendet: Upplevelse, kolumn, färgton av och Skiffer som standard; ogiltigt faller tillbaka', () => {
+    setTvSettings({ hubLayout: 'classic', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
+    expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'chips', heroTint: false, liveBackground: 'night' })
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { hubLayout: 'x', guideCategoryLayout: 1, heroTint: 'yes', liveBackground: 'pink' })
-    expect(getTvSettings()).toMatchObject({ hubLayout: 'classic', guideCategoryLayout: 'column', heroTint: false, liveBackground: 'slate' })
+    expect(getTvSettings()).toMatchObject({ hubLayout: 'experience', guideCategoryLayout: 'column', heroTint: false, liveBackground: 'slate' })
   })
   it('egna färger: null som standard, bara #rrggbb sparas (gemener), null återställer', () => {
     expect(getTvSettings()).toMatchObject({ liveBgColor: null, liveSurfaceColor: null })

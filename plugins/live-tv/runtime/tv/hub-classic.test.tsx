@@ -8,6 +8,7 @@ import type { EpgCacheEntry } from '../epg/types'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 import { LiveTvTvShell } from './tv-shell'
+import { setTvSettings } from './tv-settings-store'
 
 /**
  * Kanaler, layout Klassisk (handoff "Screen 1b"): topprad, spotlight i tre
@@ -31,6 +32,8 @@ const keyOf = (name: string) => channelKey({ name, url: `http://x/${name}` })
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
+  // Klassisk-hubben testas här; Upplevelse är standard sedan 2026-10-31.
+  setTvSettings({ hubLayout: 'classic' })
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [keyOf('A'), keyOf('B')])

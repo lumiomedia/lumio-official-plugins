@@ -5,7 +5,7 @@ import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/p
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
 import { DEFAULT_GROUP_ORDER, sanitizeGroupOrder, type GroupOrder } from '../group-order'
-import { sanitizeGuideCategoryLayout, sanitizeHexColor, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
+import { DEFAULT_HUB_LAYOUT, sanitizeGuideCategoryLayout, sanitizeHexColor, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -89,7 +89,7 @@ const DEFAULTS: TvSettings = {
   streamFallback: true,
   streamFallbackAfterS: 5,
   groupOrder: DEFAULT_GROUP_ORDER,
-  hubLayout: 'classic',
+  hubLayout: DEFAULT_HUB_LAYOUT,
   guideCategoryLayout: 'column',
   // Av som standard: Jerry vill inte ha en tonad gradient bakom Live TV (2026-10-30).
   heroTint: false,

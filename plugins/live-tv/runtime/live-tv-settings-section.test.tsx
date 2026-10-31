@@ -77,9 +77,9 @@ describe('LiveTvSettingsSection', () => {
   it('Utseende v2: Kanaler-layout, guidens kategorier, färgton och bakgrund sparas', () => {
     render(<LiveTvSettingsSection />)
     const hub = screen.getByTestId('lt-hub-layout')
-    expect(within(hub).getByTestId('lt-hub-layout-classic')).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(within(hub).getByTestId('lt-hub-layout-experience'))
-    expect(getTvSettings().hubLayout).toBe('experience')
+    expect(within(hub).getByTestId('lt-hub-layout-experience')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(hub).getByTestId('lt-hub-layout-classic'))
+    expect(getTvSettings().hubLayout).toBe('classic')
     fireEvent.click(within(screen.getByTestId('lt-guide-categories')).getByTestId('lt-guide-categories-chips'))
     expect(getTvSettings().guideCategoryLayout).toBe('chips')
     fireEvent.click(within(screen.getByTestId('lt-live-background')).getByTestId('lt-live-background-night'))

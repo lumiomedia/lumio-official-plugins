@@ -12,7 +12,7 @@ export { ALL_STEP, useHubData }
 
 /**
  * Kanaler: väljaren. Telefonen har sin egen gren; TV och skrivbord ritar
- * layouten ur inställningarna (`hubLayout`, Klassisk som standard).
+ * layouten ur inställningarna (`hubLayout`, Upplevelse som standard).
  */
 export function TvHub(props: TvViewProps) {
   if (props.phone) return <TvHubPhone {...props} />

@@ -7,6 +7,7 @@ import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="player" /> }))
 
 import { LiveTvTvShell } from './tv-shell'
+import { setTvSettings } from './tv-settings-store'
 
 /**
  * SCENEN ÄR INTE ALLTID 1920 DESIGNPIXLAR BRED.
@@ -48,6 +49,8 @@ const list: LiveTvList = {
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
+  // Klassisk-hubben testas här; Upplevelse är standard sedan 2026-10-31.
+  setTvSettings({ hubLayout: 'classic' })
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])

@@ -15,6 +15,8 @@ const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport')
 afterEach(cleanup)
 beforeEach(() => {
   __resetForTests()
+  // Klassisk-hubben testas här; Upplevelse är standard sedan 2026-10-31.
+  setTvSettings({ hubLayout: 'classic' })
   __setTvModeForTests(true)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [channelKey({ name: 'A', url: 'http://x/A' })])

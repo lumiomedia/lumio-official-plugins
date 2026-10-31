@@ -8,6 +8,7 @@ vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => null }))
 
 import { LiveTvTvShell } from './tv-shell'
 import { GROUP_PANEL_STEP } from './tv-group-picker'
+import { setTvSettings } from './tv-settings-store'
 
 const pad = (n: number) => String(n).padStart(3, '0')
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
@@ -25,7 +26,7 @@ function mount(groups: number) {
 }
 
 afterEach(cleanup)
-beforeEach(() => { __resetForTests() })
+beforeEach(() => { __resetForTests(); setTvSettings({ hubLayout: 'classic' }) /* Klassisk-hubben; Upplevelse är standard sedan 2026-10-31 */ })
 
 describe('"Alla grupper" i hubben (skrivbord)', () => {
   beforeEach(() => __setTvModeForTests(false))

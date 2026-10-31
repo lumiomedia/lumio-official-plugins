@@ -52,6 +52,7 @@ import { __resetForTests, __setProfilePinForTests, __setTvModeForTests, BROWSE_B
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LOCKED_CHANNELS_KEY } from '../channel-locks'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
+import { setTvSettings } from './tv-settings-store'
 
 // Spelaren äger Back medan den är öppen (se tv-shell.tsx). Mocken måste därför
 // stänga sig själv på Back precis som den riktiga spelaren gör — annars hade
@@ -83,6 +84,8 @@ afterEach(() => {
 })
 beforeEach(() => {
   __resetForTests()
+  // Klassisk-hubben testas här; Upplevelse är standard sedan 2026-10-31.
+  setTvSettings({ hubLayout: 'classic' })
   __setTvModeForTests(false)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
@@ -269,6 +272,8 @@ describe('Bakåt med pekare', () => {
   it('Bakåt-kedjan är identisk från tangent och från klick', async () => {
     const fromKey = await runChain(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
     __resetForTests()
+    // Klassisk-hubben testas här; Upplevelse är standard sedan 2026-10-31.
+    setTvSettings({ hubLayout: 'classic' })
     __setTvModeForTests(false)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
     writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
