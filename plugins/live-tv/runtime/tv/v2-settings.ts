@@ -59,5 +59,5 @@ export function sanitizeHexColor(raw: unknown): string | null {
  * TV:ns paletter (en färgväljare går inte att styra med en fjärrkontroll).
  * Mörka, dämpade toner; den första i varje lista är standardfärgen.
  */
-export const LIVE_BG_SWATCHES: readonly string[] = ['#161a23', '#1b1b1f', '#0f1219', '#1a1f2e', '#10202a', '#13201b', '#221a24', '#241a1a', '#201d16', '#1c1c28']
-export const LIVE_SURFACE_SWATCHES: readonly string[] = ['#2b3142', '#33333a', '#2a3550', '#24414a', '#2c3a34', '#3a2e3e', '#3e2c2c', '#38342a', '#30304a', '#3a3f4c']
+export const LIVE_BG_SWATCHES: readonly string[] = ['#000000', '#161a23', '#1b1b1f', '#0f1219', '#1a1f2e', '#10202a', '#13201b', '#221a24', '#241a1a', '#201d16', '#1c1c28']
+export const LIVE_SURFACE_SWATCHES: readonly string[] = ['#000000', '#2b3142', '#33333a', '#2a3550', '#24414a', '#2c3a34', '#3a2e3e', '#3e2c2c', '#38342a', '#30304a', '#3a3f4c']
