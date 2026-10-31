@@ -293,6 +293,35 @@ describe('HubExperience', () => {
     press('ArrowDown'); press('ArrowDown'); press('ArrowDown')
     expect(track.style.transform).toMatch(/translateY\(-[1-9]/)
   })
+  it('TV: raden lägger det fokuserade kortet i FÖRSTA platsen, som appens hemrader (Jerry 2026-10-31)', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown'); press('ArrowDown')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-0')
+    const strip = within(screen.getByTestId('xp-row-onNow')).getByTestId('xp-row-strip')
+    expect(strip.style.transform).toBe('translateX(-0px)')
+    press('ArrowRight')
+    expect(document.activeElement?.getAttribute('data-xp')).toBe('r0-1')
+    // Sänds nu: kortet 440 + luft 20.
+    expect(strip.style.transform).toBe('translateX(-460px)')
+    // Kort före det fokuserade syns inte i vänsterkanten.
+    const cards = within(strip).getAllByTestId('xp-card')
+    expect((cards[0]!.firstElementChild as HTMLElement).style.opacity).toBe('0')
+    expect((cards[1]!.firstElementChild as HTMLElement).style.opacity).toBe('')
+    expect(cards[1]).toHaveAttribute('data-xp-focused', '1')
+    // Den aktiva radens övriga kort dämpas av remsans CSS-regel.
+    expect(strip).toHaveAttribute('data-dim', '1')
+  })
+  it('TV: Sänds nu är platt — ingen coverflow (3D) och ingen spegling', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown'); press('ArrowDown'); press('ArrowRight')
+    const hub = screen.getByTestId('hub-experience')
+    for (const el of [hub, ...hub.querySelectorAll<HTMLElement>('*')]) {
+      const css = el.getAttribute('style') ?? ''
+      expect(css).not.toMatch(/rotateY|preserve-3d|box-reflect|perspective/)
+    }
+  })
   it('bakgrunden är den gemensamma neutrala gradienten även när heron visar en kanal med förhandsruta', async () => {
     await mount()
     expect(screen.getByTestId('xp-hero-tile')).toBeInTheDocument()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type JSX, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { channelKey, getLiveTvLogoSrc, type M3uChannel } from '../live-tv-data'
 import { formatClock, progressOf } from '../live-tv-ui'
 import { isReminded } from '../reminders'
@@ -13,7 +13,7 @@ import { groupCounts } from './group-chips'
 import { useGroupPicker } from './tv-group-picker'
 import { holdMenu, okAction } from './programme-actions'
 import { useProgrammeArt } from './programme-art'
-import { useRemindersVersion } from './guide-nowsen-view'
+import { useLatest, useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
 import { FOCUS_BTN, FOCUS_CARD, V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
 import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
@@ -238,7 +238,6 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   // Mus (handoffen): första klicket fokuserar, andra aktiverar. Pekarnedtrycket
   // sker före fokusbytet, så där syns om kortet redan hade fokus.
   const armRef = useRef<{ id: string; focused: boolean } | null>(null)
-  const pointerArm = (id: string) => ({ onPointerDownCapture: (e: { currentTarget: EventTarget }) => { armRef.current = { id, focused: document.activeElement === e.currentTarget } } })
   const guarded = (id: string, run: () => void) => () => {
     const arm = armRef.current
     armRef.current = null
@@ -280,6 +279,14 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     return 'watchNow'
   }
   const openInGuide = (item: XpItem) => (item.kind === 'category' ? nav.go('guide', { group: item.category! }) : item.channel ? nav.go('guide', { channel: channelKey(item.channel) }) : nav.go('guide'))
+  // Korten är memoiserade (XpCard): de får samma ref varje rendering och läser
+  // de senaste hanterarna först när något faktiskt händer.
+  const cardApi = useLatest<XpCardApi>({
+    activate: (id, item) => guarded(id, () => activate(item))(),
+    hold: (item, el) => hold(item)?.(el),
+    arm: (id, target) => { armRef.current = { id, focused: document.activeElement === target } },
+    focusCard: (ri, ii) => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows', row: ri, cols } }),
+  })
 
   // Ambient ton: programbilden, annars logon; kategorier har sin egen färg.
   const heroChannel = heroItem?.channel ?? null
@@ -336,6 +343,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       style={{ position: 'relative', isolation: 'isolate', flex: 1, minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden', color: V2.text, fontSize: dp(22), lineHeight: 1.3 }}
     >
       <V2FocusStyle />
+      {/* Den aktiva radens övriga kort dämpas (TV). I CSS och inte per kort: ett radbyte ritar då inte om alla kort. */}
+      <style>{'[data-testid="xp-row-strip"][data-dim="1"] > [data-xp]:not([data-xp-focused]) > :first-child { opacity: .82 }'}</style>
       {/* Hål åt förhandsrutan: mpv ritar videon under webbvyn. */}
       <CutoutLayer testId="xp-ambient" data={{ 'data-bg': ambient }} background={ambient} style={{ zIndex: -1, transition: 'background .6s ease' }} />
       {hasArt ? (
@@ -428,50 +437,37 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                   <span style={{ fontSize: dp(26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{title}</span>
                   {sub ? <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.55)' }}>{sub}</span> : null}
                 </div>
-                <div style={{ perspective: m.poster && !native ? dp(1600) : undefined, padding: native ? `${dp(14)}px 0 0` : `${dp(14)}px ${dp(56)}px 0` }}>
+                <div style={{ padding: native ? `${dp(14)}px 0 0` : `${dp(14)}px ${dp(56)}px 0` }}>
                   <div
                     data-testid="xp-row-strip"
+                    data-dim={!native && onRow && inRows ? '1' : undefined}
                     className={native ? 'lumio-xp-strip' : undefined}
                     style={native
                       ? { display: 'flex', gap: dp(m.gap), overflowX: 'auto', overflowY: 'hidden', padding: `${dp(10)}px ${dp(56)}px ${dp(m.poster ? 70 : 24)}px`, scrollPaddingInline: dp(56), scrollbarWidth: 'none' }
-                      : { display: 'flex', gap: dp(m.gap), transform: `translateX(-${dp(Math.max(0, col - (m.poster ? 2 : 1)) * (m.w + m.gap))}px)`, transition: `transform .4s ${EASE}`, transformStyle: 'preserve-3d' }}
+                      // TV (Jerry 2026-10-31): som appens hemrader — det fokuserade kortet står alltid i FÖRSTA
+                      // platsen, raden glider en kolumn per steg. Platt: ingen coverflow och ingen spegling.
+                      : { display: 'flex', gap: dp(m.gap), transform: `translateX(-${dp(col * (m.w + m.gap))}px)`, transition: `transform .4s ${EASE}`, willChange: 'transform' }}
                   >
                     {row.items.map((item, ii) => {
-                      const d = ii - col
-                      const focused = onRow && d === 0 && inRows
-                      const id = `r${ri}-${ii}`
-                      let tf = 'none'
-                      let op = 1
-                      let z = 1
-                      if (native) {
-                        // Skrivbordet: platta kort; hovring lyfter bara kortet (ingen layoutförskjutning).
-                        if (focused) tf = 'scale(1.04)'
-                      } else if (m.poster) {
-                        // Coverflow (README): sidokort vridna ±26°, fokuserat framåt.
-                        const a = Math.max(-3, Math.min(3, d))
-                        tf = d === 0 ? (focused ? 'translateZ(50px) scale(1.05)' : 'translateZ(0)') : `rotateY(${a < 0 ? 26 : -26}deg) translateZ(-${30 + Math.abs(a) * 16}px)`
-                        op = Math.abs(d) > 4 ? 0.4 : 1
-                        z = 20 - Math.abs(d)
-                      } else if (focused) tf = 'scale(1.07)'
-                      if (!native && onRow && inRows && !focused && !m.poster) op = 0.82
+                      const focused = onRow && ii === col && inRows
+                      // TV: kort före det fokuserade döljs (de har glidit ut till vänster).
+                      // Dämpningen av den aktiva radens övriga kort sköts av CSS på remsan
+                      // (`data-dim`), så ett radbyte inte ritar om radernas alla kort.
                       return (
-                        <div
+                        <XpCard
                           key={item.key}
-                          {...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER[row.id] })}
-                          {...pointerArm(id)}
-                          onFocus={() => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows', row: ri, cols } })}
-                          style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : z, cursor: 'pointer', userSelect: 'none', outline: 'none' }}
-                        >
-                          <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, opacity: op, boxShadow: focused && active ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s, opacity .3s`, WebkitBoxReflect: m.poster ? 'below 6px linear-gradient(transparent 72%, rgba(255,255,255,.14))' : undefined } as CSSProperties}>
-                            <CardFace rowId={row.id} item={item} model={model} lookup={native ? ii < 6 : Math.abs(d) <= 4} holdPad={native && HOLD_CORNER[row.id] === 'br' ? HOLD_PAD : 0} />
-                          </div>
-                          {row.id === 'yours' && item.channel ? (
-                            <div style={{ padding: `${dp(12)}px ${dp(4)}px 0`, opacity: focused ? 1 : 0.65, transition: 'opacity .3s' }}>
-                              <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{item.channel.name}</div>
-                              <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.programme?.title ?? ''}</div>
-                            </div>
-                          ) : null}
-                        </div>
+                          rowId={row.id}
+                          item={item}
+                          ri={ri}
+                          ii={ii}
+                          focused={focused}
+                          ring={focused && active}
+                          hidden={!native && ii < col}
+                          native={native}
+                          lookup={native ? ii < 6 : Math.abs(ii - col) <= 4}
+                          model={model}
+                          api={cardApi}
+                        />
                       )
                     })}
                   </div>
@@ -499,15 +495,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${XP_GRID_COLUMNS}, minmax(0, 1fr))`, gap: dp(14), padding: `0 ${dp(56)}px` }}>
                       {row.items.map((item, ii) => {
                         const focused = onRow && inRows && (s.cols[ri] ?? 0) === ii
-                        const id = `r${ri}-${ii}`
-                        const props = {
-                          ...station(guarded(id, () => activate(item)), hold(item), { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER.grid }),
-                          ...pointerArm(id),
-                          onFocus: () => setNav((p) => { const cols = p.cols.slice(); cols[ri] = ii; return { ...p, zone: 'rows' as const, row: ri, cols } }),
-                        }
-                        const style: CSSProperties = { height: native ? undefined : dp(ROW.grid.h), boxShadow: focused && active ? FOCUS_CARD : undefined, transform: focused ? 'scale(1.04)' : 'none', transition: `transform .3s ${EASE}, box-shadow .3s`, position: 'relative', zIndex: focused ? 2 : 1, outline: 'none', userSelect: 'none' }
-                        if (item.kind === 'more') return <MoreCard key={item.key} remaining={item.count ?? 0} props={props} style={style} />
-                        return <ChannelGridCard key={item.key} channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} captionPadRight={native ? HOLD_PAD : undefined} {...props} style={style} />
+                        return <XpGridCard key={item.key} item={item} ri={ri} ii={ii} focused={focused} ring={focused && active} native={native} model={model} api={cardApi} />
                       })}
                     </div>
                   </section>
@@ -523,6 +511,28 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 }
 
 type TT = (key: TvStringKey, vars?: Record<string, string | number>) => string
+
+/** Ett kort i kategorins rutnät, memoiserat som `XpCard`. */
+const XpGridCard = memo(function XpGridCard({ item, ri, ii, focused, ring, native, model, api }: {
+  item: XpItem
+  ri: number
+  ii: number
+  focused: boolean
+  ring: boolean
+  native: boolean
+  model: TvViewProps['model']
+  api: { readonly current: XpCardApi }
+}): JSX.Element {
+  const id = `r${ri}-${ii}`
+  const props = {
+    ...station(() => api.current.activate(id, item), item.channel ? (el) => api.current.hold(item, el) : undefined, { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER.grid }),
+    onPointerDownCapture: (e: { currentTarget: EventTarget }) => api.current.arm(id, e.currentTarget),
+    onFocus: () => api.current.focusCard(ri, ii),
+  }
+  const style: CSSProperties = { height: native ? undefined : dp(ROW.grid.h), boxShadow: ring ? FOCUS_CARD : undefined, transform: focused ? 'scale(1.04)' : 'none', transition: `transform .3s ${EASE}, box-shadow .3s`, position: 'relative', zIndex: focused ? 2 : 1, outline: 'none', userSelect: 'none' }
+  if (item.kind === 'more') return <MoreCard remaining={item.count ?? 0} props={props} style={style} />
+  return <ChannelGridCard channel={item.channel!} model={model} faceHeight={native ? undefined : GRID_FACE_H} captionPadRight={native ? HOLD_PAD : undefined} {...props} style={style} />
+})
 
 /** Visa fler sist i rutnätet: samma kortyta som kanalerna, "Visa 60 fler" + antal kvar. */
 function MoreCard({ remaining, props, style }: { remaining: number; props: Record<string, unknown>; style: CSSProperties }) {
@@ -584,8 +594,61 @@ function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }
   )
 }
 
+interface XpCardApi {
+  activate(id: string, item: XpItem): void
+  hold(item: XpItem, el: HTMLElement): void
+  arm(id: string, target: EventTarget): void
+  focusCard(ri: number, ii: number): void
+}
+
+/**
+ * ETT kort i en rad, memoiserat. Förut ritades alla ~100 kort (yta,
+ * programbildsuppslag, påminnelser) om vid varje pil-tryck — ~0,65 s
+ * huvudtråd på en Mi Box S. Nu ritas bara kort vars fokus, synlighet eller
+ * uppslag ändras; hanterarna går via `api`-refen.
+ */
+const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden, native, lookup, model, api }: {
+  rowId: XpRowId
+  item: XpItem
+  ri: number
+  ii: number
+  focused: boolean
+  /** Fokusringen: fokuserat OCH fokus står i vyn. */
+  ring: boolean
+  /** TV: kortet har glidit ut till vänster om första platsen. */
+  hidden: boolean
+  native: boolean
+  lookup: boolean
+  model: TvViewProps['model']
+  api: { readonly current: XpCardApi }
+}): JSX.Element {
+  const m = ROW[rowId]
+  const id = `r${ri}-${ii}`
+  // Platta kort överallt; fokuserat kort lyfts lite (Sänds nu något mindre, korten är större).
+  const tf = focused ? (native ? 'scale(1.04)' : m.poster ? 'scale(1.05)' : 'scale(1.07)') : 'none'
+  return (
+    <div
+      {...station(() => api.current.activate(id, item), item.channel ? (el) => api.current.hold(item, el) : undefined, { 'data-xp': id, 'data-v2f': 'xp', 'data-testid': 'xp-card', 'data-kind': item.kind, 'data-hold-corner': HOLD_CORNER[rowId] })}
+      onPointerDownCapture={(e) => api.current.arm(id, e.currentTarget)}
+      onFocus={() => api.current.focusCard(ri, ii)}
+      data-xp-focused={focused ? '1' : undefined}
+      style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none' }}
+    >
+      <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, opacity: hidden ? 0 : undefined, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s, opacity .3s` }}>
+        <CardFace rowId={rowId} item={item} model={model} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} />
+      </div>
+      {rowId === 'yours' && item.channel ? (
+        <div style={{ padding: `${dp(12)}px ${dp(4)}px 0`, opacity: hidden ? 0 : focused ? 1 : 0.65, transition: 'opacity .3s' }}>
+          <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{item.channel.name}</div>
+          <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.programme?.title ?? ''}</div>
+        </div>
+      ) : null}
+    </div>
+  )
+})
+
 /** Kortets yta per rad (README "Rows"). `lookup` = programbilden slås upp (bara nära fokus). */
-function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; item: XpItem; model: TvViewProps['model']; lookup: boolean; holdPad: number }) {
+const CardFace = memo(function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; item: XpItem; model: TvViewProps['model']; lookup: boolean; holdPad: number }) {
   const { tt, locale } = useTvText()
   const channel = item.channel ?? NO_CHANNEL
   const p = item.programme ?? null
@@ -683,4 +746,4 @@ function CardFace({ rowId, item, model, lookup, holdPad }: { rowId: XpRowId; ite
       {item.kind !== 'replay' && progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
     </NoArt>
   )
-}
+})
