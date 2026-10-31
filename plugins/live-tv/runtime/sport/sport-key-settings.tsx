@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useReducer, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LtBtn, LtConfirm, LtNote, LtSection, UI } from '../settings-ui'
 import { Action, HINT_SIZE, HINT_SIZE_PHONE, Heading } from '../tv/settings-tabs'
 import { MT } from '../tv/mobile/mobile-tokens'
@@ -157,12 +157,29 @@ export function SportKeySettingsTv({ phone = false, pushLayer }: { phone?: boole
   const [editing, setEditing] = useState<ProviderId | null>(null)
   const [confirm, setConfirm] = useState<ProviderId | null>(null)
   const editRow = editing ? rows.find((r) => r.id === editing) ?? null : null
+  // FOKUS IN OCH UT (Jerry 2026-10-31: "se till att jag hamnar i fokus där,
+  // nu tappas det helt"). Redigeraren ersätter raden som hade fokus, så
+  // fokus föll till body och fjärren stod still. In: redigerarens första
+  // stopp. Ut: raden man öppnade.
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const lastEditing = useRef<ProviderId | null>(null)
+  useLayoutEffect(() => {
+    if (phone) return
+    const root = rootRef.current
+    if (editing && root) {
+      const target = root.querySelector<HTMLElement>('[data-init]') ?? root.querySelector<HTMLElement>('[data-f]')
+      target?.focus({ preventScroll: true })
+    } else if (!editing && lastEditing.current) {
+      document.querySelector<HTMLElement>(`[data-testid="sport-key-${lastEditing.current}"]`)?.focus({ preventScroll: true })
+    }
+    lastEditing.current = editing
+  }, [editing, phone])
 
   if (editRow) {
     // TV: Ta bort direkt (fjärrkontrollen har redan valt källan och knappen). Telefonen: bekräftelse.
     const remove = () => { if (phone) setConfirm(editRow.id); else { removeKey(editRow.id); setEditing(null) } }
     return (
-      <div data-testid="sport-key-settings-tv" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 12 : dp(16), padding: phone ? 14 : 0 }}>
+      <div ref={rootRef} data-testid="sport-key-settings-tv" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 12 : dp(16), padding: phone ? 14 : 0 }}>
         <Editor r={editRow} onClose={() => setEditing(null)} onRemove={remove} pushLayer={pushLayer}>
           <div><Action phone={phone} testId="sport-key-cancel" label={tt('sportCancel')} onOk={() => setEditing(null)} /></div>
         </Editor>

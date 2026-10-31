@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { QRCodeSVG, getTvGlassMenu, useTvMode, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { LtBtn, LtNote, LtRows, LtSection, UI } from '../settings-ui'
 import { HINT_SIZE, HINT_SIZE_PHONE, Heading, Row } from '../tv/settings-tabs'
 import { MT } from '../tv/mobile/mobile-tokens'
-import { TV, dp } from '../tv/tv-ui'
+import { TV, dp, station } from '../tv/tv-ui'
+import { PickerPanel } from '../tv/picker-panel'
 import { useTvText, type TvStringKey } from '../tv/tv-strings'
 import { MobileSheet } from '../tv/mobile/mobile-sheet'
 import { KIND_KEYS } from './sport-ctx'
@@ -215,6 +216,26 @@ const noLayer = () => () => {}
  * telefon (bottenark, filväljare) och skrivbordet i nya designen (utfälld
  * panel, filväljare).
  */
+function HandoffBody({ close, received, url, text, only, cancel }: { close: () => void; received: boolean; url: string | null; text: string; only: string; cancel: string }) {
+  // Kvittot syns en stund, sedan stängs panelen och fokus går tillbaka till raden.
+  useEffect(() => {
+    if (!received) return
+    const t = window.setTimeout(close, 1200)
+    return () => window.clearTimeout(t)
+  }, [received, close])
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: dp(20), alignItems: 'flex-start' }}>
+      <div data-testid="sport-backdrop-only" style={{ fontSize: dp(23), fontWeight: 600 }}>{only}</div>
+      {url && !received ? <div data-testid="sport-backdrop-qr" style={{ background: '#fff', padding: dp(12), borderRadius: dp(12) }}><QRCodeSVG value={url} size={dp(240)} /></div> : null}
+      <div role="status" style={{ fontSize: dp(21), lineHeight: 1.4, color: 'rgba(243,244,248,0.8)' }}>{text}</div>
+      <div {...station(close, undefined, { 'data-init': '' })} data-testid="sport-backdrop-handoff-cancel"
+        style={{ minHeight: dp(56), padding: `0 ${dp(24)}px`, borderRadius: dp(12), background: TV.s06, display: 'inline-flex', alignItems: 'center', fontSize: dp(21), fontWeight: 600, cursor: 'pointer' }}>
+        {cancel}
+      </div>
+    </div>
+  )
+}
+
 export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: boolean; pushLayer?: (close: () => void) => () => void }) {
   const { tt } = useTvText()
   const tvMode = useTvMode()
@@ -275,14 +296,6 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
           {open === r.scope ? <ChooserPanel choices={choicesFor(r.scope)} onPick={(k) => pick(r.scope, k)} /> : null}
         </div>
       ))}
-      {viaPhone && qrSlot ? (
-        <figure data-testid="sport-backdrop-handoff" style={{ margin: 0, display: 'flex', gap: dp(20), alignItems: 'center', padding: `${dp(8)}px 0` }}>
-          {handoff.url && !handoff.received ? <div data-testid="sport-backdrop-qr" style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={handoff.url} size={dp(132)} /></div> : null}
-          <figcaption style={{ fontSize: dp(16), color: TV.dim, maxWidth: dp(360) }}>
-            {handoff.received ? tt('sportBackdropReceived') : handoff.expired ? tt('sportKeyExpired') : `${rows.find((r) => r.scope === qrSlot)!.label}: ${tt('sportBackdropPhoneHint')}`}
-          </figcaption>
-        </figure>
-      ) : null}
       {uploader.status ? <div role="status" style={note}>{uploader.status}</div> : null}
       <div data-testid="sport-backdrop-note" style={note}>{tt('sportBackdropLocalNote')}</div>
       </section>
@@ -291,6 +304,30 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
       <Row phone={phone} testId="sport-cards-opacity-row" label={tt('sportCardsOpacity')} right={`${opacityNow} %`} onOk={() => setSportSettings({ cards: withCardOpacity(s.cards, tvCards, nextOpacity) })} />
       <Row phone={phone} testId="sport-cards-tone-row" label={tt('sportCardsColor')} right={tt(TONE_LABEL[s.cards.tone])} onOk={() => setSportSettings({ cards: { ...s.cards, tone: nextTone } })} />
       </section>
+      {/* EGEN BILD I EN PANEL (Jerry 2026-10-31: "när man väljer custom borde en
+          popup dyka upp, så man fattar att det är för bara den bilden … som
+          försvinner när den är satt"). Rubriken och raden under säger vilken
+          sport bilden gäller; panelen stänger sig själv när bilden kommit. */}
+      {viaPhone && qrSlot ? (
+        <PickerPanel
+          nav={{ pushLayer: pushLayer ?? noLayer }}
+          title={`${tt('sportBackdropCustom')} · ${rows.find((r) => r.scope === qrSlot)!.label}`}
+          testId="sport-backdrop-handoff"
+          chips={null}
+          opener={document.querySelector<HTMLElement>(`[data-testid="sport-backdrop-row-${qrSlot}"]`)}
+          onClose={() => setQrSlot(null)}
+          rows={(close) => (
+            <HandoffBody
+              close={close}
+              received={handoff.received}
+              url={handoff.url}
+              text={handoff.received ? tt('sportBackdropReceived') : handoff.expired ? tt('sportKeyExpired') : tt('sportBackdropPhoneHint')}
+              only={tt('sportBackdropOnlyFor', { name: rows.find((r) => r.scope === qrSlot)!.label })}
+              cancel={tt('sportCancel')}
+            />
+          )}
+        />
+      ) : null}
       {menu && GlassMenu ? <GlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
       {sheetRow ? (
         <MobileSheet

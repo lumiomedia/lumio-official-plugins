@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import * as sdk from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { TV, Toggle, dp, station } from './tv-ui'
+import { useRowNeighbours } from '../sport/row-nav'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 import { ContentTab, EpgTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
@@ -37,20 +38,59 @@ export function TvSettingsView(props: TvViewProps) {
   return <TvSettingsDesktop {...props} />
 }
 
+/**
+ * FJÄRREN I INSTÄLLNINGARNA (Jerry 2026-10-31: "ner = alltid ner i settings,
+ * vänster alltid till första menyn"). Ner/upp går rad för rad via
+ * `useRowNeighbours` — geometrin hoppade över rader och ut i sidomenyn när
+ * nästa stopp stod långt till höger. Vänster från radens första stopp går
+ * till den aktiva fliken; inne i en rad (färgprover, knappar) flyttar
+ * vänster fortfarande ett steg. Sidopaneler (`data-panel-root`) rörs inte.
+ */
+function useLeftToTabs(ref: RefObject<HTMLElement | null>): void {
+  const mark = () => {
+    const root = ref.current
+    if (!root) return
+    const stops = Array.from(root.querySelectorAll<HTMLElement>('[data-f]')).filter((el) => !el.closest('[data-panel-root]'))
+    const rects = stops.map((el) => el.getBoundingClientRect())
+    stops.forEach((el, i) => {
+      const r = rects[i]
+      const mid = r.top + r.height / 2
+      const hasLeft = rects.some((o, j) => j !== i && o.right <= r.left + 1 && mid >= o.top && mid <= o.bottom)
+      const mine = el.getAttribute('data-f-left-auto') === 'tab'
+      if (el.hasAttribute('data-f-left') && !mine) return
+      if (!hasLeft) { el.setAttribute('data-f-left', '[data-tab-active]'); el.setAttribute('data-f-left-auto', 'tab') }
+      else if (mine) { el.removeAttribute('data-f-left'); el.removeAttribute('data-f-left-auto') }
+    })
+  }
+  useLayoutEffect(mark)
+  useEffect(() => {
+    const root = ref.current
+    if (!root || typeof MutationObserver === 'undefined') return
+    let frame = 0
+    const mo = new MutationObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(mark) })
+    mo.observe(root, { childList: true, subtree: true })
+    return () => { cancelAnimationFrame(frame); mo.disconnect() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref])
+}
+
 function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale, lang } = useTvText()
   const initial = (TABS as string[]).includes(params.tab ?? '') ? (params.tab as Tab) : 'appearance'
   const [tab, setTab] = useState<Tab>(initial)
+  const contentRef = useRef<HTMLDivElement | null>(null)
+  useRowNeighbours(contentRef, true)
+  useLeftToTabs(contentRef)
   const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental'), sport: tt('tabSport'), help: tt('tabHelp') }
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <div style={{ width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
         <div style={{ fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }}>{tt('liveTv')}</div>
         {TABS.map((t) => (
-          <div key={t} data-testid={`tab-${t}`} {...station(() => setTab(t), undefined, { ...(t === tab ? { 'data-init': '' } : {}), 'data-f-right': '[data-live-tv-settings-content] [data-f]' })} style={{ height: dp(60), minHeight: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', fontSize: dp(20), background: t === tab ? TV.s12 : 'transparent', color: t === tab ? TV.text : TV.muted, cursor: 'pointer' }}>{labels[t]}</div>
+          <div key={t} data-testid={`tab-${t}`} {...station(() => setTab(t), undefined, { ...(t === tab ? { 'data-init': '', 'data-tab-active': '' } : {}), 'data-f-right': '[data-live-tv-settings-content] [data-f]' })} style={{ height: dp(60), minHeight: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', fontSize: dp(20), background: t === tab ? TV.s12 : 'transparent', color: t === tab ? TV.text : TV.muted, cursor: 'pointer' }}>{labels[t]}</div>
         ))}
       </div>
-      <div data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
+      <div ref={contentRef} data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
         {tab === 'content' ? <ContentTab model={model} nav={nav} tt={tt} /> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}

@@ -62,7 +62,9 @@ export function GuideCategoryChips({ items, value, onPick }: GuideCategoriesProp
             key={item.key ?? '__all'}
             data-testid="guide-cat"
             data-key={item.key ?? ''}
-            {...station(() => onPick(item.key), undefined, { 'data-v2f': 'btn', ...(on ? { 'data-selected': '' } : {}) })}
+            // Upp från chipsen går till lägesväljaren (Jerry 2026-10-31: från
+            // Alla hamnade fokus i sidomenyn) — på det aktiva läget.
+            {...station(() => onPick(item.key), undefined, { 'data-v2f': 'btn', 'data-f-up': '[data-testid^="guide-mode-"][data-active]', ...(on ? { 'data-selected': '' } : {}) })}
             style={{ flexShrink: 0, height: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, fontSize: dp(19), fontWeight: on ? 600 : 400, display: 'inline-flex', alignItems: 'center', background: on ? 'rgba(252,252,255,0.18)' : 'rgba(252,252,255,0.06)', color: on ? V2.text : 'rgba(243,244,248,0.7)', border: `1px solid ${on ? 'rgba(255,255,255,0.24)' : 'transparent'}`, cursor: 'pointer', whiteSpace: 'nowrap', boxSizing: 'border-box' }}
           >
             {item.label}

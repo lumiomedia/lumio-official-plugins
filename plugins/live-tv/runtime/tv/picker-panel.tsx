@@ -24,7 +24,8 @@ export function PickerPanel({
   surface,
   backButton,
 }: {
-  nav: TvNav
+  /** Bara lagret behövs — sportens inställningar har ingen hel `TvNav`. */
+  nav: Pick<TvNav, 'pushLayer'>
   title: string
   chips: ReactNode
   /**
@@ -101,15 +102,22 @@ export function PickerPanel({
         <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       )}
       {chips}
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
+      {/* Luft innanför rullningen: overflow klipper fokusramen, och utan den
+          syntes bara radernas underkant (Jerry 2026-10-31). */}
+      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `${dp(8)}px ${dp(10)}px`, margin: `0 ${-dp(10)}px` }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
     </div>
   )
 }
 
-/** Bocken. Enda återkopplingen i flervalsläget — raden ligger kvar. */
+/**
+ * Kryssrutan. Enda återkopplingen i flervalsläget — raden ligger kvar. Rutan
+ * syns även omarkerad (Jerry 2026-10-31: med bara en bock på valda rader såg
+ * en lista utan val ut som en lista utan kryssrutor).
+ */
 export function Check({ on, label }: { on: boolean; label: string }) {
-  if (!on) return <span style={{ width: dp(28), flexShrink: 0 }} />
+  const box = { width: dp(30), height: dp(30), flexShrink: 0, boxSizing: 'border-box', borderRadius: dp(7), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(20), lineHeight: 1 } as const
+  if (!on) return <span style={{ ...box, border: `${dp(2)}px solid rgba(243,244,248,0.45)` }} />
   return (
-    <span data-testid={`picker-check-${label}`} style={{ width: dp(28), flexShrink: 0, color: TV.acc, fontSize: dp(22), textAlign: 'center' }}>✓</span>
+    <span data-testid={`picker-check-${label}`} style={{ ...box, color: TV.acc, fontSize: dp(24) }}>✓</span>
   )
 }

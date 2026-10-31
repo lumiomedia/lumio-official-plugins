@@ -86,7 +86,12 @@ type TT = ReturnType<typeof useTvText>['tt']
  * nedan), annars hamnar TV-fokuset på två ställen samtidigt när en flik
  * råkar sakna innehåll (t.ex. Spellistor utan listor).
  */
-export function Row({ label, right, onOk, testId, phone = false }: { label: ReactNode; right: ReactNode; onOk: () => void; testId?: string; phone?: boolean }) {
+/**
+ * `down`: väljare för Ner när nästa station står långt till höger (en knapp i
+ * nästa sektions rubrik) — geometrin valde annars sidomenyn. Träffar den
+ * inget tar geometrin över.
+ */
+export function Row({ label, right, onOk, testId, phone = false, down }: { label: ReactNode; right: ReactNode; onOk: () => void; testId?: string; phone?: boolean; down?: string }) {
   // Telefonen (P12): raden ligger i ett kort — ingen egen grund eller radie,
   // en linje under, och `minHeight` (aldrig `height`) på en rad med text.
   if (phone) {
@@ -98,7 +103,7 @@ export function Row({ label, right, onOk, testId, phone = false }: { label: Reac
     )
   }
   return (
-    <div data-testid={testId} {...station(onOk)} style={{ height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19), cursor: 'pointer' }}>
+    <div data-testid={testId} {...station(onOk, undefined, down ? { 'data-f-down': down } : undefined)} style={{ height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV.s06, padding: `0 ${dp(18)}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(16), fontSize: dp(19), cursor: 'pointer' }}>
       <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       <span style={{ flexShrink: 0, color: 'rgba(243,244,248,0.6)', display: 'inline-flex', alignItems: 'center', gap: dp(10) }}>{right}</span>
     </div>
@@ -923,7 +928,10 @@ export function ContentTab({ model, nav, tt, phone = false }: { model: TvViewPro
               key={option.key}
               data-testid={`vod-mode-${option.key}`}
               data-active={active ? '' : undefined}
-              {...station(() => choose(option.key))}
+              // Ner från korten går till biblioteksdelen: dess knappar står
+              // längst till höger, så geometrin valde sidomenyn i stället.
+              // Saknas delen träffar väljaren inget och geometrin tar över.
+              {...station(() => choose(option.key), undefined, { 'data-f-down': '[data-testid="vod-library"] [data-f]' })}
               style={phone
                 ? { width: '100%', padding: '12px 14px', borderRadius: 12, background: MT.s07, border: `1px solid ${active ? TV.acc : MT.line10}`, cursor: 'pointer' }
                 : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV.s07, border: `1px solid ${active ? TV.acc : TV.lineCard}`, cursor: 'pointer', textAlign: 'left' }}
@@ -1060,7 +1068,7 @@ export function EpgTab({ lists, nav, tt, locale, phone = false }: { lists: LiveT
           )
         })}
         {keyboard.available && lists[0] ? <Row phone={phone} label={tt('addEpgUrl')} right={phone ? <PhoneCaret /> : '+'} onOk={() => keyboard.ask(tt('addEpgUrl'), '', (value) => { const url = value.trim(); if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] }) }, 'url')} /> : null}
-        <Row phone={phone} testId="epg-shift" label={tt('epgShift')} right={<>{shift === 0 ? tt('epgShiftNone') : formatEpgShift(shift)}{phone ? <PhoneCaret /> : null}</>} onOk={() => setShiftOpen(true)} />
+        <Row phone={phone} testId="epg-shift" down='[data-testid="epg-refresh"]' label={tt('epgShift')} right={<>{shift === 0 ? tt('epgShiftNone') : formatEpgShift(shift)}{phone ? <PhoneCaret /> : null}</>} onOk={() => setShiftOpen(true)} />
         {keyboard.node}
       </section>
       {shiftOpen ? (
@@ -1137,6 +1145,12 @@ export function ParentalTab({ model, tt, phone = false }: { model: TvViewProps['
     <section style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(10) }}>
       <Heading phone={phone}>{tt('lockedChannels')}</Heading>
       {channels.length === 0 ? <div style={phone ? { fontSize: 15, color: MT.dim, padding: '4px 14px 14px' } : { fontSize: dp(18), color: TV.dim }}>{tt('noLocked')}</div> : null}
+      {/* Hur man låser (Jerry 2026-10-31: "hur låser man en kanal?"). Valet
+          i hållmenyn finns bara med en PIN på profilen — utan den sägs det
+          rakt ut i stället för att menyn tyst saknar raden. */}
+      <div data-testid="parental-howto" style={phone ? { fontSize: 13, color: MT.dim, padding: '0 14px 14px', lineHeight: 1.4 } : { fontSize: dp(18), color: TV.dim, lineHeight: 1.4, maxWidth: dp(900) }}>
+        {lockAvailable ? tt(phone ? 'lockHowToPhone' : 'lockHowTo') : tt('lockNeedsPin')}
+      </div>
       {channels.map((channel) => <Row phone={phone} key={channelKey(channel)} label={channel.name} right={tt('unlock')} onOk={() => requestUnlock(channel)} />)}
       <PinGate
         open={pinTarget !== null}
