@@ -261,9 +261,12 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
           lämnar — hemsidan får samma ton som Live TV:s övriga vyer (Jerry 2026-10-30).
           Detaljsidans flytande Hem-pill (media-details-panel.tsx, [data-details-home])
           göms samma tid: rälsen har redan Hem. Bibliotekschipsen (Filmer, Serier,
-          Sök; home-rows.tsx [data-library-nav]) får herons pilknappars glasstil:
-          mörk botten, ljus toning, kant överst (Jerry 2026-10-31). */}
-      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; } [data-library-nav] { border-radius: 9999px !important; background-color: rgba(0,0,0,0.35) !important; background-image: linear-gradient(rgba(255,255,255,0.16), rgba(255,255,255,0.04)) !important; border-color: transparent !important; color: #fff !important; font-weight: 600 !important; } [data-library-nav]:not(:focus):not([data-fcur="1"]) { box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.22) !important; } [data-library-nav][data-current] { background-image: linear-gradient(rgba(255,255,255,0.30), rgba(255,255,255,0.10)) !important; }`}</style>
+          Sök; home-rows.tsx [data-library-nav]) får appens glas: vitt 8 %, riktig
+          blur och en mjuk skugga, ingen kant (Jerry 2026-10-31, samma som herons
+          knappar i spa/src/index.css). Fokus på rälsen och chipsen följer
+          accenten — Hem ligger utanför Live TV-skalet, så värdens lila TV-ring
+          tog annars över. */}
+      <style>{`.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; } [data-library-nav] { border-radius: 9999px !important; background-color: rgb(252 252 255 / 0.08) !important; background-image: none !important; border-color: transparent !important; color: #fff !important; font-weight: 600 !important; } :root:not([data-perf="1"]) [data-library-nav] { -webkit-backdrop-filter: blur(12px) !important; backdrop-filter: blur(12px) !important; } [data-library-nav]:not(:focus):not([data-fcur="1"]) { box-shadow: 0 3px 14px rgb(0 0 0 / 0.45) !important; } [data-library-nav][data-current] { background-color: rgb(252 252 255 / 0.22) !important; } :root:not([data-focus-source="pointer"]) [data-live-tv-frame-bg] [data-f]:focus, :root:not([data-focus-source="pointer"]) [data-live-tv-frame-bg] [data-f][data-fcur="1"], :root:not([data-focus-source="pointer"]) [data-library-nav]:focus, :root:not([data-focus-source="pointer"]) [data-library-nav][data-fcur="1"] { box-shadow: inset 0 0 0 2px rgb(var(--accent-500)), 0 0 24px color-mix(in srgb, rgb(var(--accent-500)) 35%, transparent) !important; }`}</style>
       <TvRail active="home" isTv={isTv} narrow={narrow} labels={settings.railLabels && !narrow} onSelect={select} />
     </div>
   )
