@@ -59,28 +59,28 @@ export function MatchCard({ match, ctx, fluid = false }: { match: SportMatch; ct
   const status = statusText(match, ctx)
   const progress = st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0
   return (
-    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match), focusAttr('card'))} style={{ ...sportCardStyle, position: 'relative', width: fluid ? '100%' : dp(450), minWidth: 0, flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
-      <div data-testid="card-anchor" style={{ width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, color: TV.muted }}>
-        {best ? <ChannelArt channel={sourceChannel(best)} style={{ width: '100%', height: '100%' }} radius={dp(12)} /> : <SportIcon kind={match.kind} size={dp(40)} />}
+    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match), focusAttr('card'))} style={{ ...sportCardStyle, position: 'relative', width: fluid ? '100%' : dp(450), minWidth: 0, flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px ${dp(22)}px`, display: 'flex', alignItems: 'center', gap: dp(18), cursor: 'pointer', boxSizing: 'border-box' }}>
+      <div data-testid="card-anchor" style={{ width: dp(104), height: dp(104), flexShrink: 0, borderRadius: dp(12), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, color: TV.muted }}>
+        {best ? <ChannelArt channel={sourceChannel(best)} style={{ width: '100%', height: '100%' }} radius={dp(12)} /> : <SportIcon kind={match.kind} size={dp(48)} />}
       </div>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), minWidth: 0 }}>
           {match.home && match.away ? (
             <span style={{ display: 'flex', gap: dp(4), flexShrink: 0 }}>
-              <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(30)} src={match.homeCrest} />
-              <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(30)} src={match.awayCrest} />
+              <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(34)} src={match.homeCrest} />
+              <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(34)} src={match.awayCrest} />
             </span>
           ) : null}
-          <span style={{ flex: 1, minWidth: 0, fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: dp(23), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</span>
           <MatchScore match={match} size="row" />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(19), color: TV.muted, minWidth: 0 }}>
           <span data-testid="card-status" data-live={status.live ? '1' : '0'} style={{ flexShrink: 0, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: status.live ? TV.acc : TV.text }}>{status.text}</span>
           <span style={{ ...ellipsis, flex: 1 }}>{match.league || ctx.kindLabel(match.kind)}</span>
           {followed ? <span data-testid="card-followed" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(18)} filled /></span> : null}
           {reminded ? <span data-testid="card-reminded" style={{ display: 'inline-flex' }}><SportIcons.Bell size={dp(18)} /></span> : null}
         </div>
-        <div style={{ fontSize: dp(15), color: TV.dim, ...ellipsis }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</div>
+        <div style={{ fontSize: dp(18), color: TV.dim, ...ellipsis }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</div>
       </div>
       <div data-testid="card-progress" aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: dp(4), background: TV.s08 }}>
         <div data-fill="" style={{ width: `${Math.round(progress * 100)}%`, height: '100%', background: st === 'finished' ? TV.s18 : TV.acc }} />
