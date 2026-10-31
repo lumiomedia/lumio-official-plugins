@@ -115,6 +115,19 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
       })
     })
   }, [overlay])
+  // Fälls in när fokus landar utanför rälsen. På dokumentet och inte som
+  // onBlur på raden: i Hem-ramen (live-tv-library-frame) kom inget blur när
+  // motorn flyttade fokus till heron (uppmätt på Mi Box S).
+  useEffect(() => {
+    if (!overlay || !open) return
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target
+      if (target instanceof Node && navRef.current?.contains(target)) return
+      setOpen(false)
+    }
+    document.addEventListener('focusin', onFocusIn, true)
+    return () => document.removeEventListener('focusin', onFocusIn, true)
+  }, [overlay, open])
 
   /**
    * Alla poster delar radens mått och utseende (smalläget följer med av sig
@@ -164,7 +177,6 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         data-bg={railBg}
         {...(overlay ? { 'data-tv-rail-overlay': open ? 'open' : 'closed', ...(open ? {} : { inert: true }) } : {})}
         onFocus={overlay ? () => setOpen(true) : undefined}
-        onBlur={overlay ? () => { window.setTimeout(() => { if (!navRef.current?.contains(document.activeElement)) setOpen(false) }, 0) } : undefined}
         style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: railBg, transition: overlay ? 'background 600ms ease, transform 220ms ease, box-shadow 220ms ease' : 'background 600ms ease', padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8), ...(overlay ? { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 45, transform: open ? 'none' : 'translateX(-100%)', boxShadow: open ? '12px 0 40px rgba(0,0,0,0.55)' : 'none' } : null) }}
       >
         {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal

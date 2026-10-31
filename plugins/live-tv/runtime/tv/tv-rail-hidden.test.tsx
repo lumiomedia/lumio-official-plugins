@@ -37,3 +37,17 @@ describe('dold sidomeny (Jerry 2026-10-31)', () => {
     expect(meta.claimed).toBe(false)
   })
 })
+
+describe('dold sidomeny fälls in', () => {
+  it('fokus utanför rälsen fäller in den igen', async () => {
+    setTvSettings({ railHidden: true })
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    mount()
+    act(() => { __emitTvFocusEdgeForTests('left') })
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('rail-guide')))
+    act(() => { outside.focus() })
+    expect(screen.getByTestId('tv-rail').getAttribute('data-tv-rail-overlay')).toBe('closed')
+    outside.remove()
+  })
+})
