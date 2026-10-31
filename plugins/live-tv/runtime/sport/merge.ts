@@ -99,9 +99,53 @@ function fixtureOnly(f: Fixture, overrides: SportOverrides, canonical: Pick<Fixt
   return overrides[match.id] ? { ...match, sources: rankedSources(match, overrides), resultOnly: false } : match
 }
 
+/** Fixturens lagnycklar, vikta en gång per fixtur (de jämfördes förut om i varje par). */
+const fixtureKeys = new WeakMap<Fixture, [string, string]>()
+function keysOf(f: Fixture): [string, string] {
+  let k = fixtureKeys.get(f)
+  if (!k) { k = [foldTeamKey(f.home.name), foldTeamKey(f.away.name)]; fixtureKeys.set(f, k) }
+  return k
+}
+
+/**
+ * Indexorden för en lagnyckel: första och sista ordet utan ett avslutande s.
+ * `teamKeysMatch` godkänner bara lika nycklar, genitiv-s eller en kortform som
+ * är början eller slutet av den långa — alla delar då första eller sista ordet
+ * (s-et borträknat). Indexet ger alltså en övermängd; `sameTeams` avgör.
+ */
+export function teamTokens(key: string): string[] {
+  const words = key.split(' ')
+  const bare = (w: string) => (w.endsWith('s') ? w.slice(0, -1) : w)
+  return [bare(words[0]), bare(words[words.length - 1])]
+}
+
+/**
+ * PRESTANDA (Jerry 2026-10-31: "sporttabben otroligt långsam"). Repriskollen
+ * jämförde varje sändning mot alla fixturer i dag + historiken: ~10 s på Mi Box
+ * vid varje öppning. Indexet slår upp fixturer vars lag delar ett indexord med
+ * sändningens hemmalag; ordningen bevaras så att sorteringen ger samma svar.
+ */
+class TeamIndex {
+  private byToken = new Map<string, number[]>()
+  constructor(private fixtures: Fixture[]) {
+    fixtures.forEach((f, i) => {
+      for (const key of keysOf(f)) for (const t of teamTokens(key)) {
+        const list = this.byToken.get(t)
+        if (!list) this.byToken.set(t, [i])
+        else if (list[list.length - 1] !== i) list.push(i)
+      }
+    })
+  }
+  candidates(m: SportMatch): Fixture[] {
+    if (!m.homeKey) return []
+    const hits = new Set<number>()
+    for (const t of teamTokens(m.homeKey)) for (const i of this.byToken.get(t) ?? []) hits.add(i)
+    return [...hits].sort((x, y) => x - y).map((i) => this.fixtures[i])
+  }
+}
+
 function sameTeams(m: SportMatch, f: Fixture): boolean {
-  const h = foldTeamKey(f.home.name)
-  const a = foldTeamKey(f.away.name)
+  const [h, a] = keysOf(f)
   return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
 }
 
@@ -121,11 +165,11 @@ function originalOf(m: SportMatch, fixtures: Fixture[]): Fixture | null {
  * och då stod de som LIVE utan ställning. Källan vet bättre: samma lag har redan spelat
  * (avspark minst två timmar före sändningen, inom en vecka) och inget nytt möte väntar i dag.
  */
-function isProviderRerun(m: SportMatch, today: Fixture[], history: Fixture[]): boolean {
+function isProviderRerun(m: SportMatch, today: Fixture[], all: Fixture[]): boolean {
   if (m.rerun || m.coverage !== 'full' || !m.homeKey || !m.awayKey) return false
   const fits = fitsTeams(m)
   if (today.some((f) => fits(f) && f.status !== 'finished' && f.status !== 'postponed')) return false
-  return originalOf(m, [...today, ...history]) != null
+  return originalOf(m, all) != null
 }
 
 /**
@@ -171,9 +215,12 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
     out.push(fixtureOnly(f, a.overrides, a.canonical?.(f)))
   }
   const history = a.history ?? []
+  // `today` före `history`, som förut: originalOf sorterar stabilt på avspark.
+  const todayIndex = new TeamIndex(a.fixtures)
+  const allIndex = new TeamIndex([...a.fixtures, ...history])
   for (let i = 0; i < a.epg.length; i += 1) {
     const m = out[i]
-    if (m.rerun || (!used.has(m.id) && isProviderRerun(m, a.fixtures, history))) out[i] = asReplay(m, linkedFixture.get(m.id) ?? null, [...a.fixtures, ...history])
+    if (m.rerun || (!used.has(m.id) && isProviderRerun(m, todayIndex.candidates(m), allIndex.candidates(m)))) out[i] = asReplay(m, linkedFixture.get(m.id) ?? null, allIndex.candidates(m))
   }
   return out
 }

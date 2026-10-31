@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { fixtureMatchKey, mergeLinked, relevantMatches } from './merge'
+import { fixtureMatchKey, mergeLinked, relevantMatches, teamTokens } from './merge'
+import { teamKeysMatch } from './sport-store'
 import type { Fixture } from './provider'
 import type { SportMatch } from './sport-model'
 import type { OverrideChannel } from './sport-store'
@@ -219,5 +220,30 @@ describe('reprisens originalmatch (visas med ställning och datum i stället fö
     expect(n.status).not.toBe('live')
     expect(n.replayOf).toBeUndefined()
     expect(liveRow).toMatchObject({ resultOnly: true, status: 'live', minute: 67 })
+  })
+})
+
+/* Prestanda (Jerry 2026-10-31: "sporttabben otroligt långsam"): mergeLinked
+   jämförde varje sändning mot alla fixturer. Indexet på lagnamnens första/sista
+   ord får aldrig tappa ett par som teamKeysMatch godkänner. */
+describe('teamTokens', () => {
+  const pairs: [string, string][] = [
+    ['malmo', 'malmo'], ['ranger', 'rangers'], ['glasgow rangers', 'glasgow ranger'],
+    ['manchester', 'manchester united'], ['united', 'manchester united'],
+    ['real madrid', 'real madrid cf'], ['madrid cf', 'real madrid cf'], ['bayern', 'fc bayern'],
+  ]
+  it('ett godkänt lagpar delar alltid minst ett indexord', () => {
+    for (const [a, b] of pairs) {
+      expect(teamKeysMatch(a, b)).toBe(true)
+      const ta = new Set(teamTokens(a))
+      expect(teamTokens(b).some((t) => ta.has(t))).toBe(true)
+    }
+  })
+  it('mergeLinked ger samma repris-markering med många ovidkommande fixturer', () => {
+    const noise = Array.from({ length: 300 }, (_, i) => fixture({ id: `n${i}`, home: { id: `h${i}`, name: `Team${i} A`, crest: null }, away: { id: `a${i}`, name: `Team${i} B`, crest: null }, kickoff: KO - 86_400_000, status: 'finished', score: { home: 1, away: 0 } }))
+    const original = fixture({ id: 'orig', home: { id: '375', name: 'Malmo FF', crest: null }, away: { id: '377', name: 'Djurgarden', crest: null }, kickoff: KO - 86_400_000, status: 'finished', score: { home: 2, away: 1 } })
+    const out = mergeLinked({ epg: [epgMatch({ status: 'upcoming' })], fixtures: [], history: [...noise, original], links: {}, overrides: {}, coverage: () => 'full' })
+    expect(out[0].rerun).toBe(true)
+    expect(out[0].replayOf?.fixture.id).toBe('orig')
   })
 })
