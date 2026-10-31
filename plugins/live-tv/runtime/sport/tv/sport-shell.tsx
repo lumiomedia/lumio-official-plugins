@@ -190,14 +190,16 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
     <style>{SPORT_FOCUS_CSS}</style>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
     <div data-testid="sport-view" data-scroll="" onFocusCapture={revealHeaderFully} style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
+      {/* Sammanfattningen större, och uppdateringsraden bredvid den i stället för
+          på en egen rad: allt under kommer högre upp (Jerry 2026-10-31). */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18), flexWrap: 'wrap' }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
-        <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
+        <span data-testid="sport-summary" style={{ fontSize: dp(24), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
+        <RateLineView status={status} tv={tvMode} inline />
         {ownClock ? <span data-testid="sport-clock" style={{ marginLeft: 'auto' }}>{clock}</span> : null}
       </div>
-      <RateLineView status={status} tv={tvMode} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(28), borderBottom: `1px solid ${TV.s12}` }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(14), borderBottom: `1px solid ${TV.s12}` }}>
         {(['foryou', 'results', 'follows'] as const).map((key) => (
           <div
             key={key}
@@ -210,16 +212,16 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
               ...(key === 'follows' && tab === 'foryou' ? { 'data-f-right': VIEW_AS_FIRST } : null),
             })}
             aria-selected={key === tab ? 'true' : 'false'}
-            style={{ padding: `${dp(8)}px ${dp(4)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
+            style={{ padding: `${dp(8)}px ${dp(14)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
           >
             {key === 'foryou' ? tt('sportTabForYou') : key === 'results' ? tt('sportTabResults') : tt('sportTabFollows')}
           </div>
         ))}
         {tab === 'foryou' ? (
           <div data-testid="sport-view-as" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), paddingBottom: dp(8) }}>
-            <span style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportViewAs')}</span>
+            <span style={{ fontSize: dp(21), color: TV.muted }}>{tt('sportViewAs')}</span>
             <Segment
-              size="lg"
+              size="xl"
               options={[{ key: 'matchday' as const, label: tt('sportMatchday') }, { key: 'feed' as const, label: tt('sportFeed') }]}
               value={ctx.settings.view}
               onChange={(view) => setSportSettings({ view })}

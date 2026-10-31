@@ -58,12 +58,14 @@ export function useGoalBlink(match: SportMatch): boolean {
 }
 
 /** Den tysta takt-raden. "Snabbare med betald nyckel" är en länk utanför TV och text på TV. */
-export function RateLineView({ status, tv }: { status: RateStatus; tv: boolean }) {
+/** `inline`: i rubrikraden bredvid dagens sammanfattning (Jerry 2026-10-31), i stället för en egen rad under. */
+export function RateLineView({ status, tv, inline = false }: { status: RateStatus; tv: boolean; inline?: boolean }) {
   const { tt, lang, locale } = useTvText()
   const line = rateLine(status, tt, { lang, locale })
   if (!line) return null
   return (
-    <div data-testid="sport-rate-line" style={{ fontSize: dp(14), color: TV.faint, display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
+    <div data-testid="sport-rate-line" style={{ fontSize: dp(inline ? 18 : 14), color: TV.faint, display: 'flex', gap: dp(10), flexWrap: 'wrap', ...(inline ? { alignItems: 'baseline' } : null) }}>
+      {inline ? <span aria-hidden="true">·</span> : null}
       <span>{line.text}</span>
       {line.showPaidLink
         ? tv
