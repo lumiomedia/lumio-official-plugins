@@ -17,7 +17,7 @@ import { useProgrammeArt } from './programme-art'
 import { useLatest, useRemindersVersion } from './guide-nowsen-view'
 import { useTint } from './tint'
 import { FOCUS_BTN, FOCUS_CARD, V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
-import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle } from './v2-ui'
+import { KeyCap, LivePill, LogoPlate, NoArt, V2FocusStyle, type PillSize } from './v2-ui'
 import { AccentTag, ChannelGridCardView, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
 import { XP_ALL, XP_GRID_COLUMNS, XP_GRID_STEP, useExperienceRows, type XpItem, type XpRow, type XpRowId } from './hub-experience-data'
 import { xpInitial, xpNavReduce, xpNormalise, type XpKey, type XpNavState } from './hub-experience-nav'
@@ -62,6 +62,21 @@ const ROW: Record<XpRowId, { w: number; h: number; gap: number; extra: number; r
   grid: { w: 0, h: 224, gap: 14, extra: 14, radius: 14 },
 }
 const ROW_HEAD = 64
+/** TV: jämn luft från en rads kortnederkant till nästa rads rubrik, för alla rader (Jerry 2026-10-31). */
+const TV_ROW_SPACING = 72
+/** TV: herons höjd från toppen 124 — knapparna slutar i linje med förhandsrutan (120 + 338). */
+const HERO_TV_H = 334
+/** Radens kortmått. TV: Dina kanaler har Fortsätt tittas kort (420×236) sedan 2026-10-31. */
+function rowDims(id: XpRowId, tv: boolean): (typeof ROW)[XpRowId] {
+  return tv && id === 'yours' ? ROW.continue : ROW[id]
+}
+/** Luften under radens kort: TV jämnt 72, skrivbordet handoffens `extra` (rutnätet behåller sin). */
+function rowTail(id: XpRowId, tv: boolean): number {
+  return tv && id !== 'grid' ? TV_ROW_SPACING : ROW[id].extra
+}
+/** TV-Upplevelses LIVE-brickor: på korten 28/14 och i herons kicker 30/15. */
+const TV_CARD_PILL: PillSize = { height: 28, font: 14, padX: 11, dot: 9 }
+const TV_HERO_PILL: PillSize = { height: 30, font: 15, padX: 12, dot: 10 }
 /** Dina kanaler: luften runt logobilden, och ytan den ryms i (kortet 250×160 minus luften). */
 const YOURS_FRAME = 11
 const YOURS_PLATE: [number, number] = [250 - 2 * YOURS_FRAME, 160 - 2 * YOURS_FRAME]
@@ -147,6 +162,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 
   // Senaste värden för lager-/tangenthanterarna (de registreras sällan).
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const chipTrackRef = useRef<HTMLDivElement | null>(null)
   /**
    * SKRIVBORDET SCROLLAR SOM APPENS HEMRADER (Jerry 2026-10-30): sidan rullar
    * fritt lodrätt, varje rad vågrätt med styrplattan, hovring tänder bara
@@ -154,6 +170,19 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
    * coverflow) eftersom fjärren bara har pilar.
    */
   const native = !isTv
+  /**
+   * TV: chipremsan sveper så att den fokuserade chipen alltid är den FÖRSTA
+   * synliga (Jerry 2026-10-31), som raderna — inte "rulla in i bild". Chippen
+   * är olika breda, så förskjutningen mäts (offsetLeft är layout och rörs inte
+   * av transformen) och skrivs direkt på remsan.
+   */
+  const chipCount = chipItems.length
+  useLayoutEffect(() => {
+    const track = chipTrackRef.current
+    if (native || !track) return
+    const target = track.children[s.chipIdx] as HTMLElement | undefined
+    track.style.transform = `translateX(-${target ? target.offsetLeft : 0}px)`
+  }, [native, s.chipIdx, chipCount])
   const live = useRef({ s, dims, chip, selectedChipIdx })
   live.current = { s, dims, chip, selectedChipIdx }
   const focusAt = (st: XpNavState) => {
@@ -164,8 +193,9 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     // Skrivbordet: tangentbordet följer rullningen som i appens hemrader.
     if (native && st.zone === 'rows') el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
     // Chipraden rullar inte av sig själv (overflow hidden + preventScroll).
-    if (st.zone === 'chips') {
-      const row = el.parentElement
+    // TV: chipremsan sveper själv (fokuserad chip först, se effekten nedan).
+    if (native && st.zone === 'chips') {
+      const row = el.parentElement?.parentElement
       if (row) {
         if (el.offsetLeft < row.scrollLeft) row.scrollLeft = el.offsetLeft - dp(8)
         else if (el.offsetLeft + el.offsetWidth > row.scrollLeft + row.clientWidth) row.scrollLeft = el.offsetLeft + el.offsetWidth - row.clientWidth + dp(8)
@@ -311,7 +341,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
   const heroProgress = heroIsLive && heroProgramme ? progressOf(heroProgramme.start, heroProgramme.stop, model.nowMs) : null
 
   // Radernas toppar: fokuserad rad hamnar överst i fönstret.
-  const rowHeight = (row: XpRow, ri: number) => (row.id === 'grid' ? (ri === gridFrom ? ROW_HEAD : 0) : ROW_HEAD) + ROW[row.id].h + ROW[row.id].extra
+  const rowHeight = (row: XpRow, ri: number) => (row.id === 'grid' ? (ri === gridFrom ? ROW_HEAD : 0) : ROW_HEAD) + rowDims(row.id, isTv).h + rowTail(row.id, isTv)
   const tops: number[] = []
   let acc = 0
   rows.forEach((row, ri) => { tops.push(acc); acc += rowHeight(row, ri) })
@@ -380,27 +410,27 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
 
       <div data-testid="hub-topbar" style={{ position: 'absolute', left: dp(56), right: dp(56), top: dp(30), display: 'flex', alignItems: 'center', gap: dp(14), zIndex: 4 }}>
         <span style={{ fontSize: dp(34), fontWeight: 600, marginRight: dp(10) }}>{tt('liveTv')}</span>
-        <HubPlaylistPill model={model} nav={nav} init={false} height={48} onPicked={() => selectChip(null)} />
-        <div {...station(() => nav.go('search'), undefined, { 'data-v2f': 'btn', 'aria-label': tt('railSearch') })} style={{ width: dp(48), height: dp(48), minHeight: dp(48), borderRadius: 999, background: 'rgba(252,252,255,0.12)', border: '1px solid rgba(255,255,255,0.12)', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <Icons.Search size={dp(20)} />
+        <HubPlaylistPill model={model} nav={nav} init={false} height={isTv ? 60 : 48} fontSize={isTv ? 24 : 20} padX={isTv ? 26 : 22} iconSize={isTv ? 22 : 20} onPicked={() => selectChip(null)} />
+        <div {...station(() => nav.go('search'), undefined, { 'data-v2f': 'btn', 'aria-label': tt('railSearch') })} style={{ width: dp(isTv ? 60 : 48), height: dp(isTv ? 60 : 48), minHeight: dp(isTv ? 60 : 48), borderRadius: 999, background: 'rgba(252,252,255,0.12)', border: '1px solid rgba(255,255,255,0.12)', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <Icons.Search size={dp(isTv ? 26 : 20)} />
         </div>
         <HubGreeting nowMs={model.nowMs} clock={clock} />
       </div>
 
       {/* Texten får gå fram till förhandsrutan (eller över hela bredden utan ruta); rubriken står på en rad. */}
-      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: hasArt ? dp(1000) : heroChannel && heroItem?.kind !== 'category' ? `calc(100% - ${dp(56 + 600 + 56 + 40)}px)` : `calc(100% - ${dp(112)}px)`, display: 'flex', flexDirection: 'column', gap: dp(14), zIndex: 3 }}>
-        {heroItem ? <HeroText item={heroItem} model={model} /> : null}
+      <div data-testid="xp-hero" style={{ position: 'absolute', left: dp(56), top: dp(124), width: hasArt ? dp(1000) : heroChannel && heroItem?.kind !== 'category' ? `calc(100% - ${dp(56 + 600 + 56 + 40)}px)` : `calc(100% - ${dp(112)}px)`, display: 'flex', flexDirection: 'column', gap: dp(isTv ? 18 : 14), zIndex: 3, ...(isTv ? { height: dp(HERO_TV_H) } : null) }}>
+        {heroItem ? <HeroText item={heroItem} model={model} tv={isTv} /> : null}
+        {/* TV: knappraden (och legenden) står nertill, i linje med förhandsrutans nederkant (120 + 338 = 458 = 124 + 334). */}
         {showButtons ? (
-          <div data-testid="xp-hero-buttons" style={{ display: 'flex', gap: dp(12), marginTop: dp(8), alignItems: 'center' }}>
+          <div data-testid="xp-hero-buttons" style={{ display: 'flex', gap: dp(12), marginTop: isTv ? 'auto' : dp(8), alignItems: 'center' }}>
             {/* Primärknappen följer appens accent (Jerry 2026-10-30), vit text. */}
             {featuredBtn(0, () => activate(featured), { 'data-init': '', 'data-accent': '1' }, { padding: `0 ${dp(28)}px`, background: TV.acc, color: '#fff', fontSize: dp(20), fontWeight: 700 }, <><Icons.Play size={dp(20)} />{tt(ctaKey(featured))}</>)}
             {featuredBtn(1, () => openInGuide(featured), {}, { padding: `0 ${dp(24)}px`, background: 'rgba(252,252,255,0.14)', border: '1px solid rgba(255,255,255,0.14)', boxSizing: 'border-box', fontSize: dp(20), fontWeight: 600 }, tt('guideV2Title'))}
             {featured.channel ? featuredBtn(2, () => model.togglePin(featured.channel!), { 'aria-label': tt('xpFavourite') }, { width: dp(56), background: 'rgba(252,252,255,0.14)', border: '1px solid rgba(255,255,255,0.14)', boxSizing: 'border-box', color: favourite ? TV.acc : V2.text }, <Icons.Heart size={dp(22)} filled />) : null}
-            {isTv && s.zone === 'hero' ? <span style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.5)', marginLeft: dp(8) }}>{tt('xpHintCategories')}</span> : null}
           </div>
         ) : null}
         {showLegend ? (
-          <div data-testid="xp-legend" style={{ display: 'flex', gap: dp(10), marginTop: dp(8), alignItems: 'center', fontSize: dp(17), color: V2.text2 }}>
+          <div data-testid="xp-legend" style={{ display: 'flex', gap: dp(10), marginTop: isTv ? 'auto' : dp(8), alignItems: 'center', fontSize: dp(17), color: V2.text2 }}>
             <KeyCap>OK</KeyCap><span>{tt(ctaKey(focusedItem))}</span>
             <span style={{ marginLeft: dp(14) }}><KeyCap>{tt('xpKeyHold')}</KeyCap></span><span>{tt('moreOptions')}</span>
             <span style={{ marginLeft: dp(14) }}><KeyCap>{tt('back')}</KeyCap></span><span>{tt('xpToTop')}</span>
@@ -408,7 +438,9 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
         ) : null}
       </div>
 
-      <div data-testid="xp-chips" style={{ position: 'absolute', left: dp(50), right: dp(50), top: dp(514), display: 'flex', gap: dp(10), zIndex: 3, overflow: 'hidden', padding: dp(6) }}>
+      <div data-testid="xp-chips" style={{ position: 'absolute', left: dp(50), right: dp(50), top: dp(514), zIndex: 3, overflow: 'hidden', padding: dp(6) }}>
+        {/* TV: remsan sveper så att den fokuserade chipen alltid står FÖRST (som raderna); transformen sätts i effekten ovan. */}
+        <div ref={chipTrackRef} data-testid="xp-chips-track" data-first-chip={native ? undefined : String(s.chipIdx)} style={{ position: 'relative', display: 'flex', gap: dp(10), ...(native ? null : { transition: `transform .35s ${EASE}` }) }}>
         {chipItems.map((c, i) => {
           const on = chip !== null && c.key !== MORE_GROUPS && chipValue(c.key) === chip
           const focused = s.zone === 'chips' && s.chipIdx === i
@@ -419,27 +451,28 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
               key={c.id}
               {...station(onOk, undefined, { 'data-xp': `chip-${i}`, 'data-v2f': 'xp', 'data-testid': `xp-chip-${c.id}`, ...(on ? { 'data-selected': '1' } : {}) })}
               onFocus={() => setNav((p) => ({ ...p, zone: 'chips', chipIdx: i }))}
-              style={{ height: dp(46), minHeight: dp(46), padding: `0 ${dp(20)}px`, borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', fontSize: dp(17), whiteSpace: 'nowrap', cursor: 'pointer', background: on ? V2.text : 'rgba(252,252,255,0.10)', color: on ? V2.onLight : V2.text, fontWeight: on ? 700 : 500, boxShadow: ring(focused, FOCUS_BTN) ?? 'inset 0 0 0 1px rgba(255,255,255,0.12)', transform: active && focused ? 'scale(1.06)' : 'none', transition: 'transform .2s, box-shadow .2s' }}
+              style={{ height: dp(isTv ? 50 : 46), minHeight: dp(isTv ? 50 : 46), padding: `0 ${dp(isTv ? 22 : 20)}px`, borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', fontSize: dp(isTv ? 19 : 17), whiteSpace: 'nowrap', cursor: 'pointer', background: on ? V2.text : 'rgba(252,252,255,0.10)', color: on ? V2.onLight : V2.text, fontWeight: on ? 700 : 500, boxShadow: ring(focused, FOCUS_BTN) ?? 'inset 0 0 0 1px rgba(255,255,255,0.12)', transform: active && focused ? 'scale(1.06)' : 'none', transition: 'transform .2s, box-shadow .2s' }}
             >{c.label}</div>
           )
         })}
+        </div>
       </div>
 
       <div data-testid="xp-rows-viewport" style={{ position: 'absolute', left: 0, right: 0, top: dp(596), bottom: 0, overflowX: 'hidden', overflowY: native ? 'auto' : 'hidden', zIndex: 2 }}>
         <div data-testid="xp-rows-track" style={native ? { position: 'relative', paddingBottom: dp(40) } : { position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(-${dp(tops[s.row] ?? 0)}px)`, transition: `transform .45s ${EASE}` }}>
           {rows.map((row, ri) => {
             if (row.id === 'grid') return null
-            const m = ROW[row.id]
+            const m = rowDims(row.id, isTv)
             const col = s.cols[ri] ?? 0
             const onRow = ri === s.row
             const inRows = s.zone === 'rows'
             const opacity = native ? 1 : ri < s.row ? 0 : onRow ? (inRows ? 1 : 0.8) : 0.55
             const { title, sub } = rowHead(row.id, chip, chipLabel, isTv, tt)
             return (
-              <section key={row.id} data-testid={`xp-row-${row.id}`} style={{ height: dp(ROW_HEAD + m.h + m.extra), opacity, transition: 'opacity .35s' }}>
+              <section key={row.id} data-testid={`xp-row-${row.id}`} style={{ height: dp(ROW_HEAD + m.h + rowTail(row.id, isTv)), opacity, transition: 'opacity .35s' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14), padding: `0 ${dp(56)}px`, height: dp(50) }}>
-                  <span style={{ fontSize: dp(26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{title}</span>
-                  {sub ? <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.55)' }}>{sub}</span> : null}
+                  <span style={{ fontSize: dp(isTv ? 28 : 26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{title}</span>
+                  {sub ? <span style={{ fontSize: dp(isTv ? 20 : 17), color: 'rgba(243,244,248,0.55)' }}>{sub}</span> : null}
                 </div>
                 <div style={{ padding: native ? `${dp(14)}px 0 0` : `${dp(14)}px ${dp(56)}px 0` }}>
                   <div
@@ -492,8 +525,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
                   <section key={`grid-${ri}`} data-testid="xp-row-grid" style={{ height: native ? undefined : dp(rowHeight(row, ri)), paddingBottom: native ? dp(14) : undefined, opacity, transition: 'opacity .35s' }}>
                     {first ? (
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14), padding: `0 ${dp(56)}px`, height: dp(50), marginBottom: dp(14) }}>
-                        <span style={{ fontSize: dp(26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{chip === XP_ALL ? tt('allChannels') : chipLabel ?? ''}</span>
-                        <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.55)' }}>{tt('channelsCount', { count: row.total ?? 0 })}</span>
+                        <span style={{ fontSize: dp(isTv ? 28 : 26), fontWeight: 600, color: onRow ? V2.text : 'rgba(243,244,248,0.7)' }}>{chip === XP_ALL ? tt('allChannels') : chipLabel ?? ''}</span>
+                        <span style={{ fontSize: dp(isTv ? 20 : 17), color: 'rgba(243,244,248,0.55)' }}>{tt('channelsCount', { count: row.total ?? 0 })}</span>
                       </div>
                     ) : null}
                     {/* Vanligt CSS-rutnät med FAST kolumnantal (aldrig auto-fill), ingen vågrät rullning; varje rad om XP_GRID_COLUMNS är en rad i reducern. */}
@@ -585,7 +618,7 @@ function rowHead(id: XpRowId, chip: string | null, chipLabel: string | null, isT
 }
 
 /** Heronas text: kicker (tagg · nummer · kanal), titel, meta + förlopp, beskrivning. */
-function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }) {
+function HeroText({ item, model, tv }: { item: XpItem; model: TvViewProps['model']; tv: boolean }) {
   const { tt, locale } = useTvText()
   const p = item.programme ?? null
   const minLeft = p ? Math.max(0, Math.round((p.stop - model.nowMs) / 60_000)) : 0
@@ -601,21 +634,21 @@ function HeroText({ item, model }: { item: XpItem; model: TvViewProps['model'] }
   const description = item.kind === 'category' ? tt('xpCategoryDesc') : p?.description ?? null
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(18), color: 'rgba(243,244,248,0.8)' }}>
+      <div data-testid="xp-hero-kicker" style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(tv ? 22 : 18), color: 'rgba(243,244,248,0.8)' }}>
         {item.kind === 'live'
-          ? <LivePill label={tag} />
-          : <span style={{ fontSize: dp(13), fontWeight: 600, letterSpacing: '0.14em', padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: 'rgba(252,252,255,0.16)', color: V2.text, textTransform: 'uppercase' }}>{tag}</span>}
+          ? <LivePill label={tag} size={tv ? TV_HERO_PILL : undefined} />
+          : <span style={{ fontSize: dp(tv ? 15 : 13), fontWeight: 600, letterSpacing: '0.14em', ...(tv ? { height: dp(30), display: 'inline-flex', alignItems: 'center', padding: `0 ${dp(12)}px`, boxSizing: 'border-box' } : { padding: `${dp(5)}px ${dp(12)}px` }), borderRadius: dp(8), background: 'rgba(252,252,255,0.16)', color: V2.text, textTransform: 'uppercase' }}>{tag}</span>}
         {number ? <span style={{ fontWeight: 600, color: V2.accText, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
         {item.channel ? <span style={ellipsis}>{item.channel.name}</span> : null}
       </div>
-      <div data-testid="xp-hero-title" style={{ fontSize: dp(60), fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+      <div data-testid="xp-hero-title" style={{ fontSize: dp(tv ? 50 : 60), fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
       {meta ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(19), color: 'rgba(243,244,248,0.8)' }}>
+        <div data-testid="xp-hero-meta" style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(tv ? 23 : 19), color: 'rgba(243,244,248,0.8)' }}>
           <span>{meta}</span>
           {isLive && p ? <div style={{ width: dp(240) }}><V2Progress value={progressOf(p.start, p.stop, model.nowMs)} height={5} track="rgba(252,252,255,.18)" /></div> : null}
         </div>
       ) : null}
-      {description ? <p style={{ margin: 0, fontSize: dp(19), color: V2.text2, maxWidth: '60ch', ...clamp2 }}>{description}</p> : null}
+      {description ? <p style={{ margin: 0, fontSize: dp(tv ? 24 : 19), color: V2.text2, maxWidth: '60ch', ...clamp2 }}>{description}</p> : null}
     </>
   )
 }
@@ -655,7 +688,7 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
   number: number | null
   api: { readonly current: XpCardApi }
 }): JSX.Element {
-  const m = ROW[rowId]
+  const m = rowDims(rowId, !native)
   const id = `r${ri}-${ii}`
   // Platta kort överallt; fokuserat kort lyfts lite (Sänds nu något mindre, korten är större).
   const tf = focused ? (native ? 'scale(1.04)' : m.poster ? 'scale(1.05)' : 'scale(1.07)') : 'none'
@@ -671,9 +704,10 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
       style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none', visibility: hidden ? 'hidden' : undefined }}
     >
       <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s` }}>
-        <CardFace rowId={rowId} item={item} nowMs={nowMs} number={number} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} />
+        <CardFace rowId={rowId} item={item} nowMs={nowMs} number={number} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} tv={!native} />
       </div>
-      {rowId === 'yours' && item.channel ? (
+      {/* Skrivbordet: Dina kanaler har bildtexten under kortet. TV: inne i kortet, som Fortsätt titta. */}
+      {native && rowId === 'yours' && item.channel ? (
         <div style={{ padding: `${dp(12)}px ${dp(4)}px 0` }}>
           {/* Dämpad text med färgens alfa, inte opacity (se regeln för data-dim). */}
           <div style={{ fontSize: dp(17), fontWeight: 600, color: focused ? V2.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.channel.name}</div>
@@ -685,7 +719,7 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
 })
 
 /** Kortets yta per rad (README "Rows"). `lookup` = programbilden slås upp (bara nära fokus). */
-const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, holdPad }: { rowId: XpRowId; item: XpItem; nowMs: number; number: number | null; lookup: boolean; holdPad: number }) {
+const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, holdPad, tv }: { rowId: XpRowId; item: XpItem; nowMs: number; number: number | null; lookup: boolean; holdPad: number; tv: boolean }) {
   const { tt, locale } = useTvText()
   const channel = item.channel ?? NO_CHANNEL
   const p = item.programme ?? null
@@ -708,6 +742,23 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
           <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.8)' }}>{tt('channelsCount', { count: item.count ?? 0 })}</div>
         </div>
       </div>
+    )
+  }
+
+  if (rowId === 'yours' && tv) {
+    // TV (Jerry 2026-10-31): exakt som Fortsätt tittas kort — vit logoplatta 180×90 centrerad 40 %
+    // ner, mörk bottentoning, kanalnamn + det som sänds inne i kortet, förlopp i nederkanten.
+    return (
+      <NoArt style={{ display: 'block' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)' }}><LogoPlate channel={channel} width={180} height={90} radius={10} /></div>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.75))' }} />
+        {number != null ? <span data-testid="xp-yours-number" style={{ position: 'absolute', left: dp(14), top: dp(14), padding: `${dp(2)}px ${dp(9)}px`, borderRadius: dp(8), background: 'rgba(17,19,26,.78)', color: V2.text, fontSize: dp(19), fontWeight: 700, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
+        <div data-testid="xp-yours-text" style={{ position: 'absolute', left: dp(16), right: dp(16), bottom: dp(18) }}>
+          <div style={{ fontSize: dp(21), fontWeight: 700, ...ellipsis }}>{channel.name}</div>
+          <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{p?.title ?? ''}</div>
+        </div>
+        {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
+      </NoArt>
     )
   }
 
@@ -754,7 +805,7 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
       <NoArt style={{ display: 'block' }}>
         {image}{plate}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.82))' }} />
-        <span style={{ position: 'absolute', left: dp(14), top: dp(14) }}><LivePill solid label={tt('live')} /></span>
+        <span style={{ position: 'absolute', left: dp(14), top: dp(14) }}><LivePill solid label={tt('live')} size={tv ? TV_CARD_PILL : undefined} /></span>
         {art ? <LogoPlate channel={channel} width={60} height={34} radius={6} style={{ position: 'absolute', right: dp(14), top: dp(14) }} /> : null}
         <div style={{ position: 'absolute', left: dp(18), right: textRight(18), bottom: dp(20), display: 'flex', flexDirection: 'column', gap: dp(4) }}>
           <div style={{ fontSize: dp(24), fontWeight: 800, lineHeight: 1.1, ...ellipsis }}>{sport?.title ?? p?.title ?? channel.name}</div>

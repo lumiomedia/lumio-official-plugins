@@ -38,12 +38,16 @@ export function HubGreeting({ clock }: { nowMs?: number; clock: ReactNode }) {
  * flyttade då fokus tillbaka till [data-init] mitt i att användaren pilade i
  * menyn. `nav` läses i stället ur en ref.
  */
-export function HubPlaylistPill({ model, nav, init, height, onPicked }: {
+export function HubPlaylistPill({ model, nav, init, height, fontSize = 20, padX = 22, iconSize = 20, onPicked }: {
   model: LiveTvModel
   nav: TvNav
   /** Pillen bär vyns `data-init` (inga kort att landa på). */
   init: boolean
   height: number
+  /** Text, sidoluft och pilikon (designpx); TV-Upplevelse har större. */
+  fontSize?: number
+  padX?: number
+  iconSize?: number
   /** Efter byte av spellista: vyn nollställer sitt filter. */
   onPicked: () => void
 }) {
@@ -63,8 +67,8 @@ export function HubPlaylistPill({ model, nav, init, height, onPicked }: {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div ref={pillRef} data-testid="playlist-pill" {...station(() => setOpen(true), undefined, { 'data-v2f': 'btn', ...(init ? { 'data-init': '' } : {}) })} style={{ height: dp(height), minHeight: dp(height), padding: `0 ${dp(22)}px`, borderRadius: 999, background: V2.surface4, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}>
-        {model.activePlaylistName ?? tt('allPlaylists')} <Icons.ChevronDown />
+      <div ref={pillRef} data-testid="playlist-pill" {...station(() => setOpen(true), undefined, { 'data-v2f': 'btn', ...(init ? { 'data-init': '' } : {}) })} style={{ height: dp(height), minHeight: dp(height), padding: `0 ${dp(padX)}px`, borderRadius: 999, background: V2.surface4, display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(fontSize), fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+        {model.activePlaylistName ?? tt('allPlaylists')} <Icons.ChevronDown size={dp(iconSize)} />
       </div>
       {open ? (
         <div ref={menuRef} role="menu" data-panel-root="" data-scroll="" data-live-tv-layer="" style={{ position: 'absolute', top: `calc(100% + ${dp(8)}px)`, left: 0, zIndex: 60, width: dp(380), padding: dp(8), borderRadius: dp(16), background: 'rgba(58,59,66,0.98)', boxShadow: '0 24px 64px rgba(0,0,0,0.55)', maxHeight: dp(560), overflowY: 'auto' }}>

@@ -362,12 +362,107 @@ describe('HubExperience', () => {
     // Samma prefix som skalets fokusregel, så specificiteten räcker.
     expect(rule).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]')
   })
+  describe('TV-justeringar (Jerrys förhandsvisning 2026-10-31)', () => {
+    const px = (el: Element | null | undefined, prop: 'height' | 'fontSize' | 'width' | 'padding' | 'marginTop') => (el as HTMLElement).style[prop]
+    it('toppraden: spellistpillen 60 hög, 24 px text, 0 26 luft; sökknappen 60×60', async () => {
+      await mount()
+      const pill = screen.getByTestId('playlist-pill')
+      expect(px(pill, 'height')).toBe('60px')
+      expect(px(pill, 'fontSize')).toBe('24px')
+      expect(px(pill, 'padding')).toBe('0px 26px')
+      const search = within(screen.getByTestId('hub-topbar')).getByLabelText('Search')
+      expect(px(search, 'width')).toBe('60px')
+      expect(px(search, 'height')).toBe('60px')
+    })
+    it('heron: rubrik 50, meta 23, beskrivning 24, kicker 22, höjd 334 med knapparna nertill, ingen kategorihint', async () => {
+      await mount()
+      const hero = screen.getByTestId('xp-hero')
+      expect(px(hero, 'height')).toBe('334px')
+      expect(hero.style.gap).toBe('18px')
+      expect(px(screen.getByTestId('xp-hero-title'), 'fontSize')).toBe('50px')
+      expect(px(screen.getByTestId('xp-hero-kicker'), 'fontSize')).toBe('22px')
+      expect(px(screen.getByTestId('xp-hero-meta'), 'fontSize')).toBe('23px')
+      expect(px(screen.getByTestId('xp-hero-buttons'), 'marginTop')).toBe('auto')
+      expect(screen.getByTestId('xp-hero-buttons').textContent).not.toMatch(/categories/i)
+      const live = within(screen.getByTestId('xp-hero-kicker')).getByTestId('live-pill')
+      expect(px(live, 'height')).toBe('30px')
+      expect(px(live, 'fontSize')).toBe('15px')
+    })
+    it('legenden står också nertill i heron', async () => {
+      await mount()
+      focusInit()
+      press('ArrowDown'); press('ArrowDown')
+      expect(px(screen.getByTestId('xp-legend'), 'marginTop')).toBe('auto')
+    })
+    it('chippen 50 höga, 19 px; den fokuserade chipen står alltid FÖRST i raden', async () => {
+      await mount()
+      const chip = screen.getByTestId('xp-chip-Sport')
+      expect(px(chip, 'height')).toBe('50px')
+      expect(px(chip, 'fontSize')).toBe('19px')
+      focusInit()
+      press('ArrowDown')
+      const track = screen.getByTestId('xp-chips-track')
+      expect(track.getAttribute('data-first-chip')).toBe('0')
+      press('ArrowRight'); press('ArrowRight')
+      expect(track.getAttribute('data-first-chip')).toBe('2')
+      expect(track.style.transform).toMatch(/^translateX\(/)
+    })
+    it('radrubriker 28/20 och LIVE-brickan på korten 28 hög, 14 px', async () => {
+      await mount()
+      const row = screen.getByTestId('xp-row-onNow')
+      const head = row.firstElementChild!
+      expect(px(head.children[0], 'fontSize')).toBe('28px')
+      expect(px(head.children[1], 'fontSize')).toBe('20px')
+      const pill = within(row).getAllByTestId('live-pill')[0]!
+      expect(px(pill, 'height')).toBe('28px')
+      expect(px(pill, 'fontSize')).toBe('14px')
+    })
+    it('Dina kanaler ser ut som Fortsätt titta: 420×236, vit logoplatta 180×90, namn och program INNE i kortet, nummerbricka 19 px', async () => {
+      await mount()
+      const row = screen.getByTestId('xp-row-yours')
+      const card = within(row).getAllByTestId('xp-card')[0]!
+      expect(px(card, 'width')).toBe('420px')
+      expect(px(card.firstElementChild, 'height')).toBe('236px')
+      const plate = within(card).getByTestId('logo-plate')
+      expect(plate.getAttribute('data-bare')).not.toBe('1')
+      expect(px(plate, 'width')).toBe('180px')
+      expect(px(plate, 'height')).toBe('90px')
+      const text = within(card).getByTestId('xp-yours-text')
+      expect(card.firstElementChild!.contains(text)).toBe(true)
+      expect(text).toHaveTextContent('A')
+      expect(px(within(card).getByTestId('xp-yours-number'), 'fontSize')).toBe('19px')
+    })
+    it('jämnt 72 px mellan raderna: varje sektion är rubrik 64 + kort + 72; stegen ▼ följer de verkliga höjderna', async () => {
+      await mount()
+      const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-testid^="xp-row-"]'))
+      const h: Record<string, number> = { onNow: 248, sport: 248, continue: 236, yours: 236, soon: 210, explore: 180 }
+      for (const sec of sections) {
+        const id = sec.getAttribute('data-testid')!.replace('xp-row-', '')
+        expect(sec.style.height).toBe(`${64 + h[id]! + 72}px`)
+      }
+      focusInit()
+      press('ArrowDown'); press('ArrowDown'); press('ArrowDown')
+      const first = sections[0]!.getAttribute('data-testid')!.replace('xp-row-', '')
+      expect(screen.getByTestId('xp-rows-track').style.transform).toBe(`translateY(-${64 + h[first]! + 72}px)`)
+    })
+    it('Dina kanaler sveper med kortets verkliga bredd (420 + 22)', async () => {
+      await mount()
+      focusInit()
+      const rows = Array.from(document.querySelectorAll<HTMLElement>('section[data-testid^="xp-row-"]')).map((s) => s.getAttribute('data-testid'))
+      press('ArrowDown')
+      for (let i = 0; i <= rows.indexOf('xp-row-yours'); i++) press('ArrowDown')
+      press('ArrowRight')
+      const strip = within(screen.getByTestId('xp-row-yours')).getByTestId('xp-row-strip')
+      expect(strip.style.transform).toBe('translateX(-442px)')
+    })
+  })
   it('bakgrunden är den gemensamma neutrala gradienten även när heron visar en kanal med förhandsruta', async () => {
     await mount()
     expect(screen.getByTestId('xp-hero-tile')).toBeInTheDocument()
     expect(screen.getByTestId('xp-ambient').getAttribute('data-bg')).toBe(v2Ambient('slate'))
   })
-  it('herorubriken står på en rad (kortas med …) i 60 px', async () => {
+  it('herorubriken står på en rad (kortas med …) i 60 px på skrivbordet (TV: 50)', async () => {
+    __setTvModeForTests(false)
     await mount()
     const title = screen.getByTestId('xp-hero-title')
     expect(title.style.whiteSpace).toBe('nowrap')
@@ -388,7 +483,8 @@ describe('HubExperience', () => {
     expect(plate.style.width).toBe('380px')
     expect(plate.style.height).toBe('190px')
   })
-  it('Dina kanaler: mörk kortyta, loggan utan platta (bar bild med rundade hörn) inom en jämn luft på 11 px, numret som bricka uppe till vänster', async () => {
+  it('skrivbord, Dina kanaler: mörk kortyta, loggan utan platta (bar bild med rundade hörn) inom en jämn luft på 11 px, numret som bricka uppe till vänster', async () => {
+    __setTvModeForTests(false)
     await mount()
     const face = within(screen.getByTestId('xp-row-yours')).getAllByTestId('xp-yours-face')[0]!
     expect(face.getAttribute('data-surface')).toBe('dark')

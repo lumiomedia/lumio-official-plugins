@@ -81,10 +81,14 @@ export function LogoPlate({ channel, width, height, number, radius, bare = false
 }
 
 /** LIVE-pillen: mjuk på ytor, solid på bild (Sänds nu-korten). */
-export function LivePill({ solid = false, label = 'LIVE' }: { solid?: boolean; label?: string }) {
+/** LIVE-brickans mått (designpx). Standard 24/12/9/8; TV-Upplevelse har större (Jerry 2026-10-31). */
+export interface PillSize { height: number; font: number; padX: number; dot: number }
+export const PILL_DEFAULT: PillSize = { height: 24, font: 12, padX: 9, dot: 8 }
+
+export function LivePill({ solid = false, label = 'LIVE', size = PILL_DEFAULT }: { solid?: boolean; label?: string; size?: PillSize }) {
   return (
-    <span data-testid="live-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: dp(6), height: dp(24), padding: `0 ${dp(9)}px`, borderRadius: dp(8), background: solid ? V2.liveSolid : V2.liveBg, color: solid ? '#fff' : V2.liveText, fontSize: dp(12), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
-      <span style={{ width: dp(8), height: dp(8), borderRadius: 999, background: solid ? '#fff' : V2.liveDot }} />{label}
+    <span data-testid="live-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: dp(6), height: dp(size.height), padding: `0 ${dp(size.padX)}px`, borderRadius: dp(8), background: solid ? V2.liveSolid : V2.liveBg, color: solid ? '#fff' : V2.liveText, fontSize: dp(size.font), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
+      <span style={{ width: dp(size.dot), height: dp(size.dot), borderRadius: 999, background: solid ? '#fff' : V2.liveDot }} />{label}
     </span>
   )
 }
