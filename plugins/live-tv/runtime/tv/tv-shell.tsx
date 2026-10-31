@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from 'react'
+import { TV_TYPE_SCALE_CSS } from './tv-type-scale'
 import { getTvGlassMenu, requestBrowseBack, useTvMode, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { useLiveTvModel, type LiveTvModel } from '../live-tv-model'
@@ -825,6 +826,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} background={shellBg} /> : null}
       <TvFocusStyle />
       {bleed ? <style>{'[data-lt-bleed="1"] { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; margin: 0 !important; }'}</style> : null}
+      {/* TV:ns textstorlekar och luft (tv-type-scale.ts) — bara TV-läge, aldrig telefonen. */}
+      {isTv && !phone ? <style data-lt-type-scale="">{TV_TYPE_SCALE_CSS}</style> : null}
       {phone || sportOnly || (view === 'multi' && mvFull) ? null : (
         <TvRail
           active={shellRailActive(view, redirectCheck)}
