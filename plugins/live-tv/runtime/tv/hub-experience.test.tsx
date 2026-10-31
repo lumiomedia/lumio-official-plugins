@@ -306,11 +306,21 @@ describe('HubExperience', () => {
     expect(strip.style.transform).toBe('translateX(-460px)')
     // Kort före det fokuserade syns inte i vänsterkanten.
     const cards = within(strip).getAllByTestId('xp-card')
-    expect((cards[0]!.firstElementChild as HTMLElement).style.opacity).toBe('0')
-    expect((cards[1]!.firstElementChild as HTMLElement).style.opacity).toBe('')
+    expect(cards[0]!.style.visibility).toBe('hidden')
+    expect(cards[1]!.style.visibility).toBe('')
     expect(cards[1]).toHaveAttribute('data-xp-focused', '1')
     // Den aktiva radens övriga kort dämpas av remsans CSS-regel.
     expect(strip).toHaveAttribute('data-dim', '1')
+  })
+  it('TV: korten i raderna använder ingen opacity (Mi Box S ritade dämpade kort förskjutna och krympta)', async () => {
+    await mount()
+    focusInit()
+    press('ArrowDown'); press('ArrowDown'); press('ArrowRight')
+    for (const card of within(screen.getByTestId('xp-rows-track')).getAllByTestId('xp-card')) {
+      for (const el of [card, ...card.querySelectorAll<HTMLElement>('*')]) expect(el.style.opacity).toBe('')
+    }
+    const rule = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').find((t) => t.includes('data-dim'))!
+    expect(rule).not.toMatch(/opacity/)
   })
   it('TV: Sänds nu är platt — ingen coverflow (3D) och ingen spegling', async () => {
     await mount()

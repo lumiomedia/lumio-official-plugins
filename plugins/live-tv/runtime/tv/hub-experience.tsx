@@ -345,7 +345,8 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
     >
       <V2FocusStyle />
       {/* Den aktiva radens övriga kort dämpas (TV). I CSS och inte per kort: ett radbyte ritar då inte om alla kort. */}
-      <style>{'[data-testid="xp-row-strip"][data-dim="1"] > [data-xp]:not([data-xp-focused]) > :first-child { opacity: .82 }'}</style>
+      {/* Mörkning med en överliggande yta, inte opacity: på Mi Box S ritades kort med opacity < 1 förskjutna och krympta. */}
+      <style>{'[data-testid="xp-row-strip"][data-dim="1"] > [data-xp]:not([data-xp-focused]) > :first-child::after { content: ""; position: absolute; inset: 0; background: rgba(12,14,20,.2); pointer-events: none; z-index: 5 }'}</style>
       {/* Hål åt förhandsrutan: mpv ritar videon under webbvyn. */}
       <CutoutLayer testId="xp-ambient" data={{ 'data-bg': ambient }} background={ambient} style={{ zIndex: -1, transition: 'background .6s ease' }} />
       {hasArt ? (
@@ -662,15 +663,16 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
       onPointerDownCapture={(e) => api.current.arm(id, e.currentTarget)}
       onFocus={() => api.current.focusCard(ri, ii)}
       data-xp-focused={focused ? '1' : undefined}
-      style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none' }}
+      style={{ flexShrink: 0, width: dp(m.w), position: 'relative', zIndex: focused ? 30 : 1, cursor: 'pointer', userSelect: 'none', outline: 'none', visibility: hidden ? 'hidden' : undefined }}
     >
-      <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, opacity: hidden ? 0 : undefined, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s, opacity .3s` }}>
+      <div style={{ width: '100%', height: dp(m.h), borderRadius: dp(m.radius), position: 'relative', overflow: 'hidden', transform: tf, boxShadow: ring ? FOCUS_CARD : '0 10px 30px rgba(0,0,0,.35)', transition: `transform .4s ${EASE}, box-shadow .3s` }}>
         <CardFace rowId={rowId} item={item} nowMs={nowMs} number={number} lookup={lookup} holdPad={native && HOLD_CORNER[rowId] === 'br' ? HOLD_PAD : 0} />
       </div>
       {rowId === 'yours' && item.channel ? (
-        <div style={{ padding: `${dp(12)}px ${dp(4)}px 0`, opacity: hidden ? 0 : focused ? 1 : 0.65, transition: 'opacity .3s' }}>
-          <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{item.channel.name}</div>
-          <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.programme?.title ?? ''}</div>
+        <div style={{ padding: `${dp(12)}px ${dp(4)}px 0` }}>
+          {/* Dämpad text med färgens alfa, inte opacity (se regeln för data-dim). */}
+          <div style={{ fontSize: dp(17), fontWeight: 600, color: focused ? V2.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.channel.name}</div>
+          <div style={{ fontSize: dp(15), color: focused ? 'rgba(243,244,248,0.65)' : 'rgba(243,244,248,0.42)', ...ellipsis }}>{item.programme?.title ?? ''}</div>
         </div>
       ) : null}
     </div>
