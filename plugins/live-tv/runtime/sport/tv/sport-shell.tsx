@@ -260,9 +260,9 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
         </div>
       </div>
       {tab === 'follows' ? (
-        <div data-testid="sport-follows-meta" style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(18), color: TV.muted }}>
+        <div data-testid="sport-follows-meta" style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(21), color: TV.muted }}>
           <span>{tt('sportFollowCount', { n: ctx.follows.length })}</span>
-          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(16), color: TV.dim }}><SportIcons.Bell size={dp(18)} />{tt('sportFollowBellHint')}</span>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(21), color: TV.dim }}><SportIcons.Bell size={dp(22)} />{tt('sportFollowBellHint')}</span>
         </div>
       ) : null}
 

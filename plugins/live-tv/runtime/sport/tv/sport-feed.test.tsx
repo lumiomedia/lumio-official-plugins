@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { SportFeed } from './sport-feed'
+import { __setTvModeForTests } from '@/lib/plugin-sdk'
+import { __resetPageTabsForTests } from '../team-page/page-tabs'
 import { HOUR, MIN, fakeCtx, fxDay, fxMatch, fxSource } from '../__sport-fixture'
 
 afterEach(cleanup)
@@ -73,5 +75,22 @@ describe('Flöde', () => {
     expect(list.firstElementChild).toBe(screen.getAllByTestId('feed-plan-row')[0])
     expect(within(body).queryByText('Evening plan')).toBeNull()
     expect(within(screen.getByTestId('feed-plan')).getByText('Evening plan')).toBeInTheDocument()
+  })
+})
+
+/* Jerry 2026-10-31: på TV är Just nu, Kvällsplan och Slutspelat flikar, inte staplade. */
+describe('Flöde på TV: flikar', () => {
+  afterEach(() => { __setTvModeForTests(false); __resetPageTabsForTests() })
+  it('en flik i taget; byte visar nästa sektion', () => {
+    __setTvModeForTests(true)
+    render(<SportFeed ctx={fakeCtx({ now, follows })} matches={matches} days={[fxDay('d0', matches), null]} />)
+    expect(screen.getByTestId('page-tab-now')).toBeTruthy()
+    expect(screen.getByTestId('page-tab-plan')).toBeTruthy()
+    expect(screen.getByTestId('page-tab-finished')).toBeTruthy()
+    expect(screen.getByTestId('feed-now')).toBeTruthy()
+    expect(screen.queryByTestId('feed-plan')).toBeNull()
+    fireEvent.click(screen.getByTestId('page-tab-finished'))
+    expect(screen.getByTestId('feed-finished')).toBeTruthy()
+    expect(screen.queryByTestId('feed-now')).toBeNull()
   })
 })

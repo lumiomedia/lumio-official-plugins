@@ -16,7 +16,13 @@ import { MatchScore } from './sport-score'
 import { SportIcons } from './sport-icons'
 import { focusAttr, sportCardStyle } from '../surface'
 import { SportReplays } from './sport-replays'
-import { useListScale } from '../match-info/match-info-parts'
+import { useListScale, type U } from '../match-info/match-info-parts'
+import { useTvMode } from '@/lib/plugin-sdk'
+import { PageTabs, TabBody, usePageTab, type FeedTab } from '../team-page/page-tabs'
+
+const FEED_SCOPE = '[data-feed-tabs]'
+/** Flikraden i samma storlek som Sports egen flikrad (Overview / Tables / My teams: 24). */
+const feedU: U = Object.assign((n: number) => Math.round(dp(n) * 1.2), { tv: true, dim: TV.muted })
 
 const avatarCol: CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(8), width: dp(150), flexShrink: 0, cursor: 'pointer' }
 
@@ -29,33 +35,26 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
   useBackfillFollowCrests(allMatches)
   // Kvällsplanen och Slutspelat är listor: TV-skala på TV (Jerry 2026-10-12).
   const u = useListScale()
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
-      {/* Egen ruta, som övriga sektioner med kortbakgrund (Jerry 2026-10-11). */}
-      <section data-testid="feed-teams" style={{ ...sportCardStyle, display: 'flex', flexDirection: 'column', gap: dp(14), padding: `${dp(20)}px ${dp(24)}px` }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
-          <span style={{ ...sectionTitle, display: 'inline-flex', alignItems: 'center', gap: dp(12) }}><span style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(26)} filled /></span>{ctx.tt('sportYourTeams')}</span>
-          <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
-        </div>
-        <div data-row="" style={{ display: 'flex', gap: dp(24), overflowX: 'auto', padding: `${dp(8)}px ${dp(6)}px` }}>
-          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} allMatches={allMatches} days={days} />)}
-          <div data-testid="feed-add" {...station(ctx.openFollowPicker, undefined, focusAttr('circle'))} style={avatarCol}>
-            <span data-focus-circle="" style={{ width: dp(108), height: dp(108), borderRadius: 999, border: `2px dashed ${TV.lineStrong}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><SportIcons.Plus size={dp(36)} /></span>
-            <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportAddTeam')}</span>
-          </div>
-        </div>
-      </section>
-
-      {live.length > 0 ? (
+  // TV: Just nu, Kvällsplan och Slutspelat som flikar i stället för staplade
+  // sektioner (Jerry 2026-10-31) — samma flikrad som matchdagens underflikar.
+  const tv = useTvMode()
+  const available: FeedTab[] = [...(live.length > 0 ? ['now' as const] : []), ...(later.length > 0 ? ['plan' as const] : []), ...(finished.length > 0 ? ['finished' as const] : [])]
+  const [tab, setTab] = usePageTab<FeedTab>('feed', available.length ? available : ['now'])
+  const tabbed = tv && available.length > 1
+  const shows = (k: FeedTab) => !tabbed || tab === k
+  const tabLabel: Record<FeedTab, string> = { now: `${ctx.tt('sportJustNow')} · ${live.length}`, plan: ctx.tt('sportEveningPlan'), finished: `${ctx.tt('sportFinished')} · ${finished.length}` }
+  const sections = (
+    <>
+      {live.length > 0 && shows('now') ? (
         <section data-testid="feed-now" style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
+          {tabbed ? null : <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
             <span style={sectionTitle}>{ctx.tt('sportJustNow')}</span>
-            <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportJustNowSub', { n: live.length })}</span>
-          </div>
+            <span style={{ fontSize: dp(20), color: TV.dim }}>{ctx.tt('sportJustNowSub', { n: live.length })}</span>
+          </div>}
           {live.map((m) => (
             <div key={m.id} data-testid="feed-now-row" data-focus-row="" style={{ ...sportCardStyle, display: 'flex', alignItems: 'center', gap: dp(18), padding: `${dp(14)}px ${dp(18)}px`, borderLeft: `${dp(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }}>
               <div style={{ width: dp(80), display: 'flex', flexDirection: 'column', gap: dp(6), flexShrink: 0 }}>
-                <span style={{ color: TV.live, fontWeight: 700, fontSize: dp(16) }}>{[ctx.tt('live'), matchStatusLabel(m, ctx.tt)].filter(Boolean).join(' ')}</span>
+                <span style={{ color: TV.live, fontWeight: 700, fontSize: dp(20) }}>{[ctx.tt('live'), matchStatusLabel(m, ctx.tt)].filter(Boolean).join(' ')}</span>
                 <Progress value={progressOf(m.start, m.stop, ctx.now)} height={dp(4)} />
               </div>
               {/* Hela raden markeras (data-focus-row), inte bara textblocket. */}
@@ -68,11 +67,11 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
                 ) : null}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-                  <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), followState(m, ctx.follows).any ? ctx.tt('sportYouFollow').toLowerCase() : null].filter(Boolean).join(' · ')}</div>
+                  <div style={{ fontSize: dp(19), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), followState(m, ctx.follows).any ? ctx.tt('sportYouFollow').toLowerCase() : null].filter(Boolean).join(' · ')}</div>
                 </div>
                 <MatchScore match={m} size="row" />
               </div>
-              <span data-testid="feed-source-chip" style={{ fontSize: dp(15), padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s12, whiteSpace: 'nowrap' }}>{sourceChip(m, ctx)}</span>
+              <span data-testid="feed-source-chip" style={{ fontSize: dp(19), padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(8), background: TV.s12, whiteSpace: 'nowrap' }}>{sourceChip(m, ctx)}</span>
               <div data-testid="feed-play" {...station(() => ctx.watch(m), undefined, focusAttr('on-accent'))} aria-label={ctx.tt('sportWatch')} style={{ width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                 <SportIcons.Play size={dp(22)} />
               </div>
@@ -81,10 +80,10 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
         </section>
       ) : null}
 
-      {later.length > 0 ? (
+      {later.length > 0 && shows('plan') ? (
         <section data-testid="feed-plan" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
           {/* Rubriken står ovanför båda kolumnerna, så Din kväll börjar i höjd med första raden (handoffen). */}
-          <span style={sectionTitle}>{ctx.tt('sportEveningPlan')}</span>
+          {tabbed ? null : <span style={sectionTitle}>{ctx.tt('sportEveningPlan')}</span>}
           <div data-testid="feed-plan-body" style={{ display: 'flex', gap: u(20), alignItems: 'flex-start' }}>
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: u(10) }}>
               {later.map((m) => {
@@ -120,9 +119,9 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
         </section>
       ) : null}
 
-      {finished.length > 0 ? (
+      {finished.length > 0 && shows('finished') ? (
         <section data-testid="feed-finished" style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>
-          <span style={sectionTitle}>{ctx.tt('sportFinished')}</span>
+          {tabbed ? null : <span style={sectionTitle}>{ctx.tt('sportFinished')}</span>}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: u(12) }}>
             {finished.map((m) => (
               <div key={m.id} {...station(() => ctx.openMatch(m), undefined, focusAttr('card'))} style={{ ...sportCardStyle, padding: `${u(12)}px ${u(16)}px`, display: 'flex', alignItems: 'center', gap: u(10), fontSize: u(17), cursor: 'pointer' }}>
@@ -133,6 +132,32 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
           </div>
         </section>
       ) : null}
+
+    </>
+  )
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
+      {/* Egen ruta, som övriga sektioner med kortbakgrund (Jerry 2026-10-11). */}
+      <section data-testid="feed-teams" style={{ ...sportCardStyle, display: 'flex', flexDirection: 'column', gap: dp(14), padding: `${dp(20)}px ${dp(24)}px` }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
+          <span style={{ ...sectionTitle, display: 'inline-flex', alignItems: 'center', gap: dp(12) }}><span style={{ color: '#fff', display: 'inline-flex' }}><SportIcons.Heart size={dp(26)} filled /></span>{ctx.tt('sportYourTeams')}</span>
+          <span style={{ fontSize: dp(20), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
+        </div>
+        <div data-row="" style={{ display: 'flex', gap: dp(24), overflowX: 'auto', padding: `${dp(8)}px ${dp(6)}px` }}>
+          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} allMatches={allMatches} days={days} />)}
+          <div data-testid="feed-add" {...station(ctx.openFollowPicker, undefined, focusAttr('circle'))} style={avatarCol}>
+            <span data-focus-circle="" style={{ width: dp(108), height: dp(108), borderRadius: 999, border: `2px dashed ${TV.lineStrong}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><SportIcons.Plus size={dp(36)} /></span>
+            <span style={{ fontSize: dp(21), fontWeight: 600 }}>{ctx.tt('sportAddTeam')}</span>
+          </div>
+        </div>
+      </section>
+
+      {tabbed ? (
+        <div data-feed-tabs="" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
+          <PageTabs u={feedU} scope={FEED_SCOPE} tabs={available.map((k) => ({ key: k, label: tabLabel[k] }))} value={tab} onChange={setTab} />
+          <TabBody scope={FEED_SCOPE} gap={dp(20)}>{sections}</TabBody>
+        </div>
+      ) : sections}
 
       {/* Repriser sist, utanför Just nu och kvällsplanen (Jerry 2026-10-12). */}
       <SportReplays ctx={ctx} matches={replays} />
@@ -155,10 +180,10 @@ function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }: { ctx: SportC
       {/* Ringen (live/idag) står på cirkeln; fokus ritas på samma cirkel (data-focus-circle). */}
       <span data-focus-circle="" style={{ position: 'relative', borderRadius: 999, boxShadow: ringShadow, display: 'inline-flex' }}>
         <Crest name={follow.name} colorKey={follow.key} size={dp(108)} src={crestForFollow(follow, allMatches)} />
-        {ring === 'live' ? <span style={{ position: 'absolute', left: '50%', bottom: -dp(10), transform: 'translateX(-50%)', padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: '#ef4444', color: '#fff', fontSize: dp(12), fontWeight: 700, letterSpacing: '0.1em' }}>{ctx.tt('live')}</span> : null}
+        {ring === 'live' ? <span style={{ position: 'absolute', left: '50%', bottom: -dp(10), transform: 'translateX(-50%)', padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: '#ef4444', color: '#fff', fontSize: dp(14), fontWeight: 700, letterSpacing: '0.1em' }}>{ctx.tt('live')}</span> : null}
       </span>
-      <span style={{ fontSize: dp(17), fontWeight: 600, maxWidth: '100%', textAlign: 'center', ...ellipsis, marginTop: dp(6) }}>{follow.name}</span>
-      <span style={{ fontSize: dp(15), color: ring === 'live' ? TV.live : TV.muted }}>{status}</span>
+      <span style={{ fontSize: dp(21), fontWeight: 600, maxWidth: '100%', textAlign: 'center', ...ellipsis, marginTop: dp(8) }}>{follow.name}</span>
+      <span style={{ fontSize: dp(19), color: ring === 'live' ? TV.live : TV.muted }}>{status}</span>
     </div>
   )
 }
