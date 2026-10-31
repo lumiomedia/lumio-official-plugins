@@ -121,6 +121,31 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
       if (!rail.hasAttribute('inert')) focusCurrent()
     })
   }, [overlay])
+  /*
+    ◂ MOT APPENS SIDOMENY. Hem ligger i appens scen, och där pekar herons
+    knappar och radernas första kort uttryckligen vänster mot appens sidomeny
+    (`data-f-left` = `[data-col="side"] …`). Motorn tar då trycket själv och
+    ingen kanthändelse kommer (uppmätt på Mi Box S) — så rälsen tar de trycken
+    först, i capture-fas, och fälls fram i stället.
+  */
+  useEffect(() => {
+    if (!overlay) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowLeft' || event.defaultPrevented) return
+      const rail = navRef.current
+      const active = document.activeElement
+      if (!rail || !(active instanceof HTMLElement) || rail.contains(active)) return
+      if (!(active.getAttribute('data-f-left') ?? '').includes('data-col="side"')) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      focusPendingRef.current = true
+      setOpen(true)
+      if (!rail.hasAttribute('inert')) focusCurrent()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overlay])
   // Fokus först när raden ritats om utan `inert` — en inert station tar inte
   // fokus, och på Mi Boxen hann en rAF före commit ibland.
   useLayoutEffect(() => {

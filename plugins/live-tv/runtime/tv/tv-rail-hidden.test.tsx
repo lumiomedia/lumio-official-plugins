@@ -51,3 +51,19 @@ describe('dold sidomeny fälls in', () => {
     outside.remove()
   })
 })
+
+describe('dold sidomeny i appens scen (Hem)', () => {
+  it('◂ från en station som pekar mot appens sidomeny fäller fram rälsen', async () => {
+    setTvSettings({ railHidden: true })
+    const hero = document.createElement('button')
+    hero.setAttribute('data-f-left', '[data-col="side"] [data-current]')
+    document.body.appendChild(hero)
+    mount()
+    hero.focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
+    act(() => { hero.dispatchEvent(event) })
+    expect(event.defaultPrevented).toBe(true)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('rail-guide')))
+    hero.remove()
+  })
+})
