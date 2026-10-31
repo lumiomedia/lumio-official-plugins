@@ -61,6 +61,7 @@ import { useChannelSportLive } from './sport/results-controller'
 import { PHONE_STAGE_BOX } from './tv/mobile/player-chrome-phone'
 import { releaseAllSurfaces } from './tv/video-surface'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv/tv-player-types'
+import { deferMediaKeyToRemote } from './tv/use-remote-keys'
 
 interface M3uChannel {
   name: string
@@ -559,8 +560,13 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       case 'play': void mpv.setPlayPause(!mpvPaused); break
       case 'pause': if (!mpvPaused) void mpv.setPlayPause(true); break
       case 'stop': handleCloseRef.current(); break
+      // Spola/nästa/föregående följer fjärrens mappning i TV-skalet
+      // (tv/use-remote-keys.ts); utan skal (eller utan mappning) gäller det gamla.
+      case 'rewind':
+      case 'fastforward': deferMediaKeyToRemote(action); break
       case 'next':
       case 'previous':
+        if (deferMediaKeyToRemote(action)) break
         if (tvChrome) window.dispatchEvent(new KeyboardEvent('keydown', { key: action === 'next' ? 'ChannelUp' : 'ChannelDown' }))
         break
     }

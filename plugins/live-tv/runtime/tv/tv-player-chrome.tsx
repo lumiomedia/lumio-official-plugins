@@ -11,6 +11,8 @@ import { PlayerMatchesDrawer, PlayerSourceSwitcher, PlayerSportTicker, matchesFo
 import { PlayerReplayBadge, PlayerReplayInfo } from '../sport/tv/player-replay-badge'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 import { displayTitle } from '../display-title'
+import { REMOTE_ACTION_EVENT } from './use-remote-keys'
+import type { RemoteAction } from './remote-keys'
 
 export interface TvPlayerChromeProps {
   channel: M3uChannel
@@ -244,6 +246,32 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [menu, guideOpen, matchesOpen, closeMatches, step, reveal, onClose, closeGuide, tv.gateOpen])
+
+  // Fjärrens mappade knappar (use-remote-keys.ts): spelarens egna åtgärder
+  // tas här, resten (guide, sök, senaste kanal …) går vidare till skalet.
+  const remoteRef = useRef<(action: RemoteAction) => boolean>(() => false)
+  remoteRef.current = (action) => {
+    if (tv.gateOpen) return true
+    if (menu) return true // glasmenyn är öppen: knappen sväljs, inget händer bakom den
+    switch (action) {
+      case 'miniGuide': toggleGuide(); return true
+      case 'menu': { const el = initRef.current; if (el) { reveal(); openMenu(el) } return true }
+      case 'info': tv.onOpenChannelDetails(); return true
+      case 'favourite': tv.onToggleFavourite(); reveal(); return true
+      case 'playPause': onTogglePause(); reveal(); return true
+      case 'channelUp': step(1); return true
+      case 'channelDown': step(-1); return true
+      default: return false
+    }
+  }
+  useEffect(() => {
+    const onAction = (event: Event) => {
+      const action = (event as CustomEvent<{ action: RemoteAction }>).detail?.action
+      if (action && remoteRef.current(action)) event.preventDefault()
+    }
+    window.addEventListener(REMOTE_ACTION_EVENT, onAction)
+    return () => window.removeEventListener(REMOTE_ACTION_EVENT, onAction)
+  }, [])
 
   const openMenu = (element: HTMLElement) => {
     setMenu({

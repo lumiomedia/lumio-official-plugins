@@ -7,6 +7,7 @@ import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './s
 import { DEFAULT_GROUP_ORDER, sanitizeGroupOrder, type GroupOrder } from '../group-order'
 import { DEFAULT_HUB_LAYOUT, sanitizeGuideCategoryLayout, sanitizeHexColor, sanitizeHubLayout, sanitizeLiveBackground, type GuideCategoryLayout, type HubLayout, type LiveBackground } from './v2-settings'
 import { sanitizeHubRows, type HubRowPref } from './hub-rows'
+import { sanitizeRemoteBindings, type RemoteBinding } from './remote-keys'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -75,6 +76,8 @@ export interface TvSettings {
   liveSurfaceColor: string | null
   /** Upplevelses hemrader: ordning, dolda och egna listor som rader (`hub-rows.ts`). */
   hubRows: HubRowPref[]
+  /** Fjärrens knappar: kort tryck och håll per knapp (`remote-keys.ts`). */
+  remoteKeys: RemoteBinding[]
 }
 
 const DEFAULTS: TvSettings = {
@@ -100,6 +103,7 @@ const DEFAULTS: TvSettings = {
   liveBgColor: null,
   liveSurfaceColor: null,
   hubRows: sanitizeHubRows(undefined),
+  remoteKeys: sanitizeRemoteBindings(undefined),
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -128,6 +132,7 @@ function sanitize(raw: unknown): TvSettings {
     liveBgColor: sanitizeHexColor(r.liveBgColor),
     liveSurfaceColor: sanitizeHexColor(r.liveSurfaceColor),
     hubRows: sanitizeHubRows(r.hubRows),
+    remoteKeys: sanitizeRemoteBindings(r.remoteKeys),
   }
 }
 

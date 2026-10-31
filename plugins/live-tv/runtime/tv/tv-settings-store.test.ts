@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { BUILTIN_HUB_ROWS } from './hub-rows'
+import { DEFAULT_REMOTE_BINDINGS } from './remote-keys'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { FALLBACK_AFTER_OPTIONS, nextFallbackAfter, TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
@@ -30,6 +31,7 @@ describe('tv-settings-store', () => {
       liveBgColor: null,
       liveSurfaceColor: null,
       hubRows: BUILTIN_HUB_ROWS.map((id) => ({ id, hidden: false })),
+      remoteKeys: DEFAULT_REMOTE_BINDINGS,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()

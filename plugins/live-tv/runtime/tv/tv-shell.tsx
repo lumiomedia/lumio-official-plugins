@@ -21,6 +21,7 @@ import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState, useMultiviewImmersive } from './tv-multiview-store'
 import { createZapBuffer, resolveZap } from './tv-zap'
+import { useRemoteKeys, type RemoteKeysState } from './use-remote-keys'
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import { buildTvPlayerProps } from './tv-player-props'
@@ -770,6 +771,43 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     leavePlayerForMultiview()
   }, [leavePlayerForMultiview])
   const playerSport = usePlayerSport({ playingKey: active !== null ? channelKey(active.channel) : null, model, play, openMultiview: openSportMultiview })
+
+  // FJÄRRENS KNAPPAR (remote-keys.ts). Skalets egna åtgärder; spelarens
+  // (minigiude, meny, favorit, paus, kanal upp/ner) tar kromet via
+  // `REMOTE_ACTION_EVENT`. Samma spärrar som sifferzappen: glasmeny, lager,
+  // PIN-grind och textfält.
+  const remoteRef = useRef<RemoteKeysState>({ bindings: [], playerOpen: false, blocked: () => true, run: () => {} })
+  remoteRef.current = {
+    bindings: settings.remoteKeys,
+    playerOpen: active !== null,
+    blocked: (target) => {
+      if (menu || pending || layersRef.current.some((close) => !zapThroughRef.current.has(close))) return true
+      const el = target instanceof HTMLElement ? target : null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return true
+      return !!el?.closest?.('[data-live-tv-keyboard], [data-live-tv-host-ui]')
+    },
+    run: (action) => {
+      const leave = (to: TvView) => { setActive(null); go(to) }
+      switch (action) {
+        case 'lastChannel': {
+          const playing = active ? channelKey(active.channel) : null
+          const entry = model.history.find((h) => h.key !== playing)
+          const channel = entry ? model.byKey.get(entry.key) ?? model.byUrl.get(entry.url) : undefined
+          if (channel) play({ channel })
+          return
+        }
+        case 'guide':
+        case 'miniGuide': leave('guide'); return
+        case 'search': leave('search'); return
+        case 'favourites': leave('favs'); return
+        case 'sport': leave('sport'); return
+        case 'home': leave(rootView); return
+        case 'multiview': if (active) leavePlayerForMultiview(); else go('multi'); return
+        default: return
+      }
+    },
+  }
+  useRemoteKeys(isTv && !phone, remoteRef)
 
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active
