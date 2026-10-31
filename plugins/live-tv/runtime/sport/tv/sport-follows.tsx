@@ -26,6 +26,7 @@ const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' 
 const FIRST_FOLLOW = '[data-testid="follow-row"] [data-f]'
 
 export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | null)[] }) {
+  const tv = useTvMode()
   // Avföljda ligger kvar (dämpade) tills vyn lämnas — ett felklick ska gå att ångra.
   const [shown, setShown] = useState<SportFollow[]>(ctx.follows)
   const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
@@ -73,14 +74,14 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
           <SportIcons.Plus size={dp(20)} />
           {ctx.tt('sportFollowAdd')}
         </div>
-        <span style={{ fontSize: dp(21), color: TV.muted }}>{ctx.tt('sportFollowSummary', { n: ctx.follows.length, rule: alertLabel(ctx).toLowerCase() })}</span>
+        <span style={{ fontSize: dp(tv ? 21 : 17), color: TV.muted }}>{ctx.tt('sportFollowSummary', { n: ctx.follows.length, rule: alertLabel(ctx).toLowerCase() })}</span>
         <div data-testid="follows-alert" style={{ ...sportCardStyle, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }}>
           <SportIcons.Bell size={dp(20)} />
-          <span style={{ fontSize: dp(20), fontWeight: 600 }}>{ctx.tt('sportKickoffAlert')}</span>
+          <span style={{ fontSize: dp(tv ? 20 : 17), fontWeight: 600 }}>{ctx.tt('sportKickoffAlert')}</span>
           <Segment size="lg" options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} optionAttrs={(index) => (index === 0 ? { 'data-f-left': '[data-testid="follows-add"]', 'data-f-down': FIRST_FOLLOW } : { 'data-f-down': FIRST_FOLLOW })} />
         </div>
       </div>
-      <span style={{ fontSize: dp(21), color: TV.muted }}>{ctx.tt('sportAlertOnlyRunning')}</span>
+      <span style={{ fontSize: dp(tv ? 21 : 17), color: TV.muted }}>{ctx.tt('sportAlertOnlyRunning')}</span>
       {shown.length === 0 ? <div data-testid="follows-empty" style={{ ...sportCardStyle, padding: dp(28), fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportFollowEmpty')}</div> : null}
       {groups.map(([kind, list]) => (
         <section key={kind} data-testid={`follow-group-${kind}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>

@@ -194,12 +194,14 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           på en egen rad: allt under kommer högre upp (Jerry 2026-10-31). */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18), flexWrap: 'wrap' }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
-        <span data-testid="sport-summary" style={{ fontSize: dp(24), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
-        <RateLineView status={status} tv={tvMode} inline />
+        <span data-testid="sport-summary" style={{ fontSize: dp(tvMode ? 24 : 19), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
+        {tvMode ? <RateLineView status={status} tv={tvMode} inline /> : null}
         {ownClock ? <span data-testid="sport-clock" style={{ marginLeft: 'auto' }}>{clock}</span> : null}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(14), borderBottom: `1px solid ${TV.s12}` }}>
+      {tvMode ? null : <RateLineView status={status} tv={tvMode} />}
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(tvMode ? 14 : 28), borderBottom: `1px solid ${TV.s12}` }}>
         {(['foryou', 'results', 'follows'] as const).map((key) => (
           <div
             key={key}
@@ -212,16 +214,16 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
               ...(key === 'follows' && tab === 'foryou' ? { 'data-f-right': VIEW_AS_FIRST } : null),
             })}
             aria-selected={key === tab ? 'true' : 'false'}
-            style={{ padding: `${dp(8)}px ${dp(14)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
+            style={{ padding: `${dp(8)}px ${dp(tvMode ? 14 : 4)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
           >
             {key === 'foryou' ? tt('sportTabForYou') : key === 'results' ? tt('sportTabResults') : tt('sportTabFollows')}
           </div>
         ))}
         {tab === 'foryou' ? (
           <div data-testid="sport-view-as" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), paddingBottom: dp(8) }}>
-            <span style={{ fontSize: dp(21), color: TV.muted }}>{tt('sportViewAs')}</span>
+            <span style={{ fontSize: dp(tvMode ? 21 : 18), color: TV.muted }}>{tt('sportViewAs')}</span>
             <Segment
-              size="xl"
+              size={tvMode ? 'xl' : 'lg'}
               options={[{ key: 'matchday' as const, label: tt('sportMatchday') }, { key: 'feed' as const, label: tt('sportFeed') }]}
               value={ctx.settings.view}
               onChange={(view) => setSportSettings({ view })}
@@ -251,18 +253,18 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           {(['all', ...SPORT_CHIPS.filter((k) => counts[k] > 0)] as SportFilter[]).map((k) => {
             const active = filter === k
             return (
-              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k), undefined, { 'data-f-down': BODY_FIRST })} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(56), padding: `0 ${dp(22)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(10), cursor: 'pointer', background: active ? TV.acc : 'transparent', color: TV.text, fontSize: dp(23), fontWeight: 700 }}>
+              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k), undefined, { 'data-f-down': BODY_FIRST })} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(tvMode ? 56 : 52), padding: `0 ${dp(tvMode ? 22 : 18)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(tvMode ? 10 : 8), cursor: 'pointer', background: active ? TV.acc : 'transparent', color: TV.text, fontSize: dp(tvMode ? 23 : 19), fontWeight: 700 }}>
                 {k === 'all' ? tt('sportAllShort') : ctx.kindLabel(k)}
-                {k !== 'all' ? <span style={{ fontSize: dp(18), fontWeight: 600, opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>{counts[k]}</span> : null}
+                {k !== 'all' ? <span style={{ fontSize: dp(tvMode ? 18 : 15), fontWeight: 600, opacity: tvMode ? 0.6 : 0.55, fontVariantNumeric: 'tabular-nums' }}>{counts[k]}</span> : null}
               </div>
             )
           })}
         </div>
       </div>
       {tab === 'follows' ? (
-        <div data-testid="sport-follows-meta" style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(21), color: TV.muted }}>
+        <div data-testid="sport-follows-meta" style={{ display: 'flex', alignItems: 'center', gap: dp(16), fontSize: dp(tvMode ? 21 : 18), color: TV.muted }}>
           <span>{tt('sportFollowCount', { n: ctx.follows.length })}</span>
-          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(21), color: TV.dim }}><SportIcons.Bell size={dp(22)} />{tt('sportFollowBellHint')}</span>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: dp(8), fontSize: dp(tvMode ? 21 : 16), color: TV.dim }}><SportIcons.Bell size={dp(tvMode ? 22 : 18)} />{tt('sportFollowBellHint')}</span>
         </div>
       ) : null}
 

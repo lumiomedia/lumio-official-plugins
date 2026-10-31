@@ -19,7 +19,11 @@ const follows = [
   { sport: 'football' as const, kind: 'team' as const, key: 'djurgarden', name: 'Djurgården' },
 ]
 
+// Flödet har flikar (Just nu · Kvällsplan · Slutspelat) sedan 2026-10-31.
+const showPlan = () => { const t = screen.queryByTestId('page-tab-plan'); if (t) fireEvent.click(t) }
+
 describe('Flöde', () => {
+  afterEach(() => __resetPageTabsForTests())
   it('Dina lag: röd ring för live, vit för idag, svag annars; + Lägg till öppnar väljaren', () => {
     const tomorrow = fxMatch({ id: 't', home: 'Djurgården', away: 'IFK', homeKey: 'djurgarden', start: now + 24 * HOUR })
     const ctx = fakeCtx({ now, follows })
@@ -31,6 +35,7 @@ describe('Flöde', () => {
     fireEvent.click(screen.getByTestId('feed-add'))
     expect(ctx.openFollowPicker).toHaveBeenCalled()
     // Favoriter märks med Live TV:s hjärta, inte en stjärna: AIK–Hammarby i kvällsplanen.
+    showPlan()
     const planRows = screen.getAllByTestId('feed-plan-row')
     expect(within(planRows[0]!).getByTestId('feed-plan-fav').querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
     expect(within(planRows[1]!).queryByTestId('feed-plan-fav')).toBeNull()
@@ -47,6 +52,7 @@ describe('Flöde', () => {
   it('Kvällsplan: kryssrutan växlar påminnelsen, Din kväll varnar för krockar under 100 min', () => {
     const ctx = fakeCtx({ now, isReminded: (m) => m.id === 'a' || m.id === 'b' })
     render(<SportFeed ctx={ctx} matches={matches} days={[fxDay('d0', matches), null]} />)
+    showPlan()
     const checks = screen.getAllByTestId('feed-plan-check')
     expect(checks.map((c) => c.getAttribute('aria-checked'))).toEqual(['true', 'true', 'false'])
     fireEvent.click(checks[2]!)
@@ -54,12 +60,14 @@ describe('Flöde', () => {
     const evening = screen.getByTestId('sport-evening')
     expect(evening).toHaveTextContent('2 matches with a reminder')
     expect(within(evening).getAllByTestId('evening-clash')).toHaveLength(2)
+    fireEvent.click(screen.getByTestId('page-tab-finished'))
     expect(within(screen.getByTestId('feed-finished')).getByText(/Örgryte - GAIS/)).toBeInTheDocument()
   })
   it('Kvällsplan: en match utan kanal går att bocka (planen), och raden säger att kanal saknas', () => {
     const noChannel = { ...c, id: 'nc', home: 'Barcelona', away: 'Real Madrid', homeKey: 'barcelona', awayKey: 'real madrid', sources: [] }
     const ctx = fakeCtx({ now })
     render(<SportFeed ctx={ctx} matches={[...matches, noChannel]} days={[fxDay('d0', [...matches, noChannel]), null]} />)
+    showPlan()
     const row = screen.getAllByTestId('feed-plan-row').find((r) => r.textContent?.includes('Barcelona - Real Madrid'))!
     expect(row).toHaveTextContent('No channel')
     fireEvent.click(within(row).getByTestId('feed-plan-check'))
@@ -68,13 +76,15 @@ describe('Flöde', () => {
   it('Din kväll börjar i höjd med kvällsplanens första rad — rubriken står ovanför båda kolumnerna', () => {
     const ctx = fakeCtx({ now })
     render(<SportFeed ctx={ctx} matches={matches} days={[fxDay('d0', matches), null]} />)
+    showPlan()
     const body = screen.getByTestId('feed-plan-body')
     const list = screen.getAllByTestId('feed-plan-row')[0]!.parentElement!
     expect(list.parentElement).toBe(body)
     expect(screen.getByTestId('sport-evening').parentElement).toBe(body)
     expect(list.firstElementChild).toBe(screen.getAllByTestId('feed-plan-row')[0])
     expect(within(body).queryByText('Evening plan')).toBeNull()
-    expect(within(screen.getByTestId('feed-plan')).getByText('Evening plan')).toBeInTheDocument()
+    // Rubriken bor i fliken sedan flikarna (2026-10-31).
+    expect(screen.getByTestId('page-tab-plan')).toHaveTextContent('Evening plan')
   })
 })
 

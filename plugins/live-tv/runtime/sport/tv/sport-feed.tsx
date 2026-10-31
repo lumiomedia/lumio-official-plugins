@@ -35,12 +35,12 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
   useBackfillFollowCrests(allMatches)
   // Kvällsplanen och Slutspelat är listor: TV-skala på TV (Jerry 2026-10-12).
   const u = useListScale()
-  // TV: Just nu, Kvällsplan och Slutspelat som flikar i stället för staplade
+  // Just nu, Kvällsplan och Slutspelat som flikar i stället för staplade
   // sektioner (Jerry 2026-10-31) — samma flikrad som matchdagens underflikar.
-  const tv = useTvMode()
   const available: FeedTab[] = [...(live.length > 0 ? ['now' as const] : []), ...(later.length > 0 ? ['plan' as const] : []), ...(finished.length > 0 ? ['finished' as const] : [])]
   const [tab, setTab] = usePageTab<FeedTab>('feed', available.length ? available : ['now'])
-  const tabbed = tv && available.length > 1
+  // Skrivbordet också (Jerry 2026-10-31: "saknas Right now, Evening plan-flikarna" i Mac-appen).
+  const tabbed = available.length > 1
   const shows = (k: FeedTab) => !tabbed || tab === k
   const tabLabel: Record<FeedTab, string> = { now: `${ctx.tt('sportJustNow')} · ${live.length}`, plan: ctx.tt('sportEveningPlan'), finished: `${ctx.tt('sportFinished')} · ${finished.length}` }
   const sections = (

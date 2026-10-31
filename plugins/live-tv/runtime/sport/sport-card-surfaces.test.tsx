@@ -52,7 +52,10 @@ afterEach(() => { cleanup(); __setLangForTests('en') })
 describe('Sports kortyta: allt delar samma bakgrund', () => {
   it('flödet: Dina lag, pågår nu, avslutade', () => {
     render(<SportFeed ctx={fakeCtx({ now, follows })} matches={all} days={[fxDay('d0', all), null]} />)
-    for (const el of [screen.getByTestId('feed-teams'), screen.getByTestId('feed-now-row'), screen.getByText('Örgryte - GAIS').parentElement!]) expect(bg(el)).toBe(MARK)
+    for (const el of [screen.getByTestId('feed-teams'), screen.getByTestId('feed-now-row')]) expect(bg(el)).toBe(MARK)
+    // Avslutade ligger under fliken Slutspelat (flikar sedan 2026-10-31).
+    fireEvent.click(screen.getByTestId('page-tab-finished'))
+    expect(bg(screen.getByText('Örgryte - GAIS').parentElement!)).toBe(MARK)
   })
   it('matchdagen: hero (med accentglöd ovanpå), nästa-ruta och tidslinje', () => {
     render(<SportMatchday ctx={fakeCtx({ now })} matches={all} dayFrom={dayFrom} />)
