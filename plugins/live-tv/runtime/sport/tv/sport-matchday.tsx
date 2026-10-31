@@ -166,29 +166,40 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   const span = axis.end - axis.start
   const pct = (t: number) => ((Math.min(Math.max(t, axis.start), axis.end) - axis.start) / span) * 100
   const nowInside = ctx.now >= axis.start && ctx.now <= axis.end
+  // MATCHDAGEN (Jerry 2026-10-31): bakgrund bara bakom rubriken och tidsaxeln,
+  // som står kvar överst när sidan rullar — så att klockslagen syns vid varje
+  // rad längre ner. Varje liga är en egen bubbla under den.
+  const head = { ...sportCardStyle, padding: `${dp(18)}px ${dp(24)}px ${dp(12)}px` }
+  const bubble = { ...sportCardStyle, padding: `${dp(12)}px ${dp(24)}px` }
   return (
-    <div data-testid="sport-timeline" style={{ ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
-        <span style={{ fontSize: dp(26), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
-        <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>
-      </div>
-      <div style={{ display: 'flex' }}>
-        <div style={{ width: dp(LABEL_W), flexShrink: 0 }} />
-        <div style={{ position: 'relative', flex: 1, height: dp(26) }}>
-          {axis.hours.map((h) => <span key={h} style={{ position: 'absolute', left: `${pct(h)}%`, fontSize: dp(15), color: TV.muted }}>{formatClock(h, ctx.locale)}</span>)}
+    <div data-testid="sport-timeline" style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
+      <div data-testid="sport-timeline-head" style={{ ...head, position: 'sticky', top: 0, zIndex: 3, display: 'flex', flexDirection: 'column', gap: dp(12) }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
+          <span style={{ fontSize: dp(26), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
+          <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>
         </div>
-      </div>
-      {rows.flatMap((row, rowIndex) => row.lanes.map((lane, laneIndex) => (
-        <div key={`${row.key}-${laneIndex}`} data-row="" style={{ display: 'flex', alignItems: 'center', height: dp(50), marginTop: laneIndex === 0 && rowIndex > 0 ? dp(10) : 0 }}>
-          <div style={{ width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(18), fontWeight: 600, paddingRight: dp(10), boxSizing: 'border-box' }}>
-            {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
-          </div>
-          <div style={{ position: 'relative', flex: 1, height: dp(42), background: TV.s05, borderRadius: dp(8) }}>
-            {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} showLabel={blockShowsLabel(m.stop - m.start, span)} />)}
-            {nowInside ? <div aria-hidden="true" style={{ position: 'absolute', top: -dp(4), bottom: -dp(4), left: `${pct(ctx.now)}%`, width: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
+        <div style={{ display: 'flex' }}>
+          <div style={{ width: dp(LABEL_W), flexShrink: 0 }} />
+          <div style={{ position: 'relative', flex: 1, height: dp(26) }}>
+            {axis.hours.map((h) => <span key={h} style={{ position: 'absolute', left: `${pct(h)}%`, fontSize: dp(15), color: TV.muted }}>{formatClock(h, ctx.locale)}</span>)}
           </div>
         </div>
-      )))}
+      </div>
+      {rows.map((row) => (
+        <div key={row.key} data-testid="sport-timeline-row" style={{ ...bubble, display: 'flex', flexDirection: 'column', gap: dp(6), scrollMarginTop: dp(140) }}>
+          {row.lanes.map((lane, laneIndex) => (
+            <div key={laneIndex} data-row="" style={{ display: 'flex', alignItems: 'center', height: dp(50), scrollMarginTop: dp(140) }}>
+              <div style={{ width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(18), fontWeight: 600, paddingRight: dp(10), boxSizing: 'border-box' }}>
+                {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
+              </div>
+              <div style={{ position: 'relative', flex: 1, height: dp(42), background: TV.s05, borderRadius: dp(8) }}>
+                {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} showLabel={blockShowsLabel(m.stop - m.start, span)} />)}
+                {nowInside ? <div aria-hidden="true" style={{ position: 'absolute', top: -dp(4), bottom: -dp(4), left: `${pct(ctx.now)}%`, width: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   )
 }
