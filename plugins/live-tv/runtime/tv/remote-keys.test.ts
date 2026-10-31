@@ -112,6 +112,19 @@ describe('håll-detektering', () => {
     vi.useRealTimers()
   })
 
+  it('bara kort tryck, knappen hålls (Android: upprepade keydown): åtgärden körs EN gång tills släppet', () => {
+    const { hold, fire } = setup()
+    const b: RemoteBinding = { key: 'Guide', short: 'miniGuide', long: 'none' }
+    expect(hold.down('Guide', b)).toBe('swallow')
+    expect(hold.down('Guide', b)).toBe('swallow')
+    expect(hold.down('Guide', b)).toBe('swallow')
+    expect(fire).toHaveBeenCalledTimes(1)
+    expect(hold.up('Guide')).toBe(true)
+    hold.down('Guide', b)
+    expect(fire).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
   it('ingen åtgärd alls: släpps igenom', () => {
     const { hold, fire } = setup()
     expect(hold.down('Info', { key: 'Info', short: 'none', long: 'none' })).toBe('pass')

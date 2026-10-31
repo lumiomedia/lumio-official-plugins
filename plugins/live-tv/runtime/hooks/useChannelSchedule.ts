@@ -7,6 +7,8 @@ import type { EpgProgramme } from '../epg/types'
 interface ChannelLike {
   tvgId: string | null
   name?: string
+  /** Källans namn när kanalen döpts om (channel-overrides.ts) — nyckeln byggs på det. */
+  originalName?: string
   url?: string
 }
 
@@ -25,7 +27,7 @@ export function useChannelSchedule(
   hoursBack: number = 1,
 ): EpgProgramme[] {
   const [programmes, setProgrammes] = useState<EpgProgramme[]>([])
-  const key = channel.url ? channelKey({ name: channel.name ?? '', url: channel.url }) : ''
+  const key = channel.url ? channelKey({ name: channel.name ?? '', originalName: channel.originalName, url: channel.url }) : ''
 
   useEffect(() => {
     if (!listId || !key) {

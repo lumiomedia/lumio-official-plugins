@@ -701,6 +701,9 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     [lists],
   )
 
+  // Historiken utan dolda kanaler: Fortsätt titta, Senaste kanal och
+  // "starta på senaste kanalen" ska inte ta fram en kanal användaren dolt.
+  const visibleHistory = useMemo(() => (overrides.hidden.length === 0 ? history : history.filter((entry) => !overrides.hidden.includes(entry.key))), [history, overrides])
   /** Favoriter och historik kan peka på kanaler utanför den laddade uppsättningen. */
   const loadedKeys = useMemo(() => new Set(channels.map((channel) => channelKey(channel))), [channels])
   const pinnedId = pinnedKeys.join(',')
@@ -709,7 +712,8 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     // Vänta in sidhämtningen: annars slås favoriter upp en gång i onödan
     // (de ligger oftast i den laddade uppsättningen) innan den hunnit svara.
     if (channelsLoading) return
-    const wanted = [...pinnedKeys, ...history.map((entry) => entry.key)].filter((key) => !loadedKeys.has(key))
+    // Dolda kanaler hämtas aldrig som extra (channel-overrides.ts).
+    const wanted = [...pinnedKeys, ...history.map((entry) => entry.key)].filter((key) => !loadedKeys.has(key) && !overrides.hidden.includes(key))
     if (wanted.length === 0) return
     let live = true
     const known = getResolvedChannels(wanted)
@@ -728,7 +732,7 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
       live = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinnedId, historyId, loadedKeys, channelsLoading])
+  }, [pinnedId, historyId, loadedKeys, channelsLoading, overrides])
 
   // ---- EPG ur appen -------------------------------------------------------
 
@@ -936,7 +940,7 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
       return positionByKey.get(key) ?? null
     },
     favouriteChannels,
-    history,
+    history: visibleHistory,
     nowMs,
     epgListId,
     epgUrls,

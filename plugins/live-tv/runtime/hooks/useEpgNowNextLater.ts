@@ -10,6 +10,8 @@ const EMPTY: NowNextLater = { now: null, next: null, later: null }
 interface ChannelLike {
   tvgId: string | null
   name?: string
+  /** Källans namn när kanalen döpts om (channel-overrides.ts) — nyckeln byggs på det. */
+  originalName?: string
   url?: string
 }
 
@@ -33,7 +35,7 @@ export function useEpgNowNextLater(
   enabled = true,
 ): NowNextLater {
   const [data, setData] = useState<NowNextLater>(EMPTY)
-  const key = channel.url ? channelKey({ name: channel.name ?? '', url: channel.url }) : ''
+  const key = channel.url ? channelKey({ name: channel.name ?? '', originalName: channel.originalName, url: channel.url }) : ''
 
   useEffect(() => {
     if (!enabled || !listId || !key) {

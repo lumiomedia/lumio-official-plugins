@@ -120,8 +120,8 @@ export function removeLearnedKey(list: readonly RemoteBinding[], key: string): R
  * upprepningarna sväljs.
  */
 export function createRemoteHold({ holdMs, fire, now = () => Date.now() }: { holdMs: number; fire: (action: RemoteAction) => void; now?: () => number }) {
-  let held: { key: string; binding: RemoteBinding; at: number; fired: boolean; timer: ReturnType<typeof setTimeout> } | null = null
-  const reset = () => { if (held) clearTimeout(held.timer); held = null }
+  let held: { key: string; binding: RemoteBinding; at: number; fired: boolean; timer: ReturnType<typeof setTimeout> | null } | null = null
+  const reset = () => { if (held?.timer) clearTimeout(held.timer); held = null }
   const fireLong = () => {
     if (!held || held.fired) return
     held.fired = true
@@ -136,7 +136,11 @@ export function createRemoteHold({ holdMs, fire, now = () => Date.now() }: { hol
       reset()
       if (binding.long === 'none') {
         if (binding.short === 'none' || opts?.passFirst) return 'pass'
+        // Knappen räknas som nere till släppet: en hållen knapp (upprepade
+        // keydown) kör åtgärden EN gång — annars växlade t.ex. Senaste kanal
+        // fram och tillbaka så länge knappen hölls.
         fire(binding.short)
+        held = { key, binding, at: now(), fired: true, timer: null }
         return 'swallow'
       }
       held = { key, binding, at: now(), fired: false, timer: setTimeout(fireLong, holdMs) }

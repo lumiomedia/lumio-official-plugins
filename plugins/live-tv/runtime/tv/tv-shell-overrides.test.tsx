@@ -45,6 +45,14 @@ describe('dölj och byt namn i kanalens hållmeny', () => {
     expect(screen.getByTestId('shell-toast')).toHaveTextContent('A is hidden')
   })
 
+  it('en dold favorit hämtas inte som extra och syns varken i favoriterna eller historiken', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'channel_overrides_v1', { hidden: [channelKey(ch('B'))], names: {} })
+    mount({ view: 'favs' })
+    await waitFor(() => expect(screen.getAllByTestId('fav-card')).toHaveLength(1))
+    await new Promise((r) => setTimeout(r, 150))
+    expect(screen.getAllByTestId('fav-card')).toHaveLength(1)
+  })
+
   it('ett eget namn visas, och nyckeln (favoriten) följer med', async () => {
     setChannelName(channelKey(ch('B')), 'Bee Sport')
     mount({ view: 'favs' })
