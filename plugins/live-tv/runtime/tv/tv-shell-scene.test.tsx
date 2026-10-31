@@ -78,12 +78,12 @@ describe('Live TV-skalet utanför TV-läget', () => {
   })
 
   it('ikonraden har TV-bredden i TV-läge', () => {
-    // TV-designen är godkänd: "vad ser annorlunda ut på TV?" — ingenting.
+    // Samma bredd på TV; L-brickan är borta där (Jerry 2026-10-31, platsen går till posterna).
     __setTvModeForTests(true)
     mount()
     expect(railWidth()).toBe(`${RAIL_W_TV}px`)
     expect(itemSize()).toBe(`${RAIL_ITEM_WIDE}px`)
-    expect(document.querySelector('[data-live-tv-rail-badge]')).not.toBeNull()
+    expect(document.querySelector('[data-live-tv-rail-badge]')).toBeNull()
   })
 
   it('ikonraden komprimeras på en smal yta', async () => {
