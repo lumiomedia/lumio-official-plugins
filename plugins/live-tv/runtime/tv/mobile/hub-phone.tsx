@@ -21,6 +21,7 @@ import { MobileHeader } from './mobile-header'
 import { MobileSheet } from './mobile-sheet'
 import { MobileLogo } from './mobile-logo'
 import { MobileChips } from './mobile-chips'
+import { displayTitle } from '../../display-title'
 
 // Telefonen visar ETT spotlightkort i full bredd (handoffen §1), inte tre.
 const SPOTLIGHT_COUNT_PHONE = 1
@@ -185,7 +186,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
                   <MobileLogo channel={channel} width={44} height={30} radius={6} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25, ...clamp2 }}>{channel.name}</div>
-                    <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{info.now?.title ?? noProgrammeLabel}</div>
+                    <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{displayTitle(info.now?.title) ?? noProgrammeLabel}</div>
                   </div>
                 </div>
               )
@@ -200,13 +201,13 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
           <SectionTitle title={tt('continueWatching')} />
           <div data-row="" data-testid="hub-continue" style={{ display: 'flex', gap: 10, overflowX: 'auto', margin: `0 -${MT.PAD}px`, padding: `0 ${MT.PAD}px` }}>
             {replays.map((item: CatchUpItem) => (
-              <div key={`${channelKey(item.channel)}:${item.programme.start}`} {...station(() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title }), (el) => nav.channelMenu(item.channel, el))} style={{ ...card, width: 170, flexShrink: 0, borderRadius: 14 }}>
+              <div key={`${channelKey(item.channel)}:${item.programme.start}`} {...station(() => nav.play({ channel: item.channel, url: item.url, label: displayTitle(item.programme.title) }), (el) => nav.channelMenu(item.channel, el))} style={{ ...card, width: 170, flexShrink: 0, borderRadius: 14 }}>
                 <ChannelArt channel={item.channel} height={96} radius={0}>
                   <div style={{ position: 'absolute', top: 8, right: 8 }}><ReplayTag>{tt('replay')}</ReplayTag></div>
                   <div style={{ position: 'absolute', left: 8, bottom: 6, color: MT.text, display: 'inline-flex' }}><MIcons.Play size={22} /></div>
                 </ChannelArt>
                 <div style={{ padding: '8px 10px', minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{item.programme.title}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{displayTitle(item.programme.title)}</div>
                   <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{`${item.channel.name} · ${formatClock(item.programme.start, locale)} · ${Math.round((item.programme.stop - item.programme.start) / 60_000)} min`}</div>
                 </div>
               </div>
@@ -220,7 +221,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
                     <div style={{ position: 'absolute', left: 8, bottom: 6, color: MT.text, display: 'inline-flex' }}><MIcons.Play size={22} /></div>
                   </ChannelArt>
                   <div style={{ padding: '8px 10px', minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{info.now?.title ?? channel.name}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{displayTitle(info.now?.title) ?? channel.name}</div>
                     <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{channel.name}</div>
                   </div>
                 </div>
@@ -249,7 +250,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
                 </ChannelArt>
                 <div style={{ padding: '8px 10px', minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-                  <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{info.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
+                  <div style={{ fontSize: 12, color: MT.muted, ...ellipsis }}>{displayTitle(info.now?.title) ?? (qualityFromName(channel.name) ?? channel.group)}</div>
                 </div>
               </div>
             )

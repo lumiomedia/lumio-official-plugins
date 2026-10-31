@@ -28,6 +28,7 @@ import {
   type EpgBlockBox,
   type EpgRowEntry,
 } from './epg-grid-geometry'
+import { displayTitle } from '../display-title'
 
 /**
  * Guideläget **Rutnät** (spec 4.3): skrivbordets EPG-tablå
@@ -350,7 +351,7 @@ function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { 
           <>
             <ChannelArt channel={selected.channel} style={{ width: dp(64), height: dp(40), flexShrink: 0 }} radius={dp(8)} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.programme.title}</div>
+              <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(selected.programme.title)}</div>
               <div style={{ fontSize: dp(15), color: TV.dim }}>
                 {selected.channel.name} · {formatClock(selected.programme.start, locale)}–{formatClock(selected.programme.stop, locale)}
               </div>
@@ -406,7 +407,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
   onHold: (element: HTMLElement) => void
 }) {
   const times = `${box.clippedStart ? '…' : formatClock(programme.start, locale)}–${box.clippedEnd ? '…' : formatClock(programme.stop, locale)}`
-  const tip = `${programme.title} ${times}${reminded ? ` · ${remindLabel}` : ''}`
+  const tip = `${displayTitle(programme.title)} ${times}${reminded ? ` · ${remindLabel}` : ''}`
   return (
     <div
       data-testid="grid-block"
@@ -441,7 +442,7 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, rem
     >
       {box.shape === 'marker' ? null : (
         <>
-          <div style={{ fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: reminded ? dp(14) : 0 }}>{programme.title}</div>
+          <div style={{ fontSize: dp(15), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: reminded ? dp(14) : 0 }}>{displayTitle(programme.title)}</div>
           {box.shape === 'full' ? (
             <div style={{ fontSize: dp(13), color: TV.faint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{times}</div>
           ) : null}

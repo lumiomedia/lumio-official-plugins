@@ -14,6 +14,7 @@ import { logSurfaceStack } from './surface-diagnostics'
 import { TvChannelPicker } from './tv-channel-picker'
 import { TvMultiviewPhone } from './mobile/multiview-phone'
 import { useCouchMark } from '../sport/couch/context'
+import { displayTitle } from '../display-title'
 
 const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
   2: { columns: '1fr 1fr', rows: '1fr' },
@@ -170,7 +171,7 @@ function TvMultiviewDesktop(props: TvViewProps) {
               live={live}
               isInit={realIndex === state.audioIndex}
               span={!narrow && state.layout === 3 && realIndex === 0}
-              nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
+              nowTitle={channel ? displayTitle(model.nowFor(channel).now?.title) ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
               onOk={() => {
                 if (!channel) { setPickerTile(realIndex); return }

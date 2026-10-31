@@ -6,6 +6,7 @@ import { isReminded, toggleReminder } from '../reminders'
 import type { TvGlassMenuAction } from '@/lib/plugin-sdk'
 import type { TvNav } from './tv-shell'
 import type { TvStringKey } from './tv-strings'
+import { displayTitle } from '../display-title'
 
 /**
  * OK OCH HÅLL OK PÅ ETT PROGRAM (handoff v2, "Guide navigation").
@@ -45,7 +46,7 @@ export function okAction({ channel, programme, nav, nowMs }: Ctx): () => void {
     if (state === 'future') { toggleReminder(channel, programme, nowMs); return }
     if (state === 'past') {
       const url = replayUrl(channel, programme, nowMs)
-      nav.play(url ? { channel, url, label: programme.title } : { channel })
+      nav.play(url ? { channel, url, label: displayTitle(programme.title) } : { channel })
       return
     }
     nav.play({ channel })
@@ -65,10 +66,10 @@ export function holdMenu(ctx: Ctx & { element: HTMLElement; tt: TT; locale: stri
         : { key: 'reminder', label: tt('remindMeAt', { time: formatClock(programme.start, locale) }), run: () => { toggleReminder(channel, programme, nowMs) } })
     } else if (state === 'live') {
       const url = restartUrl(channel, programme)
-      if (url) extra.push({ key: 'restart', label: tt('restartFromStart'), run: () => nav.play({ channel, url, label: programme.title }) })
+      if (url) extra.push({ key: 'restart', label: tt('restartFromStart'), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) })
     } else {
       const url = replayUrl(channel, programme, nowMs)
-      if (url) extra.push({ key: 'replay', label: tt('playReplay'), run: () => nav.play({ channel, url, label: programme.title }) })
+      if (url) extra.push({ key: 'replay', label: tt('playReplay'), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) })
     }
   }
   nav.channelMenu(channel, element, extra)

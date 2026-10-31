@@ -22,6 +22,7 @@ import type { TvNav } from './tv-shell'
 import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_ROW_GAP, GUIDE_ROW_H, GuideChannelCellV2, accentMix, ellipsis } from './guide-nowsen-view'
 import { V2 } from './v2-tokens'
 import { holdMenu, programmeState } from './programme-actions'
+import { displayTitle } from '../display-title'
 
 /**
  * Sökets omfång. Sessionstillstånd med flit — den som sökte film igår vill
@@ -222,7 +223,7 @@ function ChannelHit({ channel, model, nav }: { channel: M3uChannel; model: LiveT
     (element) => nav.channelMenu(channel, element),
     { 'data-v2f': 'inset', 'data-testid': 'search-channel-now-cell' },
   )
-  const next = info.now && info.next ? `${tt('next')} ${info.next.title} · ${formatClock(info.next.start, locale)}` : null
+  const next = info.now && info.next ? `${tt('next')} ${displayTitle(info.next.title)} · ${formatClock(info.next.start, locale)}` : null
   return (
     <div data-testid="search-channel-hit" style={hitRowStyle}>
       <GuideChannelCellV2 channel={channel} model={model} selected={false} />
@@ -244,7 +245,7 @@ function SearchProgrammeCell({ programme, nowMs, stationProps, next = null }: { 
     <div {...stationProps} style={{ flex: 1, minWidth: 0, borderRadius: dp(GUIDE_CELL_RADIUS), padding: `0 ${dp(18)}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dp(6), boxSizing: 'border-box', cursor: 'pointer', background: live ? accentMix(18) : V2.surface3 }}>
       {programme ? (
         <>
-          <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{programme.title}</div>
+          <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{displayTitle(programme.title)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(15), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums', minWidth: 0 }}>
             <span data-testid="search-programme-time" style={{ flexShrink: 0 }}>{`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}</span>
             {live ? (

@@ -12,6 +12,7 @@ import { isReminded, onRemindersChanged, toggleReminder } from '../reminders'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-types'
 import { Icons, Progress, TV, Tag, station } from './tv-ui'
 import { useTvText } from './tv-strings'
+import { displayTitle } from '../display-title'
 
 /*
  * Spelarkromets delar (skrivbord + TV) — den gamla layouten (före
@@ -121,9 +122,9 @@ export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, 
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: ps(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</div>
           {info.now ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: ps(8), fontSize: ps(12), color: 'rgba(203,213,225,0.9)', minWidth: 0 }} title={info.now.title}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: ps(8), fontSize: ps(12), color: 'rgba(203,213,225,0.9)', minWidth: 0 }} title={displayTitle(info.now.title)}>
               <span style={{ fontSize: ps(9), fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(110,231,183,0.85)', flexShrink: 0 }}>{tt('gridNow')}</span>
-              <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now.title}</span>
+              <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(info.now.title)}</span>
               <span style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>{formatClock(info.now.start, tv.locale)}–{formatClock(info.now.stop, tv.locale)}</span>
             </div>
           ) : null}
@@ -161,8 +162,8 @@ export function PlayerNextUpCard({ channel, next, nowMs, locale, ps }: {
     <div data-testid="next-up" style={{ display: 'flex', alignItems: 'center', gap: ps(12), padding: `${ps(8)}px ${ps(10)}px ${ps(8)}px ${ps(12)}px`, borderRadius: ps(12), background: 'rgba(8,12,24,0.78)', border: `1px solid ${TV.line}`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)', maxWidth: ps(360), minWidth: 0 }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: ps(11), color: TV.dim }}>{tt('nextLabel')}</div>
-        <div style={{ fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={next.title}>
-          {next.title} · {formatClock(next.start, locale)}
+        <div style={{ fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={displayTitle(next.title)}>
+          {displayTitle(next.title)} · {formatClock(next.start, locale)}
         </div>
       </div>
       <div
@@ -220,7 +221,7 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
       {info.now ? (
         <div data-testid="programme-progress" style={{ display: 'flex', flexDirection: 'column', gap: ps(6), padding: `0 ${ps(4)}px`, marginBottom: ps(8) }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: ps(12), fontSize: ps(12), color: 'rgba(203,213,225,0.9)' }}>
-            <span style={{ fontWeight: 600, color: TV.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now.title}</span>
+            <span style={{ fontWeight: 600, color: TV.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(info.now.title)}</span>
             <span style={{ flexShrink: 0 }}>{formatClock(info.now.start, tv.locale)}–{formatClock(info.now.stop, tv.locale)} · {tt('minutesLeft', { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 60_000)) })}</span>
           </div>
           <Progress value={progressOf(info.now.start, info.now.stop, tv.nowMs)} height={ps(4)} track="rgba(255,255,255,0.2)" />
@@ -357,7 +358,7 @@ export function PlayerFavouritesRow({ channel, tv, ps, onSwitch, onHold, style }
           >
             <SmallLogo channel={c} size={ps(26)} radius={ps(5)} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: ps(12), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.now?.title ?? tt('noProgramme')}</div>
+              <div style={{ fontSize: ps(12), fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(n.now?.title) ?? tt('noProgramme')}</div>
               <div style={{ fontSize: ps(10), color: TV.dim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
             </div>
           </div>
@@ -434,7 +435,7 @@ export function PlayerScheduleOverlay({ channel, tv, ps, open, onClose, onSwitch
                 data-testid="schedule-row"
                 data-guide-row=""
                 {...(live ? { 'data-now': '' } : {})}
-                {...(past ? {} : station(act, undefined, { 'aria-label': p.title }))}
+                {...(past ? {} : station(act, undefined, { 'aria-label': displayTitle(p.title) }))}
                 style={{ position: 'relative', display: 'grid', gridTemplateColumns: `${ps(80)}px 1fr auto`, gap: ps(16), alignItems: 'start', padding: `${ps(10)}px ${ps(20)}px`, borderBottom: `1px solid ${TV.s05}`, background: live ? 'rgba(16,185,129,0.10)' : 'transparent', opacity: past ? 0.4 : 1, cursor: past ? 'default' : 'pointer' }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -442,7 +443,7 @@ export function PlayerScheduleOverlay({ channel, tv, ps, open, onClose, onSwitch
                   {live ? <span style={{ marginTop: ps(2), fontSize: ps(9), fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(110,231,183,0.85)' }}>{tt('gridNow')}</span> : null}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                  <div style={{ fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(p.title)}</div>
                   {p.description ? <div data-selectable-text="" style={{ marginTop: ps(2), fontSize: ps(11), color: 'rgba(255,255,255,0.55)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</div> : null}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: ps(8), fontSize: ps(11), color: 'rgba(255,255,255,0.55)', flexShrink: 0 }}>

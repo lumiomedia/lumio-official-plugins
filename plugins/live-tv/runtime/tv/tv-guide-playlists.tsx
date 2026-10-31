@@ -16,6 +16,7 @@ import { useListRows, useListTree, type ListSelection } from './list-tree'
 import { planGroupChips } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
 import { TvGuideListsPhone } from './mobile/guide-lists-phone'
+import { displayTitle } from '../display-title'
 
 /**
  * Skrivbordets vänsterkolumn visar högst så här många grupper per lista; fler
@@ -97,7 +98,7 @@ function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: T
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: dp(14), letterSpacing: '0.1em', textTransform: 'uppercase', color: isNow ? TV.accText : 'rgba(243,244,248,0.5)' }}>
           <span>{label}</span><span style={{ fontSize: dp(15), letterSpacing: 0, textTransform: 'none' }}>{isNow ? `${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale)}</span>
         </div>
-        <div style={{ fontSize: isNow ? dp(24) : dp(20), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{programme.title}</div>
+        <div style={{ fontSize: isNow ? dp(24) : dp(20), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(programme.title)}</div>
         {isNow ? <Progress value={progressOf(programme.start, programme.stop, model.nowMs)} height={dp(4)} /> : null}
         <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.55)' }}>{isNow ? tt('okWatch') : reminded ? tt('reminderSet') : tt('okRemind')}</div>
       </div>
@@ -183,7 +184,7 @@ function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: T
               <div data-testid="pl-row-channel-col" style={{ width: dp(560), flexShrink: 0 }}>
                 <ChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} quality={null} focused={false} width="100%" />
               </div>
-              <div style={{ minWidth: 0, flex: 1, fontSize: dp(17), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rowInfo.now?.title ?? tt('noProgramme')}</div>
+              <div style={{ minWidth: 0, flex: 1, fontSize: dp(17), color: 'rgba(243,244,248,0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(rowInfo.now?.title) ?? tt('noProgramme')}</div>
               <div style={{ width: dp(110), flexShrink: 0 }}>
                 {rowInfo.now ? <><div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{tt('minutesLeft', { min: Math.max(0, Math.round((rowInfo.now.stop - model.nowMs) / 60_000)) })}</div><Progress value={progressOf(rowInfo.now.start, rowInfo.now.stop, model.nowMs)} height={dp(4)} /></> : null}
               </div>

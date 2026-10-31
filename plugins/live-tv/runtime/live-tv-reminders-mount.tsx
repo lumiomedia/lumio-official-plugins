@@ -7,6 +7,7 @@ import { reminderToChannel, startReminderScheduler, tryNativeNotification } from
 import { startSportAlertSync } from './sport/sport-alerts'
 import { useHubText } from './hub-strings'
 import { ToastCenter, pushToast } from './toast-center'
+import { displayTitle } from './display-title'
 
 /**
  * App-övergripande påminnelser: schemat körs från pluginets bootstrap, inte
@@ -19,12 +20,12 @@ export function LiveTvRemindersMount() {
   useEffect(
     () =>
       startReminderScheduler((reminder) => {
-        tryNativeNotification(reminder.title, h('startsNow', { channel: reminder.channelName }))
+        tryNativeNotification(displayTitle(reminder.title), h('startsNow', { channel: reminder.channelName }))
         const channel = reminderToChannel(reminder)
         pushToast({
           key: `reminder:${reminder.id}`,
           kicker: h('startsNow', { channel: reminder.channelName }),
-          title: reminder.title,
+          title: displayTitle(reminder.title),
           watchLabel: h('hubWatchNow'),
           // autoplay: kanalsidan startar strömmen direkt — Se nu ska inte landa på detaljer (Jerry).
           onWatch: () => requestOpenBrowsePage({ pageId: 'live-tv-browse', params: { view: 'channel', autoplay: '1', ...encodeChannelParams(channel) } }),

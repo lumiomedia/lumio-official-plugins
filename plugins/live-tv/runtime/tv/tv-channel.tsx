@@ -11,6 +11,7 @@ import { useTvText } from './tv-strings'
 import { TvPreview } from './tv-preview'
 import { isReminded } from '../reminders'
 import { TvChannelPhone } from './mobile/channel-phone'
+import { displayTitle } from '../display-title'
 
 /**
  * Telefongrenen (Task 8) har egen layout och egna testid:n — routas härifrån
@@ -97,7 +98,7 @@ function TvChannelDesktop({ model, nav, params, settings }: TvViewProps) {
                   style={{ height: dp(66), minHeight: dp(66), borderRadius: dp(12), padding: `0 ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(16), background: isSelected ? TV.s10 : 'transparent', color: k === 'past' ? 'rgba(243,244,248,0.55)' : TV.text, cursor: 'pointer' }}
                 >
                   <span style={{ width: dp(80), fontSize: dp(21), fontVariantNumeric: 'tabular-nums' }}>{formatClock(row.p.start, locale)}</span>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: dp(21), fontWeight: k === 'now' ? 600 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.p.title}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: dp(21), fontWeight: k === 'now' ? 600 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(row.p.title)}</span>
                   {tag}
                 </div>
               </div>
@@ -125,7 +126,7 @@ function TvChannelDesktop({ model, nav, params, settings }: TvViewProps) {
       {/* Detalj */}
       <div data-testid="detail" style={detailStyle}>
         <TvPreview channel={channel} enabled={settings.previewEnabled && kind === 'now'} live={kind === 'now'} width="100%" height={dp(268)} label={previewLabel} onOk={primary} />
-        <div style={{ fontSize: dp(28), fontWeight: 600 }}>{selected?.title ?? channel.name}</div>
+        <div style={{ fontSize: dp(28), fontWeight: 600 }}>{displayTitle(selected?.title) ?? channel.name}</div>
         {selected ? <div style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.6)' }}>{tt('airedAt', { time: formatClock(selected.start, locale), channel: channel.name })}</div> : null}
         {selected?.description ? <div style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.75)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical' }}>{selected.description}</div> : null}
         <div style={{ display: 'flex', gap: dp(12) }}>

@@ -16,6 +16,7 @@ import { MobileChips } from './mobile-chips'
 import { MobileChannelRow } from './mobile-channel-row'
 import { useVodPage } from '../../hooks/useVodLibrary'
 import { getVodMode } from '../../vod-data'
+import { displayTitle } from '../../display-title'
 
 /**
  * Sök på telefon (fas 3, Task 10, handoffen §7). Systemets tangentbord i
@@ -164,7 +165,7 @@ export function TvSearchPhone({ model, nav }: TvViewProps) {
                   style={{ minHeight: 56, display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${MT.line07}`, cursor: 'pointer' }}
                 >
                   <span style={{ width: 46, flexShrink: 0, fontSize: 14, color: MT.dim, fontVariantNumeric: 'tabular-nums' }}>{formatClock(hit.programme.start, locale)}</span>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, ...ellipsis }}>{hit.programme.title}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, ...ellipsis }}>{displayTitle(hit.programme.title)}</span>
                   <span style={{ maxWidth: '40%', fontSize: 12, color: MT.dim, ...ellipsis }}>{hit.channel.name}</span>
                 </div>
               ))

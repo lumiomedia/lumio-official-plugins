@@ -7,6 +7,7 @@ import { useTvText } from '../tv-strings'
 import { MT, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 import { MobileLogo } from './mobile-logo'
+import { displayTitle } from '../../display-title'
 
 export type MobileRowVariant = 'guide' | 'zap' | 'search' | 'sheet'
 
@@ -56,7 +57,7 @@ export function MobileChannelRow({ channel, number, now, nowMs, locale, pinned =
         {now.now ? (
           <>
             <div style={{ fontSize: variant === 'zap' ? 12 : 14, color: 'rgba(243,244,248,0.85)', ...ellipsis }}>
-              {variant === 'search' ? `${tt('nowPrefix')}: ${now.now.title}` : now.now.title}
+              {variant === 'search' ? `${tt('nowPrefix')}: ${displayTitle(now.now.title)}` : displayTitle(now.now.title)}
             </div>
             {variant === 'guide' || variant === 'sheet' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -67,7 +68,7 @@ export function MobileChannelRow({ channel, number, now, nowMs, locale, pinned =
               </div>
             ) : null}
             {variant === 'guide' && now.next ? (
-              <div style={{ fontSize: 13, color: MT.dim, ...ellipsis }}>{tt('nextLabel')} {formatClock(now.next.start, locale)} {now.next.title}</div>
+              <div style={{ fontSize: 13, color: MT.dim, ...ellipsis }}>{tt('nextLabel')} {formatClock(now.next.start, locale)} {displayTitle(now.next.title)}</div>
             ) : null}
           </>
         ) : (

@@ -20,6 +20,7 @@ import { useTint } from './tint'
 import { V2, liveColors, mixHex, v2Ambient } from './v2-tokens'
 import { LivePill, LogoPlate, ProgrammeArtBox, V2FocusStyle } from './v2-ui'
 import { AccentTag, ChannelGridCard, HUB_CARD, HubEmptyState, HubGreeting, HubPlaylistPill, V2Progress } from './hub-shared'
+import { displayTitle } from '../display-title'
 
 /**
  * KANALER, LAYOUT KLASSISK (handoff v2 "Screen 1b").
@@ -127,7 +128,7 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
                   <LogoPlate channel={channel} width={100} height={58} radius={8} number={model.channelNumber(channel)} />
                   <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: dp(5) }}>
                     <div style={{ fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-                    <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info.now?.title ?? noProgrammeLabel}</div>
+                    <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{displayTitle(info.now?.title) ?? noProgrammeLabel}</div>
                     {info.now ? <V2Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={3} track="rgba(252,252,255,.14)" /> : null}
                   </div>
                 </div>
@@ -149,7 +150,7 @@ export function HubClassic({ model, nav, settings }: TvViewProps): JSX.Element {
                 tag={tt('replay')}
                 meta={`${item.channel.name} · ${formatClock(item.programme.start, locale)} · ${Math.round((item.programme.stop - item.programme.start) / 60_000)} min`}
                 progress={null}
-                onOk={() => nav.play({ channel: item.channel, url: item.url, label: item.programme.title })}
+                onOk={() => nav.play({ channel: item.channel, url: item.url, label: displayTitle(item.programme.title) })}
                 onHold={hold(item.channel, item.programme)}
               />
             ))}
@@ -274,7 +275,7 @@ function ContinueCard({ channel, programme, tag, meta, progress, onOk, onHold }:
       <div style={{ padding: `${dp(12)}px ${dp(16)}px ${dp(14)}px`, display: 'flex', flexDirection: 'column', gap: dp(4) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
           <span style={{ flexShrink: 0, display: 'inline-flex' }}><Icons.Play size={dp(18)} /></span>
-          <span style={{ fontSize: dp(19), fontWeight: 600, minWidth: 0, flex: 1, ...ellipsis }}>{programme?.title ?? channel.name}</span>
+          <span style={{ fontSize: dp(19), fontWeight: 600, minWidth: 0, flex: 1, ...ellipsis }}>{displayTitle(programme?.title) ?? channel.name}</span>
           <AccentTag>{tag}</AccentTag>
         </div>
         <div style={{ fontSize: dp(15), color: V2.text3, ...ellipsis }}>{meta}</div>

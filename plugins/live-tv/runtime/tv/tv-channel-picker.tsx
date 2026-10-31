@@ -10,6 +10,7 @@ import { useTvText } from './tv-strings'
 import { MORE_GROUPS, filterByGroup, useGuideGroups } from './tv-guide-shared'
 import { groupCounts } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
+import { displayTitle } from '../display-title'
 
 /** Sports radkort (samma som matchinfons rader), ritat utan att importera ur sport/. */
 /**
@@ -79,7 +80,7 @@ export function TvChannelPicker({ model, nav, title, onPick, onClose, surface, s
               <ChannelArt channel={channel} style={{ width: dp(big ? 90 : 70), height: dp(big ? 58 : 46), flexShrink: 0 }} radius={dp(8)} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: dp(big ? 24 : 19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-                <div style={{ fontSize: dp(big ? 20 : 15), color: sport ? TV.muted : 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.group}</div>
+                <div style={{ fontSize: dp(big ? 20 : 15), color: sport ? TV.muted : 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(info.now?.title) ?? channel.group}</div>
               </div>
             </div>
           )

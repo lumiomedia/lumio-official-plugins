@@ -16,6 +16,7 @@ import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from 
 import { V2 } from './v2-tokens'
 import { LogoPlate } from './v2-ui'
 import type { GuideSelection, GuideViewProps } from './guide-types'
+import { displayTitle } from '../display-title'
 
 /** Guide v2:s mått (handoff "Screen 2 / Layout"): rader 76, gap 6, kanalcell 380, celler radius 12. */
 export const GUIDE_ROW_H = 76
@@ -292,7 +293,7 @@ const NowSenRow = memo(function NowSenRow({ channel, rowKey: key, info, selected
       {info?.now ? (
         <>
           <div data-testid="nowsen-now" data-now-station="" {...cellProps({ channel, programme: info.now }, init, true)} style={{ ...cellBase, flex: `${WEIGHTS[0]} 1 0%`, gap: dp(8), background: selected ? accentMix(18) : V2.surface3 }}>
-            <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
+            <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{displayTitle(info.now.title)}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
               <div style={{ flex: 1, height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${Math.round(progressOf(info.now.start, info.now.stop, nowMs) * 100)}%`, background: ACCENT }} />
@@ -306,7 +307,7 @@ const NowSenRow = memo(function NowSenRow({ channel, rowKey: key, info, selected
             if (!programme) return <div key={testId} data-testid={testId} style={{ ...style, cursor: 'default' }} />
             return (
               <div key={testId} data-testid={testId} {...cellProps({ channel, programme }, false, false)} style={style}>
-                <div style={{ fontSize: dp(19), color: i === 0 ? V2.text : V2.text2, ...ellipsis }}>{programme.title}</div>
+                <div style={{ fontSize: dp(19), color: i === 0 ? V2.text : V2.text2, ...ellipsis }}>{displayTitle(programme.title)}</div>
                 <div style={{ fontSize: dp(15), color: i === 0 ? 'rgba(243,244,248,0.55)' : 'rgba(243,244,248,0.5)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
                   {formatClock(programme.start, locale)}{bell(programme)}
                 </div>

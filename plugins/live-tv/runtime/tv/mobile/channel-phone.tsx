@@ -17,6 +17,7 @@ import { MobileHeader } from './mobile-header'
 import { MobileSheet, type MobileSheetProps } from './mobile-sheet'
 import { MobileLogo } from './mobile-logo'
 import { MobileChips } from './mobile-chips'
+import { displayTitle } from '../../display-title'
 
 /** Dagchipsens "Idag" (offset 0) är alltid vit; passerade dagar (< 0) dämpas. */
 const PAST_DAYS = DAY_OFFSETS.filter((o) => o < 0) as number[]
@@ -84,7 +85,7 @@ export function TvChannelPhone({ model, nav, params }: TvViewProps) {
     if (!sheetProgramme) return
     if (sheetKind === 'past') {
       const url = sheetCanReplay ? buildTimeshiftUrl(channel, sheetProgramme.start, sheetProgramme.stop - sheetProgramme.start) : null
-      if (url) nav.play({ channel, url, label: sheetProgramme.title })
+      if (url) nav.play({ channel, url, label: displayTitle(sheetProgramme.title) })
       else nav.play({ channel })
       return
     }
@@ -147,7 +148,7 @@ export function TvChannelPhone({ model, nav, params }: TvViewProps) {
                 för exakt talet 0 (`dangerousStyleValue`s specialfall), så en numerisk
                 nolla hade blivit "0" i DOM:en — samma mönster som mobile-channel-row.tsx. */}
             <div style={{ flex: 1, minWidth: '0px' }}>
-              <div style={{ fontSize: 15, fontWeight: k === 'now' ? 600 : 400, ...clamp2 }}>{p.title}</div>
+              <div style={{ fontSize: 15, fontWeight: k === 'now' ? 600 : 400, ...clamp2 }}>{displayTitle(p.title)}</div>
               {k === 'now' ? (
                 <div data-testid="programme-progress" style={{ height: 4, marginTop: 4, borderRadius: 2, background: MT.s10, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${progressOf(p.start, p.stop, model.nowMs) * 100}%`, background: MT.acc }} />
@@ -168,7 +169,7 @@ export function TvChannelPhone({ model, nav, params }: TvViewProps) {
       {sheetProgramme ? (
         <MobileSheet
           testId="programme-sheet"
-          title={sheetProgramme.title}
+          title={displayTitle(sheetProgramme.title)}
           subtitle={`${formatClock(sheetProgramme.start, locale)}–${formatClock(sheetProgramme.stop, locale)}`}
           body={sheetProgramme.description ?? undefined}
           items={[

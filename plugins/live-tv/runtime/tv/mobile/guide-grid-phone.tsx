@@ -19,6 +19,7 @@ import { MobileLogo } from './mobile-logo'
 import { MobileChips } from './mobile-chips'
 import { PhoneGuideModeBar, type PhoneGuideMode } from './guide-phone'
 import { cachedDateTimeFormat } from '../../intl-cache'
+import { displayTitle } from '../../display-title'
 
 /** Startantal rader och steget per Visa fler — samma tal som skrivbordet. */
 const MAX_ROWS = 80
@@ -158,7 +159,7 @@ export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps
                           >
                             {box.shape !== 'marker' ? (
                               <>
-                                <div style={{ fontSize: 12, fontWeight: 600, lineHeight: '16px', ...ellipsis }}>{programme.title}</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, lineHeight: '16px', ...ellipsis }}>{displayTitle(programme.title)}</div>
                                 {box.shape === 'full' ? <div style={{ fontSize: 11, lineHeight: '14px', color: MT.dim, ...ellipsis }}>{formatClock(programme.start, locale)}</div> : null}
                               </>
                             ) : null}

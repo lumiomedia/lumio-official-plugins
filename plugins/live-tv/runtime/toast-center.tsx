@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { onTvFocusEdge, useTvMode } from '@/lib/plugin-sdk'
 import { playingChannel } from './sport/goal-alerts'
+import { displayTitle } from './display-title'
 
 /*
   NOTISERNA I APPEN (mål och avspark) — användbara med fjärren (Jerry
@@ -207,7 +208,7 @@ export function ToastCenter() {
                 ) : null}
                 <div style={{ minWidth: 0, flex: 1 }}>
                   {t.kicker ? <div style={{ fontSize: s.kicker, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: GOAL_CORAL }}>{t.kicker}</div> : null}
-                  <div style={{ fontSize: s.goalTitle, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{t.title}</div>
+                  <div style={{ fontSize: s.goalTitle, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{displayTitle(t.title)}</div>
                   {t.body ? <div style={{ fontSize: s.body, color: 'rgba(243,244,248,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</div> : null}
                 </div>
               </div>
@@ -221,7 +222,7 @@ export function ToastCenter() {
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: `${s.pad}px ${s.pad + 2}px`, borderRadius: 16, background: '#141519', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 18px 40px rgba(0,0,0,0.45)', color: '#f3f4f8' }}>
             <div style={{ minWidth: 0, flex: 1 }}>
               {t.kicker ? <div style={{ fontSize: s.kicker, letterSpacing: 0.8, textTransform: 'uppercase', color: 'rgba(243,244,248,0.7)' }}>{t.kicker}</div> : null}
-              <div style={{ fontSize: s.title, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+              <div style={{ fontSize: s.title, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTitle(t.title)}</div>
               {t.body ? <div style={{ fontSize: s.body, color: 'rgba(243,244,248,0.7)' }}>{t.body}</div> : null}
             </div>
             {watch}

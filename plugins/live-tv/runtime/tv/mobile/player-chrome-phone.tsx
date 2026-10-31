@@ -15,6 +15,7 @@ import { MobileSheet } from './mobile-sheet'
 import { currentMatchSources, matchesForPlayer } from '../../sport/tv/player-sport'
 import { PhoneMatchList } from '../../sport/mobile/player-matches-phone'
 import { pickMultiviewKeys } from '../../sport/sport-day-model'
+import { displayTitle } from '../../display-title'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -158,7 +159,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
   const numberName = `${tv.channelNumber ? `${tv.channelNumber} · ` : ''}${channel.name}`
   const minutesLeft = info.now ? tt('minutesLeft', { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 60_000)) }) : null
   const timeLine = info.now ? `${formatClock(info.now.start, tv.locale)}–${formatClock(info.now.stop, tv.locale)} · ${minutesLeft}` : null
-  const nextLine = info.next ? `${tt('nextLabel')} ${info.next.title} · ${formatClock(info.next.start, tv.locale)}` : null
+  const nextLine = info.next ? `${tt('nextLabel')} ${displayTitle(info.next.title)} · ${formatClock(info.next.start, tv.locale)}` : null
   const progress = info.now ? progressOf(info.now.start, info.now.stop, tv.nowMs) : 0
   const qualityLabel = tv.quality ?? tt('autoQuality')
   const favLabel = tv.favourite ? tt('menuRemoveFavourite') : tt('menuAddFavourite')
@@ -209,7 +210,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
   const sheetNode = sheet ? (
     <MobileSheet
       title={sheet === 'audio' ? tt('audioSubs') : sheet === 'sources' ? tt('sportSourcesShort', { n: sourceItems.length }) : sheet === 'matches' ? tt('sportMatches') : channel.name}
-      subtitle={sheet === 'matches' ? tt('sportMatchesHint') : info.now?.title}
+      subtitle={sheet === 'matches' ? tt('sportMatchesHint') : displayTitle(info.now?.title)}
       list={matchList}
       items={sheet === 'audio' ? audioItems : sheet === 'sources' ? sourceItems : sheet === 'matches' ? matchItems : moreItems}
       onClose={closeSheet}
@@ -241,7 +242,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: `72px ${SAFE_SIDE_R} max(22px, env(safe-area-inset-bottom, 0px)) ${SAFE_SIDE_L}`, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.9) 55%)', display: 'flex', flexDirection: 'column', gap: 12, ...fade }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16 }}>
               <div data-testid="phone-landscape-info" style={{ flex: 1, minWidth: '0px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 26, fontWeight: 600, ...ellipsis }}>{info.now?.title ?? channel.name}</div>
+                <div style={{ fontSize: 26, fontWeight: 600, ...ellipsis }}>{displayTitle(info.now?.title) ?? channel.name}</div>
                 {timeLine ? <div style={{ fontSize: 14, color: MT.muted70, ...ellipsis }}>{timeLine}{nextLine ? ` · ${nextLine}` : ''}</div> : null}
               </div>
               <div data-testid="phone-landscape-controls" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -294,7 +295,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
             <span style={{ display: 'flex', color: tv.favourite ? MT.acc : MT.text }}><MIcons.Heart size={22} filled={tv.favourite} /></span>
           </Round>
         </div>
-        <div data-testid="phone-title" style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }}>{info.now?.title ?? channel.name}</div>
+        <div data-testid="phone-title" style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }}>{displayTitle(info.now?.title) ?? channel.name}</div>
         {timeLine ? <div style={{ fontSize: 14, color: MT.muted70, ...ellipsis }}>{timeLine}</div> : null}
         {nextLine ? <div style={{ fontSize: 14, color: MT.muted, ...ellipsis }}>{nextLine}</div> : null}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

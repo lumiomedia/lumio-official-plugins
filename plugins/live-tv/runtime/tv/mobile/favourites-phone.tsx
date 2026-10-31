@@ -11,6 +11,7 @@ import { MIcons } from './mobile-icons'
 import { MobileHeader } from './mobile-header'
 import { MobileLogo } from './mobile-logo'
 import { reorder, useDragReorder } from './use-drag-reorder'
+import { displayTitle } from '../../display-title'
 
 /** Radhöjden dra-hooken räknar mål-index ifrån (samma som `minHeight` nedan). */
 const ROW_HEIGHT = 74
@@ -85,7 +86,7 @@ export function TvFavouritesPhone({ model, nav }: TvViewProps) {
               <MobileLogo channel={channel} width={64} height={42} />
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-                <div style={{ fontSize: 13, color: 'rgba(243,244,248,0.8)', ...ellipsis }}>{info.now?.title ?? tt('noProgramme')}</div>
+                <div style={{ fontSize: 13, color: 'rgba(243,244,248,0.8)', ...ellipsis }}>{displayTitle(info.now?.title) ?? tt('noProgramme')}</div>
                 {info.now ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1, height: 3, borderRadius: 3, background: MT.s14, overflow: 'hidden' }}>

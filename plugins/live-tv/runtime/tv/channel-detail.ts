@@ -12,6 +12,7 @@ import { useSchedules } from '../hooks/useSchedules'
 import type { TvNav } from './tv-shell'
 import { useTvText } from './tv-strings'
 import { cachedDateTimeFormat } from '../intl-cache'
+import { displayTitle } from '../display-title'
 
 /**
  * Delad av skrivbordets `tv-channel.tsx` och telefonens
@@ -124,7 +125,7 @@ export function useChannelDetail(model: LiveTvModel, nav: TvNav, params: Record<
     if (kind === 'now') { nav.play({ channel }); return }
     if (kind === 'past') {
       const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null
-      if (url) nav.play({ channel, url, label: selected.title })
+      if (url) nav.play({ channel, url, label: displayTitle(selected.title) })
       else nav.play({ channel })
       return
     }

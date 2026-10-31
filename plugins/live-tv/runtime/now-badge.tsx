@@ -4,6 +4,7 @@ import { useLang } from '@/lib/plugin-sdk'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import type { M3uChannel } from './live-tv-data'
 import { useState } from 'react'
+import { displayTitle } from './display-title'
 
 interface Props {
   channel: M3uChannel
@@ -49,7 +50,7 @@ export function NowBadge({ channel, listId, urls, showTrigger = true, forceReque
   return (
     <div className="w-full truncate text-center text-[11px] text-emerald-300/90">
       <span className="mr-1 text-[9px] uppercase tracking-wider text-emerald-300/70">{t('liveTvNow')}</span>
-      {now.title}
+      {displayTitle(now.title)}
     </div>
   )
 }

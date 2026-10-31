@@ -10,6 +10,7 @@ import { TvPlayerChromePhone } from './mobile/player-chrome-phone'
 import { PlayerMatchesDrawer, PlayerSourceSwitcher, PlayerSportTicker, matchesForPlayer, replayOnChannel } from '../sport/tv/player-sport'
 import { PlayerReplayBadge, PlayerReplayInfo } from '../sport/tv/player-replay-badge'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
+import { displayTitle } from '../display-title'
 
 export interface TvPlayerChromeProps {
   channel: M3uChannel
@@ -246,7 +247,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
 
   const openMenu = (element: HTMLElement) => {
     setMenu({
-      title: `${channel.name}${info.now ? ` · ${info.now.title}` : ''}`,
+      title: `${channel.name}${info.now ? ` · ${displayTitle(info.now.title)}` : ''}`,
       element,
       actions: [
         { key: 'guide', label: tt('menuGuide'), run: () => { setGuideOpen(true); setVisible(true); clearTimer() } },

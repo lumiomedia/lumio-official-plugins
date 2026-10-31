@@ -23,6 +23,7 @@ import { XP_ALL, XP_GRID_COLUMNS, XP_GRID_STEP, useExperienceRows, type XpItem, 
 import { xpInitial, xpNavReduce, xpNormalise, type XpKey, type XpNavState } from './hub-experience-nav'
 import { CutoutLayer } from './cutout-layer'
 import { LivePreviewArt } from './live-preview-art'
+import { displayTitle } from '../display-title'
 
 /**
  * KANALER, LAYOUT UPPLEVELSE (handoff v2 "Screen 1 – Live TV Hem v3").
@@ -295,7 +296,7 @@ export function HubExperience({ model, nav, settings }: TvViewProps): JSX.Elemen
       return
     }
     const channel = item.channel!
-    if (item.kind === 'replay' && item.catchUp) { nav.play({ channel, url: item.catchUp.url, label: item.catchUp.programme.title }); return }
+    if (item.kind === 'replay' && item.catchUp) { nav.play({ channel, url: item.catchUp.url, label: displayTitle(item.catchUp.programme.title) }); return }
     if (item.kind === 'continue' || item.kind === 'live') { nav.play({ channel }); return }
     okAction({ channel, programme: item.programme ?? null, nav, nowMs: model.nowMs })()
   }
@@ -625,7 +626,7 @@ function HeroText({ item, model, tv }: { item: XpItem; model: TvViewProps['model
   const isLive = item.kind === 'live' || item.kind === 'continue'
   const tag = item.kind === 'live' ? tt('live') : item.kind === 'continue' ? tt('tagContinue') : item.kind === 'replay' ? tt('replay') : item.kind === 'upcoming' ? tt('later') : tt('xpCategory')
   const number = item.channel ? model.channelNumber(item.channel) : null
-  const title = item.kind === 'category' ? item.category ?? '' : item.sport?.title ?? p?.title ?? item.channel?.name ?? ''
+  const title = item.kind === 'category' ? item.category ?? '' : item.sport?.title ?? displayTitle(p?.title) ?? item.channel?.name ?? ''
   let meta = ''
   if (item.kind === 'category') meta = tt('channelsCount', { count: item.count ?? 0 })
   else if (item.kind === 'upcoming' && p) meta = tt('xpStartsAt', { time: formatClock(p.start, locale), min: Math.max(0, Math.round((p.start - model.nowMs) / 60_000)) })
@@ -711,7 +712,7 @@ const XpCard = memo(function XpCard({ rowId, item, ri, ii, focused, ring, hidden
         <div style={{ padding: `${dp(12)}px ${dp(4)}px 0` }}>
           {/* Dämpad text med färgens alfa, inte opacity (se regeln för data-dim). */}
           <div style={{ fontSize: dp(17), fontWeight: 600, color: focused ? V2.text : 'rgba(243,244,248,0.65)', ...ellipsis }}>{item.channel.name}</div>
-          <div style={{ fontSize: dp(15), color: focused ? 'rgba(243,244,248,0.65)' : 'rgba(243,244,248,0.42)', ...ellipsis }}>{item.programme?.title ?? ''}</div>
+          <div style={{ fontSize: dp(15), color: focused ? 'rgba(243,244,248,0.65)' : 'rgba(243,244,248,0.42)', ...ellipsis }}>{displayTitle(item.programme?.title) ?? ''}</div>
         </div>
       ) : null}
     </div>
@@ -755,7 +756,7 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
         {number != null ? <span data-testid="xp-yours-number" style={{ position: 'absolute', left: dp(14), top: dp(14), padding: `${dp(2)}px ${dp(9)}px`, borderRadius: dp(8), background: 'rgba(17,19,26,.78)', color: V2.text, fontSize: dp(19), fontWeight: 700, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
         <div data-testid="xp-yours-text" style={{ position: 'absolute', left: dp(16), right: dp(16), bottom: dp(18) }}>
           <div style={{ fontSize: dp(21), fontWeight: 700, ...ellipsis }}>{channel.name}</div>
-          <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{p?.title ?? ''}</div>
+          <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{displayTitle(p?.title) ?? ''}</div>
         </div>
         {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
       </NoArt>
@@ -791,7 +792,7 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
           <span style={{ fontSize: dp(56), fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: V2.accText }}>{mins}</span>
           <span style={{ fontSize: dp(18), color: 'rgba(243,244,248,0.7)' }}>{tt('xpSoonMin', { time: p ? formatClock(p.start, locale) : '' })}</span>
         </div>
-        <div style={{ fontSize: dp(20), fontWeight: 700, paddingRight: holdPad ? dp(holdPad - 20) : undefined, ...ellipsis }}>{p?.title ?? ''}</div>
+        <div style={{ fontSize: dp(20), fontWeight: 700, paddingRight: holdPad ? dp(holdPad - 20) : undefined, ...ellipsis }}>{displayTitle(p?.title) ?? ''}</div>
       </div>
     )
   }
@@ -808,7 +809,7 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
         <span style={{ position: 'absolute', left: dp(14), top: dp(14) }}><LivePill solid label={tt('live')} size={tv ? TV_CARD_PILL : undefined} /></span>
         {art ? <LogoPlate channel={channel} width={60} height={34} radius={6} style={{ position: 'absolute', right: dp(14), top: dp(14) }} /> : null}
         <div style={{ position: 'absolute', left: dp(18), right: textRight(18), bottom: dp(20), display: 'flex', flexDirection: 'column', gap: dp(4) }}>
-          <div style={{ fontSize: dp(24), fontWeight: 800, lineHeight: 1.1, ...ellipsis }}>{sport?.title ?? p?.title ?? channel.name}</div>
+          <div style={{ fontSize: dp(24), fontWeight: 800, lineHeight: 1.1, ...ellipsis }}>{sport?.title ?? displayTitle(p?.title) ?? channel.name}</div>
           <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{sport ? `${sport.league} · ${channel.name}` : channel.name}</div>
         </div>
         {progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}
@@ -827,7 +828,7 @@ const CardFace = memo(function CardFace({ rowId, item, nowMs, number, lookup, ho
       {art ? <LogoPlate channel={channel} width={76} height={42} radius={7} style={{ position: 'absolute', left: dp(14), top: dp(14) }} /> : null}
       <span style={{ position: 'absolute', right: dp(14), top: dp(14) }}><AccentTag>{item.kind === 'replay' ? tt('replay') : tt('tagContinue')}</AccentTag></span>
       <div style={{ position: 'absolute', left: dp(16), right: textRight(16), bottom: dp(18) }}>
-        <div style={{ fontSize: dp(21), fontWeight: 700, ...ellipsis }}>{p?.title ?? channel.name}</div>
+        <div style={{ fontSize: dp(21), fontWeight: 700, ...ellipsis }}>{displayTitle(p?.title) ?? channel.name}</div>
         <div style={{ fontSize: dp(15), color: V2.text2, ...ellipsis }}>{meta}</div>
       </div>
       {item.kind !== 'replay' && progress !== null ? <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}><V2Progress value={progress} height={5} track="rgba(0,0,0,.45)" /></div> : null}

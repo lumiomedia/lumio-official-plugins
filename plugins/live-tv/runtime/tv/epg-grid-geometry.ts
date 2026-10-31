@@ -16,6 +16,7 @@
 
 import { startOfLocalDay } from '../live-tv-model'
 import type { TimelineZoom } from './tv-settings-store'
+import { displayTitle } from '../display-title'
 
 export const HOUR_PX = 240
 export const PX_PER_MIN = HOUR_PX / 60
@@ -289,7 +290,7 @@ export function mergeShortBlocks<P extends EpgSpan & { title: string }>(
       result.push({
         box: { ...first.box, width, shape, paddingX, clippedEnd: last.box.clippedEnd },
         programme: first.programme,
-        mergedTitle: group.map((entry) => entry.programme.title).join(' · '),
+        mergedTitle: group.map((entry) => displayTitle(entry.programme.title)).join(' · '),
       })
       i = j
     } else {

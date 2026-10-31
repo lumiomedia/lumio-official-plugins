@@ -18,6 +18,7 @@ import { useTint } from './tint'
 import { useProgrammeArt } from './programme-art'
 import { LivePreviewArt } from './live-preview-art'
 import { CutoutLayer } from './cutout-layer'
+import { displayTitle } from '../display-title'
 
 /** Herobandets höjd (handoff "Screen 2 / Layout") — samma med och utan bild. */
 export const GUIDE_HERO_H = 276
@@ -179,7 +180,7 @@ export function GuideHero({ sel, model, nav, mode, onMode, tint, background, sou
         {channel ? (
           <>
             <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: dp(18), minWidth: 0 }}>
-              <div data-testid="guide-hero-title" style={{ fontSize: dp(46), fontWeight: 600, lineHeight: 1.1, minWidth: 0, ...ellipsis }}>{programme?.title ?? channel.name}</div>
+              <div data-testid="guide-hero-title" style={{ fontSize: dp(46), fontWeight: 600, lineHeight: 1.1, minWidth: 0, ...ellipsis }}>{displayTitle(programme?.title) ?? channel.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(18), color: V2.text2, flexShrink: 0 }}>
                 {number !== null ? <span style={{ fontWeight: 600, color: V2.accText, fontVariantNumeric: 'tabular-nums' }}>{number}</span> : null}
                 {programme ? <span>{channel.name}</span> : null}

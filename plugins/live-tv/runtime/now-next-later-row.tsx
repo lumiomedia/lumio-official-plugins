@@ -6,6 +6,7 @@ import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import type { EpgProgramme } from './epg/types'
 import type { M3uChannel } from './live-tv-data'
 import { cachedDateTimeFormat } from './intl-cache'
+import { displayTitle } from './display-title'
 
 interface Props {
   channel: M3uChannel
@@ -56,7 +57,7 @@ function Card({
         </div>
         <div className="text-[11px] text-white/70">{formatTime(programme.start)}</div>
       </div>
-      <div className="mt-1 truncate text-sm font-semibold text-white">{programme.title}</div>
+      <div className="mt-1 truncate text-sm font-semibold text-white">{displayTitle(programme.title)}</div>
       {programme.description ? (
         <div className="mt-0.5 line-clamp-2 text-xs text-white/60">{programme.description}</div>
       ) : null}

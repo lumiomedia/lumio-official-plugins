@@ -55,6 +55,7 @@ import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv/tv-mu
 import { useSchedules } from './hooks/useSchedules'
 import { useChannelsBySource, withIndexTwins } from './view-helpers'
 import { getM3uFetchProgress, reportM3uFetchJobProgress, runM3uFetch } from './m3u-fetch-progress'
+import { displayTitle } from './display-title'
 
 interface M3uChannel {
   name: string
@@ -1993,7 +1994,7 @@ function ChannelSidePanel({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <LiveTag label={h('hubLive')} />
-            <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{info.now.title}</div>
+            <div className="truncate" style={{ fontSize: 14, fontWeight: 500 }}>{displayTitle(info.now.title)}</div>
           </div>
           <div style={{ marginTop: 6 }}><ProgressBar value={progressOf(info.now.start, info.now.stop, nowMs)} height={3} /></div>
         </div>
@@ -2014,7 +2015,7 @@ function ChannelSidePanel({
                 style={{ display: 'flex', gap: 10, padding: '7px 10px', borderRadius: LT.radiusSm, background: isNow ? LT.accentDeep : 'transparent', opacity: past ? 0.5 : 1 }}
               >
                 <span style={{ width: 44, flexShrink: 0, fontSize: 12, color: isNow ? LT.text : LT.dim, fontVariantNumeric: 'tabular-nums' }}>{formatClock(programme.start, locale)}</span>
-                <span className="truncate" style={{ fontSize: 13, fontWeight: isNow ? 600 : 400 }}>{programme.title}</span>
+                <span className="truncate" style={{ fontSize: 13, fontWeight: isNow ? 600 : 400 }}>{displayTitle(programme.title)}</span>
               </div>
             )
           })}

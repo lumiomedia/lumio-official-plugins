@@ -8,6 +8,7 @@ import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Progress, Tag, TV, cardStyle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvFavouritesPhone } from './mobile/favourites-phone'
+import { displayTitle } from '../display-title'
 
 function escapeKey(key: string): string {
   return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"')
@@ -78,9 +79,9 @@ function TvFavouritesDesktop(props: TvViewProps) {
                 <span style={{ position: 'absolute', left: dp(14), bottom: dp(10), fontSize: dp(15), color: 'rgba(243,244,248,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{`${index + 1} · ${channel.name}`}</span>
               </ChannelArt>
               <div style={{ padding: `${dp(14)}px ${dp(16)}px`, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: dp(8) }}>
-                <div style={{ fontSize: dp(21), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? tt('noProgramme')}</div>
+                <div style={{ fontSize: dp(21), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayTitle(info.now?.title) ?? tt('noProgramme')}</div>
                 {info.now ? <div style={{ display: 'flex', alignItems: 'center', gap: dp(10) }}><Progress value={progressOf(info.now.start, info.now.stop, model.nowMs)} height={dp(4)} style={{ flex: 1 }} /><span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.5)' }}>{Math.max(0, Math.round((info.now.stop - model.nowMs) / 60_000))} min</span></div> : null}
-                {info.next ? <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('next')} {info.next.title} · {formatClock(info.next.start, locale)}</div> : null}
+                {info.next ? <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tt('next')} {displayTitle(info.next.title)} · {formatClock(info.next.start, locale)}</div> : null}
               </div>
             </div>
           )

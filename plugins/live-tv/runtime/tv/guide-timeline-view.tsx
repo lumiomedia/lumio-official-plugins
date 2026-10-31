@@ -17,6 +17,7 @@ import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from 
 import { V2 } from './v2-tokens'
 import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, ChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useLatest, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
+import { displayTitle } from '../display-title'
 
 const MIN = 60_000
 /** Fönstret är två timmar (handoff "Tablå"), tick var 30:e minut. */
@@ -331,7 +332,7 @@ const TimelineRow = memo(function TimelineRow({ channel, rowKey: key, entries, s
                 data-width={String(Math.round(box.width * 100) / 100)}
                 data-past={past ? '' : undefined}
                 {...(live ? { 'data-now-station': '' } : {})}
-                title={`${programme.title} ${span}`}
+                title={`${displayTitle(programme.title)} ${span}`}
                 {...withPointerLeave(props, leave)}
                 onFocus={() => api.current.focusProgramme(sel)}
                 onPointerEnter={enter(sel)}
@@ -339,7 +340,7 @@ const TimelineRow = memo(function TimelineRow({ channel, rowKey: key, entries, s
               >
                 {box.shape === 'marker' ? <span /> : (
                   <div style={{ opacity: past ? 0.6 : undefined }}>
-                    <div style={{ fontSize: dp(19), fontWeight: live ? 600 : 400, ...ellipsis }}>{programme.title}</div>
+                    <div style={{ fontSize: dp(19), fontWeight: live ? 600 : 400, ...ellipsis }}>{displayTitle(programme.title)}</div>
                     {box.shape === 'full' ? (
                       <div style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.55)', display: 'flex', alignItems: 'center', gap: dp(8), fontVariantNumeric: 'tabular-nums' }}>
                         {span}

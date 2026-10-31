@@ -14,6 +14,7 @@ import { GuidePaginationRow, ROWS_STEP, useHoverSelect, withPointerLeave } from 
 import { V2 } from './v2-tokens'
 import { ACCENT, GUIDE_CELL_RADIUS, GUIDE_CHANNEL_W, GUIDE_ROW_GAP, GUIDE_ROW_H, ChannelCellV2, accentMix, ellipsis, useAutoSelection, useFocusNowOnTick, useLatest, useRemindersVersion, withLeftEdge } from './guide-nowsen-view'
 import type { GuideSelection, GuideViewProps } from './guide-types'
+import { displayTitle } from '../display-title'
 
 /** Programkortens kolumn (handoff "Kanallista"). */
 const CARDS_W = 560
@@ -189,7 +190,7 @@ export function GuideListView({ model, nav, category, categoryLabel, selection, 
                   {reminded ? <span data-testid="list-card-bell" style={{ color: V2.accText, display: 'inline-flex' }}><Icons.Bell size={dp(15)} filled /></span> : null}
                   {programme ? <span style={{ marginLeft: 'auto', letterSpacing: 0, textTransform: 'none', fontSize: dp(15), color: 'rgba(243,244,248,0.55)', fontVariantNumeric: 'tabular-nums' }}>{`${formatClock(programme.start, locale)}–${formatClock(programme.stop, locale)}`}</span> : null}
                 </div>
-                <div style={{ fontSize: dp(isNow ? 24 : 20), fontWeight: 600, ...ellipsis }}>{programme?.title ?? cardChannel.name}</div>
+                <div style={{ fontSize: dp(isNow ? 24 : 20), fontWeight: 600, ...ellipsis }}>{displayTitle(programme?.title) ?? cardChannel.name}</div>
                 {isNow && programme ? (
                   <div style={{ height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: ACCENT }} />
@@ -261,7 +262,7 @@ const ListRow = memo(function ListRow({ channel, rowKey: key, info, selected, in
       >
         {info?.now ? (
           <>
-            <div style={{ minWidth: 0, flex: 1, fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{info.now.title}</div>
+            <div style={{ minWidth: 0, flex: 1, fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{displayTitle(info.now.title)}</div>
             <div style={{ width: dp(150), flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(6), alignItems: 'flex-end' }}>
               <span style={{ fontSize: dp(14), color: 'rgba(243,244,248,0.6)', fontVariantNumeric: 'tabular-nums' }}>{tt('minutesLeft', { min: Math.max(0, Math.ceil((info.now.stop - nowMs) / 60_000)) })}</span>
               <div style={{ width: '100%', height: dp(4), borderRadius: dp(4), background: 'rgba(252,252,255,0.16)', overflow: 'hidden' }}>

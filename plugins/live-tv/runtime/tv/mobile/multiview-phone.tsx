@@ -16,6 +16,7 @@ import { MobileHeader } from './mobile-header'
 import { MobileSheet } from './mobile-sheet'
 import { MobileChips } from './mobile-chips'
 import { MobileChannelRow } from './mobile-channel-row'
+import { displayTitle } from '../../display-title'
 
 /** Kanalarkets lista skärs av här — samma tak som skrivbordets kanalväljare. */
 const MAX_PICKER_ROWS = 200
@@ -105,7 +106,7 @@ export function TvMultiviewPhone({ model, nav }: TvViewProps) {
               channel={channel}
               hasAudio={hasAudio}
               live={live}
-              nowTitle={channel ? model.nowFor(channel).now?.title ?? null : null}
+              nowTitle={channel ? displayTitle(model.nowFor(channel).now?.title) ?? null : null}
               number={channel ? model.channelNumber(channel) : null}
               onTap={() => {
                 if (!channel) { openPicker(realIndex); return }

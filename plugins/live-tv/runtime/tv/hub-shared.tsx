@@ -10,6 +10,7 @@ import { Icons, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { V2 } from './v2-tokens'
 import { LogoPlate, V2FocusStyle } from './v2-ui'
+import { displayTitle } from '../display-title'
 
 /**
  * DELAT MELLAN KANALERS TVÅ LAYOUTER (Klassisk och Upplevelse): hälsningen i
@@ -170,7 +171,7 @@ export function ChannelGridCardView({ channel, info, number, pinned, locked, now
       </div>
       <div style={{ padding: `${dp(10)}px ${dp(captionPadRight ?? 12)}px ${dp(12)}px ${dp(12)}px` }}>
         <div style={{ fontSize: dp(17), fontWeight: 600, ...ellipsis }}>{channel.name}</div>
-        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{info?.now?.title ?? (qualityFromName(channel.name) ?? channel.group)}</div>
+        <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.65)', ...ellipsis }}>{displayTitle(info?.now?.title) ?? (qualityFromName(channel.name) ?? channel.group)}</div>
       </div>
     </div>
   )
