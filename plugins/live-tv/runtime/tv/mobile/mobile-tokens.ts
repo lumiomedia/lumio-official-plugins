@@ -6,7 +6,11 @@ import type { CSSProperties } from 'react'
  * — den tabellen är TV-scenens och delar inte nödvändigtvis samma toner.
  */
 export const MT = {
-  bg: '#000', text: '#f3f4f8',
+  // Live TV:s färgval (Jerry 2026-10-31: "TV:ns färgschema är mycket bättre"):
+  // skalets rot sätter --lt-bg/--lt-card (v2-tokens.ts liveColorVars), så
+  // telefonen följer samma bakgrund och kortfärg som TV:n och skrivbordet.
+  bg: 'var(--lt-bg, #000)', text: '#f3f4f8',
+  card: 'var(--lt-card, linear-gradient(180deg,#2b3142,#242938))',
   muted: 'rgba(243,244,248,0.62)', muted70: 'rgba(243,244,248,0.7)', // Handoffets 70 % text på chips
   dim: 'rgba(243,244,248,0.45)', faint: 'rgba(243,244,248,0.4)',
   s05: 'rgba(252,252,255,0.05)', s06: 'rgba(252,252,255,0.06)', s07: 'rgba(252,252,255,0.07)', s08: 'rgba(252,252,255,0.08)',

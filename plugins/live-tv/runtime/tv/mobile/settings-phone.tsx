@@ -13,6 +13,8 @@ import { SportKeySettingsTv } from '../../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../../sport/sport-backdrop-settings'
 import { SportSpoilerSettingsTv } from '../../sport/sport-spoiler-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
+import { LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES } from '../v2-settings'
+import { LIVE_SURFACE_DEFAULT, v2Bg } from '../v2-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
 import { MobileToggle } from './mobile-toggle'
@@ -86,6 +88,15 @@ export function TvSettingsPhone(props: TvViewProps) {
         <MobileSegment height={38} options={modes} value={phoneGuideMode(guideMode)} onChange={setGuideMode} testId="guide-default" />
       </Section>
 
+      {/* Live TV:s färger (Jerry 2026-10-31, skissen "Färger"): samma val som
+          TV:ns ColourRow, som runda prover — svart först. */}
+      <Section label={tt('tabAppearance')}>
+        <Card>
+          <SwatchRow testId="setting-liveBgColor" label={tt('settingLiveBgColor')} swatches={LIVE_BG_SWATCHES} value={settings.liveBgColor ?? v2Bg(settings.liveBackground)} onPick={(hex) => setTvSettings({ liveBgColor: hex })} />
+          <SwatchRow testId="setting-liveSurfaceColor" label={tt('settingLiveSurfaceColor')} swatches={LIVE_SURFACE_SWATCHES} value={settings.liveSurfaceColor ?? LIVE_SURFACE_DEFAULT} onPick={(hex) => setTvSettings({ liveSurfaceColor: hex })} last />
+        </Card>
+      </Section>
+
       <Section label={tt('sectionBehaviour')}>
         <Card>
           <Row phone testId="setting-startView" label={tt('settingStartView')} right={tt(startViewLabelKey(settings.startView))} onOk={() => setTvSettings({ startView: nextStartView(settings.startView) })} />
@@ -119,6 +130,23 @@ function PhonePage({ header, children }: { header: ReactNode; children: ReactNod
     <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 22 }}>
       <div style={{ margin: `0 -${MT.PAD}px` }}>{header}</div>
       {children}
+    </div>
+  )
+}
+
+function SwatchRow({ label, swatches, value, onPick, testId, last = false }: { label: string; swatches: readonly string[]; value: string; onPick: (hex: string) => void; testId: string; last?: boolean }) {
+  return (
+    <div data-testid={testId} style={{ padding: '12px 14px', borderBottom: last ? 'none' : `1px solid ${MT.line07}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span style={{ fontSize: 15 }}>{label}</span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        {swatches.map((hex) => (
+          <div
+            key={hex}
+            {...station(() => onPick(hex), undefined, { 'aria-label': hex, 'data-testid': `${testId}-swatch-${hex}`, ...(hex === value ? { 'data-current': '' } : {}) })}
+            style={{ width: 36, height: 36, borderRadius: 999, background: hex, boxSizing: 'border-box', border: hex === value ? `3px solid ${MT.acc}` : `1px solid ${MT.line20}`, cursor: 'pointer' }}
+          />
+        ))}
+      </div>
     </div>
   )
 }

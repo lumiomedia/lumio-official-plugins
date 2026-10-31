@@ -153,7 +153,7 @@ export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps
                             style={{
                               position: 'absolute', top: BLOCK_TOP, left: box.left, width: Math.max(box.width - 4, 4), height: BLOCK_H,
                               boxSizing: 'border-box', borderRadius: 10, padding: box.shape === 'marker' ? 0 : '8px 10px',
-                              background: live ? MT.accMix(18) : MT.s05, border: `1px solid ${live ? MT.accMix(45) : 'transparent'}`,
+                              background: live ? `linear-gradient(${MT.accMix(30)}, ${MT.accMix(30)}), ${MT.card}` : MT.card, border: `1px solid ${live ? MT.accMix(55) : 'transparent'}`,
                               overflow: 'hidden', cursor: 'pointer',
                             }}
                           >

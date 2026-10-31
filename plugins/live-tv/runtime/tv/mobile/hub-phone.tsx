@@ -39,7 +39,7 @@ const RECENT_MAX = 8
  * 1px-ramarna, och inget mer. På telefonen såg det ut som en tom orange
  * strimma (fokusringen runt ingenting).
  */
-const card = { background: MT.s07, border: `1px solid ${MT.line08}`, overflow: 'hidden' as const, cursor: 'pointer' as const, flexShrink: 0 }
+const card = { background: MT.card, border: `1px solid ${MT.line08}`, overflow: 'hidden' as const, cursor: 'pointer' as const, flexShrink: 0 }
 
 /**
  * Taggarna i bildytorna är handoffens egna 11 px-mått — inte `Tag` ur
@@ -182,7 +182,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
             {favourites.map((channel) => {
               const info = model.nowFor(channel)
               return (
-                <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ width: 156, minHeight: 72, flexShrink: 0, scrollSnapAlign: 'start', borderRadius: 14, background: MT.s08, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <div key={channelKey(channel)} {...station(() => nav.openChannel(channel), (el) => nav.channelMenu(channel, el))} style={{ width: 156, minHeight: 72, flexShrink: 0, scrollSnapAlign: 'start', borderRadius: 14, background: MT.card, padding: '0 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <MobileLogo channel={channel} width={44} height={30} radius={6} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25, ...clamp2 }}>{channel.name}</div>
