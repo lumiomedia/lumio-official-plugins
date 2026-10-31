@@ -54,7 +54,7 @@ export function markDownToActiveTab(root: HTMLElement, target: string): void {
   })
 }
 /** Underflikarna i TV-skala (1,1): något mindre än Sports egen flikrad (24). */
-const subU: U = Object.assign((n: number) => Math.round(dp(n) * 1.1), { tv: true, dim: TV.muted })
+const subU: U = Object.assign((n: number) => Math.round(dp(n) * 1.25), { tv: true, dim: TV.muted })
 
 /**
  * MATCHDAG PÅ TV (Jerry 2026-10-12: för mycket fjärrresande när hero,
@@ -102,16 +102,18 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
         <span>{context}</span>
       </div>
       {match.home && match.away ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: dp(28), width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: dp(18), minWidth: 0 }}>
+        // Lagen tar plats efter namnets längd (Jerry 2026-10-31: lika breda
+        // kolumner lämnade luft vid Chelsea medan Manchester United kapades).
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: dp(28), width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: dp(18), minWidth: 0, flex: '0 1 auto' }}>
             <span style={{ fontSize: dp(42), fontWeight: 600, ...ellipsis }}>{match.home}</span>
             <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(84)} src={match.homeCrest} />
           </div>
-          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4), flexShrink: 0 }}>
             <MatchScore match={match} size="hero" />
             <span style={{ fontSize: dp(22), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), minWidth: 0, flex: '0 1 auto' }}>
             <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(84)} src={match.awayCrest} />
             <span style={{ fontSize: dp(42), fontWeight: 600, ...ellipsis }}>{match.away}</span>
           </div>

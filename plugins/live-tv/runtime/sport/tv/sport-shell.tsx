@@ -251,9 +251,9 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           {(['all', ...SPORT_CHIPS.filter((k) => counts[k] > 0)] as SportFilter[]).map((k) => {
             const active = filter === k
             return (
-              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k), undefined, { 'data-f-down': BODY_FIRST })} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(52), padding: `0 ${dp(18)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(8), cursor: 'pointer', background: active ? TV.text : 'transparent', color: active ? '#12152a' : TV.text, fontSize: dp(19), fontWeight: 700 }}>
+              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k), undefined, { 'data-f-down': BODY_FIRST })} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(56), padding: `0 ${dp(22)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(10), cursor: 'pointer', background: active ? TV.acc : 'transparent', color: TV.text, fontSize: dp(23), fontWeight: 700 }}>
                 {k === 'all' ? tt('sportAllShort') : ctx.kindLabel(k)}
-                {k !== 'all' ? <span style={{ fontSize: dp(15), fontWeight: 600, opacity: 0.55, fontVariantNumeric: 'tabular-nums' }}>{counts[k]}</span> : null}
+                {k !== 'all' ? <span style={{ fontSize: dp(18), fontWeight: 600, opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>{counts[k]}</span> : null}
               </div>
             )
           })}

@@ -34,7 +34,7 @@ export function usePageTab<K extends TeamTab | LeagueTab | MatchdayTab>(kind: 't
 export function PageTabs<K extends string>({ u, scope, tabs, value, onChange }: { u: U; scope: string; tabs: Array<{ key: K; label: string }>; value: K; onChange: (k: K) => void }) {
   if (tabs.length < 2) return null
   return (
-    <div data-testid="page-tabs" data-row="" role="tablist" style={{ display: 'flex', alignItems: 'flex-end', gap: u(28), borderBottom: `1px solid ${TV.s12}`, flexShrink: 0, overflowX: u.tv ? 'visible' : 'auto', paddingTop: u(4) }}>
+    <div data-testid="page-tabs" data-row="" role="tablist" style={{ display: 'flex', alignItems: 'flex-end', gap: u(u.tv ? 12 : 28), borderBottom: `1px solid ${TV.s12}`, flexShrink: 0, overflowX: u.tv ? 'visible' : 'auto', paddingTop: u(4) }}>
       {tabs.map((t) => {
         const on = t.key === value
         return (
@@ -43,7 +43,7 @@ export function PageTabs<K extends string>({ u, scope, tabs, value, onChange }: 
             role="tab" aria-selected={on ? 'true' : 'false'}
             // TV: att flytta fokus längs raden byter flik, som Sports egen flikrad upplevs.
             onFocus={u.tv && !on ? () => onChange(t.key) : undefined}
-            style={{ padding: `${u(6)}px ${u(4)}px ${u(10)}px`, fontSize: u(20), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, color: on ? TV.text : TV.muted, borderBottom: `${u(4)}px solid ${on ? TV.acc : 'transparent'}`, marginBottom: -1 }}>
+            style={{ padding: `${u(6)}px ${u(u.tv ? 12 : 4)}px ${u(10)}px`, fontSize: u(20), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, color: on ? TV.text : TV.muted, borderBottom: `${u(4)}px solid ${on ? TV.acc : 'transparent'}`, marginBottom: -1 }}>
             {t.label}
           </div>
         )
