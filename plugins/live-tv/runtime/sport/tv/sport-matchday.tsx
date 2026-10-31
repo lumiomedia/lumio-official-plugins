@@ -10,7 +10,7 @@ import { heroStatusLine, matchStatusLabel, scoreText } from '../score-model'
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { Crest, MatchGrid, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
-import { SPORT_CARD_BG, focusAttr, sportCardStyle } from '../surface'
+import { SPORT_CARD_BG, SPORT_PANEL_BG, focusAttr, sportCardStyle, sportSurface } from '../surface'
 import { SportReplays } from './sport-replays'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { PageTabs, TabBody, usePageTab, type MatchdayTab } from '../team-page/page-tabs'
@@ -159,6 +159,7 @@ function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[]
 }
 
 const LABEL_W = 236
+const HEAD_BG = `var(--sport-drawer-bg, ${SPORT_PANEL_BG})`
 const MIN = 60_000
 const HOUR = 60 * MIN
 
@@ -187,11 +188,13 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   // MATCHDAGEN (Jerry 2026-10-31): bakgrund bara bakom rubriken och tidsaxeln,
   // som står kvar överst när sidan rullar — så att klockslagen syns vid varje
   // rad längre ner. Varje liga är en egen bubbla under den.
-  const head = { ...sportCardStyle, padding: `${dp(20)}px ${dp(26)}px ${dp(14)}px` }
-  const bubble = { ...sportCardStyle, padding: `${dp(14)}px ${dp(26)}px` }
+  // Rubriken är täckande (även i glipan ovanför): raderna rullar in under den.
+  // Lådytan (minst 85 % tät på TV) i stället för kortytan, i samma inställning.
+  const head = { ...sportCardStyle, ...sportSurface(HEAD_BG), boxShadow: `0 ${-dp(60)}px 0 0 ${HEAD_BG}, 0 ${dp(10)}px ${dp(24)}px rgba(0,0,0,.45)`, borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: `${dp(20)}px ${dp(26)}px ${dp(14)}px` }
+  const bubble = { ...sportCardStyle, padding: `${dp(18)}px ${dp(26)}px` }
   const labelCol = { width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(12), boxSizing: 'border-box' } as const
   return (
-    <div data-testid="sport-timeline" style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+    <div data-testid="sport-timeline" style={{ display: 'flex', flexDirection: 'column', gap: dp(26) }}>
       <div data-testid="sport-timeline-head" style={{ ...head, position: 'sticky', top: 0, zIndex: 3, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(16) }}>
           <span style={{ fontSize: dp(30), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
@@ -210,7 +213,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
         if (budget.lanes.length === 0 && budget.finished.length === 0) return null
         const lastLane = budget.lanes.length - 1
         return (
-          <div key={row.key} data-testid="sport-timeline-row" style={{ ...bubble, display: 'flex', flexDirection: 'column', gap: dp(8), scrollMarginTop: dp(150) }}>
+          <div key={row.key} data-testid="sport-timeline-row" style={{ ...bubble, display: 'flex', flexDirection: 'column', gap: dp(14), scrollMarginTop: dp(150) }}>
             {budget.lanes.map((lane, laneIndex) => (
               <div key={laneIndex} data-row="" style={{ display: 'flex', alignItems: 'center', height: dp(58), scrollMarginTop: dp(150) }}>
                 <div style={{ ...labelCol, fontSize: dp(22), fontWeight: 600 }}>
@@ -225,7 +228,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
             ))}
             {lastLane <= 0 && budget.more.length > 0 ? <div style={{ ...labelCol, width: 'auto' }}><MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /></div> : null}
             {budget.finished.length > 0 ? (
-              <div data-testid="sport-timeline-ended" data-row="" style={{ display: 'flex', alignItems: 'center', minHeight: dp(48) }}>
+              <div data-testid="sport-timeline-ended" data-row="" style={{ display: 'flex', alignItems: 'center', minHeight: dp(48), ...(budget.lanes.length > 0 ? { borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: dp(14) } : null) }}>
                 <div style={{ ...labelCol, fontSize: dp(19), color: TV.muted }}>
                   {budget.lanes.length === 0 ? <><LeagueDot leagueKey={row.key} /><span style={{ ...ellipsis, fontSize: dp(22), fontWeight: 600, color: TV.text }}>{row.label || ctx.kindLabel(row.kind)}</span></> : ctx.tt('sportMatchdayEnded')}
                 </div>
