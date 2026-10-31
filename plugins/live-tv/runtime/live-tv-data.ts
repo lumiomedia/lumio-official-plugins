@@ -369,8 +369,22 @@ function dedupeChannels(channels: M3uChannel[]): M3uChannel[] {
   return unique
 }
 
+/**
+ * Proxyadressen per logotyp. `getPluginHttpAssetUrl` tolkar URL:en och
+ * kodar om den vid varje anrop, och hubben/guiden frågar för varje kort vid
+ * varje rendering. Ren funktion av indata — en tak-begränsad cache räcker.
+ */
+const logoSrcCache = new Map<string, string | null>()
+const LOGO_SRC_CACHE_MAX = 5000
+
 export function getLiveTvLogoSrc(logo: string | null | undefined): string | null {
-  return getPluginHttpAssetUrl('/api/m3u-logo', logo)
+  if (!logo) return getPluginHttpAssetUrl('/api/m3u-logo', logo)
+  const hit = logoSrcCache.get(logo)
+  if (hit !== undefined) return hit
+  const src = getPluginHttpAssetUrl('/api/m3u-logo', logo)
+  if (logoSrcCache.size >= LOGO_SRC_CACHE_MAX) logoSrcCache.clear()
+  logoSrcCache.set(logo, src)
+  return src
 }
 
 export function isLiveTvLogoLoaded(src: string | null | undefined): boolean {
