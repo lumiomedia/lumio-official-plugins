@@ -52,7 +52,38 @@ describe('buildExperienceRows', () => {
     const out = buildExperienceRows(base())
     expect(row(out, 'onNow').items.map((i) => i.channel!.name)).toEqual(['N1', 'S1', 'K1'])
     expect(row(out, 'continue').items.filter((i) => i.kind === 'continue').map((i) => i.channel!.name)).toEqual(['S2'])
-    expect(row(out, 'yours').items.map((i) => i.channel!.name)).toEqual(['N1', 'S1', 'S2', 'K1'])
+    // Dina kanaler = bara favoriterna (Jerry 2026-10-31), ingen utfyllnad ur spellistan.
+    expect(row(out, 'yours').items.map((i) => i.channel!.name)).toEqual(['N1'])
+  })
+
+  it('Dina kanaler: favoriterna; utan favoriter de senast sedda; utan båda utelämnas raden', () => {
+    expect(row(buildExperienceRows(base({ favourites: [N1, K1] })), 'yours').items.map((i) => i.channel!.name)).toEqual(['N1', 'K1'])
+    expect(row(buildExperienceRows(base({ favourites: [], recent: [S2, S1] })), 'yours').items.map((i) => i.channel!.name)).toEqual(['S2', 'S1'])
+    expect(ids(buildExperienceRows(base({ favourites: [], recent: [] })))).not.toContain('yours')
+  })
+
+  it('Sänds nu: kanaler som sänder samma program samtidigt blir ETT kort — favoriten, annars första i spellistan; regionala varianter med olika program står kvar', () => {
+    const R1 = ch('SVT1 Ost', 'Sweden'), R2 = ch('SVT1 Väst', 'Sweden'), R3 = ch('SVT1 Skåne', 'Sweden'), R4 = ch('SVT1 Norr', 'Sweden'), X = ch('Other', 'Sweden')
+    const start = now - 600_000
+    const show = (title: string, st = start): EpgProgramme => ({ title, start: st, stop: now + 600_000 })
+    const programmes = new Map<M3uChannel, EpgProgramme | null>([
+      [R1, show('Ishockey: TV-pucken')], [R2, show('Ishockey: TV-pucken ᴸᶦᵛᵉ')], [R3, show('  ishockey:  tv-pucken ')],
+      [R4, show('Lokala nyheter Norr')], [X, null],
+    ])
+    const nf = (c: M3uChannel) => ({ now: programmes.get(c) ?? null, next: null, later: null })
+    // Hem: R3 är favorit och vinner, oavsett var i spellistan den står.
+    const home = buildExperienceRows(base({ channels: [R1, R2, R3, R4, X], favourites: [R3], recent: [], replays: [], nowFor: nf }))
+    expect(row(home, 'onNow').items.map((i) => i.channel!.name)).toEqual(['SVT1 Skåne', 'SVT1 Norr', 'Other'])
+    // Utan favorit: första i spellistans ordning.
+    const plain = buildExperienceRows(base({ channels: [R1, R2, R3, R4, X], favourites: [], recent: [], replays: [], nowFor: nf }))
+    expect(row(plain, 'onNow').items.map((i) => i.channel!.name)).toEqual(['SVT1 Ost', 'SVT1 Norr', 'Other'])
+    // Samma titel men annan start är ett annat program.
+    programmes.set(R2, show('Ishockey: TV-pucken', start - 3_600_000))
+    const shifted = buildExperienceRows(base({ channels: [R1, R2, R3, R4, X], favourites: [], recent: [], replays: [], nowFor: nf }))
+    expect(row(shifted, 'onNow').items.map((i) => i.channel!.name)).toEqual(['SVT1 Ost', 'SVT1 Väst', 'SVT1 Norr', 'Other'])
+    // Kategoriläget (senast sedda först): favoriten vinner ändå.
+    const cat = buildExperienceRows(base({ chip: XP_ALL, channels: [R1, R2, R3, R4, X], favourites: [R3], recent: [R1], replays: [], nowFor: nf }))
+    expect(row(cat, 'onNow').items.map((i) => i.channel!.name).filter((n) => n.startsWith('SVT1 O') || n.startsWith('SVT1 S'))).toEqual(['SVT1 Skåne'])
   })
 
   it('utan vald chip: hemraderna, ofiltrerade (Jerry 2026-10-30: "Alla" ska inte vara aktiv)', () => {
@@ -79,7 +110,7 @@ describe('buildExperienceRows', () => {
 
   it('kapar raderna även med tusentals kanaler', () => {
     const many = Array.from({ length: 5000 }, (_, i) => ch(`C${i}`, 'Grp'))
-    const out = buildExperienceRows(base({ channels: many, favourites: [], recent: [] }))
+    const out = buildExperienceRows(base({ channels: many, favourites: many.slice(0, 100), recent: [] }))
     expect(row(out, 'onNow').items.length).toBeLessThanOrEqual(24)
     expect(row(out, 'yours').items.length).toBeLessThanOrEqual(30)
   })
@@ -126,6 +157,15 @@ describe('buildExperienceRows, Live sport', () => {
     const lookup = new Map(many.map((c) => [`${c.name}::${c.url}`, c]))
     const big = buildExperienceRows(base({ channels: many, channelFor: (k) => lookup.get(k), sport: many.map((c, i) => match(`m${i}`, { sources: [src(c)] })) }))
     expect(row(big, 'sport').items.length).toBe(24)
+  })
+
+  it('samma match på flera kanaler (samma titel och avspark, olika match-id) blir ett kort, favoriten först', () => {
+    const out = buildExperienceRows(base({ channelFor, sport: [
+      match('x1', { home: 'AIK', away: 'Hammarby', sources: [src(S1)] }),
+      match('x2', { home: 'AIK', away: 'Hammarby', sources: [src(N1)] }),
+      match('y', { home: 'MFF', away: 'IFK', sources: [src(S2)] }),
+    ] }))
+    expect(row(out, 'sport').items.map((i) => `${i.sport!.title}@${i.channel!.name}`)).toEqual(['AIK - Hammarby@N1', 'MFF - IFK@S2'])
   })
 })
 

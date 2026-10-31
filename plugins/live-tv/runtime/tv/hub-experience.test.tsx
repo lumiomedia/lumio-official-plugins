@@ -446,6 +446,8 @@ describe('HubExperience', () => {
       expect(screen.getByTestId('xp-rows-track').style.transform).toBe(`translateY(-${64 + h[first]! + 72}px)`)
     })
     it('Dina kanaler sveper med kortets verkliga bredd (420 + 22)', async () => {
+      // Dina kanaler = favoriterna: två favoriter så att raden har något att svepa.
+      writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [keyOf('A'), keyOf('B')])
       await mount()
       focusInit()
       const rows = Array.from(document.querySelectorAll<HTMLElement>('section[data-testid^="xp-row-"]')).map((s) => s.getAttribute('data-testid'))

@@ -9,6 +9,7 @@ import { groupCounts } from './group-chips'
 import { FAVS_GROUP } from './tv-guide-shared'
 import { matchTitle, type SportMatch } from '../sport/sport-model'
 import { statusAt } from '../sport/sport-day-model'
+import { titleKey } from '../display-title'
 import { localDayKey, useSportDay } from '../sport/sport-epg'
 
 /**
@@ -118,6 +119,38 @@ function take(sources: readonly (readonly M3uChannel[])[], keep: (c: M3uChannel)
   return out
 }
 
+/**
+ * Som `take`, men kanaler som sänder SAMMA program samtidigt (samma visade
+ * titel, oavsett leverantörsmarkörer/versaler, och samma start) blir en —
+ * regionala SVT1-varianter med samma sändning gav annars fem likadana kort
+ * (Jerry 2026-10-31). Favoriten vinner gruppen, annars den som kom först;
+ * kortet står kvar på gruppens första plats. Kanaler utan pågående program
+ * slås aldrig ihop.
+ */
+function takeLive(sources: readonly (readonly M3uChannel[])[], keep: (c: M3uChannel) => boolean, max: number, nowFor: XpInput['nowFor'], favKeys: ReadonlySet<string>): M3uChannel[] {
+  const seen = new Set<string>()
+  const out: M3uChannel[] = []
+  const slotOf = new Map<string, number>()
+  for (const source of sources) {
+    for (const channel of source) {
+      if (out.length >= max) return out
+      const key = channelKey(channel)
+      if (seen.has(key) || !keep(channel)) continue
+      seen.add(key)
+      const now = nowFor(channel).now
+      const same = now ? `${titleKey(now.title)}|${now.start}` : null
+      const slot = same === null ? undefined : slotOf.get(same)
+      if (slot !== undefined) {
+        if (favKeys.has(key) && !favKeys.has(channelKey(out[slot]!))) out[slot] = channel
+        continue
+      }
+      if (same !== null) slotOf.set(same, out.length)
+      out.push(channel)
+    }
+  }
+  return out
+}
+
 export function buildExperienceRows(input: XpInput): { featured: XpItem | null; rows: XpRow[] } {
   const { channels, favourites, recent, nowFor, replays, chip } = input
   const favKeys = new Set(favourites.map(channelKey))
@@ -127,8 +160,8 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
   const continueItems = chip === null ? [...recent.map((c) => continueItem(c, nowFor)), ...replays.map(replayItem)].slice(0, CONTINUE_MAX) : []
   const inContinue = new Set(continueItems.filter((i) => i.kind === 'continue').map((i) => channelKey(i.channel!)))
   const onNow = chip === null
-    ? take([favourites, channels], (c) => !inContinue.has(channelKey(c)), ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
-    : take([recent, favourites, channels], inChip, ON_NOW_MAX).map((c) => liveItem('now', c, nowFor))
+    ? takeLive([favourites, channels], (c) => !inContinue.has(channelKey(c)), ON_NOW_MAX, nowFor, favKeys).map((c) => liveItem('now', c, nowFor))
+    : takeLive([recent, favourites, channels], inChip, ON_NOW_MAX, nowFor, favKeys).map((c) => liveItem('now', c, nowFor))
   const rows = chip === null ? homeRows(input, onNow, continueItems) : categoryRows(input, onNow)
   // Toppkortet = första kortet i Sänds nu (Jerry 2026-10-30): heron förladdar
   // och spelar det, så förhandsvisningen redan är igång när man går ner i raden.
@@ -139,8 +172,10 @@ export function buildExperienceRows(input: XpInput): { featured: XpItem | null; 
 }
 
 function homeRows(input: XpInput, onNow: XpItem[], continueItems: XpItem[]): XpRow[] {
-  const { channels, favourites, nowFor, soon, groups, counts, nowMs } = input
-  const yours = take([favourites, channels], () => true, YOURS_MAX).map((c) => liveItem('yours', c, nowFor))
+  const { favourites, recent, nowFor, soon, groups, counts, nowMs } = input
+  // Dina kanaler = favoriterna, ingen utfyllnad ur spellistan (Jerry 2026-10-31).
+  // Utan favoriter: de senast sedda; utan båda blir raden tom och utelämnas.
+  const yours = take([favourites.length > 0 ? favourites : recent], () => true, YOURS_MAX).map((c) => liveItem('yours', c, nowFor))
   const upcoming = soon
     .filter(({ programme }) => programme.start > nowMs && programme.start <= nowMs + SOON_WINDOW_MS)
     .slice()
@@ -186,12 +221,18 @@ function liveSportItems(input: XpInput): XpItem[] {
   }
   candidates.sort((a, b) => a.best - b.best || b.match.sources.length - a.match.sources.length || a.match.start - b.match.start)
   const used = new Set<string>()
+  // Samma match under flera id (olika källor/kanaler): samma titel + avspark = ett kort.
+  // Kandidaterna är redan sorterade med favoritkanalerna först, så favoriten vinner.
+  const shown = new Set<string>()
   const out: XpItem[] = []
   for (const { match, channels } of candidates) {
     if (out.length >= SPORT_MAX) break
+    const same = `${titleKey(matchTitle(match))}|${match.start}`
+    if (shown.has(same)) continue
     const channel = channels.find((c) => !used.has(channelKey(c)))
     if (!channel) continue
     used.add(channelKey(channel))
+    shown.add(same)
     const programme = nowFor(channel).now ?? { title: matchTitle(match), start: match.start, stop: match.stop }
     out.push({ kind: 'live', key: `sport:${match.id}:${channelKey(channel)}`, channel, programme, sport: { title: matchTitle(match), league: match.league } })
   }
