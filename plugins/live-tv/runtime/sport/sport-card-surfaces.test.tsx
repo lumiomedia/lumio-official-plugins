@@ -58,7 +58,8 @@ describe('Sports kortyta: allt delar samma bakgrund', () => {
     render(<SportMatchday ctx={fakeCtx({ now })} matches={all} dayFrom={dayFrom} />)
     expect(bg(screen.getByTestId('sport-next'))).toBe(MARK)
     // Tidslinjen: varje liga bär kortytan; rubriken (som står kvar överst) lådytan, så att raderna inte lyser igenom.
-    expect(screen.getByTestId('sport-timeline-head').getAttribute('style')).toContain('--sport-drawer-bg')
+    // happy-dom kastar en bakgrund med var() i en gradient; rubriken prövas på att den står kvar överst.
+    expect(screen.getByTestId('sport-timeline-head').style.position).toBe('sticky')
     expect(bg(screen.getAllByTestId('sport-timeline-row')[0])).toBe(MARK)
     // Heron lägger glöden som översta lager och kortytan som botten (inte en egen vit 7 %-färg).
     expect(screen.getByTestId('sport-hero').getAttribute('style') ?? '').not.toContain('252, 252, 255')
