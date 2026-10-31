@@ -252,7 +252,7 @@ describe('Sport som egen sida: under appens toppkrom (skrivbordet)', () => {
     // happy-dom tappar var() i inline-stilen — formen läses ur funktionen.
     expect(sportViewTop(true).marginTop).toBe('var(--tv-scene-chrome-inset, 0px)')
     expect(String(sportViewTop(true).paddingTop)).not.toContain('--tv-scene-chrome-inset')
-    expect(sportViewTop(false)).toEqual({ paddingTop: sportViewPaddingTop() })
+    expect(sportViewTop(false)).toMatchObject({ paddingTop: sportViewPaddingTop(), '--sport-view-pad': sportViewPaddingTop() })
     expect(screen.getByTestId('sport-view').style.paddingTop).not.toContain('calc')
     expect(layer.closest('[data-testid="sport-view"]')).toBeNull()
   })

@@ -160,8 +160,7 @@ function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[]
 
 const LABEL_W = 236
 // Lådytans ton över en tät grund: lådytan är bara ~85 % tät på TV.
-const HEAD_SOLID = '#14151a'
-const HEAD_BG = `linear-gradient(var(--sport-drawer-bg, ${SPORT_PANEL_BG}), var(--sport-drawer-bg, ${SPORT_PANEL_BG})), ${HEAD_SOLID}`
+const HEAD_BG = `linear-gradient(var(--sport-drawer-bg, ${SPORT_PANEL_BG}), var(--sport-drawer-bg, ${SPORT_PANEL_BG})), #14151a`
 const MIN = 60_000
 const HOUR = 60 * MIN
 
@@ -192,12 +191,16 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   // rad längre ner. Varje liga är en egen bubbla under den.
   // Rubriken är täckande (även i glipan ovanför): raderna rullar in under den.
   // Lådytan (minst 85 % tät på TV) i stället för kortytan, i samma inställning.
-  const head = { ...sportCardStyle, ...sportSurface(HEAD_BG), boxShadow: `0 ${-dp(60)}px 0 0 ${HEAD_SOLID}, 0 ${dp(10)}px ${dp(24)}px rgba(0,0,0,.45)`, borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: `${dp(20)}px ${dp(26)}px ${dp(14)}px` }
+  // Fäster ända upp mot kanten: Sport-sidans toppmarginal räknas bort (annars
+  // syntes raderna i glipan ovanför; ett band uppåt täckte i stället flikarna).
+  // --sport-view-pad sätts av Sport-sidan (sport-shell); ingen import, ingen cykel.
+  const stickTop = 'calc(-1 * var(--sport-view-pad, 0px))'
+  const head = { ...sportCardStyle, ...sportSurface(HEAD_BG), boxShadow: `0 ${dp(10)}px ${dp(24)}px rgba(0,0,0,.45)`, padding: `${dp(20)}px ${dp(26)}px ${dp(14)}px` }
   const bubble = { ...sportCardStyle, padding: `${dp(18)}px ${dp(26)}px` }
   const labelCol = { width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), paddingRight: dp(12), boxSizing: 'border-box' } as const
   return (
     <div data-testid="sport-timeline" style={{ display: 'flex', flexDirection: 'column', gap: dp(26) }}>
-      <div data-testid="sport-timeline-head" style={{ ...head, position: 'sticky', top: 0, zIndex: 3, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+      <div data-testid="sport-timeline-head" style={{ ...head, position: 'sticky', top: stickTop, zIndex: 3, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(16) }}>
           <span style={{ fontSize: dp(30), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
           <span style={{ fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>

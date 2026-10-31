@@ -82,9 +82,10 @@ export function sportViewPaddingTop(): string {
  * ändå fönstrets överkant.
  */
 export function sportViewTop(tv: boolean): CSSProperties {
-  return tv
-    ? { marginTop: 'var(--tv-scene-chrome-inset, 0px)', paddingTop: dp(34) }
-    : { paddingTop: sportViewPaddingTop() }
+  const pad = tv ? `${dp(34)}px` : sportViewPaddingTop()
+  // --sport-view-pad: matchdagens rubrik fäster ovanför marginalen, ända upp mot kanten.
+  const top = { paddingTop: pad, '--sport-view-pad': typeof pad === 'number' ? `${pad}px` : pad } as CSSProperties
+  return tv ? { marginTop: 'var(--tv-scene-chrome-inset, 0px)', ...top } : top
 }
 
 /**
