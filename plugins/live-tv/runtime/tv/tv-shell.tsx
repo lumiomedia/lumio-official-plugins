@@ -619,6 +619,23 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     return () => window.removeEventListener('keydown', onKey, true)
   }, [back, menu, phone, active, Player, pending])
 
+  // HELSKÄRM PÅ TV (Jerry 2026-10-31). Värdens sidlåda (`[data-tv-browse-page]`)
+  // står 36 px under skärmens överkant och slutar 16 px ovanför nederkanten
+  // (sektionens -mt-6/space-y-marginaler och kolumnens pb), så Live TV fick
+  // ett svart band upptill och nertill och rälsen nådde inte kanterna. Lådan
+  // är en rullbehållare, så negativa marginaler i skalet hade klippts. Medan
+  // skalet visas på TV märks lådan i stället, och regeln i renderingen lägger
+  // den över hela scenen. Märket tas bort när skalet lämnas; skrivbord och
+  // telefon rörs inte.
+  const bleed = isTv && !phone
+  useLayoutEffect(() => {
+    if (!bleed) return
+    const page = rootRef.current?.closest<HTMLElement>('[data-tv-browse-page]')
+    if (!page) return
+    page.setAttribute('data-lt-bleed', '1')
+    return () => page.removeAttribute('data-lt-bleed')
+  }, [bleed])
+
   // ANDROID-FJÄRRENS BAKÅT (Mi Box S, Jerry 2026-10-31: "Bakåt — till toppen"
   // gjorde ingenting). Tangenten når aldrig webbvyn: aktiviteten frågar
   // värdens brygga (lib/android-back-button.ts), som bara skickar Escape när
@@ -807,6 +824,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} background={shellBg} /> : null}
       <TvFocusStyle />
+      {bleed ? <style>{'[data-lt-bleed="1"] { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; margin: 0 !important; }'}</style> : null}
       {phone || sportOnly || (view === 'multi' && mvFull) ? null : (
         <TvRail
           active={shellRailActive(view, redirectCheck)}
