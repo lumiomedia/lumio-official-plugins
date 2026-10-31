@@ -78,6 +78,8 @@ export interface TvSettings {
   hubRows: HubRowPref[]
   /** Fjärrens knappar: kort tryck och håll per knapp (`remote-keys.ts`). */
   remoteKeys: RemoteBinding[]
+  /** Dölj sidomenyn på TV: rälsen glider fram med vänster vid kanten (tv-rail.tsx). */
+  railHidden: boolean
 }
 
 const DEFAULTS: TvSettings = {
@@ -104,6 +106,7 @@ const DEFAULTS: TvSettings = {
   liveSurfaceColor: null,
   hubRows: sanitizeHubRows(undefined),
   remoteKeys: sanitizeRemoteBindings(undefined),
+  railHidden: false,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -133,6 +136,7 @@ function sanitize(raw: unknown): TvSettings {
     liveSurfaceColor: sanitizeHexColor(r.liveSurfaceColor),
     hubRows: sanitizeHubRows(r.hubRows),
     remoteKeys: sanitizeRemoteBindings(r.remoteKeys),
+    railHidden: typeof r.railHidden === 'boolean' ? r.railHidden : DEFAULTS.railHidden,
   }
 }
 

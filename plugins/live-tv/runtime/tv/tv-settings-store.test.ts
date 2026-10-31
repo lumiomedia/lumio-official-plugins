@@ -32,6 +32,7 @@ describe('tv-settings-store', () => {
       liveSurfaceColor: null,
       hubRows: BUILTIN_HUB_ROWS.map((id) => ({ id, hidden: false })),
       remoteKeys: DEFAULT_REMOTE_BINDINGS,
+      railHidden: false,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()

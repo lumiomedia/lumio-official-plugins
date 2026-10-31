@@ -1,6 +1,8 @@
 'use client'
 
-import { cloneElement, isValidElement, type CSSProperties, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { onTvFocusEdge } from '@/lib/plugin-sdk'
+import { useTvSettings } from './tv-settings-store'
 import { useTvText } from './tv-strings'
 import { TV, belowTitleBar, dp, station, Icons } from './tv-ui'
 import type { TvView } from './tv-shell'
@@ -88,6 +90,32 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
   const tvBig = isTv && !narrow
   const itemHeight = railLabels ? (tvBig ? RAIL_ITEM_TV_H : RAIL_ITEM_WIDE_H) : railItemSize
 
+  /*
+   * DOLD SIDOMENY (Jerry 2026-10-31: "dölja sidomenyn och placera allt content
+   * så det matchar huvudappen, den ska komma fram med sidotryck"). Bara TV.
+   * Rälsen tas ur flödet och ligger som ett lager utanför vänsterkanten;
+   * vänster vid innehållets kant (fokusmotorns kanthändelse) fäller fram den
+   * och lägger fokus på aktuell post. Stängd är den `inert`, så geometrin
+   * aldrig hittar en osynlig station. Den fälls in när fokus lämnar den.
+   */
+  const overlay = useTvSettings().railHidden && isTv && !narrow
+  const navRef = useRef<HTMLElement | null>(null)
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!overlay) return
+    return onTvFocusEdge((dir, meta) => {
+      if (dir !== 'left' || meta?.claimed) return
+      const rail = navRef.current
+      if (!rail || rail.contains(document.activeElement)) return
+      meta?.claim?.()
+      setOpen(true)
+      window.requestAnimationFrame(() => {
+        const target = rail.querySelector<HTMLElement>('[data-current]') ?? rail.querySelector<HTMLElement>('[data-f]')
+        target?.focus({ preventScroll: true })
+      })
+    })
+  }, [overlay])
+
   /**
    * Alla poster delar radens mått och utseende (smalläget följer med av sig
    * själv genom `railItemSize`); vad ett klick gör avgör ägaren via `onSelect`.
@@ -128,8 +156,17 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
         "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
         På telefon finns ingen rad alls: flik-raden nedan tar över. */
-  return (
-      <nav data-testid="tv-rail" aria-label={tt('liveTv')} data-bg={railBg} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: railBg, transition: 'background 600ms ease', padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
+  const nav = (
+      <nav
+        ref={navRef}
+        data-testid="tv-rail"
+        aria-label={tt('liveTv')}
+        data-bg={railBg}
+        {...(overlay ? { 'data-tv-rail-overlay': open ? 'open' : 'closed', ...(open ? {} : { inert: true }) } : {})}
+        onFocus={overlay ? () => setOpen(true) : undefined}
+        onBlur={overlay ? () => { window.setTimeout(() => { if (!navRef.current?.contains(document.activeElement)) setOpen(false) }, 0) } : undefined}
+        style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: railBg, transition: overlay ? 'background 600ms ease, transform 220ms ease, box-shadow 220ms ease' : 'background 600ms ease', padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8), ...(overlay ? { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 45, transform: open ? 'none' : 'translateX(-100%)', boxShadow: open ? '12px 0 40px rgba(0,0,0,0.55)' : 'none' } : null) }}
+      >
         {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
             yta går den bort tillsammans med luften ovanför — posterna ska nå
             ner i skärmen, inte trängas under en logotyp. */}
@@ -146,4 +183,6 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
       </nav>
   )
+  // Dold räls: ingen bredd i flödet — innehållet ligger där appens innehåll ligger.
+  return overlay ? <div data-tv-rail-slot="" style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 45 }}>{nav}</div> : nav
 }
