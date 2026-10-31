@@ -22,6 +22,8 @@ import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState, useMultiviewImmersive } from './tv-multiview-store'
 import { createZapBuffer, resolveZap } from './tv-zap'
 import { useRemoteKeys, type RemoteKeysState } from './use-remote-keys'
+import { useTextPrompt } from './tv-text-entry'
+import { setChannelHidden, setChannelName, sourceName } from '../channel-overrides'
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import { buildTvPlayerProps } from './tv-player-props'
@@ -519,12 +521,18 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
         { key: 'info', label: tt('menuChannelDetails'), run: () => openChannel(channel) },
         { key: 'multi', label: tt('menuAddMultiview'), run: () => addToMultiview(channel) },
         ...extra,
+        // Dölj och byt namn (channel-overrides.ts). Visa igen och återställ
+        // namnet under Inställningar → Innehåll.
+        ...(keyboardRef.current.available
+          ? [{ key: 'rename', label: tt('menuRenameChannel'), run: () => keyboardRef.current.ask(tt('renameChannelTitle'), channel.name, (value) => setChannelName(key, value.trim() === sourceName(channel) ? null : value)) }]
+          : []),
+        { key: 'hide', label: tt('menuHideChannel'), run: () => { setChannelHidden(key, true); toast(tt('channelHiddenToast', { name: channel.name })) } },
         ...(pinSupportAvailable() && activeProfileHasPin()
           ? [{ key: 'lock', label: locked ? tt('menuUnlock') : tt('menuLock'), run: () => requestLockToggle(channel) }]
           : []),
       ],
     })
-  }, [tt, play, openChannel, addToMultiview, requestLockToggle])
+  }, [tt, play, openChannel, addToMultiview, requestLockToggle, toast])
 
   const pushLayer = useCallback((close: () => void, opts?: { allowZap?: boolean }) => {
     layersRef.current.push(close)
@@ -534,6 +542,11 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       zapThroughRef.current.delete(close)
     }
   }, [])
+
+  // Byt namn på en kanal (hållmenyn): TV:ns skärmtangentbord, annars en liten dialog.
+  const keyboard = useTextPrompt({ pushLayer })
+  const keyboardRef = useRef(keyboard)
+  keyboardRef.current = keyboard
 
   const back = useCallback(() => {
     // Glasmenyn ligger ÖVERST. Tangentvägen når aldrig hit medan den är öppen
@@ -958,6 +971,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
           den där — arket registrerar sig dessutom som lager via `pushLayer`,
           men `back()` returnerar efter `setMenu(null)` och når aldrig lagrets
           close i samma anrop. */}
+      {keyboard.node}
       {menu ? (
         phone
           ? <MobileSheet title={menu.title} items={menu.actions} onClose={() => setMenu(null)} pushLayer={pushLayer} testId="channel-sheet" />

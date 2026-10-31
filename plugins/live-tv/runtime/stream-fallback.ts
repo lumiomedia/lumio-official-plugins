@@ -1,4 +1,5 @@
 import { normalizeChannelName } from './epg/name-match'
+import { sourceName } from './channel-overrides'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import { qualityFromName } from './live-tv-model'
 
@@ -40,7 +41,7 @@ export function stallStep(s: StallState, e: StallEvent): { state: StallState; tr
 }
 
 const RANK: Record<string, number> = { '4K': 4, FHD: 3, HD: 2, SD: 1 }
-const rankOf = (c: M3uChannel) => RANK[qualityFromName(c.name) ?? ''] ?? 2
+const rankOf = (c: M3uChannel) => RANK[qualityFromName(sourceName(c)) ?? ''] ?? 2
 
 /**
  * Kandidater i ordning: matchens andra källor (redan rankade av sportläget),
@@ -52,11 +53,11 @@ export function fallbackCandidates(current: M3uChannel, ctx: { sportSources: M3u
   const out: M3uChannel[] = []
   const add = (c: M3uChannel) => { const k = channelKey(c); if (seen.has(k)) return; seen.add(k); out.push(c) }
   ctx.sportSources.forEach(add)
-  const stem = normalizeChannelName(current.name)
+  const stem = normalizeChannelName(sourceName(current))
   if (stem.length >= 4) {
     const cur = rankOf(current)
     const variants = ctx.channels
-      .filter((c) => normalizeChannelName(c.name) === stem)
+      .filter((c) => normalizeChannelName(sourceName(c)) === stem)
       .map((c, i) => ({ c, i, r: rankOf(c) }))
       .sort((a, b) => {
         const band = (r: number) => (r === cur ? 0 : r < cur ? 1 : 2)

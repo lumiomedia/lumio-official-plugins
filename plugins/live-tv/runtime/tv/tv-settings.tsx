@@ -10,6 +10,7 @@ import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, us
 import { ContentTab, EpgTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { HubRowsSection } from './hub-rows-settings'
 import { RemoteTab } from './remote-settings'
+import { ChannelOverridesSection } from './channel-overrides-settings'
 import { groupOrderLabelKey, nextGroupOrder } from '../group-order'
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
@@ -94,7 +95,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
       </div>
       <div ref={contentRef} data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
         {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
-        {tab === 'content' ? <ContentTab model={model} nav={nav} tt={tt} /> : null}
+        {tab === 'content' ? <><ContentTab model={model} nav={nav} tt={tt} /><ChannelOverridesSection tt={tt} /></> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}

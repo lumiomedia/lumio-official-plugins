@@ -27,6 +27,11 @@ import { sanitizeLiveFormat, type LiveFormat } from './live-format'
 
 export interface M3uChannel {
   name: string
+  /**
+   * Källans namn när användaren gett kanalen ett eget (channel-overrides.ts).
+   * `channelKey` läser det, så nyckeln aldrig ändras av ett namnbyte.
+   */
+  originalName?: string
   logo?: string | null
   /**
    * Reservlogotyp ur iptv-orgs öppna register. ÄGS av appen (matchningen
@@ -208,8 +213,8 @@ function sanitizeStringArray(values: unknown): string[] {
   return values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
 }
 
-export function channelKey(channel: Pick<M3uChannel, 'name' | 'url'>): string {
-  return `${String(channel.name ?? '').trim()}::${String(channel.url ?? '').trim()}`
+export function channelKey(channel: Pick<M3uChannel, 'name' | 'url'> & { originalName?: string }): string {
+  return `${String(channel.originalName ?? channel.name ?? '').trim()}::${String(channel.url ?? '').trim()}`
 }
 
 function writeLists(lists: LiveTvList[]): void {

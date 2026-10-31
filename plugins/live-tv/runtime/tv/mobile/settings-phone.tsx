@@ -6,6 +6,7 @@ import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
 import { ContentTab, EpgTab, HelpTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
+import { ChannelOverridesSection } from '../channel-overrides-settings'
 import { nextStartView, startViewLabelKey } from '../start-view'
 import { groupOrderLabelKey, nextGroupOrder } from '../../group-order'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
@@ -61,7 +62,7 @@ export function TvSettingsPhone(props: TvViewProps) {
               ? <ParentalTab model={model} tt={tt} phone />
               : params.tab === 'sport'
                 ? <><SportKeySettingsTv phone pushLayer={nav.pushLayer} /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /><SportSpoilerSettingsTv phone /></>
-                : <ContentTab model={model} nav={nav} tt={tt} phone />}
+                : <><ContentTab model={model} nav={nav} tt={tt} phone /><ChannelOverridesSection tt={tt} phone /></>}
         </Card>
       </PhonePage>
     )

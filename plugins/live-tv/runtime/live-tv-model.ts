@@ -28,6 +28,7 @@ import { clearResolvedChannels, getResolvedChannels, resolveChannelKeys } from '
 import { isDesktopTauri } from './tv/guide-surface'
 import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
+import { applyChannelOverrides, renameChannel, useChannelOverrides } from './channel-overrides'
 import { useReminders, type Reminder } from './reminders'
 import { useLockedChannelKeys } from './channel-locks'
 import { applyCuration } from './list-curation'
@@ -642,7 +643,11 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
    * `flattenChannels` gjorde före v2. Numret kommer ur indexet och påverkas
    * inte av filtret; positionen (utan aktiv källa) räknas på det som visas.
    */
-  const channels = useMemo(() => loaded.filter(isPlayableChannel), [loaded])
+  // Dolda och omdöpta kanaler (channel-overrides.ts): här, en gång, så guide,
+  // hubb, zapp, sök och multivy ser samma uppsättning. Nyckeln ändras inte av
+  // ett namnbyte, så nummer, favoriter och lås följer med.
+  const overrides = useChannelOverrides()
+  const channels = useMemo(() => applyChannelOverrides(loaded.filter(isPlayableChannel), overrides), [loaded, overrides])
   const numberByKey = useMemo(() => new Map(loaded.map((channel) => [channel.key, channel.number])), [loaded])
   const positionByKey = useMemo(
     () => new Map(channels.map((channel, index) => [channelKey(channel), index + 1])),
@@ -668,10 +673,10 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   const extrasWithLogoFallbackSwitch = useMemo(() => {
     const out: Record<string, IndexChannel> = {}
     for (const [key, channel] of Object.entries(extras)) {
-      out[key] = applyLogoFallbackSwitchToExtra(channel, lists, listByUrl)
+      out[key] = renameChannel(applyLogoFallbackSwitchToExtra(channel, lists, listByUrl), overrides)
     }
     return out
-  }, [extras, lists, listByUrl])
+  }, [extras, lists, listByUrl, overrides])
   const byKey = useMemo(() => {
     const map = new Map<string, M3uChannel>()
     for (const channel of Object.values(extrasWithLogoFallbackSwitch)) map.set(channel.key, channel)
@@ -897,8 +902,8 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
   }, [snapshot])
 
   const favouriteChannels = useMemo(
-    () => pinnedKeys.map((key) => byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
-    [pinnedKeys, byKey],
+    () => pinnedKeys.filter((key) => !overrides.hidden.includes(key)).map((key) => byKey.get(key)).filter((channel): channel is M3uChannel => Boolean(channel)),
+    [pinnedKeys, byKey, overrides],
   )
 
   const resolveKeys = useCallback(
