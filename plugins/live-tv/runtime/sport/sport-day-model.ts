@@ -128,8 +128,14 @@ export interface TimelineRow {
 
 export function timelineRows(matches: SportMatch[]): TimelineRow[] {
   const rows = new Map<string, TimelineRow>()
+  // Samma liga från två källor (t.ex. ESPN och API-Sports) har olika nycklar men
+  // samma namn: en rad per sport + namn (Jerry 2026-10-31, två "NBA"-bubblor).
+  const byName = new Map<string, string>()
   for (const m of [...matches].sort((a, b) => a.start - b.start)) {
-    const key = m.leagueKey || `kind:${m.kind}`
+    const own = m.leagueKey || `kind:${m.kind}`
+    const nameKey = m.league ? `${m.kind}|${m.league.trim().toLowerCase()}` : null
+    const key = (nameKey && byName.get(nameKey)) || own
+    if (nameKey && !byName.has(nameKey)) byName.set(nameKey, key)
     const row = rows.get(key) ?? { key, label: m.league, kind: m.kind, lanes: [] }
     rows.set(key, row)
     const lane = row.lanes.find((l) => (l[l.length - 1]?.stop ?? 0) <= m.start)

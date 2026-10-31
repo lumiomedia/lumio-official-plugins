@@ -161,6 +161,7 @@ function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[]
 }
 
 const LABEL_W = 236
+const ENDED_MAX = 5
 // Lådytans ton över en tät grund: lådytan är bara ~85 % tät på TV.
 const HEAD_BG = `linear-gradient(var(--sport-drawer-bg, ${SPORT_PANEL_BG}), var(--sport-drawer-bg, ${SPORT_PANEL_BG})), #14151a`
 const MIN = 60_000
@@ -185,8 +186,11 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   const clip = (m: SportMatch) => {
     const from = Math.max(m.start, winStart)
     const to = Math.min(m.stop, winStart + span)
-    return { left: pct(from), width: Math.max(pct(to) - pct(from), 1.5), showLabel: blockShowsLabel(to - from, span) }
+    // Korta block (MotoGP-passen) får klockslaget när titeln inte ryms.
+    return { left: pct(from), width: Math.max(pct(to) - pct(from), 1.5), showLabel: blockShowsLabel(to - from, span), timeOnly: !blockShowsLabel(to - from, span) && blockShowsLabel(to - from, span, 0.035) }
   }
+  // En rad utan något block i fönstret är bara en tom stapel.
+  const inWindow = (lane: SportMatch[]) => lane.some((m) => m.stop > winStart && m.start < winStart + span)
   const toggle = (key: string) => setExpanded((cur) => { const next = new Set(cur); if (next.has(key)) next.delete(key); else next.add(key); return next })
   // MATCHDAGEN (Jerry 2026-10-31): bakgrund bara bakom rubriken och tidsaxeln,
   // som står kvar överst när sidan rullar — så att klockslagen syns vid varje
@@ -205,7 +209,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
       <div data-testid="sport-timeline-head" style={{ ...head, position: 'sticky', top: stickTop, zIndex: 3, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(16) }}>
           <span style={{ fontSize: dp(30), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
-          <span style={{ fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>
+          <span style={{ fontSize: dp(22), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>
         </div>
         <div style={{ display: 'flex' }}>
           <div style={{ width: dp(LABEL_W), flexShrink: 0 }} />
@@ -216,8 +220,12 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
       </div>
       {rows.map((row) => {
         const open = expanded.has(row.key)
-        const budget = laneBudget(row, ctx.now, open ? Number.POSITIVE_INFINITY : 3)
+        const full = laneBudget(row, ctx.now, open ? Number.POSITIVE_INFINITY : 3)
+        const budget = { ...full, lanes: full.lanes.filter(inWindow) }
         if (budget.lanes.length === 0 && budget.finished.length === 0) return null
+        // "Ended" på en rad: de första fem, resten bakom +N (fälls ut med ligan).
+        const endedShown = open ? budget.finished : budget.finished.slice(0, ENDED_MAX)
+        const endedMore = budget.finished.length - endedShown.length
         const lastLane = budget.lanes.length - 1
         return (
           <div key={row.key} data-testid="sport-timeline-row" style={{ ...bubble, display: 'flex', flexDirection: 'column', gap: dp(14), scrollMarginTop: dp(150) }}>
@@ -225,7 +233,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
               <div key={laneIndex} data-row="" style={{ display: 'flex', alignItems: 'center', height: dp(58), scrollMarginTop: dp(150) }}>
                 <div style={{ ...labelCol, fontSize: dp(22), fontWeight: 600 }}>
                   {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
-                  {laneIndex === lastLane && (budget.more.length > 0 || open) && laneIndex > 0 ? <MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /> : null}
+                  {laneIndex === lastLane && (budget.more.length > 0 || (open && full.lanes.length > 3)) && laneIndex > 0 ? <MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /> : null}
                 </div>
                 <div style={{ position: 'relative', flex: 1, height: dp(50), background: TV.s05, borderRadius: dp(8), overflow: 'hidden' }}>
                   {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} {...clip(m)} onFocus={() => reveal(m)} />)}
@@ -233,14 +241,14 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
                 </div>
               </div>
             ))}
-            {lastLane <= 0 && budget.more.length > 0 ? <div style={{ ...labelCol, width: 'auto' }}><MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /></div> : null}
+            {lastLane <= 0 && (budget.more.length > 0 || (open && full.lanes.length > 3)) ? <div style={{ ...labelCol, width: 'auto' }}><MoreChip ctx={ctx} open={open} count={budget.more.length} onOk={() => toggle(row.key)} /></div> : null}
             {budget.finished.length > 0 ? (
               <div data-testid="sport-timeline-ended" data-row="" style={{ display: 'flex', alignItems: 'center', minHeight: dp(48), ...(budget.lanes.length > 0 ? { borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: dp(14) } : null) }}>
                 <div style={{ ...labelCol, fontSize: dp(19), color: TV.muted }}>
                   {budget.lanes.length === 0 ? <><LeagueDot leagueKey={row.key} /><span style={{ ...ellipsis, fontSize: dp(22), fontWeight: 600, color: TV.text }}>{row.label || ctx.kindLabel(row.kind)}</span></> : ctx.tt('sportMatchdayEnded')}
                 </div>
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
-                  {budget.finished.map((m) => {
+                  {endedShown.map((m) => {
                     const base = m.home && m.away ? `${crestText(m.home)}–${crestText(m.away)}` : matchTitle(m)
                     const label = [base, scoreText(m)].filter(Boolean).join(' ')
                     return (
@@ -250,6 +258,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
                       </div>
                     )
                   })}
+                  {endedMore > 0 ? <MoreChip ctx={ctx} open={false} count={endedMore} onOk={() => toggle(row.key)} /> : open && budget.finished.length > ENDED_MAX ? <MoreChip ctx={ctx} open count={0} onOk={() => toggle(row.key)} /> : null}
                 </div>
               </div>
             ) : null}
@@ -279,7 +288,7 @@ const blockSelector = (id: string): string => `[data-testid="sport-block-${id.re
  * ände äter blocket trycket så fokus står kvar. Geometrin hoppade annars till
  * närmaste block i en ANNAN rad (Jerry 2026-10-11). Upp/ner är geometri.
  */
-function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel, onFocus }: { ctx: SportCtx; m: SportMatch; prevId: string | null; nextId: string | null; left: number; width: number; showLabel: boolean; onFocus?: () => void }) {
+function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel, timeOnly = false, onFocus }: { ctx: SportCtx; m: SportMatch; prevId: string | null; nextId: string | null; left: number; width: number; showLabel: boolean; timeOnly?: boolean; onFocus?: () => void }) {
   const blink = useGoalBlink(m)
   const st = statusAt(m, ctx.now)
   const base = m.home && m.away ? `${crestText(m.home)}–${crestText(m.away)}` : matchTitle(m)
@@ -298,7 +307,7 @@ function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel, onFocus
         if ((event.key === 'ArrowRight' && !nextId) || (event.key === 'ArrowLeft' && !prevId)) { event.preventDefault(); event.stopPropagation() }
       }}
       style={{
-        position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: showLabel ? `0 ${dp(10)}px` : 0,
+        position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: showLabel || timeOnly ? `0 ${dp(timeOnly ? 6 : 10)}px` : 0,
         display: 'flex', alignItems: 'center', fontSize: dp(20), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
         background: st === 'live' ? TV.accMix(30) : st === 'finished' ? TV.s07 : TV.s14,
         border: `1px solid ${st === 'live' ? TV.accMix(85) : TV.lineCard}`,
@@ -307,7 +316,7 @@ function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel, onFocus
         color: st === 'finished' ? TV.dim : TV.text,
       }}
     >
-      {showLabel ? label : null}
+      {showLabel ? label : timeOnly ? <span style={{ fontSize: dp(16) }}>{formatClock(m.start, ctx.locale)}</span> : null}
     </div>
   )
 }

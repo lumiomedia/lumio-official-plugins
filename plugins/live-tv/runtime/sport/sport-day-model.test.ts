@@ -247,3 +247,15 @@ describe('matchdagens fönster och rader', () => {
     expect(b.more.map((m) => m.id)).toEqual(['u3', 'u4'])
   })
 })
+
+describe('timelineRows slår ihop ligor med samma namn', () => {
+  it('två källor för NBA blir en rad', () => {
+    const t = Date.UTC(2026, 9, 31, 12)
+    const rows = timelineRows([
+      fxMatch({ id: 'a', league: 'NBA', leagueKey: 'espn:nba', kind: 'basketball', start: t, stop: t + HOUR }),
+      fxMatch({ id: 'b', league: 'NBA', leagueKey: 'fx:api-sports:12', kind: 'basketball', start: t + 2 * HOUR, stop: t + 3 * HOUR }),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].lanes.flat().map((m) => m.id)).toEqual(['a', 'b'])
+  })
+})
