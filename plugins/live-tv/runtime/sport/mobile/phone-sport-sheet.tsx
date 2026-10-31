@@ -67,7 +67,7 @@ export function PhoneSportSheet({ onClose, pushLayer, testId, max = '70%', child
 export function SheetRow({ on, onPress, testId, height = 52, children }: { on: boolean; onPress: () => void; testId?: string; height?: number; children: ReactNode }) {
   return (
     <div data-testid={testId} {...station(onPress)} aria-pressed={on ? 'true' : 'false'}
-      style={{ minHeight: height, flexShrink: 0, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', cursor: 'pointer', background: on ? MT.text : 'rgba(252,252,255,0.06)', color: on ? '#12152a' : MT.text }}>
+      style={{ minHeight: height, flexShrink: 0, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', cursor: 'pointer', background: on ? MT.acc : 'rgba(252,252,255,0.06)', color: MT.text }}>
       {children}
     </div>
   )

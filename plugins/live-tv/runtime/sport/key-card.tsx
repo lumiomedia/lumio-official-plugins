@@ -73,7 +73,7 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, 
   })()
 
   const btn = (label: string, onOk: () => void, primary = false, testId?: string, danger = false) => (
-    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.text : danger ? 'rgba(224,119,106,0.16)' : TV.s12, color: primary ? '#0e0f13' : danger ? '#e0776a' : TV.text }}>{label}</div>
+    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.acc : danger ? 'rgba(224,119,106,0.16)' : TV.s12, color: primary ? '#fff' : danger ? '#e0776a' : TV.text }}>{label}</div>
   )
   const removeBtn = fixed && current && onRemove ? btn(tt('sportKeyRemove'), onRemove, false, 'sport-key-remove', true) : null
 

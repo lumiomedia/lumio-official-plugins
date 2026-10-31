@@ -166,14 +166,14 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
   const controller = () => ({ standings: vi.fn(() => null), loadStandings: vi.fn(async () => null), subscribe: () => () => {} })
   const lazio = () => m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma', league: 'Serie A', leagueKey: 'serie-a', fixture: { provider: 'api-sports', id: `x${++n}`, leagueId: '135', season: '2026' } })
 
-  it('chipsen är tydliga: ovald tät pill med vit text, vald fylld ljus pill med mörk text', () => {
+  it('chipsen är tydliga: ovald tät pill med vit text, vald pill i accentfärg med vit text (Jerry 2026-10-31)', () => {
     setSportSettings({ apiKey: 'k123' })
     render(<SportResults matches={[m()]} controller={controller() as never} onOpenMatch={vi.fn()} tv />)
     const on = screen.getByTestId('results-filter-all')
     const off = screen.getByTestId('results-filter-live')
     expect(on).toHaveAttribute('data-chip-on', '1')
-    expect(on.style.background).toBe('#f3f4f8')
-    expect(on.style.color).toBe('#12152a')
+    expect(on.style.background).not.toBe('#f3f4f8') // accent (happy-dom kastar var())
+    expect(on.style.color).toBe('#fff')
     expect(off).toHaveAttribute('data-chip-on', '0')
     expect(off.style.color).toBe('#f3f4f8')
     expect(off.style.border).toContain('1px solid')

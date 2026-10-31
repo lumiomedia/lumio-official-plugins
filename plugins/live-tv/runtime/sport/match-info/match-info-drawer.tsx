@@ -119,7 +119,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
         {ranked.map((s, i) => {
           const on = i === index
           return (
-            <div key={s.channelKey} data-testid="mc-source" data-selected={on ? '1' : '0'} {...station(() => setSelected(i), undefined, i === 0 ? { 'data-init': '' } : undefined)} style={{ ...rowCard(u), display: 'flex', alignItems: 'center', gap: u(16), padding: `${u(12)}px ${u(18)}px`, cursor: 'pointer', background: on ? TV.text : rowCard(u).background, color: on ? '#12152a' : TV.text, border: `1px solid ${on ? TV.text : TV.lineCard}` }}>
+            <div key={s.channelKey} data-testid="mc-source" data-selected={on ? '1' : '0'} {...station(() => setSelected(i), undefined, i === 0 ? { 'data-init': '' } : undefined)} style={{ ...rowCard(u), display: 'flex', alignItems: 'center', gap: u(16), padding: `${u(12)}px ${u(18)}px`, cursor: 'pointer', background: on ? TV.acc : rowCard(u).background, color: TV.text, border: `1px solid ${on ? TV.acc : TV.lineCard}` }}>
               <ChannelArt channel={sourceChannel(s)} style={{ width: u(64), height: u(42), flexShrink: 0 }} radius={u(8)} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: u(19), fontWeight: 700, ...ellipsis }}>{s.name}</div>

@@ -63,7 +63,7 @@ function TableButton({ open, onPress, testId, tt, attrs }: { open: boolean; onPr
   return (
     <div data-testid={testId} {...station(onPress, undefined, attrs)} aria-expanded={open ? 'true' : 'false'}
       style={{ display: 'inline-flex', alignItems: 'center', gap: dp(10), height: dp(52), minHeight: dp(52), padding: `0 ${dp(18)}px`, borderRadius: dp(12), boxSizing: 'border-box', cursor: 'pointer', flexShrink: 0,
-        fontSize: dp(18), fontWeight: 700, background: open ? TV.text : TV.s12, color: open ? '#12152a' : TV.text, border: `1px solid ${open ? TV.text : TV.lineStrong}` }}>
+        fontSize: dp(18), fontWeight: 700, background: open ? TV.acc : TV.s12, color: TV.text, border: `1px solid ${open ? TV.acc : TV.lineStrong}` }}>
       <SportIcons.Table size={dp(22)} />
       <span>{open ? tt('sportTableHide') : tt('sportTable')}</span>
     </div>

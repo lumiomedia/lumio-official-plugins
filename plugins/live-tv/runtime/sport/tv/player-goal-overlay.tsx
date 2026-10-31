@@ -46,7 +46,7 @@ export function PlayerGoalOverlay({ channelKey, onJump }: { channelKey: string; 
         {goalBody(e) ? <span style={{ fontSize: dp(16), color: TV.muted }}>{goalBody(e)}</span> : null}
       </span>
       {target ? (
-        <div {...station(() => { setShown(null); onJump(sourceChannel(target)) })} style={{ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), background: TV.text, color: '#0e0f13', fontWeight: 600, cursor: 'pointer' }}>{tt('sportJumpThere')}</div>
+        <div {...station(() => { setShown(null); onJump(sourceChannel(target)) })} style={{ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), background: TV.acc, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{tt('sportJumpThere')}</div>
       ) : null}
     </div>
   )

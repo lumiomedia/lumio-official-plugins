@@ -120,7 +120,7 @@ export function SportChip({ active, children, style, ...rest }: { active: boolea
   return (
     <Chip active={active} data-chip-on={active ? '1' : '0'} {...rest}
       style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(20)}px`, gap: dp(8), fontSize: dp(19), fontWeight: active ? 700 : 600, boxSizing: 'border-box',
-        ...(active ? { background: TV.text, color: '#12152a', border: `1px solid ${TV.text}` } : { ...sportSurface(sportBg('rgba(252,252,255,0.12)')), color: TV.text, border: `1px solid ${TV.lineCard}` }),
+        ...(active ? { background: TV.acc, color: '#fff', border: `1px solid ${TV.acc}` } : { ...sportSurface(sportBg('rgba(252,252,255,0.12)')), color: TV.text, border: `1px solid ${TV.lineCard}` }),
         ...style }}>
       {children}
     </Chip>
