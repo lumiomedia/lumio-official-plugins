@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.17.12
+
+- New programme guide on TV and desktop: Now/Next/Later, Timeline and Channel list as modes, a hero band with programme art (from the guide or a TMDb title match), categories as a column or chips, and OK / hold OK acting on the programme. The old grid, the Now/Next banner and the timeline zoom are gone.
+- Channels comes in two layouts, chosen in Settings → Appearance: Classic — today's hub in the new design — and Experience (the default): an ambient background, a hero with a live preview, category chips and rows for Continue watching, On now, Your channels, Starting soon, Live sport and Explore.
+- Rows on Channels: hide and reorder the built-in rows, and turn your own channel lists into rows of their own.
+- Hide and rename single channels. Renamed channels keep their programme guide; hidden ones stay out of history.
+- Appearance: pick the background and the menu/card colours (with reset), hero tint on or off, pure black on TV. Hide the side menu on TV (left at the edge slides it in), and Live TV's Home gets its own "Hide the first row" setting, separate from the app's.
+- Search: results as guide rows; channel and programme hits open the new guide on the channel; voice search with the remote's Search key.
+- Remote button mapping with short press and hold, one action per held key, and Android's Back works in the TV shell.
+- Sport: the feed as tabs on TV and desktop, a matchday view with a sticky header, three lanes per league and a ten-hour window, My teams and match cards in TV-sized type, accent-coloured selections.
+- Faster on weak boxes: guide rows and Experience cards re-render only where focus moves, no backdrop blur on Home chips, logo URLs cached, date formatting reused.
+- Phone (couch mode) follows Live TV's background and card colours.
+
 ## 0.17.11
 
 - Channel logos no longer disappear: after a while in Live TV, logos could stop loading for the rest of the session and every channel showed an empty box. They now keep loading as you browse.
