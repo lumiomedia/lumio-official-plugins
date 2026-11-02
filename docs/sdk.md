@@ -1,7 +1,9 @@
 # Lumio Plugin SDK
 
 This document describes the plugin-facing contracts used by official Lumio
-plugins, as they exist in the app today (0.1.615).
+plugins, as they exist in the app today (0.1.639). Members that arrived after
+0.1.615 say so in their section; call them guarded and raise `minAppVersion`
+when your plugin depends on them.
 
 The design goal is:
 
@@ -56,6 +58,18 @@ Tracking and lists:
 - trackers: receive the player's scrobbles (`registerTracker`)
 - list sources: user lists the host shows as ordinary home rows
   (`registerListSource`)
+- bulk import of watched history, watchlists and paused positions into the
+  host's own stores (`addWatchedMovies`, `addWatchlistEntries`,
+  `importPlaybackPositions` …)
+
+Phone, remote and voice:
+
+- couch mode: the paired phone shows a surface the plugin owns (`sport`) and
+  drives the plugin's channel player (`registerCouchSurface`,
+  `registerCouchChannelPlayer`, `openCouchTip`)
+- the remote's extra keys (Info, Guide, Menu, Last, Search) reach the page as
+  ordinary key events on Android TV
+- voice input through the system speech dialog (`listenForVoice`)
 
 Everything that used to be app-local — HomeKit, Trakt, Live TV, Plex,
 Jellyfin, Twitch, YouTube — now ships as a plugin on these contracts. The
@@ -77,7 +91,11 @@ Read the runtime boundary before writing code:
 - runtime source in `runtime/`, the published bundle in `dist/runtime.js`
 - a README and a CHANGELOG
 - strings shipped inside the runtime (the app catalogue carries no plugin
-  vocabulary); `useLang()` gives you the active language
+  vocabulary); `useLang()` gives you the active language. The app speaks five
+  languages since 0.1.637 (`en`, `sv`, `de`, `fr`, `es`), so a `PluginText`
+  object should carry all five. A user-made language (`x-<code>`) reads its
+  base language before falling back to English, so you never have to know
+  about it.
 
 ## Runtime model
 
@@ -138,14 +156,36 @@ carries three attributes for CSS and `closest()`:
 The design width never drops below 1280, so "am I small?" is read from the
 attributes, never from the scene's own width.
 
-**Keeping the app's top menu on TV.** In TV mode the top navigation menu
-(HOME, SEARCH, MOVIES, ...), the quick menu and the clock only render on the
-home scene. Set `keepsTvTopChrome: true` (or a function returning a boolean,
-re-read on every registry revision like `hideHero`) on a browse page to keep
-them. The host then measures the chrome's height and publishes it on the page
-as `--tv-scene-chrome-inset` (design px); start your first row below it, e.g.
-`padding-top: calc(var(--tv-scene-chrome-inset, 3.125rem) + 2rem)`. Older hosts
-ignore the field and do not set the variable, so keep the fallback.
+**Keeping the app's top menu.** In TV mode the top navigation menu (HOME,
+SEARCH, MOVIES, ...), the quick menu and the clock only render on the home
+scene, and on desktop a browse page normally stands on bare chrome. Set
+`keepsTvTopChrome: true` (or a function returning a boolean, re-read on every
+registry revision like `hideHero`) on a browse page to keep them on TV and on
+desktop (not on phones), the way the Sport page does. The host measures the
+chrome's height and publishes it on the page: `--host-chrome-top` (screen px)
+and, in TV mode, `--tv-scene-chrome-inset` (design px). Start your first row
+below it, e.g. `padding-top: calc(var(--tv-scene-chrome-inset, 3.125rem) +
+2rem)`. Older hosts ignore the field and do not set the variables, so keep the
+fallback. The field and its desktop behaviour both arrived in 0.1.630.
+
+**The remote's extra keys (Android TV, app 0.1.639).** Info, Guide, Menu,
+Last channel and Search reach the page as ordinary `keydown`/`keyup` events
+with `KeyboardEvent.key` set to `Info`, `Guide`, `ContextMenu`, `MediaLast`
+and `BrowserSearch`; the colour keys arrive as `ColorF0Red` … `ColorF3Blue`.
+Short press and hold are yours to tell apart (`keyup` arrives on release). The
+media keys (play/pause, rewind, fast forward, next, previous) are different:
+the host turns them into its `lumio-media-key` window event with no keyup, so
+there is only a short press. Keys the host reserves for navigation (arrows,
+Enter, Back, channel up/down, volume) never reach a plugin binding. Live TV's
+`runtime/tv/remote-keys.ts` is the reference: a user-editable map from key to
+action.
+
+**Voice (app 0.1.639).** `voiceAvailable()` answers whether the system speech
+dialog exists (Android only today; desktop and older hosts answer `false`),
+and `listenForVoice({ lang?, prompt? })` opens it and resolves with what was
+said, or `null` when the user cancelled or nothing was recognised. One dialog
+at a time; a transient failure is not cached. Both go through the host bridge,
+so they are no-ops in a bundle running on an older host.
 
 **Pointer and mouse on a TV tree.** The focus engine also runs inside the scene
 box on desktop and phone. `tvPointerHoldHandlers(onShort, onHold)` is the
@@ -174,7 +214,24 @@ orientation when your page closes.
   `onWatchedEpisodesChanged`, `getWatchlist`, `addToWatchlist`,
   `removeFromWatchlist`, `toggleWatchlist`, `onWatchlistChanged`, `isWatching`.
   Use these instead of keeping a parallel list: the host's rows, badges and
-  Trakt sync read the same state.
+  Trakt sync read the same state. Bulk writers for a first sync (0.1.631):
+  `addWatchedMovies(movies, { source })`, `addWatchedEpisodes(episodes, {
+  source })`, `addWatchlistEntries(entries, { source })` (series) and
+  `addMovieWatchlistEntries(entries, { source })`. Each takes an array of
+  plain entries (`tmdbId`, `imdbId`, `title`, `posterUrl`; episodes carry
+  `season`/`episode`; watched entries may carry `watchedAt`) and returns how
+  many were new; pass `source: 'tracker'` so the change is not echoed back to
+  other services (see *Syncing watched titles* below).
+- Continue watching positions (0.1.636): `canImportPlaybackPositions()` says
+  whether the host can take paused positions, and
+  `importPlaybackPositions('mdblist' | 'simkl', items)` merges rows in the
+  Trakt `/sync/playback` shape (`type`, `progress`, `paused_at`, `movie` /
+  `show` + `episode` with `ids.tmdb`) into Continue watching; newest wins
+  against a local entry, and the import waits until no title is starting.
+  Returns `{ applied }`, or `null` on a host without the receiver.
+- Home background (0.1.624): `getHomeBackgroundUrls()` returns the user's own
+  background images for the current profile and `onHomeBackgroundChanged(fn)`
+  subscribes, for a page that wants to match the app's home.
 - Navigation: `requestOpenMediaItem`, `requestOpenBrowsePage`,
   `requestPlaySeriesEpisode`, `requestZappLaunch`, `requestBrowseBack`.
 - Library: `fetchLibraryStatus`, `queryLibrary`, `libraryHas`,
@@ -191,7 +248,7 @@ orientation when your page closes.
 - Operating system: `hostOs()` returns `'windows'`, `'macos'` or `null`
   (Android, browser, LAN client). Use it for anything OS-specific — library
   extensions (`.dll` / `.dylib`), paths, key labels — instead of reading the
-  user agent. Added with the Windows app: guard the call
+  user agent. Added with the Windows app (0.1.636): guard the call
   (`sdk.hostOs?.()`) and raise `minAppVersion`.
 - Unsupported platforms: a marketplace entry's `unsupportedPlatforms` accepts
   `'android'`, `'tv'`, `'windows'` and `'macos'`. The OS values apply in TV
@@ -222,29 +279,25 @@ orientation when your page closes.
   `ResultsPagination`, `ResultsLoadingIndicator`, `NextEpisodeCard`,
   `TraktDeviceCodePanel` / `useTraktDeviceLogin` for device-code logins.
 
-### Channels (app 0.1.625 or newer)
+### Channels (app 0.1.630 or newer)
 
-Six helpers let a plugin build personal TV channels from the user's own
+These helpers let a plugin build personal TV channels from the user's own
 sources. They are background lookups: they run at background pace, never take
 stream focus (they do not interrupt a stream the user is starting) and are
-safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
+safe to call for a whole schedule. On a host older than 0.1.630 they resolve to
 `null` or `[]`, so check `hasChannelHost()` first and fall back gracefully.
 
 - `hasChannelHost(): boolean`: true when the host provides the channel helpers.
-- `channelResolveLibraryPlayback({ key, mediaType, season?, episode? }): Promise<ChannelPlayable | null>`:
+- `channelResolveLibraryPlayback({ key, mediaType, season?, episode?, exclude?, allowCatalog? }): Promise<ChannelPlayable | null>`:
   a playable URL for a library title (`key` is the library title key,
   `mediaType` is `'movie' | 'tv'`). `null` when it has no playable version.
-- `channelResolveTitleStream({ imdbId, mediaType, season?, episode? }): Promise<ChannelPlayable | null>`:
+  `exclude` lists versions already tried, so the host answers with the next
+  one; `allowCatalog: false` never returns the title's IPTV-VOD versions.
+  Older hosts ignore both fields.
+- `channelResolveTitleStream({ imdbId, mediaType, season?, episode?, exclude? }): Promise<ChannelPlayable | null>`:
   the best stream for a title via the core stream list (`mediaType` is
   `'movie' | 'series'`). `null` when nothing is found. The lookup does not
   remember the chosen stream; see `channelRememberStream`.
-- `channelListDebridCloud(options?: { force?: boolean }): Promise<DebridCloudTitle[]>`:
-  the titles in the user's debrid cloud (Real-Debrid, TorBox, AllDebrid),
-  with their files. Cached; `force` bypasses the cache. `[]` without a
-  connected provider.
-- `channelUnrestrictDebridFile({ provider, fileRef }): Promise<{ url: string } | null>`:
-  turns a `DebridCloudFile` into a direct URL just before playback. `null` on
-  failure.
 - `channelRememberStream(token: string): void`: makes the stream behind
   `ChannelPlayable.rememberToken` the remembered choice for that title (the
   one the details page prefers next time). Call it when the picture is
@@ -257,6 +310,25 @@ safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
 (`rememberToken` only on stream lookups). Pass the result
 to the player as a plain URL; do not pass `mediaId`, `tmdbId` or `imdbId`, so
 a channel never writes watched state or resume positions.
+
+Neutral host helpers for a plugin that talks to a source of its own (app
+0.1.631; the cloud-specific helpers that shipped in 0.1.630 are gone, that
+code lives in the Channels plugin now):
+
+- `channelSourceToken(sourceId): string | null` and
+  `channelClearSourceToken(sourceId)`: a saved key for a source the plugin
+  itself speaks to (the id is the plugin's own). `null` without a key.
+- `channelParseFileName(fileName, parentFolder?): ParsedName | null`: the
+  app's file-name parser (title, year, season, episode).
+- `channelMatchTitles([{ title, year, kind }]): Promise<Array<TmdbSearchHit | null>>`:
+  titles against TMDb through the app's match cache, one hit or `null` per
+  input (all `null` on an older host).
+- `channelPrefetch(url, headers?)`: on Android, lets the player fetch a file's
+  head and tail ahead of a direct stream. Only for an already resolved URL,
+  never for a stream lookup; a no-op elsewhere and with the source cache on.
+- `channelSourceCacheSetting(): { isPhone, get(), set(on) } | null`: the
+  app's own "Cache streams" setting on Android, read and written through the
+  host so the bundle never keeps a copy. `null` off Android.
 
 Every host-side helper added after some app version must be called guarded
 (`ctx.registerX?.()`, `getTvGlassMenu()` may return `null`), or the plugin
@@ -312,6 +384,12 @@ A film never starts a file the host recognises as a series episode, and a file
 far shorter than the film's runtime is swapped for the next candidate. Report
 availability truthfully and hide rows you cannot actually play.
 
+The request carries `background: true` (0.1.629) when the question comes from
+a row in the background (Continue watching, a watchlist grid) rather than a
+title the user opened. A provider that would have to go to the network to
+answer should then answer from what it already knows, or `null`, so a home
+full of rows never fans out into source lookups.
+
 ## Auth capabilities
 
 Auth-capable plugins register through auth providers instead of hardcoded
@@ -361,6 +439,19 @@ ctx.registerListSource?.({
 `loadList` should answer quickly from the plugin's own cache. The host looks
 up at most 40 titles per row.
 
+A **home source** (`registerHomeSource`) may declare one per-row setting with
+`option: { label, choices() }`; the user picks it in the row editor and the
+row receives it as `option` (0.1.624, older apps omit it). See
+[plugin-contracts.md](./plugin-contracts.md).
+
+**A first sync from a service.** Pull the service's history once and write it
+with the bulk helpers (`addWatchedMovies`, `addWatchedEpisodes`,
+`addWatchlistEntries`, `addMovieWatchlistEntries`, all with `source:
+'tracker'`), and its paused positions with `importPlaybackPositions` (guard
+with `canImportPlaybackPositions()`). MDBList and SIMKL do exactly this. Never
+write them one by one through the single-title helpers: every write emits a
+change event the host's rows react to.
+
 **Syncing watched titles or watchlists.** A tracker that pulls from a service
 writes locally with `source: 'tracker'`. A realtime bridge that pushes
 local changes must forward only `isUserMutation(mutation.source)`, which is
@@ -373,6 +464,39 @@ three-way merge the built-in Trakt sync uses.
 is starting. A plugin bundle carries its own copy of the SDK, so this call
 goes through the host bridge. A background job that waits on it never
 competes with a title the user just pressed play on.
+
+## Couch mode: the paired phone
+
+Couch mode pairs a phone with the app as a remote and second screen. A plugin
+can take part in two ways; both go through the host bridge, so a bundle on a
+host without couch mode gets no-ops. `hasCouchSdk()` says whether the host
+has it (0.1.625; `openCouchTip` 0.1.626). All types are re-exported from the
+SDK (`CouchSurface`, `CouchPlayerHandlers`, `CouchCommand`, `CouchPlayer`,
+`CouchAck`, the sport and tip protocols).
+
+- `registerCouchSurface('sport', surface)`: the plugin owns a surface in the
+  phone's state. `surface.snapshot()` returns what the phone should show (or
+  `null` when the surface is idle), `surface.run(cmd)` executes a command the
+  phone sent (stamped with the profile), and the optional `surface.query(q)`
+  answers a read. Call `notifyCouchSurface('sport')` whenever the snapshot
+  changed, so the phone is pushed a new state. The latest registration wins;
+  the returned function unregisters. Only `sport` exists today (Live TV's
+  matchday surface).
+- `registerCouchChannelPlayer(handlers)`: while the plugin's own player is on
+  screen, the phone's Now playing view talks to it instead of the app's
+  player. `handlers.snapshot()` returns a `CouchPlayer` (or `null` when the
+  player is closed), `handlers.run(cmd)` executes play/pause, seek, volume and
+  the other `CouchCommand`s, and the optional `handlers.said()` returns the
+  subtitle lines of the last 30 seconds ("What did they say?"). Call
+  `notifyCouchPlayer()` on every state change. Unregister when the player
+  closes so the app's player gets the phone back.
+- `openCouchTip(match, starterPhoneId)`: asks the host to open a Tip the match
+  room for a `TipMatchInfo` (`matchId`, `sport`, `league`, `home`, `away`,
+  `kickoffMs`, `backdrop`, `autoResult`). `false` when a room is already open
+  or the host has no Tip.
+
+The phone's own D-pad and channel up/down (0.1.639) arrive at the host as
+ordinary key presses, so a plugin page needs nothing extra for them.
 
 ## Design principles
 
