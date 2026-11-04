@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.13
+
+- Sport: a match linked to a fixture shows the official kickoff, not the start of the channel's broadcast (pre-match coverage made a 22:00 game read 21:40).
+
 ## 0.17.12
 
 - New programme guide on TV and desktop: Now/Next/Later, Timeline and Channel list as modes, a hero band with programme art (from the guide or a TMDb title match), categories as a column or chips, and OK / hold OK acting on the programme. The old grid, the Now/Next banner and the timeline zoom are gone.

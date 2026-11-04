@@ -62,9 +62,14 @@ function applyFixture(m: SportMatch, f: Fixture, swapped: boolean): SportMatch {
   // Källans lag ligger i källans ordning. EPG-nycklarna följer det lag de hör till.
   const homeKey = swapped ? m.awayKey : m.homeKey
   const awayKey = swapped ? m.homeKey : m.awayKey
+  // Tiden är avsparken, inte sändningens start (MLA 2026-11-03: tablån börjar 21:40 med
+  // förmatch, matchen 22:00). Kanalens fönster ligger kvar i källorna. En fixtur med bara
+  // datum (sportapi.ai /teams) har inget klockslag; då är tablåns det enda riktiga.
+  const timed = !(f as { dateOnly?: boolean }).dateOnly
   return {
     ...m,
     ...fromFixture(f),
+    ...(timed ? { start: f.kickoff, stop: Math.max(m.stop, f.kickoff + TWO_HOURS) } : {}),
     league: f.league.name || m.league,
     homeKey: homeKey ?? foldTeamKey(f.home.name),
     awayKey: awayKey ?? foldTeamKey(f.away.name),

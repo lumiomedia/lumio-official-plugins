@@ -39,6 +39,18 @@ describe('mergeLinked', () => {
     expect(m.resultOnly).toBeFalsy()
   })
 
+  it('kopplad fixtur sätter avsparken som tid, inte sändningens start (MLA 2026-11-03: 21:40 för en match 22:00)', () => {
+    const link = { '1180001': { matchId: 'm1', swapped: false } }
+    const [m] = mergeLinked({ ...base, epg: [epgMatch({ start: KO - 20 * 60_000, stop: KO + 100 * 60_000, status: 'upcoming' })], fixtures: [fixture({ status: 'scheduled', minute: null, score: null })], links: link })
+    expect(m.start).toBe(KO)
+    expect(m.stop).toBe(KO + 7_200_000)
+    const [late] = mergeLinked({ ...base, epg: [epgMatch({ start: KO - 20 * 60_000, stop: KO + 3 * 3_600_000 })], fixtures: [fixture()], links: link })
+    expect(late.stop).toBe(KO + 3 * 3_600_000)
+    // Bara datum känt (sportapi.ai /teams): tablåns klockslag är det enda riktiga.
+    const [dateOnly] = mergeLinked({ ...base, epg: [epgMatch({ start: KO - 20 * 60_000 })], fixtures: [{ ...fixture(), dateOnly: true } as Fixture], links: link })
+    expect(dateOnly.start).toBe(KO - 20 * 60_000)
+  })
+
   it('ligans land från källan följer med i fixturen (Hoppa till skiljer dubblettnamn med det)', () => {
     const [linked] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: false } } })
     expect(linked.fixture?.country).toBe('Sweden')

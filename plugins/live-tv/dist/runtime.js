@@ -51626,9 +51626,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function applyFixture(m, f, swapped) {
     const homeKey = swapped ? m.awayKey : m.homeKey;
     const awayKey = swapped ? m.homeKey : m.awayKey;
+    const timed = !f.dateOnly;
     return {
       ...m,
       ...fromFixture(f),
+      ...timed ? { start: f.kickoff, stop: Math.max(m.stop, f.kickoff + TWO_HOURS) } : {},
       league: f.league.name || m.league,
       homeKey: homeKey ?? foldTeamKey2(f.home.name),
       awayKey: awayKey ?? foldTeamKey2(f.away.name),
