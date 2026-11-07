@@ -20,7 +20,8 @@ export const C = {
   accent: 'rgb(var(--accent-500, 244 132 95))',
   accentLight: 'rgb(var(--accent-400, 247 178 103))',
   /** Text på accentfärgad yta. */
-  onAccent: 'hsl(0 0% 6%)',
+  // Vit på accenten, som appens egna accentknappar (Jerry 2026-11-07: svart text på blå accent).
+  onAccent: '#fff',
   /** Pillren och knapparna: menypillrets glas (--mc-surface i appen). */
   pillBorder: 'rgba(255,255,255,0.1)',
   pillBg: 'rgba(235,235,240,0.14)',
