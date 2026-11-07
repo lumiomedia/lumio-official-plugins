@@ -34,7 +34,22 @@ export interface JellyfinItem {
     Path?: string
     Container?: string
     Size?: number
-    MediaStreams?: Array<{ Type: string; Codec?: string; Width?: number; Height?: number; Channels?: number; Language?: string; VideoRangeType?: string; DisplayTitle?: string }>
+    MediaStreams?: Array<{
+      Type: string
+      Index?: number
+      Codec?: string
+      Width?: number
+      Height?: number
+      Channels?: number
+      Language?: string
+      VideoRangeType?: string
+      DisplayTitle?: string
+      Title?: string
+      IsExternal?: boolean
+      IsTextSubtitleStream?: boolean
+      IsForced?: boolean
+      IsHearingImpaired?: boolean
+    }>
   }>
 }
 
@@ -226,6 +241,46 @@ export function trickplayUrlTemplate(settings: Pick<JellyfinSettings, 'serverUrl
 export function streamUrl(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, itemId: string, mediaSourceId: string): string | null {
   if (!settings.serverUrl || !settings.accessToken) return null
   return `${settings.serverUrl}/Videos/${itemId}/stream?static=true&MediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`
+}
+
+/** En sidofil som Lumios spelare kan hämta själv (samma form som appens LibrarySubtitle). */
+export interface JellyfinExternalSubtitle {
+  url: string
+  language: string
+  label?: string
+  forced?: boolean
+  sdh?: boolean
+}
+
+/**
+ * Versionens externa undertextfiler (.srt/.ass bredvid filmen, eller som
+ * servern själv laddat ner). Inbäddade spår följer redan med i den statiska
+ * strömmen; sidofilerna gör det inte, så utan den här listan spelades filmen
+ * utan undertext fast servern hade en (användarrapport 2026-11-07).
+ *
+ * Servern gör om textformaten till SRT; bildbaserade (PGS/VobSub) kan den inte
+ * göra text av och hoppas över.
+ */
+export async function fetchExternalSubtitles(
+  settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken' | 'userId'>,
+  itemId: string,
+  mediaSourceId: string,
+): Promise<JellyfinExternalSubtitle[]> {
+  if (!settings.serverUrl || !settings.accessToken || !settings.userId) return []
+  const params = new URLSearchParams({ Ids: itemId, Fields: 'MediaSources' })
+  // Kort och utan omförsök: listan får aldrig hålla uppe starten.
+  const page = await request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 6_000, noRetry: true })
+  const sources = page.Items?.[0]?.MediaSources ?? []
+  const source = sources.find((candidate) => candidate.Id === mediaSourceId) ?? null
+  return (source?.MediaStreams ?? [])
+    .filter((stream) => stream.Type === 'Subtitle' && stream.IsExternal && stream.IsTextSubtitleStream !== false && typeof stream.Index === 'number')
+    .map((stream) => ({
+      url: `${settings.serverUrl}/Videos/${itemId}/${encodeURIComponent(mediaSourceId)}/Subtitles/${stream.Index}/Stream.srt?api_key=${encodeURIComponent(settings.accessToken ?? '')}`,
+      language: stream.Language ?? '',
+      label: stream.Title || stream.DisplayTitle || undefined,
+      ...(stream.IsForced ? { forced: true } : {}),
+      ...(stream.IsHearingImpaired ? { sdh: true } : {}),
+    }))
 }
 
 export async function reportPlaybackProgress(settings: JellyfinSettings, itemId: string, mediaSourceId: string, positionMs: number): Promise<void> {

@@ -24,6 +24,63 @@ const MAX_BATCH_BYTES = 1_000_000
 
 export const PLEX_LIBRARY_PROVIDER_ID = 'plex'
 
+/**
+ * Titelns/avsnittets ratingKey ur versionens indexnycklar: filmer
+ * `<källa>:<ratingKey>:m<n>`, avsnitt `<titelnyckel>:e<ratingKey>`.
+ */
+export function plexRatingKeyOf(media: Pick<LibraryMedia, 'key' | 'episodeKey'>): string | null {
+  if (media.episodeKey) return /:e(\d+)$/.exec(media.episodeKey)?.[1] ?? null
+  return /:(\d+):m\d+$/.exec(media.key)?.[1] ?? null
+}
+
+/** Plex sidofiler som Lumios spelare kan läsa: SRT (och VTT) — ASS/PGS skickas inte om av Plex. */
+const PLEX_TEXT_SUBTITLE_CODECS = new Set(['srt', 'subrip', 'vtt', 'webvtt'])
+
+type PlexSubtitleStream = {
+  streamType?: number | string
+  key?: string
+  codec?: string
+  languageTag?: string
+  languageCode?: string
+  title?: string
+  displayTitle?: string
+  forced?: boolean | number
+  hearingImpaired?: boolean | number
+}
+
+/**
+ * Versionens externa undertextfiler. Inbäddade spår följer med i filen; en
+ * sidofil (.srt bredvid filmen) har en egen `key` (/library/streams/<id>) och
+ * når bara spelaren om den räknas upp här (Jellyfin-rapporten 2026-11-07 —
+ * Plex fungerar likadant).
+ */
+export async function fetchPlexExternalSubtitles(base: string, token: string, ratingKey: string, partKey: string): Promise<Array<{ url: string; language: string; label?: string; forced?: boolean; sdh?: boolean }>> {
+  const controller = new AbortController()
+  // Kort: listan får aldrig hålla uppe starten.
+  const timer = window.setTimeout(() => controller.abort(), 6_000)
+  try {
+    const response = await fetch(`${base}/library/metadata/${encodeURIComponent(ratingKey)}?X-Plex-Token=${encodeURIComponent(token)}`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+    if (!response.ok) return []
+    const data = (await response.json()) as { MediaContainer?: { Metadata?: Array<{ Media?: Array<{ Part?: Array<{ key?: string; Stream?: PlexSubtitleStream[] }> }> }> } }
+    const parts = (data.MediaContainer?.Metadata?.[0]?.Media ?? []).flatMap((media) => media.Part ?? [])
+    const part = parts.find((candidate) => candidate.key === partKey) ?? null
+    return (part?.Stream ?? [])
+      .filter((stream) => String(stream.streamType ?? '') === '3' && stream.key && PLEX_TEXT_SUBTITLE_CODECS.has((stream.codec ?? '').toLowerCase()))
+      .map((stream) => ({
+        url: `${base}${stream.key}?X-Plex-Token=${encodeURIComponent(token)}`,
+        language: stream.languageTag ?? stream.languageCode ?? '',
+        label: stream.title || stream.displayTitle || undefined,
+        ...(stream.forced ? { forced: true } : {}),
+        ...(stream.hearingImpaired ? { sdh: true } : {}),
+      }))
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
+
 export function plexLibrarySourceId(settings: PlexSettingsState): string | null {
   return settings.serverId ? `plex-${settings.serverId}` : null
 }
@@ -180,7 +237,13 @@ export const plexLibraryProvider: LibraryProvider = {
     const base = uris[0]
     if (!base || !token) return null
     const separator = media.playRef.includes('?') ? '&' : '?'
-    return { url: `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`, filename: media.playRef.split('/').pop() }
+    const url = `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`
+    const filename = media.playRef.split('/').pop()
+    // Sidofilerna följer inte med i filen. Kan listan inte hämtas spelas
+    // filmen ändå — med filens egna spår och OpenSubtitles.
+    const ratingKey = plexRatingKeyOf(media)
+    const subtitles = ratingKey ? await fetchPlexExternalSubtitles(base, token, ratingKey, media.playRef.split('?')[0]).catch(() => []) : []
+    return subtitles.length > 0 ? { url, filename, subtitles } : { url, filename }
   },
 
   /**

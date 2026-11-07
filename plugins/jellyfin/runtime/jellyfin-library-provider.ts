@@ -1,7 +1,7 @@
 'use client'
 
 import type { LibraryBatch, LibraryEpisode, LibraryMedia, LibraryProvider, LibraryScanProgress, LibrarySourceRef, LibraryTitle } from '@/lib/plugin-sdk'
-import { fetchChangedEpisodes, fetchEpisodes, fetchLibraryItems, fetchSeriesByIds, imageUrl, markPlayed, reportPlaybackProgress, streamUrl, trickplayUrlTemplate, type JellyfinItem } from './jellyfin-api'
+import { fetchChangedEpisodes, fetchEpisodes, fetchExternalSubtitles, fetchLibraryItems, fetchSeriesByIds, imageUrl, markPlayed, reportPlaybackProgress, streamUrl, trickplayUrlTemplate, type JellyfinItem } from './jellyfin-api'
 import { getJellyfinSettings, isJellyfinConnected, jellyfinSourceId, type JellyfinSettings } from './jellyfin-storage'
 
 /**
@@ -266,7 +266,11 @@ export const jellyfinLibraryProvider: LibraryProvider = {
     const settings = getJellyfinSettings()
     const [itemId, mediaSourceId] = media.playRef.split('|')
     const url = itemId && mediaSourceId ? streamUrl(settings, itemId, mediaSourceId) : null
-    return url ? { url } : null
+    if (!url) return null
+    // Sidofilerna följer inte med i den statiska strömmen. Kan listan inte
+    // hämtas spelas filmen ändå — med filens egna spår och OpenSubtitles.
+    const subtitles = await fetchExternalSubtitles(settings, itemId, mediaSourceId).catch(() => [])
+    return subtitles.length > 0 ? { url, subtitles } : { url }
   },
   async reportProgress(_source, ref, state) {
     const settings = getJellyfinSettings()

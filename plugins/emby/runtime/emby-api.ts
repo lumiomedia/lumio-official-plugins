@@ -34,6 +34,12 @@ export interface EmbyMediaStream {
   /** "None", "Hdr10", "Hdr10Plus", "HyperLogGamma", "DolbyVision". */
   ExtendedVideoType?: string
   DisplayTitle?: string
+  Index?: number
+  Title?: string
+  IsExternal?: boolean
+  IsTextSubtitleStream?: boolean
+  IsForced?: boolean
+  IsHearingImpaired?: boolean
 }
 
 export interface EmbyItem {
@@ -350,6 +356,44 @@ export function streamUrl(settings: ApiTarget, itemId: string, mediaSourceId: st
   const ext = container?.split(',')[0]?.trim().toLowerCase()
   const file = ext && /^[a-z0-9]{2,5}$/.test(ext) ? `stream.${ext}` : 'stream'
   return `${settings.apiBase}/Videos/${itemId}/${file}?Static=true&MediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`
+}
+
+/** En sidofil som Lumios spelare kan hämta själv (samma form som appens LibrarySubtitle). */
+export interface EmbyExternalSubtitle {
+  url: string
+  language: string
+  label?: string
+  forced?: boolean
+  sdh?: boolean
+}
+
+/**
+ * Versionens externa undertextfiler (.srt/.ass bredvid filmen). Inbäddade spår
+ * följer redan med i den statiska strömmen; sidofilerna gör det inte, så utan
+ * listan spelades filmen utan undertext fast servern hade en (Jellyfin-
+ * rapporten 2026-11-07 — Emby fungerar likadant).
+ *
+ * Servern gör om textformaten till SRT; bildbaserade (PGS/VobSub) hoppas över.
+ */
+export async function fetchExternalSubtitles(
+  settings: Pick<EmbySettings, 'apiBase' | 'accessToken' | 'userId'>,
+  itemId: string,
+  mediaSourceId: string,
+): Promise<EmbyExternalSubtitle[]> {
+  if (!settings.apiBase || !settings.accessToken || !settings.userId) return []
+  const query = new URLSearchParams({ Ids: itemId, Fields: 'MediaSources,MediaStreams' })
+  // Kort och utan omförsök: listan får aldrig hålla uppe starten.
+  const page = await request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 6_000, noRetry: true })
+  const source = (page.Items?.[0]?.MediaSources ?? []).find((candidate) => candidate.Id === mediaSourceId) ?? null
+  return (source?.MediaStreams ?? [])
+    .filter((stream) => stream.Type === 'Subtitle' && stream.IsExternal && stream.IsTextSubtitleStream !== false && typeof stream.Index === 'number')
+    .map((stream) => ({
+      url: `${settings.apiBase}/Videos/${itemId}/${encodeURIComponent(mediaSourceId)}/Subtitles/${stream.Index}/Stream.srt?api_key=${encodeURIComponent(settings.accessToken ?? '')}`,
+      language: stream.Language ?? '',
+      label: stream.Title || stream.DisplayTitle || undefined,
+      ...(stream.IsForced ? { forced: true } : {}),
+      ...(stream.IsHearingImpaired ? { sdh: true } : {}),
+    }))
 }
 
 /**

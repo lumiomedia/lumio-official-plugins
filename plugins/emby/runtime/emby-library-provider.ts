@@ -1,7 +1,7 @@
 'use client'
 
 import type { LibraryBatch, LibraryEpisode, LibraryMedia, LibraryProvider, LibraryScanProgress, LibrarySourceRef, LibraryTitle } from '@/lib/plugin-sdk'
-import { fetchChangedEpisodes, fetchEpisodes, fetchLibraryItems, fetchSeriesByIds, imageUrl, isTransientEmbyError, markPlayed, reportPlaybackProgress, streamUrl, type EmbyItem, type EmbyItemsPage, type EmbyMediaStream } from './emby-api'
+import { fetchChangedEpisodes, fetchEpisodes, fetchExternalSubtitles, fetchLibraryItems, fetchSeriesByIds, imageUrl, isTransientEmbyError, markPlayed, reportPlaybackProgress, streamUrl, type EmbyItem, type EmbyItemsPage, type EmbyMediaStream } from './emby-api'
 import { describeError, EmbyScanError, logEmby } from './emby-log'
 import { getEmbySettings, isEmbyConnected, embySourceId, type EmbySettings } from './emby-storage'
 
@@ -422,7 +422,11 @@ export const embyLibraryProvider: LibraryProvider = {
     const settings = getEmbySettings()
     const [itemId, mediaSourceId, container] = media.playRef.split('|')
     const url = itemId && mediaSourceId ? streamUrl(settings, itemId, mediaSourceId, container || null) : null
-    return url ? { url } : null
+    if (!url) return null
+    // Sidofilerna följer inte med i den statiska strömmen. Kan listan inte
+    // hämtas spelas filmen ändå — med filens egna spår och OpenSubtitles.
+    const subtitles = await fetchExternalSubtitles(settings, itemId, mediaSourceId).catch(() => [])
+    return subtitles.length > 0 ? { url, subtitles } : { url }
   },
   async reportProgress(_source, ref, state) {
     const settings = getEmbySettings()

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Subtitle files that sit next to the video on your Emby server (.srt and the like) now show up in Lumio's subtitle menu, marked "From your server", and are picked automatically in your language. Before, only subtitles inside the file came along, so a film with a separate subtitle file played without subtitles. Image-based subtitles (PGS, VobSub) are skipped. Needs Lumio 0.1.641.
+
 ## 0.1.5
 
 - The index card keeps showing a running scan after you leave Settings and come back, and Cancel stops it. Rebuild and Update no longer answer "library scan already running" while a scan you can't see holds the lock; if another library is indexing, the card says so.

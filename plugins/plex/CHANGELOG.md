@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.39
+
+- Subtitle files that sit next to the video on your Plex server (.srt and the like) now show up in Lumio's subtitle menu, marked "From your server", and are picked automatically in your language. Before, only subtitles inside the file came along, so a film with a separate subtitle file played without subtitles. Only SRT files are passed on; Plex does not convert other formats. Needs Lumio 0.1.641.
+
 ## 1.0.37
 
 - On Android, Plex playback streams straight to the player, which gives smoother playback on TV boxes. Subtitle sync and short skips back keep working. Requires Lumio 0.1.630.
