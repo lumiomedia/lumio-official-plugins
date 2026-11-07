@@ -428,9 +428,11 @@ export async function epgSearch(
   from: number,
   to: number,
   limit?: number,
+  /** Sök även i programbeskrivningen, som helt ord (Bevaka i tablån; app 0.1.640+). */
+  opts?: { inDescription?: boolean },
 ): Promise<{ key: string; programme: EpgProgramme }[]> {
   const shift = epgShiftMs()
-  const qs = buildQuery({ listId, q, from: from - shift, to: to - shift, limit })
+  const qs = buildQuery({ listId, q, from: from - shift, to: to - shift, limit, ...(opts?.inDescription ? { desc: 1 } : {}) })
   const data = await requestJson<{ items?: { key: string; programme: EpgProgramme }[] }>(
     `/api/live-tv/epg/search${qs}`,
   )

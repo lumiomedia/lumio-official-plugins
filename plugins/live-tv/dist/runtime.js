@@ -1336,6 +1336,43 @@
     if (typeof window === "undefined") return "";
     return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
   }
+  function getCustomShaders() {
+    if (typeof window === "undefined") return [];
+    try {
+      const parsed2 = JSON.parse(getScopedStorageItem(KEY_CUSTOM_SHADERS) ?? "[]");
+      return Array.isArray(parsed2) ? parsed2.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  function setCustomShaders(names) {
+    setScopedStorageItem(KEY_CUSTOM_SHADERS, JSON.stringify(names));
+    emitPlaybackSettingsChanged();
+  }
+  function resolveCustomShaderPaths(selected, available2) {
+    const byName = new Map(available2.map((f) => [f.name, f.path]));
+    return selected.flatMap((name) => {
+      const path = byName.get(name);
+      return path ? [path] : [];
+    });
+  }
+  function toggleCustomShaderSelection(selected, name) {
+    return selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name];
+  }
+  function readActiveShaders(readback, anime4k, custom) {
+    if (typeof readback !== "string") return { anime4k: anime4k.length > 0, custom: custom.length };
+    return {
+      anime4k: anime4k.length > 0 && anime4k.some((path) => readback.includes(path)),
+      custom: custom.filter((path) => readback.includes(path)).length
+    };
+  }
+  function formatShaderStatus(status, t) {
+    if (status.mpvConf) return t("rtShadersMpvConf");
+    const parts2 = [];
+    if (status.anime4k) parts2.push("Anime4K");
+    if (status.custom > 0) parts2.push(t("rtShadersCustomCount").replace("{n}", String(status.custom)));
+    return parts2.length > 0 ? t("rtShadersActive").replace("{list}", parts2.join(" + ")) : t("rtShadersNone");
+  }
   function parseRawMpvConf(raw) {
     return raw.split("\n").map((line2) => line2.trim()).filter((line2) => line2 && !line2.startsWith("#")).map((line2) => {
       const eq = line2.indexOf("=");
@@ -1345,9 +1382,11 @@
       return name ? [name, value] : null;
     }).filter((entry) => entry != null);
   }
-  function getPreferEmbeddedSubtitles() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
+  function getSubtitleOrder() {
+    if (typeof window === "undefined") return "best";
+    const raw = getScopedStorageItem(KEY_SUBTITLE_ORDER);
+    if (raw === "best" || raw === "embedded" || raw === "downloads") return raw;
+    return getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) === "1" ? "embedded" : "best";
   }
   function getExternalPlayerApp() {
     if (typeof window === "undefined") return "VLC";
@@ -1450,7 +1489,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1530,7 +1569,7 @@
         th: "\u0E44\u0E17\u0E22",
         id: "Bahasa Indonesia"
       };
-      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
+      NIGHT_MODE_OPTIONS = ["off", "mild", "medium", "strong"];
       ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
       LANG3_TO_2 = {
         eng: "en",
@@ -1600,6 +1639,8 @@
       KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
       KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
       KEY_RAW_MPV_CONF = "playback_rawMpvConf";
+      KEY_CUSTOM_SHADERS = "playback_customShaders";
+      KEY_SUBTITLE_ORDER = "playback_subtitleOrder";
       KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
       KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
       AUDIO_DELAY_STEP_MS = 50;
@@ -2305,8 +2346,19 @@
   async function nativeSetAudioDelay(ms2) {
     await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms2))) });
   }
+  async function nativeSetNightMode(mode) {
+    if (!isAndroidTauriEnv) return;
+    await np({ cmd: "setNightMode", mode });
+  }
   async function nativeSetVideoTuning(t) {
+    const key = `${t.brightness}|${t.contrast}|${t.saturation}`;
+    if (key === lastSentVideoTuning) return;
+    if (lastSentVideoTuning === null && key === "0|0|0") {
+      lastSentVideoTuning = key;
+      return;
+    }
     await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
+    lastSentVideoTuning = key;
   }
   async function nativeSetVideoGeometry(opts) {
     await np({
@@ -2539,7 +2591,7 @@
       stats
     };
   }
-  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, directAfterCacheFailure, HEAVY_UNKNOWN_BITRATE_BPS, lastNativeOpen, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
+  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, directAfterCacheFailure, HEAVY_UNKNOWN_BITRATE_BPS, lastNativeOpen, lastSentVideoTuning, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
@@ -2556,6 +2608,7 @@
       directAfterCacheFailure = /* @__PURE__ */ new Set();
       HEAVY_UNKNOWN_BITRATE_BPS = 6e7;
       lastNativeOpen = null;
+      lastSentVideoTuning = null;
       fineTimeWanted = true;
       timeGate = null;
       STATUS_POLL_MS = 250;
@@ -4595,6 +4648,7 @@
         plSleepShort: "Sleep",
         plSleepOff: "Off",
         plSleepMinutes: "{n} min",
+        plSleepRemaining: "{n} min left",
         plSleepEnd: "End of episode or film",
         plSleepStillThere: "Are you still there?",
         plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
@@ -4714,6 +4768,11 @@
         rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
         allowSoftwareDecoding: "Allow software decoding",
         allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+        blockMobileData: "Ask before streaming on mobile data",
+        blockMobileDataDesc: "When the phone is not on Wi-Fi, Lumio asks before playback starts. Play anyway applies for the rest of the session.",
+        mobileDataPromptTitle: "You are on mobile data",
+        mobileDataPromptBody: "Streaming uses a lot of data. Do you want to play anyway?",
+        mobileDataPromptPlay: "Play anyway",
         dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
         dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
         dv7AsHdr10Auto: "Auto",
@@ -4760,6 +4819,7 @@
         deviceNoAudioDecoder: "This device cannot decode the lossless audio track (TrueHD/DTS-HD) \u2014 playing with another track, or without sound. Pick an AC3/EAC3/AAC version for audio.",
         deviceFormatUnsupported: "This device cannot decode that video format \u2014 try another version.",
         plTabNextEp: "Next episode",
+        plTabEnds: "When it ends",
         plNextEpHint: "Autoplay, the popup and outro behavior between episodes.",
         langAudioSubTab: "Audio & subtitles",
         langAudioSubTitle: "Audio & subtitle defaults",
@@ -4930,6 +4990,29 @@
         dsLayoutInline: "Below the content",
         heroCast: "Cast",
         newSeasonBadge: "New season",
+        episodesLeftInSeason: "{n} episodes left in the season",
+        watchedThreshold: "Counts as watched",
+        watchedThresholdDesc: "When a movie or episode is marked as watched. Automatic: episodes at 92 % or 90 s left, movies at 97 % or 30 s left.",
+        watchedThresholdAuto: "Automatic",
+        snoozeSeries: "Snooze series",
+        snoozeWeek: "For a week",
+        snoozeMonth: "For a month",
+        snoozeNextSeason: "Until the next season",
+        snoozedSeriesCount: "{n} snoozed series",
+        snoozedUntil: "until {date}",
+        snoozeWake: "Show again",
+        snoozeWakeSeries: "Wake series",
+        snoozedChip: "Snoozed ({n})",
+        snoozedSeriesHeading: "Snoozed series",
+        episodesLeftShort: "{n} left",
+        lastEpisodeShort: "Last ep.",
+        catchUpOne: "Catch up: 1 episode a night until {date}",
+        catchUpMany: "Catch up: {n} episodes a night until {date}",
+        catchUpChip: "Catch up \xB7 {n}/night",
+        catchUpMeta: "Catch up: {n} a night until {date}",
+        catchUpDetail: "{remaining} episodes left before season {season} on {date}. That is {evenings} evenings.",
+        catchUpTitle: "Catch up before the premiere",
+        lastEpisodeOfSeason: "Last episode of the season",
         homeCardShape: "Card shape",
         homeCardShapeDesc: "Poster cards or wide backdrop cards on the home rows.",
         homeRowTitle: "Row name",
@@ -5974,6 +6057,11 @@
         appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
         exitOnCloseTitle: "Quit fully on close",
         exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+        launcherModeTitle: "Use Lumio as home screen",
+        launcherModeHint: "The device starts in Lumio and your other apps sit in a row at the bottom of the home page. Android asks which home screen to use.",
+        launcherModeNotChosen: "Lumio is not the chosen home screen yet. Turn this off and on again to choose it.",
+        launcherModeBlocked: "This device doesn't let another app be the home screen (Google TV keeps its own). The apps row on the start page still works.",
+        launcherAppsRow: "Apps",
         exitAppAction: "Quit Lumio",
         exitAppTitle: "Quit Lumio?",
         exitAppConfirm: "Quit",
@@ -6192,8 +6280,11 @@
         autoplayMaxResolution: "Max resolution for auto-play",
         autoplayMaxResolutionDesc: "Skip sources above this resolution when auto-playing. Sources with an unknown resolution are still allowed.",
         autoplayMaxResolutionUnlimited: "Unlimited",
-        preferEmbeddedSubtitles: "Prefer embedded subtitles",
-        preferEmbeddedSubtitlesDesc: "When picking subtitles automatically, try tracks embedded in the video first \u2014 they are always in sync.",
+        subtitleOrder: "Subtitle order",
+        subtitleOrderDesc: "Which subtitles are picked first automatically. Best: your language comes first, and within a language the file's own full track goes before downloads \u2014 it is made for that file and always in sync.",
+        subtitleOrderBest: "Best",
+        subtitleOrderEmbedded: "File's own first",
+        subtitleOrderDownloads: "Downloads first",
         peekSeasonWord: "season",
         peekSeasonsWord: "seasons",
         peekOpenDetails: "More info",
@@ -6214,6 +6305,18 @@
         advMpvConfTitle: "Raw mpv.conf",
         advMpvConfHint: "One property=value per line, applied to the player after all managed settings. For power users.",
         advMpvConfNote: "Applies on the next playback start. Invalid lines are ignored.",
+        advCustomShadersTitle: "Custom shaders",
+        advCustomShadersHint: "Put .glsl or .hook files in the folder and choose which ones run. They run in the order you tick them, after Anime4K.",
+        advCustomShadersEmpty: "The folder is empty.",
+        advCustomShadersOpen: "Open folder",
+        advCustomShadersRefresh: "Refresh",
+        advCustomShadersNote: "Applies right away, also during playback. A glsl-shaders line in mpv.conf above replaces this list.",
+        advCustomShadersNoneOn: "No file is switched on yet \u2014 tick the ones that should run.",
+        rtShadersEmpty: "No files in the folder yet \u2014 drop .glsl files there.",
+        rtShadersActive: "Active in player: {list}",
+        rtShadersCustomCount: "{n} custom",
+        rtShadersNone: "No shaders active",
+        rtShadersMpvConf: "mpv.conf controls shaders",
         extraSubtitleLanguages: "More subtitle languages",
         extraSubtitleLanguagesDesc: "Ordered list of language codes tried after the default and fallback, comma-separated.",
         forcedSubtitlesWhenAudioMatches: "Forced subtitles when audio matches",
@@ -6422,15 +6525,17 @@
         audioModeBest: "Best possible",
         audioModeBestDesc: "Keeps multichannel audio in the proxy when possible. Tauri/mpv continues to use the original track directly.",
         nightMode: "Night mode / DRC",
-        nightModeDesc: "Reduces loud peaks and makes dialogue easier to hear at lower volume.",
+        nightModeDesc: "Lifts dialogue and quiet passages without making loud scenes louder. For watching at low volume.",
         nightModeOff: "Off",
         nightModeMild: "Mild night mode",
+        nightModeMedium: "Medium night mode",
         nightModeStrong: "Strong night mode",
         dvColorLabel: "Dolby Vision",
         dvColorAuto: "Vivid (auto)",
         dvColorOff: "Off",
         nightModeMenuLabel: "Night mode",
         nightModeMenuMild: "Mild",
+        nightModeMenuMedium: "Medium",
         nightModeMenuStrong: "Strong",
         onboardingIntegrationsEyebrow: "Integrations",
         onboardingIntegrationsTitle: "Make Lumio even better",
@@ -6471,6 +6576,7 @@
         subtitleAutoSyncOtherEditKeep: "Keep",
         playerStarvedLighter: "The connection can\u2019t keep up with this version. Lighter: {stream}",
         playerStarvedSwitch: "Switch",
+        playerStreamLost: "The stream stopped at {time}. Pick a source to continue from there.",
         subtitleLanguageDetected: "language detected",
         subtitleForced: "Forced",
         subtitleSdh: "SDH",
@@ -7025,6 +7131,8 @@
         ipSectionHint: "Click a service to view or change its settings.",
         // Home panel (Hem)
         hpTabHero: "Hero & background",
+        hpTabNavigation: "Navigation",
+        clearCacheHint: "Clears the app\u2019s response caches",
         hpTabDisplay: "Display",
         hpGenreAll: "All categories",
         hpGenreAction: "Action",
@@ -8326,7 +8434,7 @@
         }
         order.splice(insertAt, 0, id);
       }
-      const hidden2 = (Array.isArray(parsed2.hidden) ? parsed2.hidden : []).filter(
+      const hidden3 = (Array.isArray(parsed2.hidden) ? parsed2.hidden : []).filter(
         (id) => known.has(id) && id !== "playPause"
       );
       const timeFormat = parsed2.timeFormat === "remaining" || parsed2.timeFormat === "elapsed" ? parsed2.timeFormat : "elapsed-total";
@@ -8335,7 +8443,7 @@
       const seekBarHeight = parsed2.seekBarHeight === "slim" || parsed2.seekBarHeight === "chunky" ? parsed2.seekBarHeight : "standard";
       const seekBarColor = parsed2.seekBarColor === "white" || parsed2.seekBarColor === "red" || parsed2.seekBarColor === "amber" ? parsed2.seekBarColor : "accent";
       const seekBarDot = parsed2.seekBarDot !== false;
-      return { order, hidden: hidden2, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
+      return { order, hidden: hidden3, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
     } catch {
       return defaultLayout();
     }
@@ -8917,14 +9025,14 @@
     return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
   }
   function tvSceneBoxScale(element) {
-    const read11 = (raw) => {
+    const read12 = (raw) => {
       const value = parseFloat(raw);
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    const inline = read11(element.style.getPropertyValue("--tv-scene-box-scale"));
+    const inline = read12(element.style.getPropertyValue("--tv-scene-box-scale"));
     if (inline !== null) return inline;
     if (typeof getComputedStyle === "undefined") return 1;
-    return read11(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
+    return read12(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
   var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX, applied, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
@@ -10068,9 +10176,107 @@
     }
   });
 
+  // lib/watched-threshold.ts
+  function clampWatchedThreshold(pct3) {
+    return Math.round(Math.min(WATCHED_THRESHOLD_MAX, Math.max(WATCHED_THRESHOLD_MIN, pct3)));
+  }
+  function watchedRuleFor(kind, customPct) {
+    if (customPct != null && Number.isFinite(customPct)) {
+      return { ratio: clampWatchedThreshold(customPct) / 100, tailSeconds: null };
+    }
+    return kind === "movie" ? { ratio: 0.97, tailSeconds: 30 } : { ratio: 0.92, tailSeconds: 90 };
+  }
+  function reachedWatchedRule(rule, currentTime, duration) {
+    if (!Number.isFinite(currentTime) || !Number.isFinite(duration) || duration <= 0) return false;
+    if (currentTime / duration >= rule.ratio) return true;
+    return rule.tailSeconds != null && duration - currentTime <= rule.tailSeconds;
+  }
+  function getWatchedThresholdPct() {
+    const raw = getItem(STORAGE_KEY3);
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? clampWatchedThreshold(n) : null;
+  }
+  function watchedRule(kind) {
+    return watchedRuleFor(kind, getWatchedThresholdPct());
+  }
+  function isWatchedPosition(kind, currentTime, duration) {
+    return reachedWatchedRule(watchedRule(kind), currentTime, duration);
+  }
+  var STORAGE_KEY3, WATCHED_THRESHOLD_MIN, WATCHED_THRESHOLD_MAX;
+  var init_watched_threshold = __esm({
+    "lib/watched-threshold.ts"() {
+      init_app_storage();
+      STORAGE_KEY3 = "watched_threshold_pct";
+      WATCHED_THRESHOLD_MIN = 80;
+      WATCHED_THRESHOLD_MAX = 98;
+    }
+  });
+
+  // lib/progress-finished.ts
+  function isFinishedProgress(entry) {
+    if (entry.type === "audiobook") return false;
+    if (!Number.isFinite(entry.duration) || entry.duration <= 0) return false;
+    if (!Number.isFinite(entry.currentTime)) return false;
+    return isWatchedPosition(entry.type === "movie" ? "movie" : "episode", entry.currentTime, entry.duration);
+  }
+  var init_progress_finished = __esm({
+    "lib/progress-finished.ts"() {
+      init_watched_threshold();
+    }
+  });
+
+  // lib/tracker-watched-echo.ts
+  function readProgress() {
+    if (typeof window === "undefined") return [];
+    const raw = getScopedStorageItem(PROGRESS_KEY) ?? "[]";
+    if (parsedCache && parsedCache.raw === raw) return parsedCache.list;
+    let list = [];
+    try {
+      const parsed2 = JSON.parse(raw);
+      if (Array.isArray(parsed2)) {
+        list = parsed2.filter((entry) => Boolean(entry) && typeof entry === "object" && typeof entry.id === "string");
+      }
+    } catch {
+      list = [];
+    }
+    parsedCache = { raw, list };
+    return list;
+  }
+  function isTrackerWatchedEcho(target2, remoteWatchedAt) {
+    const remoteMs = Date.parse(remoteWatchedAt ?? "");
+    if (!Number.isFinite(remoteMs)) return false;
+    return readProgress().some((entry) => {
+      if (entry.id !== target2.id) return false;
+      if (target2.season != null && (entry.season !== target2.season || entry.episode !== target2.episode)) return false;
+      if (!(entry.currentTime > 0) || !(entry.duration > 0)) return false;
+      if (isFinishedProgress(entry)) return false;
+      const localMs = Date.parse(entry.watchedAt ?? "");
+      return Number.isFinite(localMs) && localMs >= remoteMs - TRACKER_ECHO_SLACK_MS;
+    });
+  }
+  function logTrackerWatchedEcho(label, remoteWatchedAt) {
+    console.info(`[sett-eko] hoppar \xF6ver ${label}: tj\xE4nstens sett ${remoteWatchedAt ?? "?"} \xE4r ekot av en of\xE4rdig uppspelning h\xE4r`);
+  }
+  var PROGRESS_KEY, TRACKER_ECHO_SLACK_MS, parsedCache;
+  var init_tracker_watched_echo = __esm({
+    "lib/tracker-watched-echo.ts"() {
+      init_profile_storage_shim();
+      init_progress_finished();
+      PROGRESS_KEY = "stream_progress_list";
+      TRACKER_ECHO_SLACK_MS = 15 * 6e4;
+      parsedCache = null;
+    }
+  });
+
   // lib/watched-episodes.ts
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
+  }
+  function isRemoteEcho(tmdbId, season, episode, watchedAt) {
+    if (!isTrackerWatchedEcho({ id: `tv-${tmdbId}`, season, episode }, watchedAt)) return false;
+    logTrackerWatchedEcho(`tv-${tmdbId} S${season}E${episode}`, watchedAt);
+    return true;
   }
   function parseStored(raw) {
     try {
@@ -10088,9 +10294,9 @@
   function readShared() {
     if (typeof window === "undefined") return {};
     const raw = getScopedStorageItem(KEY6) ?? "{}";
-    if (parsedCache && parsedCache.raw === raw) return parsedCache.data;
+    if (parsedCache2 && parsedCache2.raw === raw) return parsedCache2.data;
     const data = parseStored(raw);
-    parsedCache = { raw, data };
+    parsedCache2 = { raw, data };
     return data;
   }
   function read3() {
@@ -10099,7 +10305,7 @@
   function write3(data) {
     const raw = JSON.stringify(data);
     setScopedStorageItem(KEY6, raw);
-    parsedCache = { raw, data };
+    parsedCache2 = { raw, data };
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(EVENT9));
     }
@@ -10112,6 +10318,7 @@
     const key = epKey(tmdbId, season, episode);
     const previous = data[key];
     const source = options?.source ?? "local";
+    if (watched && source !== "local" && !previous && isRemoteEcho(tmdbId, season, episode, options?.watchedAt)) return;
     let next;
     if (watched) {
       next = options?.watchedAt ?? (source !== "local" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
@@ -10159,6 +10366,7 @@
     for (const episode of remote) {
       const key = epKey(episode.tmdbId, episode.season, episode.episode);
       remoteKeys.add(key);
+      if (!data[key] && isRemoteEcho(episode.tmdbId, episode.season, episode.episode, episode.watchedAt)) continue;
       const next = episode.watchedAt ?? data[key] ?? true;
       if (data[key] === next) continue;
       data[key] = next;
@@ -10182,6 +10390,7 @@
     for (const episode of episodes) {
       const key = epKey(episode.tmdbId, episode.season, episode.episode);
       if (data[key]) continue;
+      if (source !== "local" && isRemoteEcho(episode.tmdbId, episode.season, episode.episode, episode.watchedAt)) continue;
       const value = episode.watchedAt ?? (source !== "local" ? true : (/* @__PURE__ */ new Date()).toISOString());
       data[key] = value;
       added.push({ episode, value });
@@ -10221,15 +10430,16 @@
     window.addEventListener(DETAIL_EVENT3, handler);
     return () => window.removeEventListener(DETAIL_EVENT3, handler);
   }
-  var KEY6, EVENT9, DETAIL_EVENT3, parsedCache;
+  var KEY6, EVENT9, DETAIL_EVENT3, parsedCache2;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
+      init_tracker_watched_echo();
       KEY6 = "watched_episodes";
       EVENT9 = "lumio-watched-episodes-changed";
       DETAIL_EVENT3 = "lumio-watched-episode-mutated";
-      parsedCache = null;
+      parsedCache2 = null;
     }
   });
 
@@ -10309,6 +10519,11 @@
     if (!target2.tmdbId && !target2.imdbId && !(normalizeTitle(target2.title) && normalizeYear(target2.year) != null)) return false;
     return readEntries().some((entry) => sameMovie(entry, target2));
   }
+  function isRemoteMovieEcho(tmdbId, watchedAt) {
+    if (!tmdbId || !isTrackerWatchedEcho({ id: `movie-${tmdbId}` }, watchedAt)) return false;
+    logTrackerWatchedEcho(`movie-${tmdbId}`, watchedAt);
+    return true;
+  }
   function setMovieWatched(entry, watched, options) {
     const tmdbId = normalizeId(entry.tmdbId);
     const imdbId = normalizeId(entry.imdbId);
@@ -10316,6 +10531,7 @@
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
     const current5 = readEntries();
+    if (watched && (options?.source ?? "local") !== "local" && !current5.some((currentEntry) => sameMovie(currentEntry, { tmdbId, imdbId, title, year })) && isRemoteMovieEcho(tmdbId, options?.watchedAt ?? entry.watchedAt)) return;
     const next = current5.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
@@ -10347,6 +10563,7 @@
       if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) continue;
       if (next.some((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }))) continue;
       const existing = current5.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
+      if (!existing && isRemoteMovieEcho(tmdbId, movie.watchedAt)) continue;
       next.push({
         tmdbId,
         imdbId,
@@ -10381,6 +10598,7 @@
       const target2 = { tmdbId, imdbId, title, year };
       if (current5.some((entry) => sameMovie(entry, target2))) continue;
       if (added.some((entry) => sameMovie(entry, target2))) continue;
+      if ((options?.source ?? "local") !== "local" && isRemoteMovieEcho(tmdbId, movie.watchedAt)) continue;
       added.push({
         tmdbId,
         imdbId,
@@ -10431,6 +10649,7 @@
     "lib/watched-movies.ts"() {
       "use strict";
       "use client";
+      init_tracker_watched_echo();
       init_profile_storage_shim();
       KEY_WATCHED_MOVIES = "watched_movies";
       EVENT_WATCHED_MOVIES_CHANGED = "lumio-watched-movies-changed";
@@ -12966,6 +13185,367 @@
     }
   });
 
+  // lib/core-streams/stream-utils.ts
+  function streamResolution(name) {
+    const normalized = name.toLowerCase();
+    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
+    if (normalized.includes("1440p")) return 1440;
+    if (normalized.includes("1080p")) return 1080;
+    if (normalized.includes("720p")) return 720;
+    if (normalized.includes("480p")) return 480;
+    return null;
+  }
+  function parseSizeBytes(text2) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text2);
+    if (!match) return null;
+    const value = Number.parseFloat(match[1].replace(",", "."));
+    const unit = SIZE_UNITS[match[2].toLowerCase()];
+    if (!Number.isFinite(value) || !unit) return null;
+    return Math.round(value * unit);
+  }
+  function getStreamSizeBytes(stream) {
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    if (cachedFileBytes > 0) return cachedFileBytes;
+    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
+    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
+  }
+  function formatSize(bytes) {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
+    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+    return `${Math.round(bytes / 1024)} kB`;
+  }
+  function langFlag(code) {
+    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
+  }
+  function getStreamAudioLanguages(stream) {
+    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
+    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
+  }
+  function isInformationalStream(stream) {
+    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
+    if (stream.infoHash && !stream.directUrl) return false;
+    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
+  }
+  function streamLooksDolbyVision(stream) {
+    const text2 = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text2) || /dolby[.\s_-]?vision/i.test(text2);
+  }
+  function streamLooksLosslessAudio(stream) {
+    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
+  }
+  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+      STREAM_LANGUAGE_PATTERNS = [
+        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
+        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
+        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
+        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
+        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
+        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
+        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
+        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
+        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
+        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
+        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
+        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
+        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
+        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
+        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
+        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
+      ];
+      LANG_FLAGS = {
+        en: "\u{1F1EC}\u{1F1E7}",
+        sv: "\u{1F1F8}\u{1F1EA}",
+        no: "\u{1F1F3}\u{1F1F4}",
+        da: "\u{1F1E9}\u{1F1F0}",
+        fi: "\u{1F1EB}\u{1F1EE}",
+        de: "\u{1F1E9}\u{1F1EA}",
+        fr: "\u{1F1EB}\u{1F1F7}",
+        es: "\u{1F1EA}\u{1F1F8}",
+        it: "\u{1F1EE}\u{1F1F9}",
+        pt: "\u{1F1F5}\u{1F1F9}",
+        nl: "\u{1F1F3}\u{1F1F1}",
+        pl: "\u{1F1F5}\u{1F1F1}",
+        ru: "\u{1F1F7}\u{1F1FA}",
+        tr: "\u{1F1F9}\u{1F1F7}",
+        ja: "\u{1F1EF}\u{1F1F5}",
+        ko: "\u{1F1F0}\u{1F1F7}",
+        zh: "\u{1F1E8}\u{1F1F3}",
+        hi: "\u{1F1EE}\u{1F1F3}",
+        ar: "\u{1F1F8}\u{1F1E6}",
+        cs: "\u{1F1E8}\u{1F1FF}",
+        hu: "\u{1F1ED}\u{1F1FA}",
+        ro: "\u{1F1F7}\u{1F1F4}",
+        uk: "\u{1F1FA}\u{1F1E6}",
+        el: "\u{1F1EC}\u{1F1F7}",
+        he: "\u{1F1EE}\u{1F1F1}",
+        th: "\u{1F1F9}\u{1F1ED}",
+        vi: "\u{1F1FB}\u{1F1F3}",
+        id: "\u{1F1EE}\u{1F1E9}"
+      };
+      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
+      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var lookup_exports = {};
+  __export(lookup_exports, {
+    coreLookupAnsweredEmpty: () => coreLookupAnsweredEmpty,
+    isFreshSource: () => isFreshSource,
+    lookupCoreStreams: () => lookupCoreStreams,
+    lookupSource: () => lookupSource,
+    markSourceCooldown: () => markSourceCooldown,
+    rememberFreshSources: () => rememberFreshSources,
+    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
+    retryFailedCoreSources: () => retryFailedCoreSources,
+    sourceInCooldown: () => sourceInCooldown,
+    sourceStreamUrl: () => sourceStreamUrl,
+    streamTargetKey: () => streamTargetKey
+  });
+  function streamTargetKey(target2) {
+    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
+  }
+  function sourceStreamUrl(addon, target2) {
+    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
+  }
+  function sourceInCooldown(addon, now2 = Date.now()) {
+    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
+    if (!until) return false;
+    if (now2 >= until) {
+      cooldownUntil.delete(canonicalAddonUrl(addon.url));
+      return false;
+    }
+    return true;
+  }
+  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
+    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
+  }
+  function looksRateLimited(message) {
+    return /\b429\b|rate.?limit|too many requests/i.test(message);
+  }
+  function tagSource(streams, addon) {
+    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
+  }
+  function keepPlayable(streams) {
+    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
+  }
+  function rememberFreshSources(streams, now2 = Date.now()) {
+    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
+    if (freshSources.size > 2e3) {
+      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
+    }
+  }
+  function isFreshSource(url, now2 = Date.now()) {
+    const at = freshSources.get(url);
+    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
+  }
+  async function fetchViaApi(addon, target2, timeoutMs, signal) {
+    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
+    if (target2.type === "series" && target2.season != null && target2.episode != null) {
+      params.set("season", String(target2.season));
+      params.set("episode", String(target2.episode));
+    }
+    const controller2 = new AbortController();
+    const onAbort = () => controller2.abort();
+    signal?.addEventListener("abort", onAbort);
+    const timer5 = setTimeout(() => controller2.abort(), timeoutMs + 500);
+    try {
+      const response = await fetch(`/api/streams?${params}`, {
+        headers: {
+          "x-source-manifest-url": addon.url,
+          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
+        },
+        signal: controller2.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      if (payload.error) throw new Error(payload.error);
+      return payload.streams ?? [];
+    } finally {
+      clearTimeout(timer5);
+      signal?.removeEventListener("abort", onAbort);
+    }
+  }
+  async function fetchViaDesktop(addon, target2, timeoutMs) {
+    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
+    if (!streams) return null;
+    return streams.map((stream) => ({
+      ...stream,
+      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
+      cachedFiles: stream.cachedFiles ?? []
+    }));
+  }
+  async function lookupSource(addon, target2, options = {}) {
+    const timeoutMs = options.timeoutMs ?? 12e3;
+    const startedAt = Date.now();
+    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
+    const attempt = async () => {
+      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
+      try {
+        let raw = null;
+        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
+        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
+        const streams = keepPlayable(tagSource(raw, addon));
+        rememberFreshSources(streams);
+        const ms2 = Date.now() - startedAt;
+        return {
+          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
+          streams
+        };
+      } catch (error) {
+        const ms2 = Date.now() - startedAt;
+        const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof DOMException && error.name === "AbortError" || /operation timed out/i.test(message)) {
+          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
+        }
+        if (looksRateLimited(message)) markSourceCooldown(addon);
+        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
+      }
+    };
+    const first = await attempt();
+    const kind = first.report.outcome.kind;
+    if (kind === "error" && !sourceInCooldown(addon)) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      const second = await attempt();
+      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
+    }
+    return first;
+  }
+  function memoKey(target2) {
+    return `${target2.type}:${streamTargetKey(target2)}`;
+  }
+  function replayLookup(result2, options) {
+    if (options.onSource) {
+      const bySource = /* @__PURE__ */ new Map();
+      for (const stream of result2.streams) {
+        const name = stream.source ?? "";
+        bySource.set(name, [...bySource.get(name) ?? [], stream]);
+      }
+      for (const report of result2.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
+    }
+    return result2;
+  }
+  function isAnswered(report) {
+    return report.outcome.kind === "ok" || report.outcome.kind === "empty";
+  }
+  function memoTtl(result2) {
+    return result2.streams.length > 0 && result2.reports.every(isAnswered) ? COMPLETE_MEMO_TTL_MS : MEMO_TTL_MS;
+  }
+  function freshMemo(target2) {
+    const cached2 = memo2.get(memoKey(target2));
+    return cached2 && Date.now() - cached2.at < cached2.ttl ? cached2.result : null;
+  }
+  function resetCoreStreamLookupMemo() {
+    inflight2.clear();
+    memo2.clear();
+  }
+  function coreLookupAnsweredEmpty(target2) {
+    const result2 = freshMemo(target2);
+    return Boolean(result2 && result2.streams.length === 0 && result2.reports.length > 0 && result2.reports.every(isAnswered));
+  }
+  async function retryFailedCoreSources(target2, options = {}) {
+    const key = memoKey(target2);
+    const previous = memo2.get(key)?.result;
+    if (!previous) {
+      memo2.delete(key);
+      return lookupCoreStreams(target2, options);
+    }
+    const failed = previous.reports.filter((report) => !isAnswered(report)).map((report) => report.addon);
+    if (failed.length === 0) return replayLookup(previous, options);
+    const retried = await lookupCoreStreamsUncached(target2, { ...options, addons: failed, onSource: void 0 });
+    const seen2 = new Set(previous.streams.map((stream) => stream.directUrl ?? `hash:${stream.infoHash}`));
+    const streams = [...previous.streams];
+    for (const stream of retried.streams) {
+      const id = stream.directUrl ?? `hash:${stream.infoHash}`;
+      if (seen2.has(id)) continue;
+      seen2.add(id);
+      streams.push(stream);
+    }
+    const retriedNames = new Set(retried.reports.map((report) => report.addon.name));
+    const reports = [...previous.reports.filter((report) => !retriedNames.has(report.addon.name)), ...retried.reports];
+    const result2 = { streams, reports };
+    memo2.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
+    if (options.signal?.aborted) return result2;
+    return replayLookup(result2, options);
+  }
+  async function lookupCoreStreams(target2, options = {}) {
+    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
+    const key = memoKey(target2);
+    const replay = (result2) => replayLookup(result2, options);
+    const cached2 = freshMemo(target2);
+    if (cached2) return replay(cached2);
+    const pending5 = inflight2.get(key);
+    if (pending5) return pending5.then(replay);
+    const run3 = lookupCoreStreamsUncached(target2, options).then((result2) => {
+      const answered2 = result2.reports.some(isAnswered);
+      const framedSkip = result2.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
+      if (answered2 && !framedSkip) {
+        memo2.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
+      }
+      return result2;
+    }).finally(() => inflight2.delete(key));
+    inflight2.set(key, run3);
+    return run3;
+  }
+  async function lookupCoreStreamsUncached(target2, options = {}) {
+    const addons = options.addons ?? getEnabledCoreStreamAddons();
+    if (addons.length === 0) return { streams: [], reports: [] };
+    const seen2 = /* @__PURE__ */ new Set();
+    const merged = [];
+    const reports = [];
+    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
+      const { report, streams } = await lookupSource(addon, target2, options);
+      reports.push(report);
+      const fresh = [];
+      for (const stream of streams) {
+        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
+        if (seen2.has(key)) continue;
+        seen2.add(key);
+        merged.push(stream);
+        fresh.push(stream);
+      }
+      if (options.signal?.aborted) return;
+      options.onSource?.(report, fresh);
+    });
+    return { streams: merged, reports };
+  }
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo2;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      cooldownUntil = /* @__PURE__ */ new Map();
+      COOLDOWN_MS = 9e4;
+      FRESH_SOURCE_MS = 10 * 6e4;
+      freshSources = /* @__PURE__ */ new Map();
+      RETRY_DELAY_MS = 700;
+      MEMO_TTL_MS = 45e3;
+      COMPLETE_MEMO_TTL_MS = FRESH_SOURCE_MS;
+      inflight2 = /* @__PURE__ */ new Map();
+      memo2 = /* @__PURE__ */ new Map();
+    }
+  });
+
   // lib/stremio/source-request.ts
   function buildSourceRequest(addons) {
     const first = addons.find((addon) => addon.enabled);
@@ -13152,6 +13732,11 @@
           providerLookupInProgress.delete(cacheKey3);
         }
       }
+      if (coreLookupAnsweredEmpty({ imdbId, type: "series", season, episode })) {
+        cache12[cacheKey3] = { checkedAt: Date.now(), hasStream: false };
+        writeStreamCache(cache12);
+        return false;
+      }
       const streams = await fetchEpisodeStreamResults(imdbId, season, episode);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
@@ -13180,6 +13765,7 @@
       init_plugin_sdk();
       init_availability_throttle();
       init_core_addons();
+      init_lookup();
       init_source_request();
       init_watched_episodes();
       STREAM_CACHE_KEY = "series_watchlist_stream_status";
@@ -14062,7 +14648,15 @@
       }
     };
     window.addEventListener(OPEN_ITEM_EVENT, handler);
-    return () => window.removeEventListener(OPEN_ITEM_EVENT, handler);
+    const w = window;
+    w.__lumioOpenItemListeners = (w.__lumioOpenItemListeners ?? 0) + 1;
+    let removed = false;
+    return () => {
+      window.removeEventListener(OPEN_ITEM_EVENT, handler);
+      if (removed) return;
+      removed = true;
+      w.__lumioOpenItemListeners = Math.max(0, (w.__lumioOpenItemListeners ?? 1) - 1);
+    };
   }
   function requestPlaySeriesEpisode(request) {
     if (typeof window === "undefined") return;
@@ -14082,25 +14676,46 @@
     window.addEventListener(PLAY_EPISODE_EVENT, handler);
     return () => window.removeEventListener(PLAY_EPISODE_EVENT, handler);
   }
+  function browsePageBus() {
+    const holder = window;
+    if (!holder.__lumioBrowsePageBus) holder.__lumioBrowsePageBus = { listeners: 0, pending: null };
+    return holder.__lumioBrowsePageBus;
+  }
   function requestOpenBrowsePage(request) {
     if (typeof window === "undefined") return;
+    const bus = browsePageBus();
+    if (bus.listeners === 0) {
+      bus.pending = { request, at: Date.now() };
+      return;
+    }
     window.dispatchEvent(new CustomEvent(OPEN_BROWSE_PAGE_EVENT, { detail: request }));
   }
   function onOpenBrowsePageRequested(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event2) => {
-      const detail = event2.detail;
+    const deliver = (detail) => {
       if (!detail?.pageId) return;
       try {
         listener(detail);
       } catch {
       }
     };
+    const handler = (event2) => deliver(event2.detail);
     window.addEventListener(OPEN_BROWSE_PAGE_EVENT, handler);
-    return () => window.removeEventListener(OPEN_BROWSE_PAGE_EVENT, handler);
+    const bus = browsePageBus();
+    bus.listeners += 1;
+    const waiting = bus.pending;
+    bus.pending = null;
+    if (waiting && Date.now() - waiting.at < PENDING_TTL_MS) window.setTimeout(() => deliver(waiting.request), 0);
+    let attached = true;
+    return () => {
+      if (!attached) return;
+      attached = false;
+      bus.listeners = Math.max(0, bus.listeners - 1);
+      window.removeEventListener(OPEN_BROWSE_PAGE_EVENT, handler);
+    };
   }
-  var OPEN_ITEM_EVENT, PLAY_EPISODE_EVENT, OPEN_BROWSE_PAGE_EVENT;
+  var OPEN_ITEM_EVENT, PLAY_EPISODE_EVENT, OPEN_BROWSE_PAGE_EVENT, PENDING_TTL_MS;
   var init_open_item_runtime = __esm({
     "lib/open-item-runtime.ts"() {
       "use strict";
@@ -14108,6 +14723,133 @@
       OPEN_ITEM_EVENT = "lumio-open-media-item";
       PLAY_EPISODE_EVENT = "lumio-play-series-episode";
       OPEN_BROWSE_PAGE_EVENT = "lumio-open-browse-page";
+      PENDING_TTL_MS = 3e4;
+    }
+  });
+
+  // lib/native-alerts.ts
+  async function showNativeAlert(alert) {
+    if (!isAndroidTauriEnv) return false;
+    const res = await np({ cmd: "alertNotify", ...alert, open: alert.open ?? null }, 3e3);
+    return res?.ok === true;
+  }
+  var init_native_alerts = __esm({
+    "lib/native-alerts.ts"() {
+      "use client";
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/plugins/bootstrap-signal.ts
+  var init_bootstrap_signal = __esm({
+    "lib/plugins/bootstrap-signal.ts"() {
+      "use client";
+    }
+  });
+
+  // lib/system-notification.ts
+  function encodeAlertOpen(page) {
+    return OPEN_PREFIX + JSON.stringify(page);
+  }
+  function tryWebNotification(title, body) {
+    try {
+      if (typeof Notification === "undefined") return false;
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+        return true;
+      }
+      if (Notification.permission === "default") {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === "granted") new Notification(title, { body });
+        });
+      }
+    } catch {
+    }
+    return false;
+  }
+  async function showSystemNotification(notification) {
+    const body = notification.body ?? "";
+    if (isAndroidTauriEnv) {
+      const shown = await showNativeAlert({
+        id: notification.id,
+        title: notification.title,
+        body,
+        channelName: notification.channelName,
+        open: notification.openPage ? encodeAlertOpen(notification.openPage) : null
+      }).catch(() => false);
+      if (shown) return true;
+    }
+    return tryWebNotification(notification.title, body);
+  }
+  var OPEN_PREFIX;
+  var init_system_notification = __esm({
+    "lib/system-notification.ts"() {
+      "use strict";
+      "use client";
+      init_open_item_runtime();
+      init_native_alerts();
+      init_bootstrap_signal();
+      init_tauri_native_player();
+      OPEN_PREFIX = "browse:";
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  function pauseStartWatchdogs() {
+    pauseCount += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      pauseCount = Math.max(0, pauseCount - 1);
+    };
+  }
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS, pauseCount;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+      pauseCount = 0;
+    }
+  });
+
+  // lib/mobile-data-guard.ts
+  function getBlockMobileData() {
+    return getItem(STORAGE_KEY4) === "1";
+  }
+  function needsMobileDataConsent(blockOn, allowed, network) {
+    return blockOn && !allowed && network === "cellular";
+  }
+  function parseNetworkKind(raw) {
+    const type = raw?.type;
+    return type === "wifi" || type === "ethernet" || type === "cellular" || type === "none" || type === "other" ? type : "unknown";
+  }
+  async function confirmPlaybackNetwork(query) {
+    if (!getBlockMobileData() || allowedThisSession) return true;
+    const network = parseNetworkKind(await query(NETWORK_QUERY_TIMEOUT_MS).catch(() => null));
+    if (!needsMobileDataConsent(true, allowedThisSession, network)) return true;
+    if (typeof window === "undefined") return true;
+    const release2 = pauseStartWatchdogs();
+    try {
+      const play = await new Promise((resolve) => {
+        window.dispatchEvent(new CustomEvent(MOBILE_DATA_PROMPT_EVENT, { detail: { resolve } }));
+      });
+      if (play) allowedThisSession = true;
+      return play;
+    } finally {
+      release2();
+    }
+  }
+  var STORAGE_KEY4, MOBILE_DATA_PROMPT_EVENT, NETWORK_QUERY_TIMEOUT_MS, allowedThisSession;
+  var init_mobile_data_guard = __esm({
+    "lib/mobile-data-guard.ts"() {
+      "use client";
+      init_app_storage();
+      init_start_watchdog();
+      STORAGE_KEY4 = "playback_block_mobile_data";
+      MOBILE_DATA_PROMPT_EVENT = "lumio-mobile-data-prompt";
+      NETWORK_QUERY_TIMEOUT_MS = 800;
+      allowedThisSession = false;
     }
   });
 
@@ -14376,6 +15118,57 @@
       PLAYBACK_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
       KEY10 = "playback_speed_by_title_v1";
       MAX_ENTRIES = 200;
+    }
+  });
+
+  // lib/series-track-store.ts
+  function read6(key = KEY11) {
+    try {
+      const raw = getScopedStorageItem(key);
+      const parsed2 = raw ? JSON.parse(raw) : null;
+      return parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2) ? parsed2 : {};
+    } catch {
+      return {};
+    }
+  }
+  function getSeriesAudioLanguage(tmdbId) {
+    if (!tmdbId) return null;
+    const value = read6()[tmdbId];
+    return typeof value === "string" && value ? value : null;
+  }
+  function write5(key, tmdbId, value) {
+    const store3 = read6(key);
+    delete store3[tmdbId];
+    store3[tmdbId] = value;
+    const keys2 = Object.keys(store3);
+    for (let index = 0; index < keys2.length - MAX_ENTRIES2; index += 1) delete store3[keys2[index]];
+    try {
+      setScopedStorageItem(key, JSON.stringify(store3));
+    } catch {
+    }
+  }
+  function saveSeriesAudioLanguage(tmdbId, language) {
+    if (!tmdbId || !language) return;
+    write5(KEY11, tmdbId, language);
+  }
+  function getSeriesSubtitlePreference(tmdbId) {
+    if (!tmdbId) return null;
+    const value = read6(SUBTITLE_KEY)[tmdbId];
+    if (value === "off") return { mode: "off" };
+    return typeof value === "string" && value ? { mode: "language", language: value } : null;
+  }
+  function saveSeriesSubtitlePreference(tmdbId, preference) {
+    if (!tmdbId || preference.mode === "default") return;
+    write5(SUBTITLE_KEY, tmdbId, preference.mode === "off" ? "off" : preference.language);
+  }
+  var KEY11, SUBTITLE_KEY, MAX_ENTRIES2;
+  var init_series_track_store = __esm({
+    "lib/series-track-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      KEY11 = "series_audio_lang_v1";
+      SUBTITLE_KEY = "series_subtitle_pref_v1";
+      MAX_ENTRIES2 = 200;
     }
   });
 
@@ -16716,7 +17509,8 @@
     if (!getLibraryMode() || !isLibraryStreamUrl(entry.url)) return;
     if (entry.type !== "movie" && entry.type !== "tv") return;
     const scopeKey = `${entry.id}:${entry.season ?? ""}:${entry.episode ?? ""}`;
-    const finished = entry.duration > 0 && entry.currentTime / entry.duration >= FINISHED_RATIO;
+    const customPct = getWatchedThresholdPct();
+    const finished = customPct == null ? entry.duration > 0 && entry.currentTime / entry.duration >= 0.92 : reachedWatchedRule(watchedRuleFor(entry.type === "movie" ? "movie" : "episode", customPct), entry.currentTime, entry.duration);
     if (finished && finishedSent.has(scopeKey)) return;
     const now2 = Date.now();
     if (!finished && now2 - (lastReport.get(scopeKey) ?? 0) < REPORT_EVERY_MS) return;
@@ -16740,15 +17534,15 @@
       });
     })();
   }
-  var REPORT_EVERY_MS, FINISHED_RATIO, TITLE_TTL_MS, lastReport, finishedSent, titleCache;
+  var REPORT_EVERY_MS, TITLE_TTL_MS, lastReport, finishedSent, titleCache;
   var init_progress = __esm({
     "lib/library/progress.ts"() {
       "use client";
       init_client();
       init_mode();
       init_source_provider();
+      init_watched_threshold();
       REPORT_EVERY_MS = 15e3;
-      FINISHED_RATIO = 0.92;
       TITLE_TTL_MS = 5 * 6e4;
       lastReport = /* @__PURE__ */ new Map();
       finishedSent = /* @__PURE__ */ new Set();
@@ -16780,7 +17574,7 @@
   // lib/continue-frames.ts
   function getContinueFramesEnabled() {
     if (typeof window === "undefined") return true;
-    return getScopedStorageItem(KEY11) !== "0";
+    return getScopedStorageItem(KEY12) !== "0";
   }
   function continueFrameKey(ref) {
     const profile = getActiveProfileId() ?? "";
@@ -16818,14 +17612,14 @@
       return false;
     }
   }
-  var KEY11, ENDPOINT;
+  var KEY12, ENDPOINT;
   var init_continue_frames = __esm({
     "lib/continue-frames.ts"() {
       "use client";
       init_profile_storage_shim();
       init_player_frame_id();
       init_webdav_credentials();
-      KEY11 = "continue_watching_frames_v1";
+      KEY12 = "continue_watching_frames_v1";
       ENDPOINT = "/api/player-frame";
     }
   });
@@ -16850,10 +17644,11 @@
       imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
     };
   }
-  function read6() {
+  function read7() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY12) ?? "[]");
+      const parsed2 = JSON.parse(getScopedStorageItem(KEY13) ?? "[]");
+      return Array.isArray(parsed2) ? parsed2 : [];
     } catch {
       return [];
     }
@@ -16894,9 +17689,10 @@
     if (typeof window === "undefined") return [];
     try {
       const raw = getScopedStorageItem(HISTORY_KEY);
-      const parsed2 = raw ? JSON.parse(raw) : [];
+      const decoded = raw ? JSON.parse(raw) : [];
+      const parsed2 = Array.isArray(decoded) ? decoded : [];
       if (parsed2.length > 0) return parsed2;
-      const seed = read6();
+      const seed = read7();
       if (seed.length > 0) {
         const seenKeys = /* @__PURE__ */ new Set();
         const dedupedSeed = [];
@@ -16970,9 +17766,9 @@
   }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const before = read6();
+    const before = read7();
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
-    setScopedStorageItem(KEY12, JSON.stringify(list));
+    setScopedStorageItem(KEY13, JSON.stringify(list));
     deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
     mirrorToHistory(sanitizedEntry);
@@ -16982,16 +17778,16 @@
     const key = entryKey(id, season, episode);
     const prefixedMovieKey = entryKey(id.startsWith("movie-") ? id : `movie-${id}`, season, episode);
     const prefixedTvKey = entryKey(id.startsWith("tv-") ? id : `tv-${id}`, season, episode);
-    const before = read6();
+    const before = read7();
     const list = before.filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY12, JSON.stringify(list));
+    setScopedStorageItem(KEY13, JSON.stringify(list));
     deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
   }
-  var EVENT11, KEY12, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
+  var EVENT11, KEY13, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
@@ -16999,6 +17795,7 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
+      init_progress_finished();
       EVENT11 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
@@ -17009,7 +17806,7 @@
         }).catch(() => {
         });
       }
-      KEY12 = "stream_progress_list";
+      KEY13 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
@@ -17553,7 +18350,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY13);
+      const stored = getScopedStorageItem(KEY14);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -17575,7 +18372,7 @@
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY13, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
+    setScopedStorageItem(KEY14, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -17588,11 +18385,11 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY13, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY14, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY13 = "barcode_settings_v1";
+      KEY14 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
         enabled: false,
@@ -18146,7 +18943,7 @@
         return cached2.data;
       }
     }
-    const existing = inflight2.get(key);
+    const existing = inflight3.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
     const request = (async () => {
       const release2 = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
@@ -18191,12 +18988,12 @@
       }
       throw error;
     }).finally(() => {
-      inflight2.delete(key);
+      inflight3.delete(key);
     });
-    inflight2.set(key, request);
+    inflight3.set(key, request);
     return withAbortSignal(request, options.signal);
   }
-  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
+  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight3, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
   var init_api_json_cache = __esm({
     "lib/services/api-json-cache.ts"() {
       init_tv_focus_shim();
@@ -18207,7 +19004,7 @@
       cache3 = /* @__PURE__ */ new Map();
       CACHE_MAX_ENTRIES = 400;
       errorCache = /* @__PURE__ */ new Map();
-      inflight2 = /* @__PURE__ */ new Map();
+      inflight3 = /* @__PURE__ */ new Map();
       queue = [];
       activeRequests = 0;
       queueSeq = 0;
@@ -18237,7 +19034,7 @@
         return cached2.data;
       }
     }
-    const existing = inflight3.get(key);
+    const existing = inflight4.get(key);
     if (existing) return withAbortSignal2(existing, options.signal);
     const request = fetchApiJsonCached(`/api/wiki?${key}`, {
       timeoutMs: options.timeoutMs ?? 5200,
@@ -18254,18 +19051,18 @@
       });
       return data;
     }).finally(() => {
-      inflight3.delete(key);
+      inflight4.delete(key);
     });
-    inflight3.set(key, request);
+    inflight4.set(key, request);
     return withAbortSignal2(request, options.signal);
   }
-  var WIKI_TTL_MS, cache4, inflight3;
+  var WIKI_TTL_MS, cache4, inflight4;
   var init_wiki_request_cache = __esm({
     "lib/services/wiki-request-cache.ts"() {
       init_api_json_cache();
       WIKI_TTL_MS = 5 * 6e4;
       cache4 = /* @__PURE__ */ new Map();
-      inflight3 = /* @__PURE__ */ new Map();
+      inflight4 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -18344,7 +19141,7 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending5 = inflight4.get(b.id);
+    const pending5 = inflight5.get(b.id);
     if (pending5) return pending5;
     const task = chain.then(async () => {
       const current5 = getBarcode(b.id);
@@ -18353,8 +19150,8 @@
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
       return meta;
-    }).finally(() => inflight4.delete(b.id));
-    inflight4.set(b.id, task);
+    }).finally(() => inflight5.delete(b.id));
+    inflight5.set(b.id, task);
     chain = task.catch(() => void 0);
     return task;
   }
@@ -18363,13 +19160,13 @@
     if (b) void ensureBarcodeMeta(b).catch(() => {
     });
   }
-  var GAP_MS, inflight4, chain;
+  var GAP_MS, inflight5, chain;
   var init_barcode_meta = __esm({
     "lib/barcode/barcode-meta.ts"() {
       init_barcode_poster();
       init_barcode_store();
       GAP_MS = 250;
-      inflight4 = /* @__PURE__ */ new Map();
+      inflight5 = /* @__PURE__ */ new Map();
       chain = Promise.resolve();
     }
   });
@@ -18630,9 +19427,9 @@
         useEffect(() => {
           if (!state2.id) return;
           const id = state2.id;
-          const read11 = () => setBarcode(getBarcode(id));
-          read11();
-          return onBarcodesChanged(read11);
+          const read12 = () => setBarcode(getBarcode(id));
+          read12();
+          return onBarcodesChanged(read12);
         }, [state2.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
@@ -18759,122 +19556,6 @@
       "use client";
       init_i18n();
       init_jsx_runtime_shim();
-    }
-  });
-
-  // lib/core-streams/stream-utils.ts
-  function streamResolution(name) {
-    const normalized = name.toLowerCase();
-    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
-    if (normalized.includes("1440p")) return 1440;
-    if (normalized.includes("1080p")) return 1080;
-    if (normalized.includes("720p")) return 720;
-    if (normalized.includes("480p")) return 480;
-    return null;
-  }
-  function parseSizeBytes(text2) {
-    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text2);
-    if (!match) return null;
-    const value = Number.parseFloat(match[1].replace(",", "."));
-    const unit = SIZE_UNITS[match[2].toLowerCase()];
-    if (!Number.isFinite(value) || !unit) return null;
-    return Math.round(value * unit);
-  }
-  function getStreamSizeBytes(stream) {
-    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
-    if (cachedFileBytes > 0) return cachedFileBytes;
-    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
-    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
-  }
-  function formatSize(bytes) {
-    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
-    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
-    return `${Math.round(bytes / 1024)} kB`;
-  }
-  function langFlag(code) {
-    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
-  }
-  function getStreamAudioLanguages(stream) {
-    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
-    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
-  }
-  function isInformationalStream(stream) {
-    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
-    if (stream.infoHash && !stream.directUrl) return false;
-    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
-  }
-  function streamLooksDolbyVision(stream) {
-    const text2 = `${stream.name} ${stream.title}`;
-    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text2) || /dolby[.\s_-]?vision/i.test(text2);
-  }
-  function streamLooksLosslessAudio(stream) {
-    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
-  }
-  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
-      STREAM_LANGUAGE_PATTERNS = [
-        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
-        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
-        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
-        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
-        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
-        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
-        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
-        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
-        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
-        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
-        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
-        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
-        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
-        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
-        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
-        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
-      ];
-      LANG_FLAGS = {
-        en: "\u{1F1EC}\u{1F1E7}",
-        sv: "\u{1F1F8}\u{1F1EA}",
-        no: "\u{1F1F3}\u{1F1F4}",
-        da: "\u{1F1E9}\u{1F1F0}",
-        fi: "\u{1F1EB}\u{1F1EE}",
-        de: "\u{1F1E9}\u{1F1EA}",
-        fr: "\u{1F1EB}\u{1F1F7}",
-        es: "\u{1F1EA}\u{1F1F8}",
-        it: "\u{1F1EE}\u{1F1F9}",
-        pt: "\u{1F1F5}\u{1F1F9}",
-        nl: "\u{1F1F3}\u{1F1F1}",
-        pl: "\u{1F1F5}\u{1F1F1}",
-        ru: "\u{1F1F7}\u{1F1FA}",
-        tr: "\u{1F1F9}\u{1F1F7}",
-        ja: "\u{1F1EF}\u{1F1F5}",
-        ko: "\u{1F1F0}\u{1F1F7}",
-        zh: "\u{1F1E8}\u{1F1F3}",
-        hi: "\u{1F1EE}\u{1F1F3}",
-        ar: "\u{1F1F8}\u{1F1E6}",
-        cs: "\u{1F1E8}\u{1F1FF}",
-        hu: "\u{1F1ED}\u{1F1FA}",
-        ro: "\u{1F1F7}\u{1F1F4}",
-        uk: "\u{1F1FA}\u{1F1E6}",
-        el: "\u{1F1EC}\u{1F1F7}",
-        he: "\u{1F1EE}\u{1F1F1}",
-        th: "\u{1F1F9}\u{1F1ED}",
-        vi: "\u{1F1FB}\u{1F1F3}",
-        id: "\u{1F1EE}\u{1F1E9}"
-      };
-      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
-      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
     }
   });
 
@@ -19163,7 +19844,7 @@
       tmdbRating: next.tmdbRating ?? prev?.tmdbRating ?? null,
       imdbId: next.imdbId ?? prev?.imdbId ?? null
     });
-    while (registry.size > MAX_ENTRIES2) {
+    while (registry.size > MAX_ENTRIES3) {
       const oldest = registry.keys().next().value;
       if (oldest === void 0) break;
       registry.delete(oldest);
@@ -19289,7 +19970,7 @@
       cancelIdle?.();
     };
   }
-  var registry, MAX_ENTRIES2, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners5;
+  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners5;
   var init_player_title_meta = __esm({
     "lib/player-title-meta.ts"() {
       init_api_json_cache();
@@ -19297,7 +19978,7 @@
       init_hero_text();
       init_watchlist_item_cache();
       registry = /* @__PURE__ */ new Map();
-      MAX_ENTRIES2 = 200;
+      MAX_ENTRIES3 = 200;
       imdbToTmdb = /* @__PURE__ */ new Map();
       PLAYER_META_FETCH_DELAY_MS = 5e3;
       PLAYER_META_RETRY_DELAY_MS = 6e4;
@@ -19505,207 +20186,6 @@
     }
   });
 
-  // lib/core-streams/lookup.ts
-  var lookup_exports = {};
-  __export(lookup_exports, {
-    isFreshSource: () => isFreshSource,
-    lookupCoreStreams: () => lookupCoreStreams,
-    lookupSource: () => lookupSource,
-    markSourceCooldown: () => markSourceCooldown,
-    rememberFreshSources: () => rememberFreshSources,
-    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
-    sourceInCooldown: () => sourceInCooldown,
-    sourceStreamUrl: () => sourceStreamUrl,
-    streamTargetKey: () => streamTargetKey
-  });
-  function streamTargetKey(target2) {
-    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
-  }
-  function sourceStreamUrl(addon, target2) {
-    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
-  }
-  function sourceInCooldown(addon, now2 = Date.now()) {
-    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
-    if (!until) return false;
-    if (now2 >= until) {
-      cooldownUntil.delete(canonicalAddonUrl(addon.url));
-      return false;
-    }
-    return true;
-  }
-  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
-    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
-  }
-  function looksRateLimited(message) {
-    return /\b429\b|rate.?limit|too many requests/i.test(message);
-  }
-  function tagSource(streams, addon) {
-    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
-  }
-  function keepPlayable(streams) {
-    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
-  }
-  function rememberFreshSources(streams, now2 = Date.now()) {
-    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
-    if (freshSources.size > 2e3) {
-      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
-    }
-  }
-  function isFreshSource(url, now2 = Date.now()) {
-    const at = freshSources.get(url);
-    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
-  }
-  async function fetchViaApi(addon, target2, timeoutMs, signal) {
-    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
-    if (target2.type === "series" && target2.season != null && target2.episode != null) {
-      params.set("season", String(target2.season));
-      params.set("episode", String(target2.episode));
-    }
-    const controller2 = new AbortController();
-    const onAbort = () => controller2.abort();
-    signal?.addEventListener("abort", onAbort);
-    const timer5 = setTimeout(() => controller2.abort(), timeoutMs + 500);
-    try {
-      const response = await fetch(`/api/streams?${params}`, {
-        headers: {
-          "x-source-manifest-url": addon.url,
-          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
-        },
-        signal: controller2.signal
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      if (payload.error) throw new Error(payload.error);
-      return payload.streams ?? [];
-    } finally {
-      clearTimeout(timer5);
-      signal?.removeEventListener("abort", onAbort);
-    }
-  }
-  async function fetchViaDesktop(addon, target2, timeoutMs) {
-    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
-    if (!streams) return null;
-    return streams.map((stream) => ({
-      ...stream,
-      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
-      cachedFiles: stream.cachedFiles ?? []
-    }));
-  }
-  async function lookupSource(addon, target2, options = {}) {
-    const timeoutMs = options.timeoutMs ?? 12e3;
-    const startedAt = Date.now();
-    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
-    const attempt = async () => {
-      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
-      try {
-        let raw = null;
-        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
-        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
-        const streams = keepPlayable(tagSource(raw, addon));
-        rememberFreshSources(streams);
-        const ms2 = Date.now() - startedAt;
-        return {
-          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
-          streams
-        };
-      } catch (error) {
-        const ms2 = Date.now() - startedAt;
-        const message = error instanceof Error ? error.message : String(error);
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
-        }
-        if (looksRateLimited(message)) markSourceCooldown(addon);
-        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
-      }
-    };
-    const first = await attempt();
-    const kind = first.report.outcome.kind;
-    if ((kind === "error" || kind === "timeout") && !sourceInCooldown(addon)) {
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-      const second = await attempt();
-      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
-    }
-    return first;
-  }
-  function memoKey(target2) {
-    return `${target2.type}:${streamTargetKey(target2)}`;
-  }
-  function resetCoreStreamLookupMemo() {
-    inflight5.clear();
-    memo2.clear();
-  }
-  async function lookupCoreStreams(target2, options = {}) {
-    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
-    const key = memoKey(target2);
-    const replay = (result2) => {
-      if (options.onSource) {
-        const bySource = /* @__PURE__ */ new Map();
-        for (const stream of result2.streams) {
-          const name = stream.source ?? "";
-          bySource.set(name, [...bySource.get(name) ?? [], stream]);
-        }
-        for (const report of result2.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
-      }
-      return result2;
-    };
-    const cached2 = memo2.get(key);
-    if (cached2 && Date.now() - cached2.at < MEMO_TTL_MS) return replay(cached2.result);
-    const pending5 = inflight5.get(key);
-    if (pending5) return pending5.then(replay);
-    const run3 = lookupCoreStreamsUncached(target2, options).then((result2) => {
-      const answered2 = result2.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
-      const framedSkip = result2.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
-      if (answered2 && !framedSkip) {
-        memo2.set(key, { at: Date.now(), result: result2 });
-      }
-      return result2;
-    }).finally(() => inflight5.delete(key));
-    inflight5.set(key, run3);
-    return run3;
-  }
-  async function lookupCoreStreamsUncached(target2, options = {}) {
-    const addons = options.addons ?? getEnabledCoreStreamAddons();
-    if (addons.length === 0) return { streams: [], reports: [] };
-    const seen2 = /* @__PURE__ */ new Set();
-    const merged = [];
-    const reports = [];
-    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
-      const { report, streams } = await lookupSource(addon, target2, options);
-      reports.push(report);
-      const fresh = [];
-      for (const stream of streams) {
-        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
-        if (seen2.has(key)) continue;
-        seen2.add(key);
-        merged.push(stream);
-        fresh.push(stream);
-      }
-      if (options.signal?.aborted) return;
-      options.onSource?.(report, fresh);
-    });
-    return { streams: merged, reports };
-  }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
-  var init_lookup = __esm({
-    "lib/core-streams/lookup.ts"() {
-      "use client";
-      init_core_addons();
-      init_addon_url();
-      init_plugin_sdk();
-      init_async_utils();
-      init_stream_utils();
-      init_mode();
-      cooldownUntil = /* @__PURE__ */ new Map();
-      COOLDOWN_MS = 9e4;
-      FRESH_SOURCE_MS = 10 * 6e4;
-      freshSources = /* @__PURE__ */ new Map();
-      RETRY_DELAY_MS = 700;
-      MEMO_TTL_MS = 45e3;
-      inflight5 = /* @__PURE__ */ new Map();
-      memo2 = /* @__PURE__ */ new Map();
-    }
-  });
-
   // lib/core-streams/prepare.ts
   var init_prepare = __esm({
     "lib/core-streams/prepare.ts"() {
@@ -19763,17 +20243,32 @@
   }
   function pickAutoSubtitle(args) {
     const current5 = args.currentId ? args.options.find((option) => option.id === args.currentId) ?? null : null;
+    const hitIn = (pool, lang) => {
+      const hit2 = pool.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
+      if (!hit2) return null;
+      if (current5 && current5 !== hit2 && args.isEmbedded(hit2) && args.isEmbedded(current5) && !args.isBlocked(current5) && args.matchesLanguage(current5, lang)) return current5;
+      return hit2;
+    };
     const firstHit = (pool) => {
       for (const lang of args.languages) {
-        const hit2 = pool.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
-        if (!hit2) continue;
-        if (current5 && current5 !== hit2 && args.isEmbedded(hit2) && args.isEmbedded(current5) && !args.isBlocked(current5) && args.matchesLanguage(current5, lang)) return current5;
-        return hit2;
+        const hit2 = hitIn(pool, lang);
+        if (hit2) return hit2;
       }
       return null;
     };
     const untaggedEmbedded = () => args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
-    if (args.preferEmbedded) {
+    if (args.order === "best") {
+      const fullEmbedded = args.options.filter((option) => args.isEmbedded(option) && !option.forced);
+      const downloads = args.options.filter((option) => !args.isEmbedded(option));
+      const forcedEmbedded = args.options.filter((option) => args.isEmbedded(option) && option.forced);
+      for (const lang of args.languages) {
+        const hit2 = hitIn(fullEmbedded, lang) ?? hitIn(downloads, lang) ?? hitIn(forcedEmbedded, lang);
+        if (hit2) return hit2;
+      }
+      if (args.addonCount > 0) return null;
+      return untaggedEmbedded();
+    }
+    if (args.order === "embedded") {
       const embedded = firstHit(args.options.filter(args.isEmbedded)) ?? untaggedEmbedded();
       if (embedded) return embedded;
       return firstHit(args.options);
@@ -19957,7 +20452,7 @@
   function getStoredVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY14);
+      const raw = getScopedStorageItem(KEY15);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed2 = JSON.parse(raw);
       const clamp5 = (v, lo, hi, dflt) => {
@@ -19976,7 +20471,7 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY14, JSON.stringify(tuning));
+    setScopedStorageItem(KEY15, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onVideoTuningChanged(listener) {
@@ -20042,7 +20537,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY14, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY15, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -20055,7 +20550,7 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY14 = "video_tuning";
+      KEY15 = "video_tuning";
       EVENT13 = "lumio-video-tuning-changed";
       filmTuning = null;
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
@@ -20076,7 +20571,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY15);
+      const raw = getScopedStorageItem(KEY16);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed2 = JSON.parse(raw);
       return {
@@ -20090,7 +20585,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY15, JSON.stringify(tuning));
+    setScopedStorageItem(KEY16, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
   }
   function onAudioTuningChanged(listener) {
@@ -20106,7 +20601,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY15, EVENT14;
+  var DEFAULT_AUDIO_TUNING, KEY16, EVENT14;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -20117,12 +20612,43 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY15 = "audio_tuning";
+      KEY16 = "audio_tuning";
       EVENT14 = "lumio-audio-tuning-changed";
     }
   });
 
   // components/player/player-tuning-panel.tsx
+  function useCustomShaderFiles(enabled) {
+    const [files, setFiles] = useState(null);
+    const [selected, setSelected] = useState(() => getCustomShaders());
+    useEffect(() => onPlaybackSettingsChanged(() => setSelected(getCustomShaders())), []);
+    useEffect(() => {
+      if (!enabled) return;
+      let cancelled = false;
+      const refresh2 = () => {
+        void fetch("/api/custom-shaders").then((r) => r.json()).then((data) => {
+          if (!cancelled) setFiles(data.files ?? []);
+        }).catch(() => {
+          if (!cancelled) setFiles([]);
+        });
+      };
+      refresh2();
+      window.addEventListener("focus", refresh2);
+      return () => {
+        cancelled = true;
+        window.removeEventListener("focus", refresh2);
+      };
+    }, [enabled]);
+    const toggle = (name) => {
+      const next = toggleCustomShaderSelection(selected, name);
+      setSelected(next);
+      setCustomShaders(next);
+    };
+    const openFolder = () => {
+      void fetch("/api/custom-shaders/open", { method: "POST" });
+    };
+    return { files, selected, toggle, openFolder };
+  }
   function MiniHeader({ children }) {
     return /* @__PURE__ */ jsx("p", { className: "mb-2 mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 first:mt-0", children });
   }
@@ -20140,7 +20666,7 @@
       }
     );
   }
-  function PlayerTuningPanel({ onClose, surface }) {
+  function PlayerTuningPanel({ onClose, surface, shaders }) {
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
@@ -20154,6 +20680,9 @@
       setRenderState(getRenderTuning());
     }), []);
     useEffect(() => onAudioTuningChanged(() => setAudioState(getAudioTuning())), []);
+    const showShaders = Boolean(shaders) && !droid;
+    const customShaders = useCustomShaderFiles(showShaders);
+    const shaderStatusText = shaders?.status ? formatShaderStatus(shaders.status, t) : null;
     const [scope, setScope] = useState(() => getVideoTuningScope() === "film" || !isVideoTuningActive(getStoredVideoTuning()) ? "film" : "all");
     function apply(next) {
       setTuningState(next);
@@ -20284,7 +20813,14 @@
             ["interpolation", "rtInterpolation"],
             ["anime4k", "rtAnime4k"],
             ["largeBuffer", "rtBuffer"]
-          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] })))
+          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] }))),
+          showShaders ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("advCustomShadersTitle") }),
+            shaderStatusText ? /* @__PURE__ */ jsx("div", { "data-shader-status": "", className: "px-3 pb-1.5 text-[12px] text-slate-400", children: shaderStatusText }) : null,
+            customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[12px] text-slate-500", children: t("rtShadersEmpty") }) : null,
+            (customShaders.files ?? []).map((file) => toggle(`shader:${file.name}`, file.name, customShaders.selected.includes(file.name), () => customShaders.toggle(file.name))),
+            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: customShaders.openFolder, children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("advCustomShadersOpen") }) })
+          ] }) : null
         ] }),
         /* @__PURE__ */ jsx(
           "button",
@@ -20440,7 +20976,35 @@
                   }
                 )
               ] }, key))
-            ] })
+            ] }),
+            showShaders ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx(MiniHeader, { children: t("advCustomShadersTitle") }),
+              shaderStatusText ? /* @__PURE__ */ jsx("p", { "data-shader-status": "", className: `mb-2 text-[10.5px] ${shaders?.status && (shaders.status.anime4k || shaders.status.custom > 0) ? "text-accent-200" : "text-slate-400"}`, children: shaderStatusText }) : null,
+              /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+                customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-[10.5px] text-slate-500", children: t("rtShadersEmpty") }) : null,
+                (customShaders.files ?? []).map((file) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file.name, children: file.name }),
+                  /* @__PURE__ */ jsx(
+                    MiniToggle,
+                    {
+                      tv: isTv,
+                      checked: customShaders.selected.includes(file.name),
+                      onChange: () => customShaders.toggle(file.name)
+                    }
+                  )
+                ] }, file.name)),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    ...isTv ? { "data-f": "" } : {},
+                    onClick: customShaders.openFolder,
+                    className: "rounded-full border border-white/10 px-2.5 py-1 text-[10.5px] font-medium text-slate-300 transition hover:border-white/25",
+                    children: t("advCustomShadersOpen")
+                  }
+                )
+              ] })
+            ] }) : null
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "mt-4 flex items-center justify-between", children: [
             /* @__PURE__ */ jsx(
@@ -20473,6 +21037,7 @@
       init_video_tuning();
       init_audio_tuning();
       init_tauri_native_player();
+      init_playback_settings();
       init_jsx_runtime_shim();
       DIALS = [
         { key: "brightness", labelKey: "vtBrightness", min: -50, max: 50, step: 1 },
@@ -20601,6 +21166,46 @@
       latest = null;
       inFlight = false;
       again = false;
+    }
+  });
+
+  // lib/night-mode.ts
+  function nightModeFfmpegFilter(mode) {
+    if (mode === "off") return null;
+    const preset = NIGHT_MODE_PRESETS[mode];
+    if (!preset) return null;
+    const thresholdDb = -preset.makeupDb * preset.ratio / (preset.ratio - 1);
+    const makeup = linear(preset.makeupDb);
+    return [
+      `acompressor=threshold=${fixed(linear(thresholdDb), 4)}:ratio=${preset.ratio}:attack=5:release=300:makeup=${fixed(makeup, 4)}:knee=2:detection=peak:link=maximum`,
+      `agate=threshold=${fixed(linear(LIFT_FADE_DB + preset.makeupDb), 5)}:ratio=4:range=${fixed(1 / makeup, 4)}:attack=5:release=300:detection=peak:link=maximum`,
+      `alimiter=limit=${fixed(linear(LIMIT_DBFS), 3)}:attack=5:release=50:level=0`
+    ].join(",");
+  }
+  function nightModeLabelKey(mode, menu) {
+    switch (mode) {
+      case "off":
+        return "nightModeOff";
+      case "mild":
+        return menu ? "nightModeMenuMild" : "nightModeMild";
+      case "medium":
+        return menu ? "nightModeMenuMedium" : "nightModeMedium";
+      case "strong":
+        return menu ? "nightModeMenuStrong" : "nightModeStrong";
+    }
+  }
+  var NIGHT_MODE_PRESETS, LIFT_FADE_DB, LIMIT_DBFS, linear, fixed;
+  var init_night_mode = __esm({
+    "lib/night-mode.ts"() {
+      NIGHT_MODE_PRESETS = {
+        mild: { makeupDb: 6, ratio: 2 },
+        medium: { makeupDb: 10, ratio: 3 },
+        strong: { makeupDb: 15, ratio: 4 }
+      };
+      LIFT_FADE_DB = -50;
+      LIMIT_DBFS = -1;
+      linear = (db) => 10 ** (db / 20);
+      fixed = (value, digits) => Number(value.toFixed(digits)).toString();
     }
   });
 
@@ -22321,6 +22926,15 @@
     }
   });
 
+  // lib/quick-open.ts
+  var init_quick_open = __esm({
+    "lib/quick-open.ts"() {
+      "use client";
+      init_video_progress();
+      init_open_item_runtime();
+    }
+  });
+
   // lib/couch/host-bridge.ts
   function registerCouchPlayer(handlers) {
     const token = /* @__PURE__ */ Symbol("couch-player");
@@ -22363,6 +22977,8 @@
       init_host_trakt();
       init_sport_protocol();
       init_remote_nav();
+      init_quick_open();
+      init_video_progress();
       sportSurface = null;
       tipSummary = null;
       players = [];
@@ -22633,7 +23249,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY16);
+      const raw = getScopedStorageItem(KEY17);
       if (!raw) return {};
       const parsed2 = JSON.parse(raw);
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
@@ -22662,11 +23278,11 @@
   function hasCommandModifier(e) {
     return e.metaKey || e.ctrlKey || e.altKey;
   }
-  var KEY16, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
+  var KEY17, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY16 = "keyboard_shortcuts";
+      KEY17 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -22693,8 +23309,8 @@
   // lib/player-reveal-hold.ts
   function state() {
     const g = globalThis;
-    if (!g[KEY17]) g[KEY17] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY17];
+    if (!g[KEY18]) g[KEY18] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY18];
   }
   function isPlayerRevealHeld() {
     return state().holders > 0;
@@ -22707,20 +23323,11 @@
     if (s.userMuted === null) s.userMuted = current5;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY17;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY18;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY17 = "__lumioRevealHold";
-    }
-  });
-
-  // lib/core-streams/start-watchdog.ts
-  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
-  var init_start_watchdog = __esm({
-    "lib/core-streams/start-watchdog.ts"() {
-      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
-      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+      KEY18 = "__lumioRevealHold";
     }
   });
 
@@ -23176,33 +23783,33 @@
   });
 
   // lib/gesture-settings.ts
-  function read7(key) {
+  function read8(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read7(KEY_LEFT);
+    const stored = read8(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read7(KEY_RIGHT);
+    const stored = read8(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read7(KEY_HORIZONTAL);
+    const stored = read8(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read7(KEY_BRIGHTNESS_TARGET);
+    const stored = read8(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read7(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read8(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read7(KEY_HOLD_SPEED) === "1";
+    return read8(KEY_HOLD_SPEED) === "1";
   }
   var VERTICAL_GESTURE_ACTIONS, HORIZONTAL_GESTURE_ACTIONS, BRIGHTNESS_TARGETS, DOUBLE_TAP_SECONDS, KEY_LEFT, KEY_RIGHT, KEY_HORIZONTAL, KEY_BRIGHTNESS_TARGET, KEY_DOUBLE_TAP, KEY_HOLD_SPEED;
   var init_gesture_settings = __esm({
@@ -23245,7 +23852,7 @@
   function readStore() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(STORAGE_KEY3);
+      const raw = getScopedStorageItem(STORAGE_KEY5);
       if (!raw) return {};
       const parsed2 = JSON.parse(raw);
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
@@ -23257,12 +23864,12 @@
     if (typeof window === "undefined") return;
     try {
       const keys2 = Object.keys(store3);
-      if (keys2.length > MAX_ENTRIES3) {
-        keys2.sort((a, b) => (store3[a]?.t ?? 0) - (store3[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES3).forEach((key) => {
+      if (keys2.length > MAX_ENTRIES4) {
+        keys2.sort((a, b) => (store3[a]?.t ?? 0) - (store3[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES4).forEach((key) => {
           delete store3[key];
         });
       }
-      setScopedStorageItem(STORAGE_KEY3, JSON.stringify(store3));
+      setScopedStorageItem(STORAGE_KEY5, JSON.stringify(store3));
     } catch {
     }
   }
@@ -23302,12 +23909,12 @@
     }
     writeStore(store3);
   }
-  var STORAGE_KEY3, MAX_ENTRIES3;
+  var STORAGE_KEY5, MAX_ENTRIES4;
   var init_subtitle_delay_store = __esm({
     "lib/subtitle-delay-store.ts"() {
       init_profile_storage_shim();
-      STORAGE_KEY3 = "lumio_subtitle_delays_v1";
-      MAX_ENTRIES3 = 400;
+      STORAGE_KEY5 = "lumio_subtitle_delays_v1";
+      MAX_ENTRIES4 = 400;
     }
   });
 
@@ -23650,33 +24257,33 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/subtitle-sync/opt-out.ts
-  function read8() {
+  function read9() {
     try {
-      const parsed2 = JSON.parse(getScopedStorageItem(STORAGE_KEY4) ?? "{}");
+      const parsed2 = JSON.parse(getScopedStorageItem(STORAGE_KEY6) ?? "{}");
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
     } catch {
       return {};
     }
   }
   function isAutoSyncOptedOut(mediaKey, subtitleId) {
-    return `${mediaKey}|${subtitleId}` in read8();
+    return `${mediaKey}|${subtitleId}` in read9();
   }
   function setAutoSyncOptOut(mediaKey, subtitleId) {
-    const store3 = read8();
+    const store3 = read9();
     const key = `${mediaKey}|${subtitleId}`;
     delete store3[key];
     const next = Math.max(0, ...Object.values(store3)) + 1;
     store3[key] = next;
     const keys2 = Object.keys(store3).sort((a, b) => store3[a] - store3[b]);
-    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES4))) delete store3[k];
-    setScopedStorageItem(STORAGE_KEY4, JSON.stringify(store3));
+    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES5))) delete store3[k];
+    setScopedStorageItem(STORAGE_KEY6, JSON.stringify(store3));
   }
-  var STORAGE_KEY4, MAX_ENTRIES4;
+  var STORAGE_KEY6, MAX_ENTRIES5;
   var init_opt_out = __esm({
     "lib/subtitle-sync/opt-out.ts"() {
       init_profile_storage_shim();
-      STORAGE_KEY4 = "lumio_subtitle_autosync_optout_v1";
-      MAX_ENTRIES4 = 200;
+      STORAGE_KEY6 = "lumio_subtitle_autosync_optout_v1";
+      MAX_ENTRIES5 = 200;
     }
   });
 
@@ -24579,6 +25186,16 @@ ${effectiveName(url, id)}`;
     }
   });
 
+  // lib/season-lengths.ts
+  var SEASON_CACHE_TTL_MS;
+  var init_season_lengths = __esm({
+    "lib/season-lengths.ts"() {
+      "use client";
+      init_app_storage();
+      SEASON_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1e3;
+    }
+  });
+
   // lib/series-lock-gate.ts
   function epCode(ep) {
     return `S${ep.season}E${ep.episode}`;
@@ -24673,6 +25290,7 @@ ${effectiveName(url, id)}`;
       init_profile_storage_shim();
       init_watched_episodes();
       init_series_locks();
+      init_season_lengths();
       init_series_lock_gate();
       WATCHED_KEY = "watched_episodes";
       OPEN2 = { kind: "open" };
@@ -24803,12 +25421,12 @@ ${effectiveName(url, id)}`;
     const ss = String(total % 60).padStart(2, "0");
     return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   }
-  function normalize(s, fixed) {
+  function normalize(s, fixed2) {
     const lo = s.windowStart;
     const hi = clipWindowEnd(s);
     const max = maxLengthFor(s.format);
     let { inSec, outSec } = s;
-    if (fixed === "out") {
+    if (fixed2 === "out") {
       outSec = clamp(outSec, Math.min(hi, lo + CLIP_MIN_SEC), hi);
       inSec = clamp(inSec, Math.max(lo, outSec - max), Math.max(lo, outSec - CLIP_MIN_SEC));
     } else {
@@ -25751,23 +26369,23 @@ ${effectiveName(url, id)}`;
     const gap = 18 * s;
     let y = padY;
     if (opts.includeTitle) {
-      const fixed = opts.fixedLayout === true;
-      let size = fixed ? 22 : 28;
+      const fixed2 = opts.fixedLayout === true;
+      let size = fixed2 ? 22 : 28;
       setFont(ctx, 700, size * s);
       const yearW = year ? ctx.measureText(year).width : 0;
       const titleMax = contentW - yearW - (year ? 24 * s : 0);
       const title = b.title.toUpperCase();
-      while (!fixed && size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+      while (!fixed2 && size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
         size -= 1;
         setFont(ctx, 700, size * s);
       }
-      const rowH = (fixed ? size : 28) * 1.2 * s;
+      const rowH = (fixed2 ? size : 28) * 1.2 * s;
       ctx.fillStyle = paper.ink;
-      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, (fixed ? size : 28) * s), 0.02 * size * s, "left");
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, (fixed2 ? size : 28) * s), 0.02 * size * s, "left");
       if (year) {
-        setFont(ctx, 700, (fixed ? size : 28) * s);
+        setFont(ctx, 700, (fixed2 ? size : 28) * s);
         ctx.textAlign = "right";
-        ctx.fillText(year, padX + contentW, baseline(y, rowH, (fixed ? size : 28) * s));
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, (fixed2 ? size : 28) * s));
       }
       y += rowH + gap;
       const m = opts.meta;
@@ -25788,14 +26406,14 @@ ${effectiveName(url, id)}`;
           setFont(ctx, 700, size7);
           drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
           setFont(ctx, 400, size7);
-          const names = fixed ? c.names.slice(0, CREDIT_ROWS) : c.names;
+          const names = fixed2 ? c.names.slice(0, CREDIT_ROWS) : c.names;
           names.forEach((name, row) => {
             const top2 = y + lineH + 3 * s + row * lineH;
             drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top2, lineH, size7), spacing, "left");
           });
         });
       }
-      if (fixed) {
+      if (fixed2) {
         y += 7.5 * 1.5 * s * (1 + CREDIT_ROWS) + 3 * s + gap;
       } else if (columns.length > 0) {
         const lineH = 7.5 * 1.5 * s;
@@ -26478,56 +27096,56 @@ ${effectiveName(url, id)}`;
     }
     return `movie:${id}`;
   }
-  function read9() {
+  function read10() {
     try {
-      const raw = getScopedStorageItem(KEY18);
+      const raw = getScopedStorageItem(KEY19);
       const parsed2 = raw ? JSON.parse(raw) : null;
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
     } catch {
       return {};
     }
   }
-  function write5(store3) {
+  function write6(store3) {
     const nycklar = Object.keys(store3);
     if (nycklar.length > MAX_TITLES) {
       nycklar.sort((a, b) => store3[a].at - store3[b].at);
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store3[nyckel];
     }
     try {
-      setScopedStorageItem(KEY18, JSON.stringify(store3));
+      setScopedStorageItem(KEY19, JSON.stringify(store3));
     } catch {
     }
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT15));
   }
   function getMoments(titleKey2) {
     if (!titleKey2) return [];
-    return [...read9()[titleKey2]?.t ?? []];
+    return [...read10()[titleKey2]?.t ?? []];
   }
   function addMoment(titleKey2, seconds2, nowMs = Date.now()) {
     const sekund = Math.max(0, Math.floor(seconds2));
-    const store3 = read9();
+    const store3 = read10();
     const lista = store3[titleKey2]?.t ?? [];
     const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
     if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
     const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
     store3[titleKey2] = { at: nowMs, t: n\u00E4sta };
-    write5(store3);
+    write6(store3);
     return { kind: "added", seconds: sekund };
   }
   function removeMoment(titleKey2, seconds2) {
-    const store3 = read9();
+    const store3 = read10();
     const lista = store3[titleKey2]?.t;
     if (!lista) return;
     const kvar = lista.filter((t) => t !== seconds2);
     if (kvar.length === 0) delete store3[titleKey2];
     else store3[titleKey2] = { at: Date.now(), t: kvar };
-    write5(store3);
+    write6(store3);
   }
   function clearMoments(titleKey2) {
-    const store3 = read9();
+    const store3 = read10();
     if (!store3[titleKey2]) return;
     delete store3[titleKey2];
-    write5(store3);
+    write6(store3);
   }
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -26535,11 +27153,11 @@ ${effectiveName(url, id)}`;
     window.addEventListener(EVENT15, listener);
     return () => window.removeEventListener(EVENT15, listener);
   }
-  var KEY18, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY19, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY18 = "player_moments_v1";
+      KEY19 = "player_moments_v1";
       EVENT15 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
@@ -27098,8 +27716,9 @@ ${cue.text}`).join("\n\n")}
     const introDbCacheRef = useRef(INTRODB_CACHE);
     const containerRef = useRef(null);
     const controlsRef = useRef(null);
-    const titleBlockRef = useRef(null);
+    const [titleBlockEl, setTitleBlockEl] = useState(null);
     const [titleClearance, setTitleClearance] = useState(0);
+    const showKeySeekHudRef = useRef(null);
     const boundsSyncFrameRef = useRef(null);
     const boundsResyncTimersRef = useRef([]);
     const didSeekRef = useRef(false);
@@ -27110,6 +27729,8 @@ ${cue.text}`).join("\n\n")}
       return /^\d+$/.test(bare) ? bare : null;
     })();
     const wikiTmdbId = tmdbId ?? derivedTmdbId;
+    const seriesTrackTmdbRef = useRef(null);
+    seriesTrackTmdbRef.current = mediaType === "tv" ? wikiTmdbId ?? null : null;
     const inferredMediaType = mediaType ?? (season != null || episode != null ? "tv" : "movie");
     const endHlsSessionOnServer = useCallback((sessionId) => {
       if (!sessionId) return;
@@ -27208,12 +27829,13 @@ ${cue.text}`).join("\n\n")}
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
-    const lastPlaybackInteractionRef = useRef(initialTime ?? 0);
+    const idlePlaybackSecondsRef = useRef(0);
+    const idleTickTimeRef = useRef(null);
     const stillWatchingSeriesKeyRef = useRef(null);
     const stillWatchingEpisodeKeyRef = useRef(null);
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
-      lastPlaybackInteractionRef.current = realTime;
+      idlePlaybackSecondsRef.current = 0;
       if (showStillWatchingPrompt) {
         setShowStillWatchingPrompt(false);
         if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
@@ -27448,9 +28070,9 @@ ${cue.text}`).join("\n\n")}
       if (!hasStarted || isDroidEngine) return void 0;
       if (isMpvEngine) {
         let cancelled = false;
-        const read11 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
+        const read12 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
         const timer5 = window.setTimeout(() => {
-          void Promise.all([read11("video-params/w"), read11("video-params/h"), read11("video-params/gamma"), read11("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
+          void Promise.all([read12("video-params/w"), read12("video-params/h"), read12("video-params/gamma"), read12("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
             if (cancelled) return;
             const width = Number(w);
             const height = Number(h);
@@ -27477,6 +28099,11 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       void mpvCommand2(["set_property", "audio-channels", audioTuning.downmixStereo ? "stereo" : "auto-safe"]);
     }, [useMpv, audioTuning.downmixStereo, hasStarted]);
+    const [customShadersKey, setCustomShadersKey] = useState(() => getCustomShaders().join("\n"));
+    useEffect(() => onPlaybackSettingsChanged(() => setCustomShadersKey(getCustomShaders().join("\n"))), []);
+    const [shaderStatus, setShaderStatus] = useState(null);
+    const lastShaderRequestRef = useRef(null);
+    const shaderApplySeqRef = useRef(0);
     useEffect(() => {
       if (!useMpv) return;
       const renderTuning = getRenderTuning();
@@ -27484,15 +28111,30 @@ ${cue.text}`).join("\n\n")}
         void mpvCommand2(["set_property", prop, value]);
       }
       if (isMpvEngine) {
-        if (renderTuning.anime4k) {
-          void fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => {
-            const separator = isWindowsDesktop() ? ";" : ":";
-            if (paths && paths.length > 0) void mpvCommand2(["set_property", "glsl-shaders", paths.join(separator)]);
-          }).catch(() => {
-          });
-        } else {
-          void mpvCommand2(["set_property", "glsl-shaders", ""]);
-        }
+        const customSelected = getCustomShaders();
+        const request = `${renderTuning.anime4k ? 1 : 0}|${customSelected.join("\n")}`;
+        const changed = lastShaderRequestRef.current !== null && lastShaderRequestRef.current !== request;
+        lastShaderRequestRef.current = request;
+        const seq3 = ++shaderApplySeqRef.current;
+        void Promise.all([
+          renderTuning.anime4k ? fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => paths ?? []).catch(() => []) : Promise.resolve([]),
+          customSelected.length > 0 ? fetch("/api/custom-shaders").then((r) => r.json()).then(({ files }) => resolveCustomShaderPaths(customSelected, files ?? [])).catch(() => []) : Promise.resolve([])
+        ]).then(async ([anime4k, custom]) => {
+          if (seq3 !== shaderApplySeqRef.current) return;
+          const report = (status) => {
+            setShaderStatus(status);
+            if (changed) showMomentNotice(formatShaderStatus(status, t));
+          };
+          if (parseRawMpvConf(getRawMpvConf()).some(([prop]) => prop === "glsl-shaders")) {
+            report({ anime4k: false, custom: 0, mpvConf: true });
+            return;
+          }
+          const separator = isWindowsDesktop() ? ";" : ":";
+          await mpvCommand2(["set_property", "glsl-shaders", [...anime4k, ...custom].join(separator)]).catch(() => null);
+          const readback = await mpvCommand2(["get_property", "glsl-shaders"]).catch(() => null);
+          if (seq3 !== shaderApplySeqRef.current) return;
+          report({ ...readActiveShaders(readback, anime4k, custom), mpvConf: false });
+        });
       }
       for (const [prop, value] of parseRawMpvConf(getRawMpvConf())) {
         void mpvCommand2(["set_property", prop, value]);
@@ -27506,7 +28148,7 @@ ${cue.text}`).join("\n\n")}
       void mpvCommand2(["set_property", "saturation", effectiveVideoTuning.saturation]);
       void mpvCommand2(["set_property", "gamma", effectiveVideoTuning.gamma]);
       void mpvCommand2(["set_property", "sharpen", effectiveVideoTuning.sharpen]);
-    }, [useMpv, effectiveVideoTuning, hasStarted, isDirectLocalFileSource]);
+    }, [useMpv, effectiveVideoTuning, hasStarted, isDirectLocalFileSource, customShadersKey]);
     const [requiresUserStart, setRequiresUserStart] = useState(false);
     const [hasEnded, setHasEnded] = useState(false);
     const [mpvStartupHoldReady, setMpvStartupHoldReady] = useState(false);
@@ -27958,6 +28600,11 @@ ${cue.text}`).join("\n\n")}
         cinemaMute.held = true;
         droid.setMuted(true);
       }
+      if (!await confirmPlaybackNetwork((timeoutMs) => np({ cmd: "networkType" }, timeoutMs))) {
+        if (!args.shouldAbort?.()) onClose();
+        return;
+      }
+      if (args.shouldAbort?.()) return;
       const heavy = (expectedBitrateRef.current ?? 0) >= 3e7 || /(?:^|[.\s_\-\[(])(2160p|4k|uhd|remux)(?:$|[.\s_\-\])])/i.test(filename ?? "");
       await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang, requestHeaders: args.requestHeaders, kind: "vod", bitrateBps: expectedBitrateRef.current, heavy });
     } : openMpvPlayer;
@@ -28378,7 +29025,23 @@ ${cue.text}`).join("\n\n")}
       if (prematureEndHandledRef.current) return;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const nearRealEnd = totalDuration > 0 && realTime / totalDuration >= 0.9;
-      if (nearRealEnd || watchedThisSession >= 60) return;
+      if (nearRealEnd) return;
+      if (watchedThisSession >= 60 && totalDuration > 0) {
+        prematureEndHandledRef.current = true;
+        if (!streams) return;
+        const seconds2 = Math.max(0, Math.floor(realTime));
+        const h = Math.floor(seconds2 / 3600);
+        const m = Math.floor(seconds2 % 3600 / 60);
+        const sec = String(seconds2 % 60).padStart(2, "0");
+        const time = h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+        if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+        setSyncNotice({
+          message: t("playerStreamLost").replace("{time}", time),
+          actionLabel: t("startPickSource"),
+          onAction: () => setShowStreams(true)
+        });
+        return;
+      }
       prematureEndHandledRef.current = true;
       if (onLoadFailedRef.current?.()) {
         console.warn("[player] stream ended prematurely, parent retrying", { realTime, totalDuration, url });
@@ -28569,8 +29232,14 @@ ${cue.text}`).join("\n\n")}
       if (!on) void mpvCommand2(["set_property", "secondary-sid", "no"]);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubDelay]);
     useEffect(() => {
+      if (!isDroidEngine) return;
+      void nativeSetNightMode(nightMode).catch(() => {
+      });
+    }, [isDroidEngine, nightMode]);
+    useEffect(() => {
       if (!useMpv || !mpv.fileLoaded) return;
-      const filter = nightMode === "off" ? null : nightMode === "mild" ? "lavfi=[acompressor=threshold=0.25:ratio=2.5:attack=20:release=250,alimiter=limit=0.63:level=0]" : "lavfi=[acompressor=threshold=0.125:ratio=4:attack=10:release=300,alimiter=limit=0.4:level=0]";
+      const nightChain = nightModeFfmpegFilter(nightMode);
+      const filter = nightChain ? `lavfi=[${nightChain}]` : null;
       void (async () => {
         await mpvCommand2(["af", "clr", ""]);
         if (hapticFilterWanted) {
@@ -29725,6 +30394,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (isTv && e.key.startsWith("Arrow")) return;
       if (isTextEntryTarget2(keyTarget)) return;
+      if (e.key.startsWith("Arrow") && keyTarget instanceof HTMLInputElement && keyTarget.type === "range" && !keyTarget.hasAttribute("data-player-volume")) return;
       if (matchesShortcut("playPause", e.key) || e.key === "k") {
         e.preventDefault();
         togglePlay();
@@ -29732,10 +30402,12 @@ ${cue.text}`).join("\n\n")}
       }
       if (matchesShortcut("seekForward", e.key)) {
         seek(10);
+        showKeySeekHudRef.current?.(10);
         return;
       }
       if (matchesShortcut("seekBack", e.key)) {
         seek(-10);
+        showKeySeekHudRef.current?.(-10);
         return;
       }
       if (matchesShortcut("mute", e.key)) {
@@ -29882,6 +30554,7 @@ ${cue.text}`).join("\n\n")}
       setSubtitleDebugInfo(null);
       setSubtitleClientDebugInfo(null);
       subtitlePreferenceRef.current = nextSubtitlePreference(subtitlePreferenceRef.current, sub, Boolean(options?.manual));
+      if (options?.manual) saveSeriesSubtitlePreference(seriesTrackTmdbRef.current, subtitlePreferenceRef.current);
       if (!sub) {
         setActiveSubId(null);
         setCues([]);
@@ -30157,9 +30830,11 @@ ${cue.text}`).join("\n\n")}
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
       if (!mediaId || !url) return;
+      let lastSavedPosition = null;
       function save(final = false) {
         const snapshot3 = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot3.totalDuration <= 0) return;
+        if (!final && lastSavedPosition != null && Math.abs(snapshot3.realTime - lastSavedPosition) < 0.5) return;
         if (watchedMarkedRef.current) return;
         if (!durationConfirmedRef.current) return;
         if (!hasStartedForUrlRef.current) return;
@@ -30193,6 +30868,7 @@ ${cue.text}`).join("\n\n")}
           position: snapshot3.realTime,
           duration: snapshot3.totalDuration
         }, final);
+        lastSavedPosition = snapshot3.realTime;
       }
       const interval = setInterval(() => save(), 5e3);
       return () => {
@@ -30279,6 +30955,10 @@ ${cue.text}`).join("\n\n")}
       const imdbCacheKey = wikiTmdbId ? `${inferredMediaType}:${wikiTmdbId}` : null;
       const cachedResolvedImdbId = imdbCacheKey ? resolvedImdbByTmdbRef.current.get(imdbCacheKey) ?? null : null;
       setResolvedImdbId(imdbId ?? cachedResolvedImdbId ?? null);
+      if (subtitlePreferenceRef.current.mode === "default" && mediaType === "tv") {
+        const saved = getSeriesSubtitlePreference(wikiTmdbId);
+        if (saved) subtitlePreferenceRef.current = saved;
+      }
       setSelectedLang(
         subtitlePreferenceRef.current.mode === "language" ? subtitlePreferenceRef.current.language : subtitlePreferenceRef.current.mode === "off" ? null : defaultSubtitleLang || null
       );
@@ -30290,7 +30970,7 @@ ${cue.text}`).join("\n\n")}
       setMpvSubtitleTracks([]);
       setActiveAudioTrack(null);
       setShowAudioMenu(false);
-      preferredAudioLangRef.current = getDefaultAudioLanguage() || null;
+      preferredAudioLangRef.current = (mediaType === "tv" ? getSeriesAudioLanguage(wikiTmdbId) : null) ?? (getDefaultAudioLanguage() || null);
       didApplyPreferredAudioRef.current = false;
       loggedAudioTrackCountRef.current = -1;
       setHasEnded(false);
@@ -30333,12 +31013,12 @@ ${cue.text}`).join("\n\n")}
         stillWatchingSeriesKeyRef.current = null;
         stillWatchingEpisodeKeyRef.current = null;
         stillWatchingEpisodeCountRef.current = 0;
-        lastPlaybackInteractionRef.current = initialTime ?? 0;
+        idlePlaybackSecondsRef.current = 0;
       } else if (stillWatchingSeriesKeyRef.current !== seriesSessionKey) {
         stillWatchingSeriesKeyRef.current = seriesSessionKey;
         stillWatchingEpisodeKeyRef.current = episodeSessionKey;
         stillWatchingEpisodeCountRef.current = 1;
-        lastPlaybackInteractionRef.current = initialTime ?? 0;
+        idlePlaybackSecondsRef.current = 0;
       } else if (stillWatchingEpisodeKeyRef.current !== episodeSessionKey) {
         stillWatchingEpisodeKeyRef.current = episodeSessionKey;
         stillWatchingEpisodeCountRef.current += 1;
@@ -30429,10 +31109,9 @@ ${cue.text}`).join("\n\n")}
       if (totalDuration <= 0) return;
       if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
-      const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const watchedEnoughThisSession = watchedThisSession >= Math.min(180, Math.max(45, totalDuration * 0.05));
-      const shouldMarkWatched = hasEndedPlayback || watchedEnoughThisSession && (completionRatio >= 0.97 || secondsRemaining <= 30);
+      const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("movie", realTime, totalDuration);
       if (!shouldMarkWatched) return;
       if (!wikiTmdbId && !resolvedImdbId && !imdbId) return;
       setMovieWatched({
@@ -30447,12 +31126,20 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!stillWatchingEnabledRef.current) return;
       if (mediaType !== "tv") return;
-      if (!hasStarted || hasEndedPlayback || showStillWatchingPrompt) return;
-      if (!isPlaying) return;
+      if (!hasStarted || hasEndedPlayback || showStillWatchingPrompt || !isPlaying) {
+        idleTickTimeRef.current = null;
+        return;
+      }
+      const previousTick = idleTickTimeRef.current;
+      idleTickTimeRef.current = realTime;
+      if (previousTick != null) {
+        const step2 = realTime - previousTick;
+        if (step2 > 0 && step2 < 5) idlePlaybackSecondsRef.current += step2;
+      }
       if (stillWatchingEpisodeCountRef.current < 3) return;
       const maxSeconds = stillWatchingMaxMinutesRef.current * 60;
       if (maxSeconds <= 0) return;
-      if (realTime - lastPlaybackInteractionRef.current < maxSeconds) return;
+      if (idlePlaybackSecondsRef.current < maxSeconds) return;
       if (useMpv) {
         void setMpvPause2(true);
       } else {
@@ -30492,10 +31179,9 @@ ${cue.text}`).join("\n\n")}
       if (totalDuration <= 0) return;
       if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
-      const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const watchedEnoughThisSession = watchedThisSession >= Math.min(120, Math.max(30, totalDuration * 0.03));
-      const shouldMarkWatched = hasEndedPlayback || watchedEnoughThisSession && (completionRatio >= 0.92 || secondsRemaining <= 90);
+      const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("episode", realTime, totalDuration);
       if (!shouldMarkWatched) return;
       setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
       removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
@@ -30753,8 +31439,9 @@ ${cue.text}`).join("\n\n")}
     }, [url, initialTime, effectiveProxyAudioMode, nightMode, shouldProxyPlayback, isDirectLocalFileSource, useMpv, applyStreamSrc]);
     const preferredAudioLangRef = useRef(getDefaultAudioLanguage() || null);
     const [originalAudioLangToken, setOriginalAudioLangToken] = useState(0);
-    function switchAudioTrack(track) {
+    function switchAudioTrack(track, manual = true) {
       if (track.language) preferredAudioLangRef.current = toAudioLangGroup(track.language);
+      if (manual && mediaType === "tv") saveSeriesAudioLanguage(wikiTmdbId, toAudioLangGroup(track.language));
       setActiveAudioTrack(track.index);
       setShowAudioMenu(false);
       if (useMpv) {
@@ -30794,7 +31481,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       didApplyPreferredAudioRef.current = true;
-      switchAudioTrack(match);
+      switchAudioTrack(match, false);
     }, [activeAudioTrack, audioTracks, hasStarted, isDirectLocalFileSource, useMpv, originalAudioLangToken]);
     useEffect(() => {
       if (getDefaultAudioLanguage() || !wikiTmdbId) return;
@@ -31127,7 +31814,7 @@ ${cue.text}`).join("\n\n")}
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
         ...externalSubtitles,
-        ...getPreferEmbeddedSubtitles() ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
+        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
       ];
       const seen2 = /* @__PURE__ */ new Set();
       return merged.filter((option) => {
@@ -31273,7 +31960,7 @@ ${cue.text}`).join("\n\n")}
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] annan version: ${choice === "switch" ? "byter till" : "beh\xE5ller, inte"} filens eget sp\xE5r ${prompt.own.id}`)}`).catch(() => {
       });
       if (choice !== "switch") return;
-      void selectSubtitle(prompt.own, { noAutoSync: true });
+      void selectSubtitle(prompt.own, { manual: true, noAutoSync: true });
       showSyncNotice({ message: t("subtitleAutoSyncSwappedEmbedded") });
     }, [ownTrackPrompt, url, selectSubtitle, showSyncNotice, t]);
     useEffect(() => {
@@ -31304,7 +31991,7 @@ ${cue.text}`).join("\n\n")}
         currentId: preselectedId,
         // "Prefer embedded": container tracks are always in sync, so when the
         // setting is on they get first shot at every preferred language.
-        preferEmbedded: getPreferEmbeddedSubtitles(),
+        order: getSubtitleOrder(),
         isEmbedded: (subtitle) => subtitle.id.startsWith("embedded:"),
         isBlocked: (subtitle) => blockWords.length > 0 && blockWords.some((word) => `${subtitle.label ?? ""} ${subtitle.language ?? ""}`.toLowerCase().includes(word)),
         matchesLanguage: (subtitle, lang2) => normalizeLanguageCode(subtitle.language) === lang2 || subtitleOptionMatchesLanguage(subtitle, lang2)
@@ -31314,7 +32001,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       if (match && match.id !== activeSubId) {
-        const embeddedReplacesDownload = getPreferEmbeddedSubtitles() && match.id.startsWith("embedded:") && activeSubId != null && !activeSubId.startsWith("embedded:");
+        const embeddedReplacesDownload = getSubtitleOrder() !== "downloads" && match.id.startsWith("embedded:") && activeSubId != null && !activeSubId.startsWith("embedded:");
         if (!embeddedReplacesDownload) {
           if (activeSubId != null && !getUpgradeSubtitleWhenBetter()) return;
           if (activeSubId != null && syncedVttRef.current.get(activeSubId)?.url === url) return;
@@ -31333,7 +32020,7 @@ ${cue.text}`).join("\n\n")}
         language: secondarySubtitleLang,
         primaryId: activeSubId,
         allowEmbedded: isMpvEngine,
-        preferEmbedded: getPreferEmbeddedSubtitles(),
+        preferEmbedded: getSubtitleOrder() !== "downloads",
         isBlocked: (option) => blockWords.length > 0 && blockWords.some((word) => `${option.label ?? ""} ${option.language ?? ""}`.toLowerCase().includes(word)),
         matchesLanguage: (option, lang2) => normalizeLanguageCode(option.language) === lang2 || subtitleOptionMatchesLanguage(option, lang2)
       });
@@ -32116,13 +32803,15 @@ ${cue.text}`).join("\n\n")}
     }, [clipDocked, useMpv, scheduleBoundsResync]);
     useEffect(() => {
       const controls = controlsRef.current;
-      const block = titleBlockRef.current;
+      const block = titleBlockEl;
       if (!controls || !block || typeof ResizeObserver === "undefined") {
         setTitleClearance(0);
         return void 0;
       }
       const measure2 = () => {
-        const clearance = Math.round(controls.getBoundingClientRect().bottom - block.getBoundingClientRect().top);
+        const controlsRect = controls.getBoundingClientRect();
+        const scale = controls.offsetHeight > 0 ? controlsRect.height / controls.offsetHeight : 1;
+        const clearance = Math.round((controlsRect.bottom - block.getBoundingClientRect().top) / (scale > 0 ? scale : 1));
         setTitleClearance(clearance > 0 ? clearance : 0);
       };
       measure2();
@@ -32130,7 +32819,7 @@ ${cue.text}`).join("\n\n")}
       observer.observe(controls);
       observer.observe(block);
       return () => observer.disconnect();
-    }, [chromeKind, showClip, Boolean(clip2), creditsMode]);
+    }, [chromeKind, showClip, Boolean(clip2), creditsMode, titleBlockEl]);
     const [clipPhones, setClipPhones] = useState([]);
     const [clipQrOpen, setClipQrOpen] = useState(false);
     const [clipTvFocus, setClipTvFocus] = useState(null);
@@ -32490,7 +33179,7 @@ ${cue.text}`).join("\n\n")}
       gearValue(value)
     ] });
     const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
-    const nightLabel = (mode) => t(mode === "off" ? "nightModeOff" : mode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong");
+    const nightLabel = (mode) => t(nightModeLabelKey(mode, true));
     const applySpeed = (next) => {
       setPlaybackSpeedState(next);
       savePlaybackSpeed(mediaType, tmdbId ?? null, next);
@@ -32507,8 +33196,8 @@ ${cue.text}`).join("\n\n")}
       gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
       gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
       gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
-      gearNavRow("sleep", t("plSleepTimer"), sleepModeLabel(sleepTimer.mode), "sleep"),
-      isMpvEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
+      gearNavRow("sleep", t("plSleepTimer"), sleepStateLabel(), "sleep"),
+      isMpvEngine || isDroidEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
       mediaType === "tv" ? gearToggleRow("skip", "skip", t("plGearSkipIntros"), autoSkipIntro, () => {
         const next = !autoSkipIntro;
         setAutoSkipIntro(next);
@@ -32552,13 +33241,13 @@ ${cue.text}`).join("\n\n")}
           ] });
         case "sleep":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
-            gearSubHeader(t("plSleepTimer"), sleepModeLabel(sleepTimer.mode)),
+            gearSubHeader(t("plSleepTimer"), sleepStateLabel()),
             gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
           ] });
         case "night":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
             gearSubHeader(t("nightModeMenuLabel"), nightLabel(nightMode)),
-            gearOptions(["off", "mild", "strong"], nightMode, nightLabel, setNightMode)
+            gearOptions(NIGHT_MODE_OPTIONS, nightMode, nightLabel, setNightMode)
           ] });
         default:
           return null;
@@ -33226,7 +33915,7 @@ ${cue.text}`).join("\n\n")}
     const renderTitleBlock = (size, className) => /* @__PURE__ */ jsx(
       PlayerTitleBlock,
       {
-        blockRef: titleBlockRef,
+        blockRef: setTitleBlockEl,
         title: headerTitle,
         chips: titleChips,
         year,
@@ -33354,7 +34043,7 @@ ${cue.text}`).join("\n\n")}
           subId: activeSubId,
           // ExoPlayer kan inte förskjuta inbäddad undertext: telefonen döljer Synk vid null.
           subDelay: isDroidEngine && activeSubId?.startsWith("embedded:") ? null : subDelay,
-          dialogBoost: isMpvEngine ? nightMode !== "off" : null,
+          dialogBoost: isMpvEngine || isDroidEngine ? nightMode !== "off" : null,
           introUntil: activeIntro ? activeIntro.endMs / 1e3 : void 0,
           creditsAt: outroSegment ? outroSegment.startMs / 1e3 : void 0,
           nextEpisode: nextEpisodeOf(episodes),
@@ -33399,8 +34088,8 @@ ${cue.text}`).join("\n\n")}
               setSubDelay(Math.max(-180, Math.min(180, Math.round(cmd.value * 10) / 10)));
               return;
             case "dialog-boost":
-              if (!isMpvEngine) throw new Error("unsupported");
-              setNightMode(cmd.on ? "mild" : "off");
+              if (!isMpvEngine && !isDroidEngine) throw new Error("unsupported");
+              setNightMode(cmd.on ? "medium" : "off");
               return;
             case "stream": {
               const s = streams?.items.find((x) => streamKey(x) === cmd.key);
@@ -33651,6 +34340,15 @@ ${cue.text}`).join("\n\n")}
       if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
       setGestureHud({ kind, value, text: text2 });
     };
+    const keySeekHudRef = useRef({ total: 0, at: 0 });
+    showKeySeekHudRef.current = (delta) => {
+      const now2 = Date.now();
+      const state2 = keySeekHudRef.current;
+      state2.total = now2 - state2.at < 900 ? state2.total + delta : delta;
+      state2.at = now2;
+      showGestureHud("skip", state2.total);
+      gestureHudTimerRef.current = window.setTimeout(() => setGestureHud(null), 700);
+    };
     const onGesturePointerDown = (event2) => {
       if (!phoneChrome || event2.pointerType === "mouse") return;
       if (gestureBlockedBySurface(openSurfaceRef.current)) return;
@@ -33816,6 +34514,11 @@ ${cue.text}`).join("\n\n")}
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
     const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
+    const sleepStateLabel = () => {
+      const remaining2 = sleepTimerRemainingMs(sleepTimer, Date.now());
+      if (remaining2 == null) return sleepModeLabel(sleepTimer.mode);
+      return t("plSleepRemaining").replace("{n}", String(Math.max(1, Math.ceil(remaining2 / 6e4))));
+    };
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -33917,7 +34620,7 @@ ${cue.text}`).join("\n\n")}
       sleepTimer: {
         label: t("plSleepShort"),
         title: t("plSleepTimer"),
-        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        value: sleepTimer.mode === "off" ? void 0 : sleepStateLabel(),
         state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
         onClick: () => setShowSleepMenu((open2) => !open2),
         triggerRef: sleepTriggerRef
@@ -34799,11 +35502,13 @@ ${cue.text}`).join("\n\n")}
                   },
                   index
                 )) }),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* @__PURE__ */ jsxs(
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* Med kontrollerna framme lyfts texten över titelblocket och
+                   seekraden — annars låg repliken ovanpå tidslisten (TV 2026-10-30). */
+                /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
-                    style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
+                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8 transition-[bottom] duration-200 ease-out",
+                    style: { bottom: controlsVisible && controlsReady && titleClearance > 0 ? `max(calc(${subVerticalPos}% + 3.5rem), ${titleClearance + 12}px)` : `calc(${subVerticalPos}% + 3.5rem)` },
                     children: [
                       secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
                       [
@@ -34985,7 +35690,10 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => {
-                                  if (!editingSecondary) subtitlePreferenceRef.current = { mode: "language", language: lang2 };
+                                  if (!editingSecondary) {
+                                    subtitlePreferenceRef.current = { mode: "language", language: lang2 };
+                                    if (mediaType === "tv") saveSeriesSubtitlePreference(wikiTmdbId, subtitlePreferenceRef.current);
+                                  }
                                   setSelectedLang(lang2);
                                 },
                                 className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === lang2 ? "bg-white/5" : ""} ${isActive ? dtActiveTextClass : "text-slate-300"}`,
@@ -35192,6 +35900,7 @@ ${cue.text}`).join("\n\n")}
                 showTuningPanel && /* @__PURE__ */ jsx(
                   PlayerTuningPanel,
                   {
+                    shaders: isMpvEngine ? { status: shaderStatus } : null,
                     surface: isTv ? {
                       ...tvSurface2("tuning"),
                       style: pickerStyle(tuningTriggerRef.current, 420),
@@ -35717,6 +36426,7 @@ ${cue.text}`).join("\n\n")}
                                   max: volumeCeiling,
                                   step: 0.05,
                                   value: muted ? 0 : volume,
+                                  "data-player-volume": "",
                                   onChange: handleVolumeChange,
                                   className: "h-1 w-20 cursor-pointer appearance-none rounded-full border border-white/10 bg-white/20 accent-aurora-400"
                                 }
@@ -36318,6 +37028,8 @@ ${cue.text}`).join("\n\n")}
     "components/player/video-player-modal.tsx"() {
       "use strict";
       "use client";
+      init_watched_threshold();
+      init_mobile_data_guard();
       init_player_control_icons();
       init_trickplay_identity();
       init_playback_settings();
@@ -36326,6 +37038,7 @@ ${cue.text}`).join("\n\n")}
       init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
+      init_series_track_store();
       init_react_shim();
       init_timing();
       import_react_dom2 = __toESM(require_react_dom());
@@ -36360,6 +37073,7 @@ ${cue.text}`).join("\n\n")}
       init_haptics_filter();
       init_haptics_host();
       init_playback_settings();
+      init_night_mode();
       init_scroll_lock();
       init_i18n();
       init_lighter_stream();
@@ -37377,7 +38091,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
-    const raw = getScopedStorageItem(KEY19);
+    const raw = getScopedStorageItem(KEY20);
     return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
@@ -37386,12 +38100,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY19, DEFAULT_TV_KEYBOARD_MODE;
+  var KEY20, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY19 = "tv_keyboard_mode_v1";
+      KEY20 = "tv_keyboard_mode_v1";
       DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
@@ -39213,6 +39927,7 @@ ${cue.text}`).join("\n\n")}
     setWindowFullscreen: () => setWindowFullscreen,
     setWindowNativeFullscreen: () => setWindowNativeFullscreen,
     setZappMinRating: () => setZappMinRating,
+    showSystemNotification: () => showSystemNotification,
     sortLanguageOptions: () => sortLanguageOptions,
     spawnPluginDesktopCommand: () => spawnPluginDesktopCommand,
     stopLibretroGame: () => stopLibretroGame,
@@ -39684,6 +40399,7 @@ ${cue.text}`).join("\n\n")}
       init_zapp_settings();
       init_zapp_runtime();
       init_open_item_runtime();
+      init_system_notification();
       init_video_player_modal_shim();
       init_full_cast_page_shim();
       init_next_episode_card_shim();
@@ -39701,7 +40417,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-category-filter.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-filter.ts
   function readMap() {
     const parsed2 = readPluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, {});
     if (!parsed2 || typeof parsed2 !== "object" || Array.isArray(parsed2)) return {};
@@ -39771,11 +40487,11 @@ ${cue.text}`).join("\n\n")}
     return excluded;
   }
   function useVodChoiceMade(source) {
-    const read11 = () => source ? !isVodChoiceMigrated() || isVodChoiceMade(source) : true;
-    const [made, setMade] = useState(read11);
+    const read12 = () => source ? !isVodChoiceMigrated() || isVodChoiceMade(source) : true;
+    const [made, setMade] = useState(read12);
     useEffect(() => {
-      setMade(read11());
-      return onVodCategoryChoiceChanged(() => setMade(read11()));
+      setMade(read12());
+      return onVodCategoryChoiceChanged(() => setMade(read12()));
     }, [source]);
     return made;
   }
@@ -39805,7 +40521,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, FILTER_KEY2, MIGRATED_KEY, VOD_MERGE_PREFIX;
   var init_vod_category_filter = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-category-filter.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-filter.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39817,13 +40533,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg-shift.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-shift.ts
   function getEpgShiftMinutes() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, KEY20, null);
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, KEY21, null);
     return typeof raw === "number" ? clamp2(raw) : 0;
   }
   function setEpgShiftMinutes(min) {
-    writePluginJson(LIVE_TV_PLUGIN_ID2, KEY20, clamp2(min));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, KEY21, clamp2(min));
   }
   function shiftTimes(p, ms2) {
     if (!p) return null;
@@ -39837,13 +40553,13 @@ ${cue.text}`).join("\n\n")}
     const m = abs % 60;
     return `${sign}${h ? `${h} h` : ""}${h && m ? " " : ""}${m ? `${m} min` : ""}`;
   }
-  var KEY20, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN, clamp2, epgShiftMs;
+  var KEY21, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN, clamp2, epgShiftMs;
   var init_epg_shift = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg-shift.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-shift.ts"() {
       "use strict";
       init_plugin_sdk();
       init_live_tv_data();
-      KEY20 = "live_tv_epg_shift_v1";
+      KEY21 = "live_tv_epg_shift_v1";
       EPG_SHIFT_LIMIT_MIN = 12 * 60;
       EPG_SHIFT_STEP_MIN = 30;
       clamp2 = (min) => {
@@ -39855,7 +40571,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -40034,9 +40750,9 @@ ${cue.text}`).join("\n\n")}
     }
     return merged;
   }
-  async function epgSearch(listId, q, from, to, limit) {
+  async function epgSearch(listId, q, from, to, limit, opts) {
     const shift = epgShiftMs();
-    const qs = buildQuery({ listId, q, from: from - shift, to: to - shift, limit });
+    const qs = buildQuery({ listId, q, from: from - shift, to: to - shift, limit, ...opts?.inDescription ? { desc: 1 } : {} });
     const data = await requestJson(
       `/api/live-tv/epg/search${qs}`
     );
@@ -40044,7 +40760,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       init_epg_shift();
@@ -40056,7 +40772,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -40145,14 +40861,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/group-order.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/group-order.ts
   function sanitizeGroupOrder(raw) {
     return GROUP_ORDERS.includes(raw) ? raw : DEFAULT_GROUP_ORDER;
   }
@@ -40212,7 +40928,7 @@ ${cue.text}`).join("\n\n")}
   }
   var GROUP_ORDERS, DEFAULT_GROUP_ORDER, collator, rawOrderBySource;
   var init_group_order = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/group-order.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/group-order.ts"() {
       "use strict";
       GROUP_ORDERS = ["playlist", "name", "count"];
       DEFAULT_GROUP_ORDER = "playlist";
@@ -40221,7 +40937,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-curation.ts
   function splitGroups2(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -40244,14 +40960,14 @@ ${cue.text}`).join("\n\n")}
       names.add(name);
       merges.push({ name, groups });
     }
-    const hidden2 = [];
+    const hidden3 = [];
     for (const raw of curation.hidden ?? []) {
       const g = (raw ?? "").trim();
-      if (!g || hidden2.includes(g)) continue;
-      hidden2.push(g);
+      if (!g || hidden3.includes(g)) continue;
+      hidden3.push(g);
     }
-    if (hidden2.length === 0 && merges.length === 0) return void 0;
-    return { hidden: hidden2, merges };
+    if (hidden3.length === 0 && merges.length === 0) return void 0;
+    return { hidden: hidden3, merges };
   }
   function mergeNameFor(curation) {
     const map = /* @__PURE__ */ new Map();
@@ -40260,7 +40976,7 @@ ${cue.text}`).join("\n\n")}
   }
   function applyCuration(channels, curation) {
     if (!curation || curation.hidden.length === 0 && curation.merges.length === 0) return [...channels];
-    const hidden2 = new Set(curation.hidden);
+    const hidden3 = new Set(curation.hidden);
     const renamed = mergeNameFor(curation);
     const out = [];
     for (const channel of channels) {
@@ -40272,7 +40988,7 @@ ${cue.text}`).join("\n\n")}
       const kept = [];
       for (const part of parts2) {
         const merged = renamed.get(part);
-        if (merged === void 0 && hidden2.has(part)) continue;
+        if (merged === void 0 && hidden3.has(part)) continue;
         const name = merged ?? part;
         if (!kept.includes(name)) kept.push(name);
       }
@@ -40283,12 +40999,12 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function curatedGroupCounts(groups, curation, mode = "count", order) {
-    const hidden2 = new Set(curation?.hidden ?? []);
+    const hidden3 = new Set(curation?.hidden ?? []);
     const renamed = curation ? mergeNameFor(curation) : /* @__PURE__ */ new Map();
     const entries2 = /* @__PURE__ */ new Map();
     for (const { name, count } of groups) {
       const merged = renamed.get(name);
-      if (merged === void 0 && hidden2.has(name)) continue;
+      if (merged === void 0 && hidden3.has(name)) continue;
       const target2 = merged ?? name;
       const at = order?.get(name);
       const entry = entries2.get(target2);
@@ -40314,18 +41030,18 @@ ${cue.text}`).join("\n\n")}
     if (!trimmed) return "empty";
     if (curation.merges.some((m) => m.name === trimmed)) return "duplicate";
     const claimed = /* @__PURE__ */ new Set([...curation.merges.flatMap((m) => m.groups), ...members]);
-    const hidden2 = new Set(curation.hidden);
-    if (groups.some((g) => g.name === trimmed && !hidden2.has(g.name) && !claimed.has(g.name))) return "visible-group";
+    const hidden3 = new Set(curation.hidden);
+    if (groups.some((g) => g.name === trimmed && !hidden3.has(g.name) && !claimed.has(g.name))) return "visible-group";
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
       init_group_order();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-format.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format.ts
   function sanitizeLiveFormat(raw) {
     return raw === "ts" || raw === "hls" ? raw : "auto";
   }
@@ -40371,7 +41087,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_FORMATS, XTREAM_LIVE_RE, hlsFailedUrls, isHlsPlayUrl;
   var init_live_format = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-format.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format.ts"() {
       "use strict";
       LIVE_FORMATS = ["auto", "ts", "hls"];
       XTREAM_LIVE_RE = /^(https?:\/\/[^/?#]+)\/live\/([^/?#]+)\/([^/?#]+)\/(\d+)\.(ts|m3u8)((?:[?#].*)?)$/i;
@@ -40380,7 +41096,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -40483,12 +41199,12 @@ ${cue.text}`).join("\n\n")}
   function sanitizeCuration(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const obj = raw;
-    const hidden2 = Array.isArray(obj.hidden) ? obj.hidden.filter((g) => typeof g === "string") : [];
+    const hidden3 = Array.isArray(obj.hidden) ? obj.hidden.filter((g) => typeof g === "string") : [];
     const merges = Array.isArray(obj.merges) ? obj.merges.filter((m) => Boolean(m) && typeof m === "object").map((m) => ({
       name: typeof m.name === "string" ? m.name : "",
       groups: Array.isArray(m.groups) ? m.groups.filter((g) => typeof g === "string") : []
     })) : [];
-    return normalizeCuration({ hidden: hidden2, merges });
+    return normalizeCuration({ hidden: hidden3, merges });
   }
   function readLists() {
     const parsed2 = readPluginJson(LIVE_TV_PLUGIN_ID2, LIVE_TV_LISTS_KEY, []);
@@ -41001,12 +41717,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
   async function fetchXtreamVodCategories(login) {
-    const read11 = async (action) => {
+    const read12 = async (action) => {
       const payload = await fetchXtreamJson(xtreamApiUrl(login, { action })).catch(() => null);
       if (!Array.isArray(payload)) return [];
       return payload.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({ id: String(entry.category_id ?? "").trim(), name: String(entry.category_name ?? "").trim() })).filter((entry) => entry.id && entry.name);
     };
-    const [movie, series] = await Promise.all([read11("get_vod_categories"), read11("get_series_categories")]);
+    const [movie, series] = await Promise.all([read12("get_vod_categories"), read12("get_series_categories")]);
     return { movie, series };
   }
   async function fetchXtreamCategories(login) {
@@ -41028,7 +41744,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID2, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, logoSrcCache, LOGO_SRC_CACHE_MAX, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_vod_category_filter();
@@ -41057,7 +41773,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/lang.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/lang.ts
   function textLang(lang) {
     return lang === "sv" || lang === "de" || lang === "fr" || lang === "es" ? lang : "en";
   }
@@ -41069,13 +41785,222 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCALES;
   var init_lang = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/lang.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/lang.ts"() {
       "use strict";
       LOCALES = { en: "en-GB", sv: "sv-SE", de: "de-DE", fr: "fr-FR", es: "es-ES" };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/playlist-title.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-resolver.ts
+  function remember(key, value) {
+    memo3.set(key, value);
+    while (memo3.size > MAX_ENTRIES6) {
+      const oldest = memo3.keys().next();
+      if (oldest.done) break;
+      memo3.delete(oldest.value);
+    }
+  }
+  function getResolvedChannels(keys2) {
+    const out = {};
+    for (const key of keys2) {
+      const hit = memo3.get(key);
+      if (hit) out[key] = hit;
+    }
+    return out;
+  }
+  async function resolveChannelKeys(keys2) {
+    const wanted = [...new Set(keys2.filter((key) => key.length > 0))];
+    const missing = wanted.filter((key) => !memo3.has(key));
+    if (missing.length > 0) {
+      const items2 = await lookupChannels(missing);
+      const found = new Map(items2.map((item) => [item.key, item]));
+      for (const key of missing) remember(key, found.get(key) ?? null);
+    }
+    return wanted.map((key) => memo3.get(key) ?? null).filter((item) => item !== null);
+  }
+  function clearResolvedChannels() {
+    memo3.clear();
+  }
+  var MAX_ENTRIES6, memo3;
+  var init_channel_resolver = __esm({
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-resolver.ts"() {
+      "use strict";
+      "use client";
+      init_index_client();
+      MAX_ENTRIES6 = 1e3;
+      memo3 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/reminders.ts
+  function reminderId(channel, programme) {
+    return `${channelKey(channel)}@${programme.start}`;
+  }
+  function sanitize(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const r = item;
+      if (typeof r.id !== "string" || typeof r.start !== "number" || typeof r.channelUrl !== "string") continue;
+      out.push({
+        id: r.id,
+        channelKey: typeof r.channelKey === "string" ? r.channelKey : channelKey({ name: r.channelName ?? "", url: r.channelUrl }),
+        channelName: typeof r.channelName === "string" ? r.channelName : "Unknown",
+        channelUrl: r.channelUrl,
+        channelLogo: typeof r.channelLogo === "string" ? r.channelLogo : null,
+        channelGroup: typeof r.channelGroup === "string" ? r.channelGroup : "Other",
+        channelTvgId: typeof r.channelTvgId === "string" ? r.channelTvgId : null,
+        title: typeof r.title === "string" ? r.title : "",
+        start: r.start,
+        stop: typeof r.stop === "number" ? r.stop : r.start,
+        createdAt: typeof r.createdAt === "number" ? r.createdAt : 0,
+        notifiedAt: typeof r.notifiedAt === "number" ? r.notifiedAt : void 0,
+        leadMs: typeof r.leadMs === "number" && r.leadMs >= 0 ? r.leadMs : void 0,
+        origin: r.origin === "sport" || r.origin === "keyword" ? r.origin : void 0
+      });
+    }
+    return out.sort((left, right) => left.start - right.start);
+  }
+  function load() {
+    if (parsed) return parsed;
+    const list = sanitize(readPluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, []));
+    parsed = { list, byId: new Map(list.map((r) => [r.id, r])) };
+    onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, dropParsed);
+    void Promise.resolve().then(dropParsed);
+    return parsed;
+  }
+  function getReminders(now2 = Date.now()) {
+    return load().list.filter((r) => r.start + REMINDER_GRACE_MS > now2);
+  }
+  function write7(list) {
+    dropParsed();
+    writePluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, list);
+  }
+  function isReminded(channel, programme) {
+    const r = load().byId.get(reminderId(channel, programme));
+    return r !== void 0 && r.start + REMINDER_GRACE_MS > Date.now();
+  }
+  function toggleReminder(channel, programme, now2 = Date.now()) {
+    const id = reminderId(channel, programme);
+    const current5 = getReminders(now2);
+    const next = current5.some((r) => r.id === id) ? current5.filter((r) => r.id !== id) : [
+      ...current5,
+      {
+        id,
+        channelKey: channelKey(channel),
+        channelName: channel.name,
+        channelUrl: channel.url,
+        channelLogo: channel.logo ?? null,
+        channelGroup: channel.group,
+        channelTvgId: channel.tvgId,
+        title: programme.title,
+        start: programme.start,
+        stop: programme.stop,
+        createdAt: now2
+      }
+    ].sort((left, right) => left.start - right.start);
+    write7(next);
+    return next;
+  }
+  function replaceSportReminders(next, now2 = Date.now()) {
+    return replaceAutoReminders("sport", next, now2);
+  }
+  function replaceKeywordReminders(next, now2 = Date.now()) {
+    return replaceAutoReminders("keyword", next, now2);
+  }
+  function replaceAutoReminders(origin, next, now2) {
+    const current5 = getReminders(now2);
+    const nextIds = new Set(next.map((r) => r.id));
+    const others = current5.filter((r) => r.origin !== origin && !(origin === "sport" && r.origin === "keyword" && nextIds.has(r.id)));
+    const otherIds = new Set(others.map((r) => r.id));
+    const previous = new Map(current5.filter((r) => r.origin === origin).map((r) => [r.id, r]));
+    const seen2 = /* @__PURE__ */ new Set();
+    const auto = next.filter((r) => !otherIds.has(r.id) && !seen2.has(r.id) && seen2.add(r.id)).map((r) => ({ ...r, origin, notifiedAt: previous.get(r.id)?.notifiedAt }));
+    const merged = [...others, ...auto].sort((left, right) => left.start - right.start);
+    if (JSON.stringify(merged) !== JSON.stringify(current5)) write7(merged);
+    return merged;
+  }
+  function markReminderNotified(id, now2 = Date.now()) {
+    write7(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
+  }
+  function onRemindersChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, listener);
+  }
+  function dueReminders(now2 = Date.now(), leadMs = REMINDER_LEAD_MS) {
+    return getReminders(now2).filter((r) => r.notifiedAt === void 0 && r.start - (r.leadMs ?? leadMs) <= now2);
+  }
+  function reminderToChannel(r) {
+    return { name: r.channelName, url: r.channelUrl, logo: r.channelLogo, group: r.channelGroup, tvgId: r.channelTvgId };
+  }
+  function startReminderScheduler(onDue) {
+    let stopped = false;
+    const tick2 = () => {
+      if (stopped) return;
+      const now2 = Date.now();
+      for (const r of dueReminders(now2)) {
+        if (shownHere.has(r.id)) continue;
+        shownHere.add(r.id);
+        markReminderNotified(r.id, now2);
+        onDue(r);
+      }
+    };
+    tick2();
+    const timer5 = window.setInterval(tick2, 3e4);
+    const off = onRemindersChanged(tick2);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer5);
+      off();
+    };
+  }
+  function tryNativeNotification(title, body) {
+    try {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+      } else if (Notification.permission === "default") {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === "granted") new Notification(title, { body });
+        });
+      }
+    } catch {
+    }
+  }
+  function useReminders() {
+    const [list, setList] = useState(() => getReminders());
+    useEffect(() => {
+      const sync2 = () => setList(getReminders());
+      sync2();
+      const off = onRemindersChanged(sync2);
+      const timer5 = window.setInterval(sync2, 6e4);
+      return () => {
+        off();
+        window.clearInterval(timer5);
+      };
+    }, []);
+    return list;
+  }
+  var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS, parsed, dropParsed, shownHere;
+  var init_reminders = __esm({
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/reminders.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      REMINDERS_KEY = "reminders_v1";
+      REMINDER_LEAD_MS = 5 * 6e4;
+      REMINDER_GRACE_MS = 10 * 6e4;
+      parsed = null;
+      dropParsed = () => {
+        parsed = null;
+      };
+      shownHere = /* @__PURE__ */ new Set();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-title.ts
   function hostOf2(url) {
     try {
       return new URL(url).host || url;
@@ -41099,13 +42024,13 @@ ${cue.text}`).join("\n\n")}
     return `${host3} (${sameHost.findIndex((other) => other.id === list.id) + 1})`;
   }
   var init_playlist_title = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/playlist-title.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-title.ts"() {
       "use strict";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hls-playlist-proxy.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-playlist-proxy.ts
   function detectHlsPlaylistProxy() {
     if (available !== null) return Promise.resolve(available);
     if (probe) return probe;
@@ -41133,7 +42058,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HLS_PLAYLIST_PROXY_FEATURE, HLS_PLAYLIST_PROXY_PATH, available, probe;
   var init_hls_playlist_proxy = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
       "use strict";
       init_live_format();
       HLS_PLAYLIST_PROXY_FEATURE = "hlsPlaylistProxy";
@@ -41143,7 +42068,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-format-resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format-resolve.ts
   function decode(part) {
     try {
       return decodeURIComponent(part);
@@ -41251,7 +42176,7 @@ ${cue.text}`).join("\n\n")}
   }
   var askedLogins, hlsBrokenAccounts, accountStreamEndedAt;
   var init_live_format_resolve = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-format-resolve.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format-resolve.ts"() {
       "use strict";
       init_live_tv_data();
       init_hls_playlist_proxy();
@@ -41262,7 +42187,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -41287,11 +42212,11 @@ ${cue.text}`).join("\n\n")}
       return false;
     }
   }
-  function sanitize(raw) {
+  function sanitize3(raw) {
     return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
   }
   function getLockedChannelKeys() {
-    return sanitize(readPluginJson(LIVE_TV_PLUGIN_ID2, LOCKED_CHANNELS_KEY, []));
+    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID2, LOCKED_CHANNELS_KEY, []));
   }
   function toggleChannelLock(channel) {
     const key = channelKey(channel);
@@ -41316,7 +42241,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41328,7 +42253,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       const next = pendingLogoLoads.shift();
@@ -41427,7 +42352,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41440,7 +42365,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/intl-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/intl-cache.ts
   function cachedDateTimeFormat(locale, options) {
     const key = `${Array.isArray(locale) ? locale.join(",") : locale ?? ""}|${JSON.stringify(options)}`;
     let formatter = formatters.get(key);
@@ -41460,7 +42385,7 @@ ${cue.text}`).join("\n\n")}
   }
   var formatters, CLOCK, clocks;
   var init_intl_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/intl-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/intl-cache.ts"() {
       "use strict";
       formatters = /* @__PURE__ */ new Map();
       CLOCK = { hour: "2-digit", minute: "2-digit" };
@@ -41468,7 +42393,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words2 = name.trim().split(/\s+/).filter(Boolean);
     const letters = words2.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -41685,7 +42610,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41726,17 +42651,17 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read11 = () => {
+      const read12 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box !== null;
       };
-      const sync2 = () => setInBox(read11());
+      const sync2 = () => setInBox(read12());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -41749,24 +42674,24 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read11 = () => {
+      const read12 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
       };
-      const sync2 = () => setNarrow(read11());
+      const sync2 = () => setNarrow(read12());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -41779,19 +42704,19 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read11 = () => {
+      const read12 = () => {
         const getScale = tvSceneBoxScale2;
         if (typeof getScale !== "function") return null;
         const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
@@ -41799,7 +42724,7 @@ ${cue.text}`).join("\n\n")}
         const value = getScale(box);
         return Number.isFinite(value) && value > 0 ? value : null;
       };
-      const sync2 = () => setScale(read11());
+      const sync2 = () => setScale(read12());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -41812,7 +42737,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -41820,7 +42745,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -42069,7 +42994,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCENE_TOP_INSET, TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42198,7 +43123,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = TABLES2[textLang(lang)];
     let out = table[key] ?? EN2[key];
@@ -42214,7 +43139,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2, DE2, FR2, ES2, TABLES2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46739,7 +47664,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   function TvKeyboard({ value, onChange, onDone, initFocus }) {
     const { tt } = useTvText();
     const [symbols, setSymbols] = useState(false);
@@ -46765,7 +47690,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LETTERS, SYMBOLS;
   var init_tv_keyboard = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46777,7 +47702,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   function isComposing(event2) {
     return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
   }
@@ -46915,7 +47840,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_text_entry = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46927,7 +47852,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-shell.tsx
   function encodeChannelParams(channel) {
     return {
       url: channel.url,
@@ -46939,14 +47864,14 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID;
   var init_live_tv_shell = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-shell.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-shell.tsx"() {
       "use strict";
       LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
       LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/start-view.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/start-view.ts
   function sanitizeStartView(raw) {
     return START_VIEWS.includes(raw) ? raw : DEFAULT_START_VIEW;
   }
@@ -46979,14 +47904,14 @@ ${cue.text}`).join("\n\n")}
   }
   var START_VIEWS, DEFAULT_START_VIEW;
   var init_start_view = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/start-view.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/start-view.ts"() {
       "use strict";
       START_VIEWS = ["home", "hub", "guide", "sport", "library", "favs"];
       DEFAULT_START_VIEW = "home";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/v2-settings.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-settings.ts
   function pick2(list, raw, fallback = list[0]) {
     return list.includes(raw) ? raw : fallback;
   }
@@ -47007,7 +47932,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HUB_LAYOUTS, GUIDE_CATEGORY_LAYOUTS, LIVE_BACKGROUNDS, DEFAULT_HUB_LAYOUT, sanitizeHubLayout, sanitizeGuideCategoryLayout, sanitizeLiveBackground, nextHubLayout, nextGuideCategoryLayout, nextLiveBackground, LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES;
   var init_v2_settings = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/v2-settings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-settings.ts"() {
       "use strict";
       HUB_LAYOUTS = ["classic", "experience"];
       GUIDE_CATEGORY_LAYOUTS = ["column", "chips"];
@@ -47024,7 +47949,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows.ts
   function sanitizeHubRows(raw) {
     const out = [];
     const seen2 = /* @__PURE__ */ new Set();
@@ -47061,7 +47986,7 @@ ${cue.text}`).join("\n\n")}
   }
   var BUILTIN_HUB_ROWS, LIST_PREFIX, listRowId, listIdOf, isBuiltinHubRow;
   var init_hub_rows = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-rows.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows.ts"() {
       "use strict";
       BUILTIN_HUB_ROWS = ["onNow", "sport", "continue", "yours", "soon", "explore"];
       LIST_PREFIX = "list:";
@@ -47071,7 +47996,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/remote-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-keys.ts
   function isReservedRemoteKey(key) {
     return RESERVED.has(key) || /^[0-9]$/.test(key);
   }
@@ -47148,7 +48073,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMOTE_ACTIONS, DPAD_REMOTE_KEYS, MEDIA_REMOTE_KEYS, PRESET_REMOTE_KEYS, DEFAULT_SHORT, DEFAULT_REMOTE_BINDINGS, RESERVED, isAction, MAX_LEARNED;
   var init_remote_keys = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/remote-keys.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-keys.ts"() {
       "use strict";
       REMOTE_ACTIONS = [
         "none",
@@ -47229,11 +48154,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function nextFallbackAfter(current5) {
     return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current5) + 1) % FALLBACK_AFTER_OPTIONS.length];
   }
-  function sanitize2(raw) {
+  function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
     const timelineZoom = TIMELINE_ZOOMS.includes(r.timelineZoom) ? r.timelineZoom : DEFAULTS2.timelineZoom;
@@ -47265,10 +48190,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
   function getTvSettings() {
-    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, DEFAULTS2));
+    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, DEFAULTS2));
   }
   function setTvSettings(patch) {
-    const next = sanitize2({ ...getTvSettings(), ...patch });
+    const next = sanitize4({ ...getTvSettings(), ...patch });
     writePluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, next);
     return next;
   }
@@ -47301,7 +48226,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47349,19 +48274,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}|${getEpgShiftMinutes()}`;
   }
@@ -47452,7 +48377,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, MAX_INCREMENTAL_KEYS, incrementalUnsupported, active3, listeners10;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -47469,48 +48394,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-resolver.ts
-  function remember(key, value) {
-    memo3.set(key, value);
-    while (memo3.size > MAX_ENTRIES5) {
-      const oldest = memo3.keys().next();
-      if (oldest.done) break;
-      memo3.delete(oldest.value);
-    }
-  }
-  function getResolvedChannels(keys2) {
-    const out = {};
-    for (const key of keys2) {
-      const hit = memo3.get(key);
-      if (hit) out[key] = hit;
-    }
-    return out;
-  }
-  async function resolveChannelKeys(keys2) {
-    const wanted = [...new Set(keys2.filter((key) => key.length > 0))];
-    const missing = wanted.filter((key) => !memo3.has(key));
-    if (missing.length > 0) {
-      const items2 = await lookupChannels(missing);
-      const found = new Map(items2.map((item) => [item.key, item]));
-      for (const key of missing) remember(key, found.get(key) ?? null);
-    }
-    return wanted.map((key) => memo3.get(key) ?? null).filter((item) => item !== null);
-  }
-  function clearResolvedChannels() {
-    memo3.clear();
-  }
-  var MAX_ENTRIES5, memo3;
-  var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-resolver.ts"() {
-      "use strict";
-      "use client";
-      init_index_client();
-      MAX_ENTRIES5 = 1e3;
-      memo3 = /* @__PURE__ */ new Map();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri2() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -47524,14 +48408,14 @@ ${cue.text}`).join("\n\n")}
     return "tl";
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts3 = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -47589,7 +48473,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -47599,8 +48483,8 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-history.ts
-  function sanitize3(raw) {
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-history.ts
+  function sanitize5(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
     for (const item of raw) {
@@ -47622,7 +48506,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function getChannelHistory() {
-    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_HISTORY_KEY, []));
+    return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_HISTORY_KEY, []));
   }
   function recordChannelWatch(channel, listId = null, now2 = Date.now()) {
     if (!channel.url?.trim() || !channel.name?.trim()) return getChannelHistory();
@@ -47646,7 +48530,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -47656,29 +48540,29 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-overrides.ts
-  function sanitize4(raw) {
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-overrides.ts
+  function sanitize6(raw) {
     if (!raw || typeof raw !== "object") return EMPTY4;
     const r = raw;
-    const hidden2 = Array.isArray(r.hidden) ? [...new Set(r.hidden.filter((k) => typeof k === "string" && k.length > 0))] : [];
+    const hidden3 = Array.isArray(r.hidden) ? [...new Set(r.hidden.filter((k) => typeof k === "string" && k.length > 0))] : [];
     const names = {};
     if (r.names && typeof r.names === "object") {
       for (const [key, value] of Object.entries(r.names)) {
         if (key && typeof value === "string" && value.trim()) names[key] = value.trim().slice(0, 120);
       }
     }
-    return { hidden: hidden2, names };
+    return { hidden: hidden3, names };
   }
   function getChannelOverrides() {
-    return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, EMPTY4));
+    return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, EMPTY4));
   }
-  function write6(next) {
+  function write9(next) {
     writePluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, next);
   }
-  function setChannelHidden(key, hidden2) {
+  function setChannelHidden(key, hidden3) {
     const current5 = getChannelOverrides();
     const rest = current5.hidden.filter((k) => k !== key);
-    write6({ ...current5, hidden: hidden2 ? [...rest, key] : rest });
+    write9({ ...current5, hidden: hidden3 ? [...rest, key] : rest });
   }
   function setChannelName(key, name) {
     const current5 = getChannelOverrides();
@@ -47686,7 +48570,7 @@ ${cue.text}`).join("\n\n")}
     const trimmed = name?.trim() ?? "";
     if (trimmed) names[key] = trimmed.slice(0, 120);
     else delete names[key];
-    write6({ ...current5, names });
+    write9({ ...current5, names });
   }
   function onChannelOverridesChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, listener);
@@ -47703,17 +48587,17 @@ ${cue.text}`).join("\n\n")}
   }
   function applyChannelOverrides(channels, overrides) {
     if (overrides.hidden.length === 0 && Object.keys(overrides.names).length === 0) return channels;
-    const hidden2 = new Set(overrides.hidden);
+    const hidden3 = new Set(overrides.hidden);
     const out = [];
     for (const channel of channels) {
-      if (hidden2.has(channelKey(channel))) continue;
+      if (hidden3.has(channelKey(channel))) continue;
       out.push(renameChannel(channel, overrides));
     }
     return out;
   }
   var CHANNEL_OVERRIDES_KEY, EMPTY4, sourceName;
   var init_channel_overrides = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/channel-overrides.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-overrides.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47725,167 +48609,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/reminders.ts
-  function reminderId(channel, programme) {
-    return `${channelKey(channel)}@${programme.start}`;
-  }
-  function sanitize5(raw) {
-    if (!Array.isArray(raw)) return [];
-    const out = [];
-    for (const item of raw) {
-      if (!item || typeof item !== "object") continue;
-      const r = item;
-      if (typeof r.id !== "string" || typeof r.start !== "number" || typeof r.channelUrl !== "string") continue;
-      out.push({
-        id: r.id,
-        channelKey: typeof r.channelKey === "string" ? r.channelKey : channelKey({ name: r.channelName ?? "", url: r.channelUrl }),
-        channelName: typeof r.channelName === "string" ? r.channelName : "Unknown",
-        channelUrl: r.channelUrl,
-        channelLogo: typeof r.channelLogo === "string" ? r.channelLogo : null,
-        channelGroup: typeof r.channelGroup === "string" ? r.channelGroup : "Other",
-        channelTvgId: typeof r.channelTvgId === "string" ? r.channelTvgId : null,
-        title: typeof r.title === "string" ? r.title : "",
-        start: r.start,
-        stop: typeof r.stop === "number" ? r.stop : r.start,
-        createdAt: typeof r.createdAt === "number" ? r.createdAt : 0,
-        notifiedAt: typeof r.notifiedAt === "number" ? r.notifiedAt : void 0,
-        leadMs: typeof r.leadMs === "number" && r.leadMs >= 0 ? r.leadMs : void 0,
-        origin: r.origin === "sport" ? "sport" : void 0
-      });
-    }
-    return out.sort((left, right) => left.start - right.start);
-  }
-  function load() {
-    if (parsed) return parsed;
-    const list = sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, []));
-    parsed = { list, byId: new Map(list.map((r) => [r.id, r])) };
-    onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, dropParsed);
-    void Promise.resolve().then(dropParsed);
-    return parsed;
-  }
-  function getReminders(now2 = Date.now()) {
-    return load().list.filter((r) => r.start + REMINDER_GRACE_MS > now2);
-  }
-  function write7(list) {
-    dropParsed();
-    writePluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, list);
-  }
-  function isReminded(channel, programme) {
-    const r = load().byId.get(reminderId(channel, programme));
-    return r !== void 0 && r.start + REMINDER_GRACE_MS > Date.now();
-  }
-  function toggleReminder(channel, programme, now2 = Date.now()) {
-    const id = reminderId(channel, programme);
-    const current5 = getReminders(now2);
-    const next = current5.some((r) => r.id === id) ? current5.filter((r) => r.id !== id) : [
-      ...current5,
-      {
-        id,
-        channelKey: channelKey(channel),
-        channelName: channel.name,
-        channelUrl: channel.url,
-        channelLogo: channel.logo ?? null,
-        channelGroup: channel.group,
-        channelTvgId: channel.tvgId,
-        title: programme.title,
-        start: programme.start,
-        stop: programme.stop,
-        createdAt: now2
-      }
-    ].sort((left, right) => left.start - right.start);
-    write7(next);
-    return next;
-  }
-  function replaceSportReminders(next, now2 = Date.now()) {
-    const current5 = getReminders(now2);
-    const manual = current5.filter((r) => r.origin !== "sport");
-    const manualIds = new Set(manual.map((r) => r.id));
-    const previous = new Map(current5.filter((r) => r.origin === "sport").map((r) => [r.id, r]));
-    const auto = next.filter((r) => !manualIds.has(r.id)).map((r) => ({ ...r, origin: "sport", notifiedAt: previous.get(r.id)?.notifiedAt }));
-    const merged = [...manual, ...auto].sort((left, right) => left.start - right.start);
-    if (JSON.stringify(merged) !== JSON.stringify(current5)) write7(merged);
-    return merged;
-  }
-  function markReminderNotified(id, now2 = Date.now()) {
-    write7(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
-  }
-  function onRemindersChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, listener);
-  }
-  function dueReminders(now2 = Date.now(), leadMs = REMINDER_LEAD_MS) {
-    return getReminders(now2).filter((r) => r.notifiedAt === void 0 && r.start - (r.leadMs ?? leadMs) <= now2);
-  }
-  function reminderToChannel(r) {
-    return { name: r.channelName, url: r.channelUrl, logo: r.channelLogo, group: r.channelGroup, tvgId: r.channelTvgId };
-  }
-  function startReminderScheduler(onDue) {
-    let stopped = false;
-    const tick2 = () => {
-      if (stopped) return;
-      const now2 = Date.now();
-      for (const r of dueReminders(now2)) {
-        if (shownHere.has(r.id)) continue;
-        shownHere.add(r.id);
-        markReminderNotified(r.id, now2);
-        onDue(r);
-      }
-    };
-    tick2();
-    const timer5 = window.setInterval(tick2, 3e4);
-    const off = onRemindersChanged(tick2);
-    return () => {
-      stopped = true;
-      window.clearInterval(timer5);
-      off();
-    };
-  }
-  function tryNativeNotification(title, body) {
-    try {
-      if (typeof Notification === "undefined") return;
-      if (Notification.permission === "granted") {
-        new Notification(title, { body });
-      } else if (Notification.permission === "default") {
-        void Notification.requestPermission().then((permission) => {
-          if (permission === "granted") new Notification(title, { body });
-        });
-      }
-    } catch {
-    }
-  }
-  function useReminders() {
-    const [list, setList] = useState(() => getReminders());
-    useEffect(() => {
-      const sync2 = () => setList(getReminders());
-      sync2();
-      const off = onRemindersChanged(sync2);
-      const timer5 = window.setInterval(sync2, 6e4);
-      return () => {
-        off();
-        window.clearInterval(timer5);
-      };
-    }, []);
-    return list;
-  }
-  var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS, parsed, dropParsed, shownHere;
-  var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/reminders.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_live_tv_data();
-      REMINDERS_KEY = "reminders_v1";
-      REMINDER_LEAD_MS = 5 * 6e4;
-      REMINDER_GRACE_MS = 10 * 6e4;
-      parsed = null;
-      dropParsed = () => {
-        parsed = null;
-      };
-      shownHere = /* @__PURE__ */ new Set();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -48337,7 +49061,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48373,10 +49097,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp22, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         // Live TV:s färgval (Jerry 2026-10-31: "TV:ns färgschema är mycket bättre"):
@@ -48459,7 +49183,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, list, items: items2, onClose, pushLayer, testId, header, footer, activeKey }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -48536,7 +49260,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -48546,10 +49270,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -48628,19 +49352,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
   var init_mobile_toggle = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
       "use strict";
       init_mobile_tokens();
       init_jsx_runtime_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -48755,7 +49479,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -48897,7 +49621,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -48952,7 +49676,7 @@ ${cue.text}`).join("\n\n")}
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -49047,7 +49771,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sportapi.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sportapi.ts
   function sportApiMinute(v) {
     if (typeof v === "number" && Number.isFinite(v)) return { minute: v, extra: null };
     const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?/.exec(String(v ?? ""));
@@ -49139,7 +49863,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORTAPI_REGISTER_URL, ESPN_CREST, arr3, num3, str3, enc3, foldTeamKey, STATUS, side2, STAT_LABELS, listOf, okBody, sportApi;
   var init_sportapi = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sportapi.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sportapi.ts"() {
       "use strict";
       SPORTAPI_REGISTER_URL = "https://sportapi.ai/pricing";
       ESPN_CREST = "https://a.espncdn.com/i/teamlogos/soccer/500";
@@ -49251,7 +49975,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/day-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/day-plan.ts
   function planKey(c) {
     return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
   }
@@ -49306,13 +50030,13 @@ ${cue.text}`).join("\n\n")}
     return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
   }
   var init_day_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/day-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/day-plan.ts"() {
       "use strict";
       init_intl_cache();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/espn.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/espn.ts
   function espnRecent(sport, slug, date, tz2) {
     if (!pathOf(sport, slug)) return { requests: [], parse: () => [] };
     const end = localDay(date, tz2).start;
@@ -49498,7 +50222,7 @@ ${cue.text}`).join("\n\n")}
   }
   var ESPN_LEAGUES, ESPN_SLUG_BY_LEAGUE, ymdLocal, LIVE_FALLBACK, SPORT_PATH, SLUG_PATH, pathOf, arr4, num4, str4, ymd2, leaguesToday, focus, boards, scoreboard, STAT, covered, espn;
   var init_espn = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/espn.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/espn.ts"() {
       "use strict";
       init_day_plan();
       ESPN_LEAGUES = {
@@ -49632,7 +50356,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
     return id === "thesportsdb" ? theSportsDb : id === "sportapi" ? sportApi : id === "espn" ? espn : apiSports;
   }
@@ -49653,7 +50377,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PROVIDER_IDS, KEYLESS_IDS, ALL_IDS, PROVIDER_LABEL, isKeyless;
   var init_providers = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
@@ -49667,7 +50391,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -49709,7 +50433,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -49717,11 +50441,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-direct.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-direct.ts
   function remember2(key, data, at, final) {
     cache7.delete(key);
     cache7.set(key, { data, at, final });
-    while (cache7.size > MAX_ENTRIES6) cache7.delete(cache7.keys().next().value);
+    while (cache7.size > MAX_ENTRIES7) cache7.delete(cache7.keys().next().value);
   }
   function isFresh(e, req, now2) {
     if (req.ttlS < 0) return e.final;
@@ -49768,22 +50492,22 @@ ${cue.text}`).join("\n\n")}
     release2();
     return run3;
   }
-  var BASES, MAX_ENTRIES6, cache7, inflight9, result;
+  var BASES, MAX_ENTRIES7, cache7, inflight9, result;
   var init_sport_direct = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-direct.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-direct.ts"() {
       "use strict";
       "use client";
       BASES = {
         espn: { base: "https://site.api.espn.com/apis/", allow: /^(site\/v2|v2)\/sports\/(soccer|hockey|basketball|football|baseball)\/[a-z0-9._]+\/(scoreboard|summary|standings)(\?[A-Za-z0-9=&%._-]*)?$/ }
       };
-      MAX_ENTRIES6 = 120;
+      MAX_ENTRIES7 = 120;
       cache7 = /* @__PURE__ */ new Map();
       inflight9 = /* @__PURE__ */ new Map();
       result = (data, cached2, fresh, fetchedAt, error) => ({ data, cached: cached2, fresh, fetchedAt, quota: null, error });
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/budget.ts
   function pooled(items2, limit, run3) {
     let active5 = 0;
     const queue3 = [];
@@ -49805,7 +50529,7 @@ ${cue.text}`).join("\n\n")}
   }
   var RETRY_MS2, KEYLESS_PARALLEL, DAY_MS, unknownQuota, Budget;
   var init_budget = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
       init_sport_fetch();
@@ -50065,7 +50789,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
   }
@@ -50079,7 +50803,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
   var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-model.ts"() {
       "use strict";
       SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
       SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
@@ -50087,7 +50811,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-store.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-store.ts
   function cardOpacity(cards, tv) {
     const own = tv ? cards.tvOpacity : cards.opacity;
     return typeof own === "number" ? own : tv ? CARD_OPACITY_DEFAULT.tv : CARD_OPACITY_DEFAULT.desktop;
@@ -50220,11 +50944,11 @@ ${cue.text}`).join("\n\n")}
     delete keys2[id];
     return setSportSettings({ keys: keys2 });
   }
-  function useStored(key, read11) {
-    const [value, setValue] = useState(read11);
+  function useStored(key, read12) {
+    const [value, setValue] = useState(read12);
     useEffect(() => {
-      setValue(read11());
-      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, () => setValue(read11()));
+      setValue(read12());
+      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, () => setValue(read12()));
     }, [key]);
     return value;
   }
@@ -50343,7 +51067,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_KEYS_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, ownImageDefaults, BACKDROPS_REV, CARD_OPACITY_DEFAULT, CARDS_REV, isMode, pct2, DEFAULT_CARDS, ALL_PROVIDERS, DEFAULT_SETTINGS, isProvider, KEY_RE, LEGACY_PROVIDERS, followAlert, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50388,7 +51112,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -50423,7 +51147,7 @@ ${cue.text}`).join("\n\n")}
     removeProviderKey(provider ?? getSportSettings().provider);
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -50432,7 +51156,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-handoff.ts
   async function startKeyHandoff() {
     try {
       const res = await fetch(BASE2, { method: "POST" });
@@ -50504,7 +51228,7 @@ ${cue.text}`).join("\n\n")}
   }
   var BASE2, POLL_MS3;
   var init_key_handoff = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-handoff.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-handoff.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50513,7 +51237,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/router.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/router.ts
   function lacksLiveData(f, now2) {
     return (f.status === "live" || f.status === "ht") && f.score == null && f.minute == null && now2 - f.kickoff >= NO_LIVE_GRACE_MS;
   }
@@ -50537,7 +51261,7 @@ ${cue.text}`).join("\n\n")}
   }
   var keylessSources, FALL_THROUGH, NO_LIVE_GRACE_MS, SportRouter, current2, budgets;
   var init_router = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/router.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/router.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -50754,10 +51478,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/surface.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/surface.ts
   var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface2, sportCardStyle, SPORT_DRAWER_PADDING, sportDrawerStyle, SPORT_SOLID_BG, sportStackedStyle, focusAttr, ACC, TINT, ON, F, ROW_DECL, SPORT_FOCUS_CSS;
   var init_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/surface.ts"() {
       "use strict";
       init_tv_ui();
       sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
@@ -50809,13 +51533,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-card.tsx
-  function KeyCard({ variant, onDone, pushLayer, provider: fixed, current: current5, onRemove }) {
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-card.tsx
+  function KeyCard({ variant, onDone, pushLayer, provider: fixed2, current: current5, onRemove }) {
     const { tt } = useTvText();
     const tv = useTvMode();
     const settings = useSportSettings();
     const [chosen, setProvider] = useState(() => PROVIDER_IDS.find((id) => !settings.keys[id]) ?? "sportapi");
-    const provider = fixed ?? chosen;
+    const provider = fixed2 ?? chosen;
     const [draft, setDraft] = useState("");
     const [phase, setPhase] = useState({ kind: "idle" });
     const [phoneEntry, setPhoneEntry] = useState(false);
@@ -50845,16 +51569,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
     })();
     const btn = (label, onOk, primary = false, testId, danger = false) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.acc : danger ? "rgba(224,119,106,0.16)" : TV2.s12, color: primary ? "#fff" : danger ? "#e0776a" : TV2.text }, children: label });
-    const removeBtn = fixed && current5 && onRemove ? btn(tt("sportKeyRemove"), onRemove, false, "sport-key-remove", true) : null;
+    const removeBtn = fixed2 && current5 && onRemove ? btn(tt("sportKeyRemove"), onRemove, false, "sport-key-remove", true) : null;
     return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : fixed ? `${PROVIDER_LABEL[fixed]} \xB7 ${tt(settings.keys[fixed] ? "sportKeyChange" : "sportKeyAdd")}` : tt("sportKeyTitle") }),
-        fixed ? null : /* @__PURE__ */ jsx(Segment, { size: tv ? "lg" : "md", options: PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] })), value: provider, onChange: (k) => {
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : fixed2 ? `${PROVIDER_LABEL[fixed2]} \xB7 ${tt(settings.keys[fixed2] ? "sportKeyChange" : "sportKeyAdd")}` : tt("sportKeyTitle") }),
+        fixed2 ? null : /* @__PURE__ */ jsx(Segment, { size: tv ? "lg" : "md", options: PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] })), value: provider, onChange: (k) => {
           setProvider(k);
           setPhase({ kind: "idle" });
         } }),
-        fixed ? null : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("sportKeyChoice") }),
-        fixed && current5 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-current", style: { display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+        fixed2 ? null : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("sportKeyChoice") }),
+        fixed2 && current5 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-current", style: { display: "flex", flexDirection: "column", gap: dp(6) }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.text }, children: tt("sportKeyCurrent", { key: current5.masked }) }),
           current5.detail ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted, fontVariantNumeric: "tabular-nums" }, children: current5.detail }) : null
         ] }) : null,
@@ -50905,7 +51629,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SPORT_NAMES, SIGNUP;
   var init_key_card = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-card.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-card.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -50933,7 +51657,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -50975,17 +51699,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { text: `${head}${left}${via}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
       init_providers();
       init_lang();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/event-index.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-index.ts
   var WINDOW_MS, fold, aliasKey, EventIndex;
   var init_event_index = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/event-index.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-index.ts"() {
       "use strict";
       init_sport_store();
       WINDOW_MS = 15 * 6e4;
@@ -51045,7 +51769,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -51175,7 +51899,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51191,7 +51915,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/goal-events.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-events.ts
   function diffGoals(prev, next, now2, keyOf2 = (f) => f.id) {
     const out = [];
     for (const f of next) {
@@ -51228,13 +51952,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var listeners11;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
       listeners11 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -51322,7 +52046,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var pad2, SportEndpointMissing, TTL_MS2, cache8;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51339,7 +52063,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.rerun) return now2 < m.start ? "upcoming" : "finished";
     if (m.phase === "postponed") return "upcoming";
@@ -51565,7 +52289,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOUR, MIN, WINDOW_HOURS, WINDOW, LEAD, MERGE_GAP_MS, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
@@ -51598,7 +52322,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
@@ -51732,7 +52456,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TWO_HOURS, REPLAY_GAP, REPLAY_LOOKBACK, STATUS2, phaseOf, fixtureKeys, TeamIndex, fitsTeams;
   var init_merge = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       init_sport_store();
@@ -51765,7 +52489,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-link.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-link.ts
   async function linkFixtures(args) {
     if (args.fixtures.length === 0) return {};
     try {
@@ -51788,7 +52512,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_sport_link = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-link.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-link.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
@@ -51798,7 +52522,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/detail-fill.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/detail-fill.ts
   function sameTeam(a, b) {
     const x = words(a);
     const y = words(b);
@@ -51837,7 +52561,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var fold2, AFFIX, words, KICKOFF_SLACK_MS, flipStat, flipLineup, lacksDetail;
   var init_detail_fill = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/detail-fill.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/detail-fill.ts"() {
       "use strict";
       fold2 = (name) => name.replace(/[øØ]/g, "o").replace(/[æÆ]/g, "ae").replace(/ß/g, "ss").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
       AFFIX = /* @__PURE__ */ new Set(["fc", "cf", "afc", "sc", "ac", "ssc", "fk", "sk", "if", "ik", "bk", "ff", "cd", "ud", "sv", "vfb", "vfl", "tsg", "rc", "as", "us", "club", "de"]);
@@ -51849,7 +52573,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/evening-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/evening-plan.ts
   function getEveningPlan(now2 = Date.now()) {
     const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, null);
     return Array.isArray(raw) ? raw.filter((e) => e && typeof e.start === "number" && e.start + KEEP_MS > now2) : [];
@@ -51868,12 +52592,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function addPlanned(m, title, now2 = Date.now()) {
     const plan = getEveningPlan(now2);
     if (plan.some((e) => samePlanned(e, m))) return;
-    write8([...plan, { id: m.id, kind: m.kind, homeKey: m.homeKey ?? null, awayKey: m.awayKey ?? null, event: m.event ?? null, title, start: m.start }]);
+    write10([...plan, { id: m.id, kind: m.kind, homeKey: m.homeKey ?? null, awayKey: m.awayKey ?? null, event: m.event ?? null, title, start: m.start }]);
   }
   function removePlanned(m, now2 = Date.now()) {
     const plan = getEveningPlan(now2);
     const next = plan.filter((e) => !samePlanned(e, m));
-    if (next.length !== plan.length) write8(next);
+    if (next.length !== plan.length) write10(next);
   }
   function useEveningPlan() {
     const [plan, setPlan] = useState(() => getEveningPlan());
@@ -51889,9 +52613,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }
     }, [matches, plan]);
   }
-  var EVENING_PLAN_KEY, KEEP_MS, SLACK_MS, write8;
+  var EVENING_PLAN_KEY, KEEP_MS, SLACK_MS, write10;
   var init_evening_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/evening-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/evening-plan.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51901,11 +52625,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       EVENING_PLAN_KEY = "sport_evening_plan_v1";
       KEEP_MS = 12 * 36e5;
       SLACK_MS = 3 * 36e5;
-      write8 = (list) => writePluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, list);
+      write10 = (list) => writePluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, list);
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/spoiler.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/spoiler.ts
   function spoilerKey(m) {
     if (m.rerun) {
       const f = m.replayOf?.fixture;
@@ -51990,7 +52714,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SPOILER_KEEP_MS, REVEAL_TV_MS, SPOILER_TV_KEY, protectedUntil, phoneReveals, listeners12, emit3;
   var init_spoiler = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -52008,7 +52732,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
     const router = currentRouter();
     if (!router) {
@@ -52108,7 +52832,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, FILL_REFRESH_MS, STANDINGS_MISS_MS, HISTORY_DAYS, ResultsController, current3, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52627,7 +53351,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const plan = input.plan ?? [];
@@ -52742,7 +53466,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var KIND_KEYS, NOOP;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52768,7 +53492,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -52821,7 +53545,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     for (const [key, entry] of cache9) {
       if (now2 - entry.storedAt >= TTL_MS3) cache9.delete(key);
     }
-    while (cache9.size > MAX_ENTRIES7) {
+    while (cache9.size > MAX_ENTRIES8) {
       const oldest = cache9.keys().next();
       if (oldest.done) break;
       cache9.delete(oldest.value);
@@ -52877,16 +53601,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS3, MAX_ENTRIES7, cache9, batches, inflight10, HOUR_MS;
+  var TTL_MS3, MAX_ENTRIES8, cache9, batches, inflight10, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
       init_epg_shift();
       init_store_id();
       TTL_MS3 = 5 * 60 * 1e3;
-      MAX_ENTRIES7 = 600;
+      MAX_ENTRIES8 = 600;
       cache9 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
       inflight10 = /* @__PURE__ */ new Map();
@@ -52894,7 +53618,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -52923,13 +53647,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var EMPTY6;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY6 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/display-title.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-title.ts
   function displayTitle(title) {
     if (!title) return title;
     if (!MARKERS.test(title)) {
@@ -52944,13 +53668,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var MARKERS;
   var init_display_title = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/display-title.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-title.ts"() {
       "use strict";
       MARKERS = /[ᴬ-ᵪᶛ-ᶿⁱⁿʰ-ʸˠ-ˤ]+/g;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -52980,7 +53704,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var EMPTY8;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52990,7 +53714,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/couch-channel-player.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/couch-channel-player.ts
   function channelSnapshot(a) {
     return {
       kind: "channel",
@@ -53022,12 +53746,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_couch_channel_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/couch-channel-player.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/couch-channel-player.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hls-recovery.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-recovery.ts
   function nextRecoveryStep(failures) {
     if (failures >= HLS_REOPEN_BACKOFF_MS.length) return { kind: "fallback-ts" };
     return { kind: "reopen", delayMs: HLS_REOPEN_BACKOFF_MS[Math.max(0, failures)], attempt: Math.max(0, failures) + 1 };
@@ -53048,7 +53772,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O, HLS_DEMUXER_LAVF_O_PROXIED;
   var init_hls_recovery = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hls-recovery.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-recovery.ts"() {
       "use strict";
       HLS_STALL_MS = 8e3;
       HLS_REOPEN_BACKOFF_MS = [3e3, 6e3, 12e3];
@@ -53059,7 +53783,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -53208,19 +53932,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useOrientation.ts
-  function read10() {
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useOrientation.ts
+  function read11() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
   }
   function useOrientation() {
-    const [orientation, setOrientation] = useState(read10);
+    const [orientation, setOrientation] = useState(read11);
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       const mql = window.matchMedia(QUERY);
@@ -53233,14 +53957,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -53289,13 +54013,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [active5]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -53306,13 +54030,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -53332,7 +54056,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -53345,7 +54069,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -53389,7 +54113,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -53403,7 +54127,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/score-model.ts
   function scoreHidden(m, now2 = Date.now()) {
     if (!spoilerProtected(m, now2)) return false;
     return hiddenOnTv(m, now2, getSportSettings());
@@ -53456,7 +54180,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return f.crest ?? null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
       init_spoiler();
@@ -53464,7 +54188,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -53485,7 +54209,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -53562,7 +54286,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card", px }) {
     const blink = useGoalBlink(match);
     useSpoilerVersion();
@@ -53613,7 +54337,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53632,15 +54356,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
   var init_sport_icons2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
       "use strict";
       init_sport_icons();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/crest.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/crest.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -53650,7 +54374,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(colorKey), color: "#fff", fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: crestText(name) });
   }
   var init_crest = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/crest.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/crest.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53662,7 +54386,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function LeagueDot({ leagueKey, size = dp(12) }) {
     return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: dp(3), background: leagueColor(leagueKey), flexShrink: 0 } });
   }
@@ -53741,7 +54465,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn, GRID_MIN_CARD;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53780,7 +54504,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -53971,7 +54695,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53996,7 +54720,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/results-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-model.ts
   function groupResults(matches, filter, follows = []) {
     const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
     const isFollowed = (m) => followState(m, follows).any;
@@ -54023,7 +54747,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var isLive, isMine, FORM_COLOR;
   var init_results_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/results-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-model.ts"() {
       "use strict";
       init_sport_day_model();
       isLive = (m) => m.status === "live";
@@ -54032,7 +54756,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/league-jump.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/league-jump.ts
   function foldText(s) {
     return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
   }
@@ -54092,7 +54816,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var YOUR_LEAGUES_MAX, TOP_LEAGUES_MAX, OPEN_COUNTRIES, HOME_COUNTRIES, isHomeCountry, byCount;
   var init_league_jump = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/league-jump.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/league-jump.ts"() {
       "use strict";
       init_merge();
       init_sport_day_model();
@@ -54105,7 +54829,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
   function sectionTarget(key, current5 = "sport") {
     return key === current5 ? null : key;
   }
@@ -54149,7 +54873,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_SECTIONS, watchable;
   var init_phone_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
       "use strict";
       init_sport_day_model();
       init_results_model();
@@ -54165,7 +54889,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
   function usePhonePlatform() {
     return phonePlatform(typeof navigator === "undefined" ? "" : navigator.userAgent || "", isAndroidTauriEnv);
   }
@@ -54229,7 +54953,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHEET_BG, sheetTitle, overline2;
   var init_phone_sport_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54244,7 +54968,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
   function Row2({ entry, on, showCountry, sportLabel: sportLabel2, onPick }) {
     const sub = [showCountry ? entry.country : null, sportLabel2].filter(Boolean).join(" \xB7 ");
     return /* @__PURE__ */ jsxs(SheetRow, { testId: `phone-league-row-${entry.key}`, on, height: 50, onPress: onPick, children: [
@@ -54310,7 +55034,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var dot;
   var init_sport_league_sheet_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54324,7 +55048,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
   function PhoneTeamCrest({ name, colorKey, src, size }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: colorKey ?? name, src, size });
   }
@@ -54401,7 +55125,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var P, cardStyle2, svg4, PIcons;
   var init_phone_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54484,7 +55208,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
   function PhoneCrest({ name, src, size = 22 }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: name, src, size });
   }
@@ -54653,7 +55377,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
   var init_sport_results_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54677,7 +55401,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
   function PhoneMatchList({ sport, currentKey, nowMs, locale, picked, onTogglePick, onDone }) {
     const { tt } = useTvText();
     const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
@@ -54715,7 +55439,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }, g.start ?? "now")) });
   }
   var init_player_matches_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
       "use strict";
       "use client";
       init_live_tv_ui();
@@ -54731,7 +55455,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -54961,7 +55685,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer2, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54988,7 +55712,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/presence.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/presence.ts
   function sync() {
     const want = seen.size > 0;
     if (want && !release) release = acquirePollDemand("couch");
@@ -55019,7 +55743,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PRESENCE_TTL_MS, seen, listeners14, release, hasCouchPresence, TIP_PRESENCE_PREFIX, hasPhonePresence;
   var init_presence = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/presence.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/presence.ts"() {
       "use strict";
       init_live_poller();
       PRESENCE_TTL_MS = 6e4;
@@ -55032,7 +55756,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
   function useHidden(match) {
     useSpoilerVersion();
     return scoreHidden(match);
@@ -55044,17 +55768,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function PlayerReplayBadge({ match, ps, top: top2 }) {
     const { tt } = useTvText();
-    const hidden2 = useHidden(match);
-    const score = hidden2 ? null : revealedReplayScore(match);
+    const hidden3 = useHidden(match);
+    const score = hidden3 ? null : revealedReplayScore(match);
     return /* @__PURE__ */ jsxs(
       "div",
       {
         "data-testid": "player-replay-badge",
-        "data-hidden": hidden2 ? "1" : "0",
+        "data-hidden": hidden3 ? "1" : "0",
         style: { position: "absolute", top: top2, left: ps(32), zIndex: 31, display: "flex", alignItems: "center", gap: ps(10), height: ps(44), padding: `0 ${ps(8)}px`, borderRadius: ps(12), background: "rgba(18,18,22,0.72)", border: `1px solid ${TV2.lineCard}`, boxSizing: "border-box", color: TV2.text, pointerEvents: "none", fontFamily: TV2.font },
         children: [
           match.home ? /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: ps(28), src: match.homeCrest }) : null,
-          hidden2 ? /* @__PURE__ */ jsxs("span", { "data-testid": "player-replay-score-hidden", "aria-label": tt("sportResultHidden"), style: { position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: [
+          hidden3 ? /* @__PURE__ */ jsxs("span", { "data-testid": "player-replay-score-hidden", "aria-label": tt("sportResultHidden"), style: { position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: [
             /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { fontSize: ps(18), fontWeight: 700, fontVariantNumeric: "tabular-nums", filter: "blur(7px)", opacity: 0.8 }, children: "0\u20130" }),
             /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsx(SportIcons.Lock, { size: ps(16) }) })
           ] }) : score ? /* @__PURE__ */ jsx("span", { "data-testid": "player-replay-score", style: { fontSize: ps(18), fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: `${score.home}\u2013${score.away}` }) : null,
@@ -55073,7 +55797,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function PlayerReplayInfo({ match, ps, nowMs, locale }) {
     const { tt } = useTvText();
-    const hidden2 = useHidden(match);
+    const hidden3 = useHidden(match);
     const present = usePresence();
     const kickoff = match.replayOf?.kickoff ?? null;
     const overline3 = [match.league, kickoff != null ? playedWhen(kickoff, nowMs, locale, tt) : null].filter(Boolean).join(" \xB7 ");
@@ -55082,7 +55806,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         overline3 ? /* @__PURE__ */ jsx("div", { "data-testid": "player-replay-overline", style: { fontSize: ps(12), fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: TV2.muted, ...ellipsis4 }, children: overline3 }) : null,
         /* @__PURE__ */ jsx("div", { style: { fontSize: ps(34), fontWeight: 700, lineHeight: 1.15, ...ellipsis4 }, children: matchTitle(match) })
       ] }),
-      hidden2 ? /* @__PURE__ */ jsxs("div", { "data-testid": "player-replay-hidden", style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(14)}px`, borderRadius: ps(12), background: "rgba(18,18,22,0.72)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14) }, children: [
+      hidden3 ? /* @__PURE__ */ jsxs("div", { "data-testid": "player-replay-hidden", style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(14)}px`, borderRadius: ps(12), background: "rgba(18,18,22,0.72)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14) }, children: [
         /* @__PURE__ */ jsx(SportIcons.Lock, { size: ps(14) }),
         /* @__PURE__ */ jsx("span", { style: { fontWeight: 600 }, children: tt("sportResultHidden") }),
         /* @__PURE__ */ jsxs("span", { "data-testid": "player-replay-where", style: { color: TV2.muted }, children: [
@@ -55094,7 +55818,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis4;
   var init_player_replay_badge = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55114,7 +55838,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -55431,7 +56155,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FAV_WINDOW, DAY_MS2, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55476,7 +56200,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/use-remote-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/use-remote-keys.ts
   function dispatchRemoteAction(action) {
     const event2 = new CustomEvent(REMOTE_ACTION_EVENT, { detail: { action }, cancelable: true });
     window.dispatchEvent(event2);
@@ -55554,7 +56278,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var REMOTE_ACTION_EVENT, REMOTE_MEDIA_EVENT;
   var init_use_remote_keys = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/use-remote-keys.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/use-remote-keys.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55565,7 +56289,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -55828,7 +56552,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55846,7 +56570,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
     const direct = merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId);
     if (direct || !e.aliases?.length) return direct ?? null;
@@ -55880,7 +56604,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var playing, playingListeners;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
@@ -55888,7 +56612,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
     const controller2 = useResultsController();
@@ -55923,7 +56647,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55941,7 +56665,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/stream-fallback-prompt.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback-prompt.tsx
   function StreamFallbackPrompt({ target: target2, seconds: seconds2 = FALLBACK_COUNTDOWN_S, onSwitch, onStay }) {
     const { tt } = useTvText();
     const auto = seconds2 > 0;
@@ -55967,7 +56691,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FALLBACK_COUNTDOWN_S;
   var init_stream_fallback_prompt = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55978,7 +56702,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
   function unique(matches) {
     const seen2 = /* @__PURE__ */ new Set();
     return matches.filter((m) => {
@@ -56063,7 +56787,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOUR2, WEEK_MS, ofSport, watchable2, byStart;
   var init_rows_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
       "use strict";
       init_live_tv_shell();
       init_score_model();
@@ -56078,7 +56802,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
   function emit4() {
     for (const cb of [...listeners15]) cb();
   }
@@ -56135,8 +56859,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       added = true;
     }
     if (!added) return;
-    const notify2 = notifyPluginRegistryChanged;
-    if (typeof notify2 === "function") notify2();
+    const notify3 = notifyPluginRegistryChanged;
+    if (typeof notify3 === "function") notify3();
   }
   function ensureLinks(day, ids, fixtures2) {
     const key = `${day}|${ids}`;
@@ -56234,7 +56958,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var REFRESH_MS, WEEK_DAYS, listeners15, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer4, generation2, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
   var init_rows_feed = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56273,7 +56997,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/name-match.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/name-match.ts
   function foldDiacritics(text2) {
     return text2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ø/g, "o").replace(/æ/g, "ae").replace(/œ/g, "oe").replace(/ß/g, "ss").replace(/đ/g, "d").replace(/ł/g, "l");
   }
@@ -56282,7 +57006,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
   var init_name_match2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/name-match.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/name-match.ts"() {
       "use strict";
       COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
       COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
@@ -56292,7 +57016,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback.ts
   function stallStep(s, e) {
     if (e.type === "start") return { state: { startedAt: e.at, stallSince: null, stalls: [], fired: false }, trigger: false };
     const inGrace = (at) => at - s.startedAt < GRACE_MS;
@@ -56335,7 +57059,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var GRACE_MS, LONG_STALL_MS, STALL_WINDOW_MS, STALLS_TO_TRIGGER, initialStall, RANK, rankOf;
   var init_stream_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback.ts"() {
       "use strict";
       init_name_match2();
       init_channel_overrides();
@@ -56351,7 +57075,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/use-stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/use-stream-fallback.ts
   function sportSourcesFor(key, matches, now2) {
     const m = matches.find((x) => x.start <= now2 && now2 < x.stop && x.sources.some((s) => s.channelKey === key));
     return m ? rankedSources(m, getOverrides()).map(sourceChannel) : [];
@@ -56402,7 +57126,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TICK_MS2;
   var init_use_stream_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/use-stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/use-stream-fallback.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56418,7 +57142,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -56478,7 +57202,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var cutouts, listeners16, snapshot2;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56488,7 +57212,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -56797,7 +57521,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56819,7 +57543,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer,
@@ -57752,7 +58476,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var import_react_dom5, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS, TS_REFILL_ON_UNDERRUN;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -57788,7 +58512,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -57798,11 +58522,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches-settings.tsx
+  init_react_shim();
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -58025,14 +58752,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var LT_NARROW_QUERY = "(max-width: 639px)";
   function useLtNarrow() {
-    const read11 = () => {
+    const read12 = () => {
       try {
         return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(LT_NARROW_QUERY).matches;
       } catch {
         return false;
       }
     };
-    const [narrow, setNarrow] = useState(read11);
+    const [narrow, setNarrow] = useState(read12);
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       let mql;
@@ -58336,129 +59063,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/display-metrics.ts
-  function readDisplayMetrics() {
-    if (typeof window === "undefined") return null;
-    const visual = window.visualViewport;
-    const sceneScale = typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale").trim();
-    const body = typeof document === "undefined" ? null : document.body;
-    return {
-      layoutWidth: window.innerWidth,
-      layoutHeight: window.innerHeight,
-      visualWidth: visual ? visual.width : null,
-      visualHeight: visual ? visual.height : null,
-      visualScale: visual ? visual.scale : null,
-      dpr: window.devicePixelRatio,
-      sceneScale: sceneScale || "1",
-      sceneOn: typeof document !== "undefined" && document.documentElement.getAttribute("data-tv-scene") === "1",
-      bodyTransform: body ? getComputedStyle(body).transform || "none" : "none",
-      bodyWidth: body ? Math.round(body.getBoundingClientRect().width) : 0,
-      bodyLayoutWidth: body ? body.offsetWidth : 0,
-      bodyHeight: body ? Math.round(body.getBoundingClientRect().height) : 0,
-      bodyLayoutHeight: body ? body.offsetHeight : 0,
-      bodyScale: body ? matrixScale(getComputedStyle(body).transform) : null
-    };
-  }
-  function matrixScale(transform) {
-    const match = /matrix\(([^,]+),/.exec(transform);
-    if (!match) return null;
-    const value = parseFloat(match[1]);
-    return Number.isFinite(value) ? value : null;
-  }
-  function formatDisplayMetrics(m) {
-    const visual = m.visualWidth !== null && m.visualHeight !== null ? `synlig ${Math.round(m.visualWidth)}\xD7${Math.round(m.visualHeight)} @${m.visualScale}` : "synlig saknas";
-    const scen = `scen ${m.sceneScale}${m.sceneOn ? "" : " AV"}`;
-    const kropp = `kropp ${m.bodyLayoutWidth}\xD7${m.bodyLayoutHeight}\u2192${m.bodyWidth}\xD7${m.bodyHeight} \xD7${m.bodyScale ?? "otransformerad"}`;
-    return `${m.layoutWidth}\xD7${m.layoutHeight} \xB7 ${visual} \xB7 dpr ${m.dpr} \xB7 ${scen} \xB7 ${kropp}`;
-  }
-  function isSceneNotApplied(m) {
-    if (!m.sceneOn) return false;
-    const expected = parseFloat(m.sceneScale);
-    if (!Number.isFinite(expected) || expected === 1) return false;
-    if (m.bodyTransform === "none" || m.bodyScale === null) return true;
-    if (Math.abs(m.bodyScale - expected) > 1e-3) return true;
-    return m.bodyLayoutWidth > 0 && m.bodyWidth > 0 && Math.abs(m.bodyLayoutWidth * expected - m.bodyWidth) > 2;
-  }
-  function isViewportMismatch(m) {
-    if (m.visualWidth === null || m.visualHeight === null) return false;
-    return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-settings-section.tsx
-  init_live_tv_data();
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/list-import-flags.ts
-  init_live_tv_data();
-  function recordListImportOutcome(listId, error) {
-    replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/m3u-fetch-progress.ts
-  var IDLE = {
-    status: "idle",
-    current: 0,
-    total: 0,
-    url: null,
-    results: [],
-    error: null,
-    jobProgress: null
-  };
-  var progress = IDLE;
-  var listeners9 = /* @__PURE__ */ new Set();
-  function publish(next) {
-    progress = next;
-    for (const listener of [...listeners9]) listener();
-  }
-  function getM3uFetchProgress() {
-    return progress;
-  }
-  function subscribeM3uFetch(listener) {
-    listeners9.add(listener);
-    return () => listeners9.delete(listener);
-  }
-  function reportM3uFetchJobProgress(received, total) {
-    if (progress.status !== "fetching") return;
-    publish({ ...progress, jobProgress: { received, total: total ?? null } });
-  }
-  async function runM3uFetch(urls, fetchOne) {
-    if (progress.status === "fetching") return false;
-    const queue3 = urls.map((url) => url.trim()).filter(Boolean);
-    if (queue3.length === 0) return false;
-    const results = [];
-    publish({ status: "fetching", current: 1, total: queue3.length, url: queue3[0], results, error: null, jobProgress: null });
-    for (let index = 0; index < queue3.length; index += 1) {
-      const url = queue3[index];
-      publish({ ...progress, current: index + 1, url, jobProgress: null });
-      try {
-        const channels = await fetchOne(url);
-        results.push({ url, channels });
-        publish({ ...progress, results: [...results], jobProgress: null });
-      } catch (err) {
-        publish({
-          status: "error",
-          current: index + 1,
-          total: queue3.length,
-          url,
-          results: [...results],
-          error: err instanceof Error ? err.message : String(err),
-          jobProgress: null
-        });
-        return false;
-      }
-    }
-    publish({
-      status: "done",
-      current: queue3.length,
-      total: queue3.length,
-      url: null,
-      results: [...results],
-      error: null,
-      jobProgress: null
-    });
-    return true;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   init_lang();
   var EN = {
@@ -58526,6 +59131,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     remindersEmpty: "No reminders. Tap the bell on a programme to add one.",
     remove: "Remove",
     startsNow: "Starts now on {channel}",
+    epgWatchesTitle: "Guide alerts",
+    epgWatchesHint: "Lumio looks for these words in programme titles and descriptions across the whole guide and tells you when a match turns up, and again just before it starts.",
+    epgWatchAddLabel: "New word",
+    epgWatchPlaceholder: "e.g. Allsvenskan or Champions League",
+    epgWatchAdd: "Add",
+    epgWatchRemove: "Remove",
+    epgWatchNone: "No watched words yet.",
+    epgWatchSummary: "{n} words",
+    epgWatchThis: "Alert me about \u201C{query}\u201D",
+    epgWatchStop: "Stop alerts for \u201C{query}\u201D",
+    epgWatchFoundTitle: "In the guide: {query}",
+    epgWatchFoundBody: "{title} \xB7 {when} on {channel}",
+    epgWatchMore: "+{n} more",
+    epgWatchAdded: "Alerts on for \u201C{query}\u201D",
     startsIn: "Starts in {min} min on {channel}",
     watch: "Watch",
     dismiss: "Dismiss",
@@ -58765,6 +59384,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     remindersEmpty: "Inga p\xE5minnelser. Tryck p\xE5 klockan p\xE5 ett program f\xF6r att l\xE4gga till en.",
     remove: "Ta bort",
     startsNow: "B\xF6rjar nu p\xE5 {channel}",
+    epgWatchesTitle: "Bevaka i tabl\xE5n",
+    epgWatchesHint: "Lumio letar efter orden i programtitlar och beskrivningar i hela tabl\xE5n och s\xE4ger till n\xE4r n\xE5got dyker upp, och igen strax f\xF6re start.",
+    epgWatchAddLabel: "Nytt ord",
+    epgWatchPlaceholder: "t.ex. Allsvenskan eller Champions League",
+    epgWatchAdd: "L\xE4gg till",
+    epgWatchRemove: "Ta bort",
+    epgWatchNone: "Inga bevakade ord \xE4n.",
+    epgWatchSummary: "{n} ord",
+    epgWatchThis: "Bevaka \u201D{query}\u201D",
+    epgWatchStop: "Sluta bevaka \u201D{query}\u201D",
+    epgWatchFoundTitle: "I tabl\xE5n: {query}",
+    epgWatchFoundBody: "{title} \xB7 {when} p\xE5 {channel}",
+    epgWatchMore: "+{n} till",
+    epgWatchAdded: "Bevakar \u201D{query}\u201D",
     startsIn: "B\xF6rjar om {min} min p\xE5 {channel}",
     watch: "Titta",
     dismiss: "St\xE4ng",
@@ -58991,6 +59624,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     remindersEmpty: "Keine Erinnerungen. Tippe bei einer Sendung auf die Glocke, um eine hinzuzuf\xFCgen.",
     remove: "Entfernen",
     startsNow: "L\xE4uft jetzt auf {channel}",
+    epgWatchesTitle: "Programm beobachten",
+    epgWatchesHint: "Lumio sucht diese W\xF6rter im ganzen Programm und meldet sich, wenn etwas auftaucht, und noch einmal kurz vor Beginn.",
+    epgWatchAddLabel: "Neues Wort",
+    epgWatchPlaceholder: "z. B. Bundesliga oder Champions League",
+    epgWatchAdd: "Hinzuf\xFCgen",
+    epgWatchRemove: "Entfernen",
+    epgWatchNone: "Noch keine beobachteten W\xF6rter.",
+    epgWatchSummary: "{n} W\xF6rter",
+    epgWatchThis: "\u201E{query}\u201C beobachten",
+    epgWatchStop: "\u201E{query}\u201C nicht mehr beobachten",
+    epgWatchFoundTitle: "Im Programm: {query}",
+    epgWatchFoundBody: "{title} \xB7 {when} auf {channel}",
+    epgWatchMore: "+{n} weitere",
+    epgWatchAdded: "Beobachte \u201E{query}\u201C",
     startsIn: "Beginnt in {min} Min. auf {channel}",
     watch: "Ansehen",
     dismiss: "Schlie\xDFen",
@@ -59215,6 +59862,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     remindersEmpty: "Aucun rappel. Touchez la cloche d\u2019un programme pour en ajouter un.",
     remove: "Supprimer",
     startsNow: "Commence maintenant sur {channel}",
+    epgWatchesTitle: "Surveiller le guide",
+    epgWatchesHint: "Lumio cherche ces mots dans tout le guide et vous pr\xE9vient quand une \xE9mission appara\xEEt, puis juste avant le d\xE9but.",
+    epgWatchAddLabel: "Nouveau mot",
+    epgWatchPlaceholder: "p. ex. Ligue 1 ou Champions League",
+    epgWatchAdd: "Ajouter",
+    epgWatchRemove: "Retirer",
+    epgWatchNone: "Aucun mot surveill\xE9.",
+    epgWatchSummary: "{n} mots",
+    epgWatchThis: "Surveiller \xAB {query} \xBB",
+    epgWatchStop: "Ne plus surveiller \xAB {query} \xBB",
+    epgWatchFoundTitle: "Dans le guide : {query}",
+    epgWatchFoundBody: "{title} \xB7 {when} sur {channel}",
+    epgWatchMore: "+{n} autres",
+    epgWatchAdded: "\xAB {query} \xBB surveill\xE9",
     startsIn: "Commence dans {min} min sur {channel}",
     watch: "Regarder",
     dismiss: "Ignorer",
@@ -59439,6 +60100,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     remindersEmpty: "No hay recordatorios. Toca la campana de un programa para a\xF1adir uno.",
     remove: "Quitar",
     startsNow: "Empieza ahora en {channel}",
+    epgWatchesTitle: "Vigilar la gu\xEDa",
+    epgWatchesHint: "Lumio busca estas palabras en toda la gu\xEDa y te avisa cuando aparece algo, y otra vez justo antes de empezar.",
+    epgWatchAddLabel: "Palabra nueva",
+    epgWatchPlaceholder: "p. ej. LaLiga o Champions League",
+    epgWatchAdd: "A\xF1adir",
+    epgWatchRemove: "Quitar",
+    epgWatchNone: "A\xFAn no hay palabras vigiladas.",
+    epgWatchSummary: "{n} palabras",
+    epgWatchThis: "Vigilar \xAB{query}\xBB",
+    epgWatchStop: "Dejar de vigilar \xAB{query}\xBB",
+    epgWatchFoundTitle: "En la gu\xEDa: {query}",
+    epgWatchFoundBody: "{title} \xB7 {when} en {channel}",
+    epgWatchMore: "+{n} m\xE1s",
+    epgWatchAdded: "Vigilando \xAB{query}\xBB",
     startsIn: "Empieza en {min} min en {channel}",
     watch: "Ver",
     dismiss: "Descartar",
@@ -59624,10 +60299,370 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches.ts
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_index_client();
+  init_channel_resolver();
+  init_reminders();
+  var EPG_WATCHES_KEY = "epg_watches_v1";
+  var EPG_WATCH_MIN_QUERY = 2;
+  var EPG_WATCH_HORIZON_MS = 48 * 60 * 6e4;
+  var EPG_WATCH_MAX_HITS = 10;
+  var EPG_WATCH_SYNC_MS = 30 * 6e4;
+  var EPG_WATCH_START_DELAY_MS = 9e4;
+  function sanitize2(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const item of raw) {
+      const w = item;
+      if (!w || typeof w.id !== "string" || typeof w.query !== "string") continue;
+      out.push({
+        id: w.id,
+        query: w.query,
+        createdAt: typeof w.createdAt === "number" ? w.createdAt : 0,
+        primedAt: typeof w.primedAt === "number" ? w.primedAt : void 0,
+        seen: Array.isArray(w.seen) ? w.seen.filter((s) => typeof s === "string") : void 0
+      });
+    }
+    return out;
+  }
+  function getEpgWatches() {
+    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID2, EPG_WATCHES_KEY, []));
+  }
+  function write8(list) {
+    writePluginJson(LIVE_TV_PLUGIN_ID2, EPG_WATCHES_KEY, list);
+  }
+  function normalizeWatchQuery(query) {
+    return query.trim().replace(/\s+/g, " ");
+  }
+  function addEpgWatch(query, now2 = Date.now()) {
+    const q = normalizeWatchQuery(query);
+    const current5 = getEpgWatches();
+    if (q.length < EPG_WATCH_MIN_QUERY || current5.some((w) => w.query.toLowerCase() === q.toLowerCase())) return current5;
+    const next = [...current5, { id: `w${now2.toString(36)}${Math.random().toString(36).slice(2, 6)}`, query: q, createdAt: now2 }];
+    write8(next);
+    syncNow?.();
+    return next;
+  }
+  function removeEpgWatch(id) {
+    const next = getEpgWatches().filter((w) => w.id !== id);
+    write8(next);
+    return next;
+  }
+  function hasEpgWatch(query) {
+    const q = normalizeWatchQuery(query).toLowerCase();
+    return getEpgWatches().some((w) => w.query.toLowerCase() === q);
+  }
+  function onEpgWatchesChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, EPG_WATCHES_KEY, listener);
+  }
+  function keywordReminders(hits, now2) {
+    const byShow = /* @__PURE__ */ new Map();
+    for (const hit of [...hits].sort((a, b) => a.programme.start - b.programme.start)) {
+      if (hit.programme.start <= now2) continue;
+      const show = `${hit.programme.title.trim().toLowerCase()}@${hit.programme.start}`;
+      if (!byShow.has(show)) byShow.set(show, hit);
+    }
+    return [...byShow.values()].map(({ channel, programme }) => ({
+      id: reminderId(channel, programme),
+      channelKey: channelKey(channel),
+      channelName: channel.name,
+      channelUrl: channel.url,
+      channelLogo: channel.logo ?? null,
+      channelGroup: channel.group,
+      channelTvgId: channel.tvgId,
+      title: programme.title,
+      start: programme.start,
+      stop: programme.stop,
+      createdAt: now2,
+      origin: "keyword"
+    }));
+  }
+  function startOfId(id) {
+    const at = id.lastIndexOf("@");
+    const n = at >= 0 ? Number(id.slice(at + 1)) : NaN;
+    return Number.isFinite(n) ? n : null;
+  }
+  function updateWatchSeen(watch, reminders, now2) {
+    const previous = new Set(watch.seen ?? []);
+    const discovered = watch.primedAt === void 0 ? [] : reminders.filter((r) => !previous.has(r.id));
+    const seen2 = [.../* @__PURE__ */ new Set([...watch.seen ?? [], ...reminders.map((r) => r.id)])].filter((id) => (startOfId(id) ?? now2) > now2);
+    return { watch: { ...watch, primedAt: watch.primedAt ?? now2, seen: seen2 }, discovered };
+  }
+  var defaultDeps2 = {
+    search: epgSearch,
+    resolve: (keys2) => resolveChannelKeys(keys2)
+  };
+  async function syncEpgWatches(now2 = Date.now(), deps2 = defaultDeps2) {
+    const watches = getEpgWatches();
+    if (watches.length === 0) {
+      replaceKeywordReminders([], now2);
+      return [];
+    }
+    const all = [];
+    const updated = [];
+    const discovered = [];
+    let failed = false;
+    for (const watch of watches) {
+      let reminders;
+      try {
+        const items2 = await deps2.search(LIVE_TV_GLOBAL_EPG_ID, watch.query, now2, now2 + EPG_WATCH_HORIZON_MS, EPG_WATCH_MAX_HITS * 3, { inDescription: true });
+        const channels = await deps2.resolve(items2.map((item) => item.key));
+        const byKey = new Map(channels.map((channel) => [channel.key, channel]));
+        const hits = [];
+        for (const item of items2) {
+          const channel = byKey.get(item.key);
+          if (channel) hits.push({ watch, channel, programme: item.programme });
+        }
+        reminders = keywordReminders(hits, now2).slice(0, EPG_WATCH_MAX_HITS);
+      } catch {
+        updated.push(watch);
+        failed = true;
+        continue;
+      }
+      const result2 = updateWatchSeen(watch, reminders, now2);
+      updated.push(result2.watch);
+      all.push(...reminders);
+      if (result2.discovered.length > 0) discovered.push({ watch, reminders: result2.discovered });
+    }
+    const keep = failed ? getReminders(now2).filter((r) => r.origin === "keyword") : [];
+    replaceKeywordReminders([...keep, ...all], now2);
+    const latest2 = getEpgWatches();
+    const stillThere = new Set(latest2.map((w) => w.id));
+    const next = updated.filter((w) => stillThere.has(w.id));
+    const added = latest2.filter((w) => !updated.some((u) => u.id === w.id));
+    const merged = [...next, ...added];
+    if (JSON.stringify(merged) !== JSON.stringify(latest2)) write8(merged);
+    return discovered;
+  }
+  var hidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
+  var syncNow = null;
+  function startEpgWatchSync(onDiscovered) {
+    let stopped = false;
+    let ready = false;
+    let running2 = false;
+    let rerun = false;
+    const run3 = () => {
+      if (stopped || !ready || hidden()) return;
+      if (running2) {
+        rerun = true;
+        return;
+      }
+      running2 = true;
+      rerun = false;
+      void syncEpgWatches().then((found) => {
+        if (!stopped) for (const { watch, reminders } of found) onDiscovered(watch, reminders);
+      }).catch(() => {
+      }).finally(() => {
+        running2 = false;
+        if (rerun) run3();
+      });
+    };
+    const startTimer = window.setTimeout(() => {
+      ready = true;
+      run3();
+    }, EPG_WATCH_START_DELAY_MS);
+    const timer5 = window.setInterval(run3, EPG_WATCH_SYNC_MS);
+    const onVisibility = () => {
+      if (!hidden()) run3();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const off = onEpgWatchesChanged(run3);
+    syncNow = () => {
+      ready = true;
+      run3();
+    };
+    return () => {
+      stopped = true;
+      syncNow = null;
+      window.clearTimeout(startTimer);
+      window.clearInterval(timer5);
+      document.removeEventListener("visibilitychange", onVisibility);
+      off();
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches-settings.tsx
+  init_jsx_runtime_shim();
+  function useEpgWatches() {
+    const [list, setList] = useState(() => getEpgWatches());
+    useEffect(() => {
+      const sync2 = () => setList(getEpgWatches());
+      sync2();
+      return onEpgWatchesChanged(sync2);
+    }, []);
+    return list;
+  }
+  function EpgWatchesCard() {
+    const { h } = useHubText();
+    const watches = useEpgWatches();
+    const [draft, setDraft] = useState("");
+    const add = () => {
+      if (draft.trim().length < EPG_WATCH_MIN_QUERY) return;
+      addEpgWatch(draft);
+      setDraft("");
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "lt-epg-watches", children: [
+      /* @__PURE__ */ jsx(LtNote, { children: h("epgWatchesHint") }),
+      /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsx(
+          LtTextRow,
+          {
+            first: true,
+            label: h("epgWatchAddLabel"),
+            value: draft,
+            onChange: setDraft,
+            placeholder: h("epgWatchPlaceholder"),
+            fieldWidth: 220,
+            button: h("epgWatchAdd"),
+            onButton: add,
+            buttonDisabled: draft.trim().length < EPG_WATCH_MIN_QUERY,
+            testId: "lt-epg-watch-add"
+          }
+        ),
+        watches.map((watch) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": `lt-epg-watch-${watch.id}`,
+            style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${UI.lineSoft}`, padding: "12px 0" },
+            children: [
+              /* @__PURE__ */ jsx("p", { style: { margin: 0, flex: 1, minWidth: 0, fontSize: 13.5, color: UI.text }, children: watch.query }),
+              /* @__PURE__ */ jsx(LtBtn, { onClick: () => removeEpgWatch(watch.id), testId: `lt-epg-watch-remove-${watch.id}`, children: h("epgWatchRemove") })
+            ]
+          },
+          watch.id
+        ))
+      ] })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-metrics.ts
+  function readDisplayMetrics() {
+    if (typeof window === "undefined") return null;
+    const visual = window.visualViewport;
+    const sceneScale = typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale").trim();
+    const body = typeof document === "undefined" ? null : document.body;
+    return {
+      layoutWidth: window.innerWidth,
+      layoutHeight: window.innerHeight,
+      visualWidth: visual ? visual.width : null,
+      visualHeight: visual ? visual.height : null,
+      visualScale: visual ? visual.scale : null,
+      dpr: window.devicePixelRatio,
+      sceneScale: sceneScale || "1",
+      sceneOn: typeof document !== "undefined" && document.documentElement.getAttribute("data-tv-scene") === "1",
+      bodyTransform: body ? getComputedStyle(body).transform || "none" : "none",
+      bodyWidth: body ? Math.round(body.getBoundingClientRect().width) : 0,
+      bodyLayoutWidth: body ? body.offsetWidth : 0,
+      bodyHeight: body ? Math.round(body.getBoundingClientRect().height) : 0,
+      bodyLayoutHeight: body ? body.offsetHeight : 0,
+      bodyScale: body ? matrixScale(getComputedStyle(body).transform) : null
+    };
+  }
+  function matrixScale(transform) {
+    const match = /matrix\(([^,]+),/.exec(transform);
+    if (!match) return null;
+    const value = parseFloat(match[1]);
+    return Number.isFinite(value) ? value : null;
+  }
+  function formatDisplayMetrics(m) {
+    const visual = m.visualWidth !== null && m.visualHeight !== null ? `synlig ${Math.round(m.visualWidth)}\xD7${Math.round(m.visualHeight)} @${m.visualScale}` : "synlig saknas";
+    const scen = `scen ${m.sceneScale}${m.sceneOn ? "" : " AV"}`;
+    const kropp = `kropp ${m.bodyLayoutWidth}\xD7${m.bodyLayoutHeight}\u2192${m.bodyWidth}\xD7${m.bodyHeight} \xD7${m.bodyScale ?? "otransformerad"}`;
+    return `${m.layoutWidth}\xD7${m.layoutHeight} \xB7 ${visual} \xB7 dpr ${m.dpr} \xB7 ${scen} \xB7 ${kropp}`;
+  }
+  function isSceneNotApplied(m) {
+    if (!m.sceneOn) return false;
+    const expected = parseFloat(m.sceneScale);
+    if (!Number.isFinite(expected) || expected === 1) return false;
+    if (m.bodyTransform === "none" || m.bodyScale === null) return true;
+    if (Math.abs(m.bodyScale - expected) > 1e-3) return true;
+    return m.bodyLayoutWidth > 0 && m.bodyWidth > 0 && Math.abs(m.bodyLayoutWidth * expected - m.bodyWidth) > 2;
+  }
+  function isViewportMismatch(m) {
+    if (m.visualWidth === null || m.visualHeight === null) return false;
+    return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  init_live_tv_data();
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-import-flags.ts
+  init_live_tv_data();
+  function recordListImportOutcome(listId, error) {
+    replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  var IDLE = {
+    status: "idle",
+    current: 0,
+    total: 0,
+    url: null,
+    results: [],
+    error: null,
+    jobProgress: null
+  };
+  var progress = IDLE;
+  var listeners9 = /* @__PURE__ */ new Set();
+  function publish(next) {
+    progress = next;
+    for (const listener of [...listeners9]) listener();
+  }
+  function getM3uFetchProgress() {
+    return progress;
+  }
+  function subscribeM3uFetch(listener) {
+    listeners9.add(listener);
+    return () => listeners9.delete(listener);
+  }
+  function reportM3uFetchJobProgress(received, total) {
+    if (progress.status !== "fetching") return;
+    publish({ ...progress, jobProgress: { received, total: total ?? null } });
+  }
+  async function runM3uFetch(urls, fetchOne) {
+    if (progress.status === "fetching") return false;
+    const queue3 = urls.map((url) => url.trim()).filter(Boolean);
+    if (queue3.length === 0) return false;
+    const results = [];
+    publish({ status: "fetching", current: 1, total: queue3.length, url: queue3[0], results, error: null, jobProgress: null });
+    for (let index = 0; index < queue3.length; index += 1) {
+      const url = queue3[index];
+      publish({ ...progress, current: index + 1, url, jobProgress: null });
+      try {
+        const channels = await fetchOne(url);
+        results.push({ url, channels });
+        publish({ ...progress, results: [...results], jobProgress: null });
+      } catch (err) {
+        publish({
+          status: "error",
+          current: index + 1,
+          total: queue3.length,
+          url,
+          results: [...results],
+          error: err instanceof Error ? err.message : String(err),
+          jobProgress: null
+        });
+        return false;
+      }
+    }
+    publish({
+      status: "done",
+      current: queue3.length,
+      total: queue3.length,
+      url: null,
+      results: [...results],
+      error: null,
+      jobProgress: null
+    });
+    return true;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -59679,7 +60714,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, urls, refreshing, refresh: refresh2, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -59771,10 +60806,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_playlist_title();
   init_live_tv_data();
@@ -59784,7 +60819,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -59984,7 +61019,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -60070,15 +61105,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -60151,7 +61186,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -60173,7 +61208,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_vod_category_filter();
   init_live_tv_data();
@@ -60182,8 +61217,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
-  var defaultDeps2 = { query: queryVod, status: vodStatus, categories: listVodCategories, excluded: getVodExcluded };
-  async function scanVodSource(libraryId, emit8, progress2, signal, deps2 = defaultDeps2) {
+  var defaultDeps3 = { query: queryVod, status: vodStatus, categories: listVodCategories, excluded: getVodExcluded };
+  async function scanVodSource(libraryId, emit8, progress2, signal, deps2 = defaultDeps3) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps2.status();
@@ -60283,7 +61318,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -60331,13 +61366,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -60524,18 +61559,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_tv_strings();
   init_vod_client();
   init_vod_category_filter();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-category-apply.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-apply.ts
   init_plugin_sdk();
   init_vod_category_filter();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_live_tv_shell();
   init_tv_settings_store();
@@ -60574,7 +61609,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-category-apply.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-apply.ts
   var WAIT_LIMIT_MS = 15 * 6e4;
   var WAIT_STEP_MS = 2e3;
   var sleep3 = (ms2) => new Promise((resolve) => {
@@ -60634,7 +61669,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/picker-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/picker-panel.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -60704,7 +61739,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { ...box, color: TV2.acc, fontSize: dp(24) }, children: "\u2713" });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_tv_ui();
   init_jsx_runtime_shim();
   function useVodCategoryDraft(source) {
@@ -61119,18 +62154,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return has;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61181,7 +62216,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/group-chips.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/group-chips.ts
   var MAX_GROUP_CHIPS = 12;
   var MORE_GROUPS = "__more_groups";
   var FAVS = "__favs";
@@ -61211,7 +62246,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return counts3;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
@@ -61257,14 +62292,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     nownext: { width: gp(48), height: gp(30) }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61316,7 +62351,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_jsx_runtime_shim();
   var GROUP_PANEL_STEP = 40;
   var PREFETCH_ROWS = 5;
@@ -61414,7 +62449,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { open: () => setOpen(true), node };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
     const { tt } = useTvText();
@@ -61531,7 +62566,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61701,10 +62736,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/help-content.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/help-content.ts
   var en2 = [
     { id: "menu", title: "The channel menu", steps: [
       "Hold OK on a channel or programme to open its menu. On a computer, right-click or use the \u2026 button; on a phone, press and hold.",
@@ -61799,14 +62834,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return lang === "sv" ? sv : en2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_epg_shift();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/phone-add-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/phone-add-panel.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/phone-form.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/phone-form.ts
   init_react_shim();
   var BASE = "/api/phone-form";
   var POLL_MS2 = 2e3;
@@ -61902,7 +62937,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { urls: [...new Set(urls)], xtream: server && username && password ? { server, username, password } : null };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/phone-add-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/phone-add-panel.tsx
   init_tv_ui();
   init_jsx_runtime_shim();
   function playlistPhoneSpec(tt, lang) {
@@ -61960,7 +62995,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_mobile_tokens();
@@ -62735,6 +63770,29 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       ] }) : null
     ] });
   }
+  function GuideAlertsTab({ nav, phone = false }) {
+    const { lang } = useLang();
+    const h = (key, vars) => hubText(lang, key, vars);
+    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
+    const watches = useEpgWatches();
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: h("epgWatchesHint"), children: h("epgWatchesTitle") }),
+      keyboard.available ? /* @__PURE__ */ jsx(
+        Row,
+        {
+          phone,
+          testId: "guide-alerts-add",
+          label: h("epgWatchAddLabel"),
+          right: phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+",
+          onOk: () => keyboard.ask(h("epgWatchAddLabel"), "", (value) => {
+            addEpgWatch(value);
+          }, "text")
+        }
+      ) : null,
+      watches.map((watch) => /* @__PURE__ */ jsx(Row, { phone, testId: `guide-alert-${watch.id}`, label: watch.query, right: h("epgWatchRemove"), onOk: () => removeEpgWatch(watch.id) }, watch.id)),
+      keyboard.node
+    ] });
+  }
   function ParentalTab({ model, tt, phone = false }) {
     const [keys2, setKeys] = useState(getLockedChannelKeys);
     useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
@@ -62794,14 +63852,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
   init_key_card();
   init_key_flow();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/key-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-model.ts
   init_key_flow();
   init_providers();
   init_sport_model();
@@ -62868,7 +63926,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return tt("sportKeyLeftPerSport", { list });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_providers();
   init_rate_line();
   init_results_controller();
@@ -63052,7 +64110,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -63062,10 +64120,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_ctx();
   init_sport_epg();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/rail-tint.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/rail-tint.ts
   init_react_shim();
   var current4 = null;
   var listeners13 = /* @__PURE__ */ new Set();
@@ -63097,7 +64155,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `linear-gradient(180deg, ${rgba(t, 0.92)} 0%, ${rgba(t, 0.8)} 55%, ${rgba([12, 14, 18], 0.9)} 100%)`;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop.ts
   init_plugin_sdk();
   init_router();
   init_sport_store();
@@ -63415,7 +64473,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop-handoff.ts
   init_react_shim();
   var BASE3 = "/api/live-tv/sport/backdrop-handoff";
   var POLL_MS4 = 2e3;
@@ -63481,7 +64539,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { url, expired, received, restart };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
   var SCOPES = ["all", ...BACKDROP_SPORTS];
@@ -63816,7 +64874,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
   init_mobile_toggle();
   init_mobile_tokens();
   init_tv_ui();
@@ -63837,7 +64895,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { "data-testid": "sport-spoiler-settings", children: /* @__PURE__ */ jsx(LtRows, { children: /* @__PURE__ */ jsx(LtToggleRow, { testId: "sport-spoiler-toggle", label: tt("sportSpoilerSetting"), desc: tt("sportSpoilerSettingHint"), checked: on, onChange: (v) => setSportSettings({ spoilerReplays: v }) }) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -63999,7 +65057,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_react_shim();
   init_jsx_runtime_shim();
@@ -64047,7 +65105,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_group_order();
@@ -64055,10 +65113,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -64163,7 +65221,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_live_format();
@@ -64356,7 +65414,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/category-curation-panel.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
@@ -64495,7 +65553,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
             groups === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
             rows.map((g, i) => {
-              const hidden2 = draft.hidden.includes(g.name);
+              const hidden3 = draft.hidden.includes(g.name);
               const isMarked = marked.includes(g.name);
               return /* @__PURE__ */ jsxs("div", { "data-cat-row": "", style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${i === 0 ? "transparent" : UI.lineSoft}`, padding: "10px 0" }, children: [
                 /* @__PURE__ */ jsx(
@@ -64503,14 +65561,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                   {
                     type: "button",
                     role: "checkbox",
-                    "aria-checked": !hidden2,
+                    "aria-checked": !hidden3,
                     "aria-label": g.name,
                     onClick: () => toggleHidden(g.name),
                     style: { display: "flex", flex: "none", cursor: "pointer", background: "transparent", border: 0, padding: 0 },
-                    children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden2 })
+                    children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden3 })
                   }
                 ),
-                /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden2 ? UI.muted : UI.text }, children: g.name }),
+                /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden3 ? UI.muted : UI.text }, children: g.name }),
                 /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }, children: fmtInt(g.count, locale) }),
                 /* @__PURE__ */ jsx(LtBtn, { active: isMarked, style: { padding: "5px 11px", color: isMarked ? UI.text : UI.muted }, onClick: () => toggleMark(g.name), children: isMarked ? h("marked") : h("mark") })
               ] }, `g:${g.name}`);
@@ -64533,7 +65591,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
   init_index_client();
@@ -64589,6 +65647,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, []);
     const epg2 = useEpgStatus();
     const vod = useVodLibrarySources();
+    const watches = useEpgWatches();
+    const [watchDraft, setWatchDraft] = useState("");
     const [vodCats, setVodCats] = useState(null);
     const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null;
     useEffect(() => {
@@ -64614,6 +65674,26 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback", label: tt("settingStreamFallback"), hint: tt("settingStreamFallbackHint"), toggle: tvSettings.streamFallback, onToggle: (streamFallback) => setTvSettings({ streamFallback }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback-after", label: tt("settingStreamFallbackAfter"), hint: tt("settingStreamFallbackAfterHint"), value: tvSettings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: tvSettings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-group-order", label: tt("settingGroupOrder"), hint: tt("settingGroupOrderHint"), value: tt(groupOrderLabelKey(tvSettings.groupOrder)), onOk: () => setTvSettings({ groupOrder: nextGroupOrder(tvSettings.groupOrder) }) }),
+      s.lists.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(TvEyebrow, { children: h("epgWatchesTitle") }),
+        /* @__PURE__ */ jsx(TvNote, { children: h("epgWatchesHint") }),
+        /* @__PURE__ */ jsx(TvTextRow, { testId: "tv-epg-watch-draft", label: h("epgWatchAddLabel"), value: watchDraft, placeholder: h("epgWatchPlaceholder"), onChange: setWatchDraft }),
+        /* @__PURE__ */ jsx(
+          TvRow,
+          {
+            testId: "tv-epg-watch-add",
+            label: h("epgWatchAdd"),
+            value: watchDraft.trim() || void 0,
+            caret: true,
+            disabled: watchDraft.trim().length < EPG_WATCH_MIN_QUERY,
+            onOk: () => {
+              addEpgWatch(watchDraft);
+              setWatchDraft("");
+            }
+          }
+        ),
+        watches.map((watch) => /* @__PURE__ */ jsx(TvRow, { testId: `tv-epg-watch-${watch.id}`, label: watch.query, value: h("epgWatchRemove"), onOk: () => removeEpgWatch(watch.id) }, watch.id))
+      ] }) : null,
       /* @__PURE__ */ jsx(TvEyebrow, { children: h("playlists") }),
       s.lists.length === 0 ? /* @__PURE__ */ jsx(TvNote, { children: h("noPlaylistsYet") }) : null,
       s.lists.map((list) => /* @__PURE__ */ jsx(
@@ -65002,12 +66082,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_tv_settings_store();
   init_start_view();
   init_v2_settings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/v2-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-tokens.ts
   init_tv_ui();
   var V2 = {
     rail: "#222734",
@@ -65079,11 +66159,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var FOCUS_INSET = `inset 0 0 0 2px ${TV2.acc}, 0 0 24px ${TV2.accMix(35)}`;
   var FOCUS_BTN = `0 0 0 3px ${TV2.acc}, 0 0 26px ${TV2.accMix(42)}`;
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_group_order();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-rows-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -65186,7 +66266,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text2) {
@@ -65321,6 +66401,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const narrow = useLtNarrow();
     const vod = useVodLibrarySources();
     const accordion = useLtAccordion(narrow, ["playlists"]);
+    const watches = useEpgWatches();
     const fetchLabel = s.fetchProgress.status === "fetching" ? h("fetching") : h("fetchList");
     const totalChannels = s.lists.reduce((sum, list) => sum + (list.channelCount ?? 0), 0);
     const playlistsSummary = s.lists.length === 0 ? h("summaryNoLists") : `${s.lists.length === 1 ? h("summaryListsOne") : h("summaryListsMany", { n: s.lists.length })} \xB7 ${h("channelsCount", { count: fmtInt(totalChannels, locale) })}`;
@@ -65379,6 +66460,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         ] })
       ] })),
       epgCount > 0 ? section("guide", h("sectionGuide"), sourcesText(epgCount), /* @__PURE__ */ jsx(EpgStatusCard, { bare: true })) : null,
+      s.lists.length > 0 ? section("watches", h("epgWatchesTitle"), watches.length === 0 ? h("epgWatchNone") : watches.map((w) => w.query).join(" \xB7 "), /* @__PURE__ */ jsx(EpgWatchesCard, {})) : null,
       section("behaviour", h("sectionBehaviour"), behaviourSummary, /* @__PURE__ */ jsxs(LtRows, { children: [
         /* @__PURE__ */ jsx(LtToggleRow, { first: true, label: h("useAsHome"), desc: h("useAsHomeDesc"), checked: s.homeOverrideEnabled, onChange: s.toggleHomeOverride, error: s.homeOverrideError || null }),
         /* @__PURE__ */ jsx(LtToggleRow, { first: false, label: h("hideHero"), desc: h("hideHeroDesc"), checked: s.hideHero, onChange: s.setHideHero }),
@@ -65537,11 +66619,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_playlist_title();
   init_plugin_sdk();
@@ -65550,15 +66632,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -65568,7 +66650,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return () => clearTimeout(timer5);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY7 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -65601,7 +66683,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_display_title();
   init_jsx_runtime_shim();
@@ -65635,7 +66717,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -65665,14 +66747,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
   init_live_tv_shell();
   init_tv_settings_store();
   init_group_order();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -65701,7 +66783,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -65720,14 +66802,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     return { layout: state2.layout, tiles, audioIndex };
   }
-  function sanitize6(raw) {
+  function sanitize7(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const layout = r.layout === 2 || r.layout === 3 || r.layout === 4 ? r.layout : 4;
     const tiles = Array.isArray(r.tiles) ? r.tiles.map((t) => typeof t === "string" && t ? t : null) : [];
     return normalize4({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
   }
   function getMultiviewState() {
-    return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, DEFAULT_STATE));
+    return sanitize7(readPluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, DEFAULT_STATE));
   }
   function setMultiviewState(next) {
     writePluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, normalize4(next));
@@ -65785,14 +66867,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -65832,7 +66914,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -65986,7 +67068,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
@@ -67500,13 +68582,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -67523,7 +68605,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-next-later-row.tsx
   init_intl_cache();
   init_display_title();
   init_jsx_runtime_shim();
@@ -67587,7 +68669,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
@@ -67806,13 +68888,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_shell();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -67867,12 +68949,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now2, getAlertSkips()), now2);
   }
   var SPORT_ALERT_START_DELAY_MS = 6e4;
-  var hidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
+  var hidden2 = () => typeof document !== "undefined" && document.visibilityState === "hidden";
   function startSportAlertSync() {
     let stopped = false;
     let ready = false;
     const run3 = () => {
-      if (stopped || !ready || hidden()) return;
+      if (stopped || !ready || hidden2()) return;
       void syncKickoffReminders().catch(() => {
       });
     };
@@ -67882,7 +68964,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, SPORT_ALERT_START_DELAY_MS);
     const timer5 = window.setInterval(run3, SPORT_ALERT_SYNC_MS);
     const onVisibility = () => {
-      if (!hidden()) run3();
+      if (!hidden2()) run3();
     };
     document.addEventListener("visibilitychange", onVisibility);
     const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY, SPORT_ALERT_SKIP_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, run3));
@@ -67895,7 +68977,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/toast-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/toast-center.tsx
   init_react_shim();
   init_plugin_sdk();
   init_goal_alerts();
@@ -68117,14 +69199,25 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_display_title();
   init_jsx_runtime_shim();
+  var channelPage = (reminder) => ({
+    pageId: "live-tv-browse",
+    params: { view: "channel", autoplay: "1", ...encodeChannelParams(reminderToChannel(reminder)) }
+  });
+  function notify2(id, title, body, reminder) {
+    if (typeof showSystemNotification !== "function") {
+      tryNativeNotification(title, body);
+      return;
+    }
+    void showSystemNotification({ id, title, body, openPage: channelPage(reminder) }).catch(() => tryNativeNotification(title, body));
+  }
   function LiveTvRemindersMount() {
-    const { h } = useHubText();
+    const { h, locale } = useHubText();
     useEffect(
       () => startReminderScheduler((reminder) => {
-        tryNativeNotification(displayTitle(reminder.title), h("startsNow", { channel: reminder.channelName }));
+        notify2(`reminder:${reminder.id}`, displayTitle(reminder.title), h("startsNow", { channel: reminder.channelName }), reminder);
         const channel = reminderToChannel(reminder);
         pushToast({
           key: `reminder:${reminder.id}`,
@@ -68140,17 +69233,41 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       [h]
     );
     useEffect(() => startSportAlertSync(), []);
+    const textRef = useRef({ h, locale });
+    textRef.current = { h, locale };
+    useEffect(
+      () => startEpgWatchSync((watch, reminders) => {
+        const { h: hh, locale: loc } = textRef.current;
+        const first = reminders[0];
+        if (!first) return;
+        const when = new Date(first.start).toLocaleString(loc, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+        const title = hh("epgWatchFoundTitle", { query: watch.query });
+        const line2 = hh("epgWatchFoundBody", { title: first.title, when, channel: first.channelName });
+        const body = reminders.length > 1 ? `${line2} \xB7 ${hh("epgWatchMore", { n: reminders.length - 1 })}` : line2;
+        notify2(`watch:${watch.id}`, title, body, first);
+        pushToast({
+          key: `watch:${watch.id}`,
+          kicker: title,
+          title: reminders.length > 1 ? `${first.title} \xB7 ${when} \xB7 ${hh("epgWatchMore", { n: reminders.length - 1 })}` : `${first.title} \xB7 ${when}`,
+          watchLabel: hh("hubWatchNow"),
+          onWatch: () => requestOpenBrowsePage(channelPage(first)),
+          dismissLabel: hh("back"),
+          timeoutMs: 15e3
+        });
+      }),
+      []
+    );
     return /* @__PURE__ */ jsx(ToastCenter, {});
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
   init_live_tv_shell();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/context.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/context.ts
   init_react_shim();
   var counts = /* @__PURE__ */ new Map();
   var listeners18 = /* @__PURE__ */ new Set();
@@ -68181,11 +69298,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/goals.ts
   init_goal_alerts();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/snapshot.ts
   init_sport_day_model();
   init_score_model();
   var NOW_MAX = 40;
@@ -68205,9 +69322,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var byStart2 = (a, b) => a.start - b.start || (a.home ?? a.event ?? "").localeCompare(b.home ?? b.event ?? "");
   function toCouchMatch(m, i) {
     const best = rankedSources(m, i.overrides)[0] ?? null;
-    const hidden2 = i.spoilerHidden(m);
-    const replayScore = m.rerun && i.hasKey && !hidden2 ? m.replayOf?.score ?? null : null;
-    const scored = i.hasKey && !hidden2 && showsScore(m);
+    const hidden3 = i.spoilerHidden(m);
+    const replayScore = m.rerun && i.hasKey && !hidden3 ? m.replayOf?.score ?? null : null;
+    const scored = i.hasKey && !hidden3 && showsScore(m);
     const detail = i.hasKey && m.coverage === "full" && (m.rerun ? !!m.replayOf?.fixture : !!m.fixture);
     return {
       id: m.id,
@@ -68273,10 +69390,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const soonList = soon.slice(0, SOON_MAX);
     const multiview = i.marks.multiview && i.multiview ? toCouchMultiview(i, i.multiview, tvKey) : null;
     const shown = [...focus2 ? [focus2] : [], ...nowList, ...soonList];
-    const hidden2 = new Set(shown.filter((m) => i.spoilerHidden(m)).map((m) => m.id));
+    const hidden3 = new Set(shown.filter((m) => i.spoilerHidden(m)).map((m) => m.id));
     for (const t of multiview?.tiles ?? []) {
       const m = t?.match ? i.matches.find((x) => x.id === t.match.id) : null;
-      if (m && i.spoilerHidden(m)) hidden2.add(m.id);
+      if (m && i.spoilerHidden(m)) hidden3.add(m.id);
     }
     return {
       context,
@@ -68292,11 +69409,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         const m = i.matches.find((x) => x.id === g.matchId);
         return !m || !i.spoilerHidden(m);
       }),
-      spoiler: { hidden: [...hidden2] }
+      spoiler: { hidden: [...hidden3] }
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/goals.ts
   init_spoiler();
   var GOAL_TTL_MS = 12e4;
   var GOAL_TOAST_MS = 8e3;
@@ -68358,7 +69475,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return goalAlertWanted(match, ctx.settings, ctx.follows, now2);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_goal_events();
   init_goal_alerts();
   init_results_controller();
@@ -68421,7 +69538,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -68431,7 +69548,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/follow-search.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/follow-search.ts
   init_router();
   init_merge();
   var MIN_PROVIDER_QUERY = 3;
@@ -68476,12 +69593,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return res.filter((x) => x.kind === "team").map(({ kind: _k, sport: _s, ...t }) => t);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_sport_day_model();
   init_sport_ctx();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/follows.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/follows.ts
   init_merge();
   init_score_model();
   init_sport_day_model();
@@ -68572,7 +69689,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/commands.ts
   init_live_tv_shell();
   init_sport_day_model();
   init_sport_model();
@@ -68580,7 +69697,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_presence();
   init_spoiler();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/tip.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/tip.ts
   init_sport_day_model();
   init_sport_epg();
   init_spoiler();
@@ -68641,7 +69758,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, spoilerTv };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/commands.ts
   var isSport = (s) => SPORT_KINDS.includes(s);
   function playSource(d, s) {
     d.open({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(s)) } });
@@ -68816,7 +69933,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_presence();
   init_spoiler();
   init_jsx_runtime_shim();
@@ -68937,7 +70054,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [watching, setWatching] = useState(tvShowsSportish);
     const notifyRef = useRef(() => {
     });
-    const [notify2] = useState(() => () => notifyRef.current());
+    const [notify3] = useState(() => () => notifyRef.current());
     useEffect(() => {
       if (!enabled) return;
       let timer5 = null;
@@ -68960,34 +70077,34 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         if (c === controller2) return;
         offMerged?.();
         controller2 = c;
-        offMerged = c ? c.onMerged(notify2) : null;
+        offMerged = c ? c.onMerged(notify3) : null;
       };
       watchController();
       const subs = [
         onPlayingChannelChanged(() => {
           setWatching(tvShowsSportish());
-          notify2();
+          notify3();
         }),
         onCouchMarksChanged(() => {
           setWatching(tvShowsSportish());
-          notify2();
+          notify3();
         }),
         onPresenceChanged(() => {
           setPresent(hasCouchPresence());
-          notify2();
+          notify3();
         }),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, notify2),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, notify3),
         // Följda lag ändrar "följt" i bilden (och Följer-listan på telefonen).
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, notify2),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_FOLLOWS_KEY, notify3),
         onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPORT_SETTINGS_KEY, () => {
           watchController();
-          notify2();
+          notify3();
         }),
         // Nytt eller stängt mål (TV:n eller en telefon): alla telefoner får samma lista.
-        onGoalsChanged(notify2),
+        onGoalsChanged(notify3),
         // Spoilerskyddet: ny repris, Visa resultat (telefon eller TV) eller utgånget visat på TV:n.
-        onSpoilerChanged(notify2),
-        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, notify2)
+        onSpoilerChanged(notify3),
+        onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, notify3)
       ];
       const goalSweep = setInterval(() => {
         openGoals(Date.now());
@@ -69001,19 +70118,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         notifyRef.current = () => {
         };
       };
-    }, [enabled, notify2]);
+    }, [enabled, notify3]);
     useEffect(() => {
       if (!enabled || !present) return;
       const sweep = setInterval(() => sweepPresence(Date.now()), SWEEP_MS);
       return () => clearInterval(sweep);
     }, [enabled, present]);
-    return enabled && (present || watching) ? /* @__PURE__ */ jsx(SportCouchFeeder, { onChange: notify2, merge: present }) : null;
+    return enabled && (present || watching) ? /* @__PURE__ */ jsx(SportCouchFeeder, { onChange: notify3, merge: present }) : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-type-scale.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-type-scale.ts
   var TV_TYPE_SCALE_CSS = String.raw`
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-testid^=tab-] { font-size:24px!important }
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-f]:has(> span[style*="width: 28px"][style*="999px"]) { font-size:23px!important }
@@ -69124,13 +70241,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-testid=library-card][data-fcur="1"] > div:first-child::after { content:"";position:absolute;inset:-4px;border:3px solid rgb(var(--accent-500));border-radius:15px;box-shadow:0 0 28px rgb(var(--accent-500) / .45);pointer-events:none;z-index:6 }
 `;
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -69253,24 +70370,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_live_tv_ui();
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
     const [phone, setPhone] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read11 = () => {
+      const read12 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_PHONE_ATTR) === "1";
       };
-      const sync2 = () => setPhone(read11());
+      const sync2 = () => setPhone(read12());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -69283,7 +70400,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -69335,12 +70452,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_settings_store();
@@ -69476,7 +70593,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return overlay ? /* @__PURE__ */ jsx("div", { "data-tv-rail-slot": "", style: { width: 0, flexShrink: 0, position: "relative", zIndex: 45 }, children: nav }) : nav;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -69605,10 +70722,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -69652,7 +70769,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_use_remote_keys();
   init_tv_text_entry();
   init_channel_overrides();
@@ -69660,12 +70777,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -69713,7 +70830,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 40;
   var REPLAY_DAYS = 3;
   function useHubData(model, spotlightCount) {
@@ -69740,7 +70857,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-classic.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-classic.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -69748,7 +70865,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/programme-actions.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/programme-actions.ts
   init_live_tv_ui();
   init_reminders();
   init_display_title();
@@ -69803,16 +70920,30 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         if (url) extra.push({ key: "replay", label: tt("playReplay"), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) });
       }
     }
+    if (programme) {
+      const query = normalizeWatchQuery(displayTitle(programme.title));
+      const lang = locale.slice(0, 2);
+      if (hasEpgWatch(query)) {
+        extra.push({ key: "watch", label: hubText(lang, "epgWatchStop", { query }), run: () => {
+          const found = getEpgWatches().find((w) => w.query.toLowerCase() === query.toLowerCase());
+          if (found) removeEpgWatch(found.id);
+        } });
+      } else {
+        extra.push({ key: "watch", label: hubText(lang, "epgWatchThis", { query }), run: () => {
+          addEpgWatch(query);
+        } });
+      }
+    }
     nav.channelMenu(channel, element, extra);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/programme-art.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/programme-art.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
   var STORE_KEY = "live_tv_programme_art_v1";
   var TTL_MS4 = 7 * 864e5;
-  var MAX_ENTRIES8 = 500;
+  var MAX_ENTRIES9 = 500;
   var MAX_ACTIVE = 2;
   var MAX_PER_MINUTE = 30;
   var FETCH_TIMEOUT_MS2 = 1e4;
@@ -69848,9 +70979,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const all = store2();
     all[key] = { url, at: Date.now() };
     const keys2 = Object.keys(all);
-    if (keys2.length > MAX_ENTRIES8) {
+    if (keys2.length > MAX_ENTRIES9) {
       keys2.sort((a, b) => all[a].at - all[b].at);
-      for (const k of keys2.slice(0, keys2.length - MAX_ENTRIES8)) delete all[k];
+      for (const k of keys2.slice(0, keys2.length - MAX_ENTRIES9)) delete all[k];
     }
     if (writeTimer) return;
     writeTimer = setTimeout(() => {
@@ -69950,7 +71081,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { url: found.url };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tint.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tint.ts
   var NEUTRAL_TINT = "#2b3142";
   var hex = (n) => n.toString(16).padStart(2, "0");
   function useTint(imageUrl, enabled) {
@@ -69959,7 +71090,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `#${hex(tone[0])}${hex(tone[1])}${hex(tone[2])}`;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/v2-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-ui.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_logo_image();
@@ -70025,7 +71156,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
 ` });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-shared.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -70120,7 +71251,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-classic.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-classic.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT = 3;
@@ -70299,7 +71430,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-experience.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -70308,7 +71439,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-nowsen-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-nowsen-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -70514,7 +71645,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-experience-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience-data.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -70707,7 +71838,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts3, chip, model.nowMs, limit, sport, channelFor, hubRows, lists]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-experience-nav.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience-nav.ts
   function xpInitial(rows) {
     return { zone: "hero", heroBtn: 0, chipIdx: 0, row: 0, cols: Array.from({ length: rows }, () => 0) };
   }
@@ -70757,7 +71888,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { ...s, row, cols };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/cutout-layer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/cutout-layer.tsx
   init_react_shim();
   init_surface_cutouts();
   init_jsx_runtime_shim();
@@ -70800,7 +71931,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -70850,7 +71981,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/hub-experience.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var NO_CHANNEL2 = { name: "", logo: null, group: "", url: "", tvgId: null };
@@ -71333,7 +72464,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       description ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: dp(tv ? 24 : 19), color: V2.text2, maxWidth: "60ch", ...clamp23 }, children: description }) : null
     ] });
   }
-  var XpCard = memo(function XpCard2({ rowId, item, ri, ii, focused, ring, hidden: hidden2, native, lookup: lookup2, nowMs, number, api }) {
+  var XpCard = memo(function XpCard2({ rowId, item, ri, ii, focused, ring, hidden: hidden3, native, lookup: lookup2, nowMs, number, api }) {
     const m = rowDims(rowId, !native);
     const id = `r${ri}-${ii}`;
     const tf = focused ? native ? "scale(1.04)" : m.poster ? "scale(1.05)" : "scale(1.07)" : "none";
@@ -71345,7 +72476,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         onFocus: () => api.current.focusCard(ri, ii),
         "data-xp-focused": focused ? "1" : void 0,
         "data-xp-face-ring": "",
-        style: { flexShrink: 0, width: dp(m.w), position: "relative", zIndex: focused ? 30 : 1, cursor: "pointer", userSelect: "none", outline: "none", visibility: hidden2 ? "hidden" : void 0 },
+        style: { flexShrink: 0, width: dp(m.w), position: "relative", zIndex: focused ? 30 : 1, cursor: "pointer", userSelect: "none", outline: "none", visibility: hidden3 ? "hidden" : void 0 },
         children: [
           /* @__PURE__ */ jsx("div", { style: { width: "100%", height: dp(m.h), borderRadius: dp(m.radius), position: "relative", overflow: "hidden", transform: tf, boxShadow: ring ? FOCUS_CARD : "0 10px 30px rgba(0,0,0,.35)", transition: `transform .4s ${EASE}, box-shadow .3s` }, children: /* @__PURE__ */ jsx(CardFace, { rowId, item, nowMs, number, lookup: lookup2, holdPad: native && HOLD_CORNER[rowId] === "br" ? HOLD_PAD : 0, tv: !native }) }),
           native && rowId === "yours" && item.channel ? /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(12)}px ${dp(4)}px 0` }, children: [
@@ -71445,7 +72576,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -71456,7 +72587,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -71516,11 +72647,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -71569,7 +72700,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
@@ -71736,7 +72867,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   function TvHub(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvHubPhone, { ...props });
@@ -71744,7 +72875,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx(HubClassic, { ...props });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -71753,7 +72884,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS2 = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -71778,7 +72909,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS2 * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -71808,7 +72939,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -71817,7 +72948,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -71863,7 +72994,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -71872,14 +73003,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -71911,7 +73042,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -71984,7 +73115,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -72117,7 +73248,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var MAX_GROUPS = 12;
@@ -72268,7 +73399,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -72278,7 +73409,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -72316,7 +73447,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -72324,7 +73455,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   init_display_title();
   var HOUR_PX = 240;
@@ -72399,7 +73530,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_intl_cache();
@@ -72526,7 +73657,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
@@ -72780,11 +73911,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -72792,7 +73923,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_settings_store();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-timeline-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-timeline-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73051,7 +74182,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-list-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-list-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -73260,7 +74391,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-hero.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73397,7 +74528,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-categories.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -73443,14 +74574,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-keys.ts
   function guideKeyAction(key) {
     if (key === "n" || key === "N") return "now";
     if (key === "t" || key === "T") return "toggle-tl";
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt } = useTvText();
@@ -73641,7 +74772,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
@@ -73892,7 +75023,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73900,7 +75031,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -73910,7 +75041,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -73971,7 +75102,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
@@ -74068,7 +75199,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function escapeKey(key) {
@@ -74149,7 +75280,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -74158,7 +75289,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -74338,7 +75469,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function TvChannel(props) {
@@ -74469,7 +75600,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -74477,7 +75608,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/voice.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/voice.ts
   init_react_shim();
   var host2 = () => typeof window !== "undefined" ? window.__lumioPluginRuntime?.sdk : void 0;
   function voiceAvailable2() {
@@ -74502,11 +75633,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return ok;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -74540,7 +75671,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -74582,7 +75713,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return state2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -74729,7 +75860,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function TvSearch(props) {
@@ -74911,7 +76042,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -74919,7 +76050,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -74928,10 +76059,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -74972,7 +76103,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_plugin_sdk();
@@ -75045,7 +76176,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -75216,7 +76347,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var GRID = {
@@ -75382,7 +76513,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -75945,13 +77076,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -76009,7 +77140,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -76079,13 +77210,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const [watched, setWatched2] = useState(false);
     useEffect(() => {
       if (!watchKey) return;
-      const read11 = () => {
+      const read12 = () => {
         setInList(isWatching(watchKey));
         setWatched2(isMovieWatched({ tmdbId: watchKey }));
       };
-      read11();
-      const offList = onWatchlistChanged(read11);
-      const offWatched = onWatchedMoviesChanged(read11);
+      read12();
+      const offList = onWatchlistChanged(read12);
+      const offWatched = onWatchedMoviesChanged(read12);
       return () => {
         offList();
         offWatched();
@@ -76466,7 +77597,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -76501,12 +77632,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/row-nav.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/row-nav.ts
   init_react_shim();
   var AUTO = "row";
   var seq2 = 0;
@@ -76587,11 +77718,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }, [ref, enabled]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/remote-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -76752,21 +77883,21 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/channel-overrides-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/channel-overrides-settings.tsx
   init_channel_overrides();
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   var nameOfKey = (key) => key.slice(0, Math.max(0, key.lastIndexOf("::"))) || key;
   function ChannelOverridesSection({ tt, phone = false }) {
-    const { hidden: hidden2, names } = useChannelOverrides();
+    const { hidden: hidden3, names } = useChannelOverrides();
     const renamed = Object.entries(names);
-    const empty = hidden2.length === 0 && renamed.length === 0;
+    const empty = hidden3.length === 0 && renamed.length === 0;
     return /* @__PURE__ */ jsxs("section", { "data-testid": "channel-overrides", style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
       /* @__PURE__ */ jsx(Heading, { phone, hint: tt("hiddenChannelsHint"), children: tt("hiddenChannelsHeading") }),
       empty ? /* @__PURE__ */ jsx("div", { style: phone ? { fontSize: 15, color: MT.dim, padding: "4px 14px 14px" } : { fontSize: dp(18), color: TV2.dim }, children: tt("hiddenChannelsNone") }) : null,
-      hidden2.map((key) => /* @__PURE__ */ jsx(Row, { phone, testId: `hidden-channel-${key}`, label: names[key] ?? nameOfKey(key), right: tt("channelShow"), onOk: () => setChannelHidden(key, false) }, `h:${key}`)),
-      renamed.filter(([key]) => !hidden2.includes(key)).map(([key, name]) => /* @__PURE__ */ jsx(
+      hidden3.map((key) => /* @__PURE__ */ jsx(Row, { phone, testId: `hidden-channel-${key}`, label: names[key] ?? nameOfKey(key), right: tt("channelShow"), onOk: () => setChannelHidden(key, false) }, `h:${key}`)),
+      renamed.filter(([key]) => !hidden3.includes(key)).map(([key, name]) => /* @__PURE__ */ jsx(
         Row,
         {
           phone,
@@ -76783,10 +77914,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_group_order();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -76802,6 +77933,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const guideMode = useGuideMode();
     if (params.tab === "help") {
       return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt("tabHelp"), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: /* @__PURE__ */ jsx(HelpTab, { tt, lang, phone: true }) }) });
+    }
+    if (params.tab === "alerts") {
+      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: hubText(lang, "epgWatchesTitle"), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: /* @__PURE__ */ jsx(GuideAlertsTab, { nav, phone: true }) }) });
     }
     if (params.tab === "epg" || params.tab === "parental" || params.tab === "content" || params.tab === "sport") {
       const rubrik = params.tab === "epg" ? "tabEpg" : params.tab === "parental" ? "tabParental" : params.tab === "sport" ? "tabSport" : "tabContent";
@@ -76838,6 +77972,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-content-nav", label: tt("tabContent"), onOk: () => nav.go("settings", { tab: "content" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-epg", label: tt("tabEpg"), onOk: () => nav.go("settings", { tab: "epg" }) }),
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-alerts", label: hubText(lang, "epgWatchesTitle"), onOk: () => nav.go("settings", { tab: "alerts" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-parental", label: tt("tabParental"), onOk: () => nav.go("settings", { tab: "parental" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-sport", label: tt("tabSport"), onOk: () => nav.go("settings", { tab: "sport" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-help", label: tt("tabHelp"), onOk: () => nav.go("settings", { tab: "help" }) })
@@ -76893,12 +78028,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_start_view();
   init_v2_settings();
   init_jsx_runtime_shim();
-  var TABS = ["appearance", "content", "playlists", "epg", "parental", "remote", "sport", "help"];
+  var TABS = ["appearance", "content", "playlists", "epg", "alerts", "parental", "remote", "sport", "help"];
   var accentApi = plugin_sdk_exports;
   var hasAccent = typeof accentApi.getAccent === "function" && typeof accentApi.setAccent === "function" && !!accentApi.ACCENT_PRESETS;
   function TvSettingsView(props) {
@@ -76949,7 +78084,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const contentRef = useRef(null);
     useRowNeighbours(contentRef, true);
     useLeftToTabs(contentRef);
-    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental"), remote: tt("tabRemote"), sport: tt("tabSport"), help: tt("tabHelp") };
+    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), alerts: hubText(lang, "epgWatchesTitle"), parental: tt("tabParental"), remote: tt("tabRemote"), sport: tt("tabSport"), help: tt("tabHelp") };
     return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }, children: tt("liveTv") }),
@@ -76963,6 +78098,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         ] }) : null,
         tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { model, nav, lists: model.lists, tt, locale, toast: nav.toast }) : null,
         tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale }) : null,
+        tab === "alerts" ? /* @__PURE__ */ jsx(GuideAlertsTab, { nav }) : null,
         tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null,
         tab === "remote" ? /* @__PURE__ */ jsx(RemoteTab, { bindings: settings.remoteKeys, nav, tt }) : null,
         tab === "help" ? /* @__PURE__ */ jsx(HelpTab, { tt, lang }) : null,
@@ -77058,7 +78194,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_evening_plan();
   init_react_shim();
   init_plugin_sdk();
@@ -77068,10 +78204,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info-model.ts
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/event-timeline.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-timeline.ts
   function markerKind(e) {
     if (e.type === "goal") return "goal";
     if (e.type === "penalty") return "penalty";
@@ -77079,7 +78215,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info-model.ts
   function dayHeaderCounts(matches, now2) {
     return {
       total: matches.length,
@@ -77149,7 +78285,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -77170,13 +78306,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -77186,7 +78322,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_league_jump();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -77320,12 +78456,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_results_model();
   init_surface();
   init_sport_icons2();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -77406,13 +78542,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const crest = compact ? u(64) : u(84);
     const status = match.rerun ? playedOnText(match, ctx.tt, ctx.locale) ?? ctx.tt("sportReplay") : heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx);
     useSpoilerVersion();
-    const hidden2 = scoreHidden(match) && (!match.rerun || !!match.replayOf);
+    const hidden3 = scoreHidden(match) && (!match.rerun || !!match.replayOf);
     const score = match.rerun ? revealedReplayScore(match) : showsScore(match) ? match.score ?? null : null;
     if (!match.home || !match.away) {
       return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-head", style: { display: "flex", flexDirection: "column", gap: u(6) }, children: [
         /* @__PURE__ */ jsx("div", { "data-testid": "mc-title", style: { fontSize: u(30), fontWeight: 700, lineHeight: 1.15 }, children: matchTitle(match) }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: u(17), fontWeight: 600, color: st === "live" ? TV2.live : TV2.muted }, children: status }),
-        hidden2 ? /* @__PURE__ */ jsx(HiddenResult, { u, match, ctx, align: "flex-start" }) : null
+        hidden3 ? /* @__PURE__ */ jsx(HiddenResult, { u, match, ctx, align: "flex-start" }) : null
       ] });
     }
     const team3 = (side3) => {
@@ -77441,7 +78577,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-head", "aria-label": matchTitle(match), style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "start", gap: u(12) }, children: [
       team3("home"),
       /* @__PURE__ */ jsxs("div", { "data-testid": "mc-scoreline", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: u(6), paddingTop: u(compact ? 6 : 14) }, children: [
-        hidden2 ? /* @__PURE__ */ jsx(HiddenResult, { u, match, ctx, align: "center" }) : null,
+        hidden3 ? /* @__PURE__ */ jsx(HiddenResult, { u, match, ctx, align: "center" }) : null,
         score ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-score", style: { fontSize: compact ? u(52) : u(64), fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }, children: `${score.home} : ${score.away}` }) : null,
         /* @__PURE__ */ jsx("span", { "data-testid": "mc-status-line", style: { fontSize: u(17), fontWeight: 600, fontVariantNumeric: "tabular-nums", color: st === "live" ? TV2.live : TV2.muted, whiteSpace: "nowrap" }, children: status })
       ] }),
@@ -77513,7 +78649,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
@@ -77584,8 +78720,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   }
   function FixtureRow({ u, f, ctx, title, sub, reminded, onPress, testId }) {
     useSpoilerVersion();
-    const hidden2 = !!f.score && f.status !== "scheduled" && fixtureScoreHidden(f);
-    const score = f.score && f.status !== "scheduled" && !hidden2 ? `${f.score.home}\u2013${f.score.away}` : null;
+    const hidden3 = !!f.score && f.status !== "scheduled" && fixtureScoreHidden(f);
+    const score = f.score && f.status !== "scheduled" && !hidden3 ? `${f.score.home}\u2013${f.score.away}` : null;
     const live2 = f.status === "live" || f.status === "ht";
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onPress ?? NOOP2), style: { ...rowCard(u), minHeight: u(68), display: "flex", alignItems: "center", gap: u(14), padding: `${u(10)}px ${u(16)}px`, cursor: onPress ? "pointer" : "default" }, children: [
       /* @__PURE__ */ jsx("span", { style: { width: u(156), flexShrink: 0, whiteSpace: "nowrap", fontSize: u(15), fontWeight: 700, color: live2 ? TV2.live : TV2.muted, fontVariantNumeric: "tabular-nums" }, children: live2 ? ctx.tt("sportLiveShort") : fixtureWhen(f, ctx) }),
@@ -77593,7 +78729,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         /* @__PURE__ */ jsx("div", { style: { fontSize: u(18), fontWeight: 700, ...ellipsis11 }, children: title }),
         sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: u(15), color: TV2.muted, ...ellipsis11 }, children: sub }) : null
       ] }),
-      hidden2 ? /* @__PURE__ */ jsxs("span", { "data-testid": "page-fixture-score-hidden", "aria-label": ctx.tt("sportResultHidden"), style: { display: "inline-flex", alignItems: "center", gap: u(6), fontSize: u(20), fontWeight: 800, color: TV2.muted, flexShrink: 0 }, children: [
+      hidden3 ? /* @__PURE__ */ jsxs("span", { "data-testid": "page-fixture-score-hidden", "aria-label": ctx.tt("sportResultHidden"), style: { display: "inline-flex", alignItems: "center", gap: u(6), fontSize: u(20), fontWeight: 800, color: TV2.muted, flexShrink: 0 }, children: [
         /* @__PURE__ */ jsx(SportIcons.Lock, { size: u(16) }),
         "\u2013"
       ] }) : null,
@@ -77605,7 +78741,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(NOOP2), style: { fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }, children: text2 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-model.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-model.ts
   init_lang();
   init_merge();
   init_sport_store();
@@ -77818,7 +78954,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return [...g].map((c) => String.fromCodePoint(127462 + c.charCodeAt(0) - 65)).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_sport_store();
   init_merge();
   init_results_model();
@@ -78017,11 +79153,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -78034,7 +79170,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_icons2();
   init_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -78060,7 +79196,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       matches.map((m) => {
         const best = rankedSources(m, ctx.overrides)[0] ?? null;
         const score = replayScoreText(m);
-        const hidden2 = !!m.replayOf?.score && scoreHidden(m);
+        const hidden3 = !!m.replayOf?.score && scoreHidden(m);
         return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-replay-row", "data-match-id": m.id, style: { ...sportCardStyle, display: "flex", alignItems: "center", gap: u(16), minHeight: u(48), boxSizing: "border-box", padding: `${u(12)}px ${u(16)}px`, borderLeft: `${u(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }, children: [
           /* @__PURE__ */ jsx(ReplayTag2, { ctx, u }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: u(20), fontWeight: 700, width: u(76), flexShrink: 0, color: TV2.muted, fontVariantNumeric: "tabular-nums" }, children: formatClock2(m.start, ctx.locale) }),
@@ -78068,7 +79204,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
             /* @__PURE__ */ jsx("div", { style: { fontSize: u(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
             /* @__PURE__ */ jsx("div", { "data-testid": "sport-replay-meta", style: { fontSize: u(15), color: TV2.muted, ...ellipsis3 }, children: [playedOnText(m, ctx.tt, ctx.locale), m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(" \xB7 ") })
           ] }),
-          hidden2 ? /* @__PURE__ */ jsxs("span", { "data-testid": "sport-replay-score-hidden", "aria-label": ctx.tt("sportResultHidden"), style: { display: "inline-flex", alignItems: "center", gap: u(6), fontSize: u(20), fontWeight: 700, color: TV2.muted, flexShrink: 0 }, children: [
+          hidden3 ? /* @__PURE__ */ jsxs("span", { "data-testid": "sport-replay-score-hidden", "aria-label": ctx.tt("sportResultHidden"), style: { display: "inline-flex", alignItems: "center", gap: u(6), fontSize: u(20), fontWeight: 700, color: TV2.muted, flexShrink: 0 }, children: [
             /* @__PURE__ */ jsx(SportIcons.Lock, { size: u(16) }),
             "\u2013"
           ] }) : null,
@@ -78079,10 +79215,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -78137,7 +79273,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { ref, "data-tab-body": "", style: { display: "flex", flexDirection: "column", gap }, children });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom, replays = [] }) {
     const tv = useTvMode();
@@ -78414,7 +79550,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -78423,7 +79559,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_day_model();
   init_sport_ctx();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/follow-crest.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/follow-crest.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -78448,7 +79584,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }, [matches]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_score_model();
   init_sport_parts();
   init_sport_score();
@@ -78576,7 +79712,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -78767,7 +79903,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_plugin_sdk();
   init_react_shim();
   init_live_tv_data();
@@ -78779,7 +79915,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_surface();
   init_phone_sport_sheet();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
   init_sport_store();
   var FOUR_HOURS = 4 * 36e5;
   function eventLabel(e, tt) {
@@ -78816,7 +79952,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     setSportSettings({ goalAlertMatches: current5 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
   init_react_shim();
   init_results_controller();
   init_live_poller();
@@ -78830,10 +79966,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const replay = match.rerun ? match.replayOf?.fixture ?? null : null;
     const covered2 = match.coverage === "full" && (match.rerun ? !!replay : !!match.fixture);
     useSpoilerVersion();
-    const hidden2 = covered2 && scoreHidden(match);
-    usePollDemand("match-center", covered2 && !hidden2 && !match.rerun && match.status === "live");
+    const hidden3 = covered2 && scoreHidden(match);
+    usePollDemand("match-center", covered2 && !hidden3 && !match.rerun && match.status === "live");
     useEffect(() => {
-      if (!covered2 || hidden2 || !controller2) return;
+      if (!covered2 || hidden3 || !controller2) return;
       let cancelled = false;
       const ref = replay ?? match.fixture;
       if (!ref) return;
@@ -78846,13 +79982,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       return () => {
         cancelled = true;
       };
-    }, [covered2, hidden2, controller2, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away]);
+    }, [covered2, hidden3, controller2, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away]);
     if (!covered2 || !controller2) return { detail: null, state: "none" };
-    if (hidden2) return { detail: null, state: "hidden" };
+    if (hidden3) return { detail: null, state: "hidden" };
     return { detail, state: detail || done ? "ready" : "loading" };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
@@ -78879,7 +80015,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       ] })
     ] });
   }
-  function EventsPage({ u, match, ctx, detail, hidden: hidden2 = false }) {
+  function EventsPage({ u, match, ctx, detail, hidden: hidden3 = false }) {
     const { lang, locale } = useTvText();
     const controller2 = useResultsController();
     const rows = detail ? eventRows(detail.events) : [];
@@ -78887,7 +80023,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const rate = controller2 ? rateLine(controller2.status(match.kind), ctx.tt, { lang, locale }) : null;
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportEvents") }),
-      rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": hidden2 ? "mc-events-hidden" : "mc-no-events", style: { fontSize: u(17), color: u.dim }, children: hidden2 ? ctx.tt("sportEventsHidden") : detail ? ctx.tt("sportNoEvents") : ctx.tt("sportDetailLoading") }) : null,
+      rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": hidden3 ? "mc-events-hidden" : "mc-no-events", style: { fontSize: u(17), color: u.dim }, children: hidden3 ? ctx.tt("sportEventsHidden") : detail ? ctx.tt("sportNoEvents") : ctx.tt("sportDetailLoading") }) : null,
       /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: u(10) }, children: rows.map((r) => /* @__PURE__ */ jsx(EventCard, { u, row: r, match, ctx }, r.index)) }),
       bars.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportStats") }),
@@ -78988,7 +80124,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_jsx_runtime_shim();
   var parentOf = (p) => p.kind === "player" ? { kind: "lineups" } : null;
   var SLIDE_CSS = "@keyframes lumio-sport-mi-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }";
@@ -79157,13 +80293,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_jsx_runtime_shim();
   function SportMatchCenter({ ctx, match, onClose }) {
     return /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match, onClose });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_evening_plan();
   init_react_shim();
   init_tv_ui();
@@ -79174,16 +80310,16 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_day_model();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_sport_store();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -79305,18 +80441,18 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   init_react_shim();
   init_results_controller();
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-data.ts
   init_day_plan();
   init_merge();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-providers.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-providers.ts
   init_api_sports();
   init_sportapi();
   init_thesportsdb();
@@ -79509,7 +80645,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return id === "sportapi" ? sportApiCalls : id === "thesportsdb" ? tsdbCalls : id === "espn" ? espnCalls : apiSportsCalls;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-data.ts
   var NEAR_MS = 120 * 864e5;
   var MEMO_MS = 5 * 6e4;
   var memo4 = /* @__PURE__ */ new Map();
@@ -79747,7 +80883,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   var tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
   function useTeamPageData(target2) {
     const controller2 = useResultsController();
@@ -79827,7 +80963,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return useMemo(() => [...known, ...loaded2.filter((m) => !known.some((k) => k.id === m.id))], [known, loaded2]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_jsx_runtime_shim();
   function LeaguePage({ ctx, target: target2, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -79885,7 +81021,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] }) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_plugin_sdk();
   init_react_shim();
   init_tv_ui();
@@ -79902,7 +81038,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_icons();
   init_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
   init_tv_ui();
   init_sport_icons();
   init_jsx_runtime_shim();
@@ -79944,7 +81080,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] }, label)) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_jsx_runtime_shim();
   function TeamPage({ ctx, target: target2, matches, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -80098,7 +81234,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       const LIMIT = 6;
       const shownComing = allMatches ? coming : coming.slice(0, LIMIT);
       const shownDone = allMatches ? done : done.slice(0, LIMIT);
-      const hidden2 = coming.length + done.length - shownComing.length - shownDone.length;
+      const hidden3 = coming.length + done.length - shownComing.length - shownDone.length;
       return /* @__PURE__ */ jsxs("section", { "data-testid": "tp-matches", style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
         /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportTeamMatches") }),
         comps.length > 1 ? /* @__PURE__ */ jsx("div", { "data-testid": "tp-comp-chips", "data-row": "", style: { display: "flex", gap: u(8), flexWrap: phone ? "nowrap" : "wrap", overflowX: phone ? "auto" : void 0 }, children: [null, ...comps].map((c) => /* @__PURE__ */ jsx(Chip, { "data-testid": `tp-comp-${c ?? "all"}`, active: competition === c, "aria-pressed": competition === c ? "true" : "false", ...station(() => setCompetition(c)), style: { height: u(44), minHeight: u(44), fontSize: u(16), padding: `0 ${u(16)}px`, flexShrink: 0 }, children: c ?? ctx.tt("sportAllShort") }, c ?? "__all")) }) : null,
@@ -80112,7 +81248,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         }),
         shownDone.length > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: u(15), fontWeight: 600, color: TV2.muted }, children: ctx.tt("sportTeamPlayed") }) : null,
         shownDone.map((f) => /* @__PURE__ */ jsx(FixtureRow, { u, f: { ...f, dateOnly: true }, ctx, testId: "tp-played-row", title: `${f.home.name} \u2013 ${f.away.name}`, sub: f.league.name }, f.id)),
-        hidden2 > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "tp-matches-all", ...station(() => setAllMatches(true)), style: { alignSelf: "flex-start", fontSize: u(16), fontWeight: 600, color: TV2.accText, cursor: "pointer", padding: `${u(6)}px ${u(4)}px` }, children: ctx.tt("sportTeamShowAll", { n: coming.length + done.length }) }) : null
+        hidden3 > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "tp-matches-all", ...station(() => setAllMatches(true)), style: { alignSelf: "flex-start", fontSize: u(16), fontWeight: 600, color: TV2.accText, cursor: "pointer", padding: `${u(6)}px ${u(4)}px` }, children: ctx.tt("sportTeamShowAll", { n: coming.length + done.length }) }) : null
       ] });
     })() });
     const squadPart = /* @__PURE__ */ jsx(Fragment2, { children: data.squad && data.squad.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "tp-squad", style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
@@ -80227,7 +81363,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_jsx_runtime_shim();
   var MAX_DEPTH = 6;
   function useSportPages() {
@@ -80245,14 +81381,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_results_controller();
   init_live_poller();
   init_sport_ctx();
   init_sport_icons();
   init_sport_results_phone();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -80302,7 +81438,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -80433,7 +81569,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     if (!tl) return null;
     const pct3 = (t) => (Math.min(Math.max(t, tl.start), tl.end) - tl.start) / (tl.end - tl.start) * 100;
     const rows = expanded ? tl.rows : tl.rows.slice(0, TIMELINE_ROWS);
-    const hidden2 = tl.rows.length - rows.length;
+    const hidden3 = tl.rows.length - rows.length;
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-timeline", style: { ...cardStyle2, borderRadius: 16, padding: "12px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, paddingRight: 12 }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: ctx.tt("sportMatchday") }),
@@ -80450,8 +81586,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         ] }, `${row.key}-${laneIndex}`))),
         nowPx != null ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-now", "aria-hidden": "true", style: { position: "absolute", top: 18, bottom: 0, left: LABEL_W2 + 4 + nowPx, width: 2, background: P.coral, boxShadow: "0 0 8px rgba(244,132,95,0.8)", pointerEvents: "none" } }) : null
       ] }) }),
-      hidden2 > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-timeline-more", ...station(() => setExpanded(true)), style: { alignSelf: "flex-start", minHeight: 32, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: P.coralLight, cursor: "pointer" }, children: [
-        ctx.tt("showMoreN", { n: hidden2 }),
+      hidden3 > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-timeline-more", ...station(() => setExpanded(true)), style: { alignSelf: "flex-start", minHeight: 32, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: P.coralLight, cursor: "pointer" }, children: [
+        ctx.tt("showMoreN", { n: hidden3 }),
         /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 14 })
       ] }) : null
     ] });
@@ -80629,7 +81765,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -80737,7 +81873,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_phone_sport_model();
   init_phone_sport_sheet();
   init_phone_sport_parts();
@@ -80901,7 +82037,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_surface();
   init_intl_cache();
   init_jsx_runtime_shim();
@@ -81070,7 +82206,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -81085,10 +82221,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_start_view();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -81168,7 +82304,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
@@ -81242,11 +82378,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_vod_category_filter();
   init_mobile_sheet();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/shell-toast.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/shell-toast.ts
   init_tv_ui();
   init_mobile_tokens();
   function shellToastStyle(opts) {
@@ -81291,7 +82427,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2, background }) {
     const ref = useRef(null);
@@ -81917,7 +83053,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/sport-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-page.tsx
   init_react_shim();
   init_live_tv_shell();
   var SPORT_PAGE_ID = LIVE_TV_SPORT_PAGE_ID;
@@ -81925,7 +83061,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return createElement(LiveTvTvShell, { ...props, sportOnly: true });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/register.ts
   init_react_shim();
   init_tv_strings();
   init_sport_ctx();
@@ -81934,7 +83070,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_rows_feed();
   init_rows_model();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_react_shim();
   init_tv_strings();
   init_crest();
@@ -81945,7 +83081,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_rows_feed();
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
   init_live_tv_ui();
   init_sport_ctx();
   init_sport_epg();
@@ -81996,7 +83132,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { kicker, title, metaLine: metaLine2, overview, backdropUrl: sportHeroBackdrop(m, d) };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_rows_model();
   init_jsx_runtime_shim();
   var TEXT2 = "#f8fafc";
@@ -82148,7 +83284,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/register.ts
   var LANGS = ["en", "sv", "de", "fr", "es"];
   var both = (key, vars) => Object.fromEntries(LANGS.map((l) => [l, tvText(l, key, vars)]));
   var sportOption = {
@@ -82194,7 +83330,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -82251,7 +83387,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -82293,7 +83429,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -82331,13 +83467,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         return;
       }
       let frame = 0;
-      const read11 = () => {
+      const read12 = () => {
         frame = 0;
         setUrl(readHomeHeroImage(document));
       };
-      read11();
+      read12();
       const observer = new MutationObserver(() => {
-        if (!frame) frame = requestAnimationFrame(read11);
+        if (!frame) frame = requestAnimationFrame(read12);
       });
       observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-active"] });
       return () => {
@@ -82505,7 +83641,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-guide-v2/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index.ts
   init_hls_playlist_proxy();
   init_vod_category_filter();
   init_vod_client();
@@ -82514,7 +83650,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.17.8"
+      version: "0.19.2"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -82528,7 +83664,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV", de: "Live-TV", fr: "TV en direct", es: "TV en directo" },
-    version: "0.17.8",
+    version: "0.19.2",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio.",
@@ -82596,8 +83732,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       }
       if (typeof window !== "undefined") {
         onLiveTvHideHeroChanged(() => {
-          const notify2 = notifyPluginRegistryChanged;
-          if (typeof notify2 === "function") notify2();
+          const notify3 = notifyPluginRegistryChanged;
+          if (typeof notify3 === "function") notify3();
         });
       }
     }

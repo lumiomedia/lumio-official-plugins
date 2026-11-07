@@ -7,7 +7,8 @@ import { TV, Toggle, dp, station } from './tv-ui'
 import { useRowNeighbours } from '../sport/row-nav'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
-import { ContentTab, EpgTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
+import { ContentTab, EpgTab, GuideAlertsTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
+import { hubText } from '../hub-strings'
 import { HubRowsSection } from './hub-rows-settings'
 import { RemoteTab } from './remote-settings'
 import { ChannelOverridesSection } from './channel-overrides-settings'
@@ -21,8 +22,8 @@ import { nextStartView, startViewLabelKey } from './start-view'
 import { LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, nextGuideCategoryLayout, nextHubLayout, nextLiveBackground } from './v2-settings'
 import { LIVE_SURFACE_DEFAULT, v2Bg } from './v2-tokens'
 
-type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'remote' | 'sport' | 'help'
-const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'remote', 'sport', 'help']
+type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'alerts' | 'parental' | 'remote' | 'sport' | 'help'
+const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'alerts', 'parental', 'remote', 'sport', 'help']
 
 type AccentApi = { getAccent?: () => string; setAccent?: (id: string) => void; ACCENT_PRESETS?: Record<string, { label: string; shades: string[] }> }
 const accentApi = sdk as unknown as AccentApi
@@ -84,7 +85,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
   const contentRef = useRef<HTMLDivElement | null>(null)
   useRowNeighbours(contentRef, true)
   useLeftToTabs(contentRef)
-  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental'), remote: tt('tabRemote'), sport: tt('tabSport'), help: tt('tabHelp') }
+  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), alerts: hubText(lang, 'epgWatchesTitle'), parental: tt('tabParental'), remote: tt('tabRemote'), sport: tt('tabSport'), help: tt('tabHelp') }
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <div style={{ width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
@@ -98,6 +99,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
         {tab === 'content' ? <><ContentTab model={model} nav={nav} tt={tt} /><ChannelOverridesSection tt={tt} /></> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
+        {tab === 'alerts' ? <GuideAlertsTab nav={nav} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
         {tab === 'remote' ? <RemoteTab bindings={settings.remoteKeys} nav={nav} tt={tt} /> : null}
         {tab === 'help' ? <HelpTab tt={tt} lang={lang} /> : null}

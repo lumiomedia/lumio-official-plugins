@@ -55,6 +55,9 @@ import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
 import { TvCurationPicker } from './tv-curation-picker'
 import { useTextPrompt } from './tv-text-entry'
+import { addEpgWatch, removeEpgWatch } from '../epg-watches'
+import { useEpgWatches } from '../epg-watches-settings'
+import { hubText } from '../hub-strings'
 import { helpSections } from './help-content'
 import { PickerPanel } from './picker-panel'
 import { formatEpgShift, getEpgShiftMinutes, setEpgShiftMinutes, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN } from '../epg-shift'
@@ -1123,6 +1126,36 @@ export function EpgTab({ lists, nav, tt, locale, phone = false }: { lists: LiveT
         </section>
       ) : null}
     </>
+  )
+}
+
+/**
+ * Guide alerts (epg-watches.ts) i hubbens egna inställningar — dator, TV och
+ * telefon. Fanns bara i appens Inställningar → Live TV, där ingen letade
+ * (Jerry 2026-11-07). Samma textprompt som EPG-adressen: fjärren och musen.
+ */
+export function GuideAlertsTab({ nav, phone = false }: { nav: TvNav; phone?: boolean }) {
+  const { lang } = useLang()
+  const h = (key: Parameters<typeof hubText>[1], vars?: Record<string, string | number>) => hubText(lang, key, vars)
+  const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
+  const watches = useEpgWatches()
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(10) }}>
+      <Heading phone={phone} hint={h('epgWatchesHint')}>{h('epgWatchesTitle')}</Heading>
+      {keyboard.available ? (
+        <Row
+          phone={phone}
+          testId="guide-alerts-add"
+          label={h('epgWatchAddLabel')}
+          right={phone ? <PhoneCaret /> : '+'}
+          onOk={() => keyboard.ask(h('epgWatchAddLabel'), '', (value) => { addEpgWatch(value) }, 'text')}
+        />
+      ) : null}
+      {watches.map((watch) => (
+        <Row phone={phone} key={watch.id} testId={`guide-alert-${watch.id}`} label={watch.query} right={h('epgWatchRemove')} onOk={() => removeEpgWatch(watch.id)} />
+      ))}
+      {keyboard.node}
+    </section>
   )
 }
 

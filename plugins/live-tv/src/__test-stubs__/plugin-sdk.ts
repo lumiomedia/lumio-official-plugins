@@ -972,3 +972,7 @@ export function openCouchTip(m: TipMatchInfo, starterPhoneId: string | null): bo
   const open = couchHost()?.openTip
   return typeof open === 'function' ? open(m, starterPhoneId) === true : false
 }
+/** Värdens systemnotis (Android-notis eller webbens Notification). Stubben visar inget och svarar false. */
+export async function showSystemNotification(_n: { id: string; title: string; body?: string; channelName?: string; openPage?: { pageId: string; params?: Record<string, string> } }): Promise<boolean> {
+  return false
+}

@@ -10,6 +10,7 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
+import { EpgWatchesCard, useEpgWatches } from './epg-watches-settings'
 import { LtCard, LtChoiceRow, LtCollapsible, LtColorRow, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useLtAccordion, useLtNarrow, useToast } from './settings-ui'
 import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
@@ -266,6 +267,7 @@ function DesktopPage() {
   // Spellistor står öppen från början (Jerry 2026-10-15) — det är där man
   // oftast ska. Sessionens eget val vinner så fort man fällt något.
   const accordion = useLtAccordion(narrow, ['playlists'])
+  const watches = useEpgWatches()
   const fetchLabel = s.fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
 
   const totalChannels = s.lists.reduce((sum, list) => sum + (list.channelCount ?? 0), 0)
@@ -335,6 +337,10 @@ function DesktopPage() {
       ))}
 
       {epgCount > 0 ? section('guide', h('sectionGuide'), sourcesText(epgCount), <EpgStatusCard bare />) : null}
+
+      {/* Bevaka i tablån (epg-watches.ts): sökord som blir påminnelser. */}
+      {/* Oberoende av tablåadress: Xtream-tablån har ingen egen länk. */}
+      {s.lists.length > 0 ? section('watches', h('epgWatchesTitle'), watches.length === 0 ? h('epgWatchNone') : watches.map((w) => w.query).join(' · '), <EpgWatchesCard />) : null}
 
       {section('behaviour', h('sectionBehaviour'), behaviourSummary, (
         <LtRows>

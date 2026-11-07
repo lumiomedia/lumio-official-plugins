@@ -7,6 +7,8 @@ import type { TvGlassMenuAction } from '@/lib/plugin-sdk'
 import type { TvNav } from './tv-shell'
 import type { TvStringKey } from './tv-strings'
 import { displayTitle } from '../display-title'
+import { addEpgWatch, getEpgWatches, hasEpgWatch, normalizeWatchQuery, removeEpgWatch } from '../epg-watches'
+import { hubText } from '../hub-strings'
 
 /**
  * OK OCH HÅLL OK PÅ ETT PROGRAM (handoff v2, "Guide navigation").
@@ -70,6 +72,19 @@ export function holdMenu(ctx: Ctx & { element: HTMLElement; tt: TT; locale: stri
     } else {
       const url = replayUrl(channel, programme, nowMs)
       if (url) extra.push({ key: 'replay', label: tt('playReplay'), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) })
+    }
+  }
+  // Bevaka titeln (epg-watches.ts): samma program nästa gång, på vilken kanal som helst.
+  if (programme) {
+    const query = normalizeWatchQuery(displayTitle(programme.title))
+    const lang = locale.slice(0, 2)
+    if (hasEpgWatch(query)) {
+      extra.push({ key: 'watch', label: hubText(lang, 'epgWatchStop', { query }), run: () => {
+        const found = getEpgWatches().find((w) => w.query.toLowerCase() === query.toLowerCase())
+        if (found) removeEpgWatch(found.id)
+      } })
+    } else {
+      extra.push({ key: 'watch', label: hubText(lang, 'epgWatchThis', { query }), run: () => { addEpgWatch(query) } })
     }
   }
   nav.channelMenu(channel, element, extra)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.2
+
+- Guide alerts: save a word ("Allsvenskan", "Bond") and Lumio reminds you before every matching programme on any channel, and tells you when a new one turns up in the guide. Add words under Live TV settings → Guide alerts, or hold OK on a programme and choose Alert me. Words are matched in programme titles and, as whole words, in descriptions.
+- Reminders arrive as system notifications on Android and open the channel when tapped.
+- Needs Lumio 0.1.640.
+
 ## 0.17.13
 
 - Sport: a match linked to a fixture shows the official kickoff, not the start of the channel's broadcast (pre-match coverage made a 22:00 game read 21:40).

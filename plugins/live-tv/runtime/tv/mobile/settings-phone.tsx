@@ -5,7 +5,8 @@ import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
-import { ContentTab, EpgTab, HelpTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
+import { ContentTab, EpgTab, GuideAlertsTab, HelpTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
+import { hubText } from '../../hub-strings'
 import { ChannelOverridesSection } from '../channel-overrides-settings'
 import { nextStartView, startViewLabelKey } from '../start-view'
 import { groupOrderLabelKey, nextGroupOrder } from '../../group-order'
@@ -50,6 +51,13 @@ export function TvSettingsPhone(props: TvViewProps) {
     return (
       <PhonePage header={<MobileHeader title={tt('tabHelp')} back onBack={() => nav.go('settings')} />}>
         <Card><HelpTab tt={tt} lang={lang} phone /></Card>
+      </PhonePage>
+    )
+  }
+  if (params.tab === 'alerts') {
+    return (
+      <PhonePage header={<MobileHeader title={hubText(lang, 'epgWatchesTitle')} back onBack={() => nav.go('settings')} />}>
+        <Card><GuideAlertsTab nav={nav} phone /></Card>
       </PhonePage>
     )
   }
@@ -115,6 +123,7 @@ export function TvSettingsPhone(props: TvViewProps) {
               hänvisningsruta, och det ska gå att hitta även utan den. */}
           <NavRow testId="settings-content-nav" label={tt('tabContent')} onOk={() => nav.go('settings', { tab: 'content' })} />
           <NavRow testId="settings-epg" label={tt('tabEpg')} onOk={() => nav.go('settings', { tab: 'epg' })} />
+          <NavRow testId="settings-alerts" label={hubText(lang, 'epgWatchesTitle')} onOk={() => nav.go('settings', { tab: 'alerts' })} />
           <NavRow testId="settings-parental" label={tt('tabParental')} onOk={() => nav.go('settings', { tab: 'parental' })} />
           <NavRow testId="settings-sport" label={tt('tabSport')} onOk={() => nav.go('settings', { tab: 'sport' })} />
           <NavRow testId="settings-help" label={tt('tabHelp')} onOk={() => nav.go('settings', { tab: 'help' })} />

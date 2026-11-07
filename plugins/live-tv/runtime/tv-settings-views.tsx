@@ -13,6 +13,8 @@ import { completeLogos } from './index-client'
 import { curationSummary, formatFetchedAt } from './playlist-card'
 import { playlistTitle } from './playlist-title'
 import { useEpgStatus } from './hooks/useEpgStatus'
+import { useEpgWatches } from './epg-watches-settings'
+import { EPG_WATCH_MIN_QUERY, addEpgWatch, removeEpgWatch } from './epg-watches'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { TvVodCategoriesPanel, useSourceHasVod } from './vod-categories-picker'
 import { useTvText } from './tv/tv-strings'
@@ -109,6 +111,8 @@ export function TvSettingsPage() {
   }, [])
   const epg = useEpgStatus()
   const vod = useVodLibrarySources()
+  const watches = useEpgWatches()
+  const [watchDraft, setWatchDraft] = useState('')
   const [vodCats, setVodCats] = useState<{ source: string; name: string } | null>(null)
 
   const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null
@@ -147,6 +151,27 @@ export function TvSettingsPage() {
       <TvRow testId="tv-stream-fallback" label={tt('settingStreamFallback')} hint={tt('settingStreamFallbackHint')} toggle={tvSettings.streamFallback} onToggle={(streamFallback) => setTvSettings({ streamFallback })} />
       <TvRow testId="tv-stream-fallback-after" label={tt('settingStreamFallbackAfter')} hint={tt('settingStreamFallbackAfterHint')} value={tvSettings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: tvSettings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) })} />
       <TvRow testId="tv-group-order" label={tt('settingGroupOrder')} hint={tt('settingGroupOrderHint')} value={tt(groupOrderLabelKey(tvSettings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(tvSettings.groupOrder) })} />
+
+      {s.lists.length > 0 ? (
+        <>
+          {/* Bevaka i tablån (epg-watches.ts). Högt upp och oberoende av tablåadress: med Xtream-tablå
+              fanns ingen XMLTV-länk och kortet syntes aldrig (Jerry 2026-11-07). Varje rad har onOk. */}
+          <TvEyebrow>{h('epgWatchesTitle')}</TvEyebrow>
+          <TvNote>{h('epgWatchesHint')}</TvNote>
+          <TvTextRow testId="tv-epg-watch-draft" label={h('epgWatchAddLabel')} value={watchDraft} placeholder={h('epgWatchPlaceholder')} onChange={setWatchDraft} />
+          <TvRow
+            testId="tv-epg-watch-add"
+            label={h('epgWatchAdd')}
+            value={watchDraft.trim() || undefined}
+            caret
+            disabled={watchDraft.trim().length < EPG_WATCH_MIN_QUERY}
+            onOk={() => { addEpgWatch(watchDraft); setWatchDraft('') }}
+          />
+          {watches.map((watch) => (
+            <TvRow key={watch.id} testId={`tv-epg-watch-${watch.id}`} label={watch.query} value={h('epgWatchRemove')} onOk={() => removeEpgWatch(watch.id)} />
+          ))}
+        </>
+      ) : null}
 
       <TvEyebrow>{h('playlists')}</TvEyebrow>
       {s.lists.length === 0 ? <TvNote>{h('noPlaylistsYet')}</TvNote> : null}
