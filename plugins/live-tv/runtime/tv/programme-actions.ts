@@ -1,4 +1,4 @@
-import type { M3uChannel } from '../live-tv-data'
+import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { EpgProgramme } from '../epg/types'
 import { formatClock } from '../live-tv-ui'
 import { buildTimeshiftUrl, channelSupportsCatchUp } from '../catch-up'
@@ -9,6 +9,9 @@ import type { TvStringKey } from './tv-strings'
 import { displayTitle } from '../display-title'
 import { addEpgWatch, getEpgWatches, hasEpgWatch, normalizeWatchQuery, removeEpgWatch } from '../epg-watches'
 import { hubText } from '../hub-strings'
+import { getCachedRecordings, recordingFor, scheduleRecording, stopRecording } from '../recordings'
+import { planFromNow, planFromProgramme } from '../recording-plan'
+import { getTvSettings, recordMargins } from './tv-settings-store'
 
 /**
  * OK OCH HÅLL OK PÅ ETT PROGRAM (handoff v2, "Guide navigation").
@@ -72,6 +75,24 @@ export function holdMenu(ctx: Ctx & { element: HTMLElement; tt: TT; locale: stri
     } else {
       const url = replayUrl(channel, programme, nowMs)
       if (url) extra.push({ key: 'replay', label: tt('playReplay'), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) })
+    }
+  }
+  // Inspelning (recordings.ts): kommande planeras, pågående spelas in från nu.
+  // Listan läses ur den delade cachen (skalet håller den varm) — menyn byggs
+  // synkront vid hållet.
+  if (programme) {
+    const settings = getTvSettings()
+    const state = programmeState(programme, nowMs)
+    if (settings.recordingEnabled && state !== 'past') {
+      const existing = recordingFor(getCachedRecordings(), channelKey(channel), programme.start)
+        ?? (state === 'live' ? recordingFor(getCachedRecordings(), channelKey(channel), null) : undefined)
+      if (existing) {
+        extra.push({ key: 'record', label: tt('cancelRecording'), run: () => { void stopRecording(existing.id).catch(() => {}) } })
+      } else if (state === 'future') {
+        extra.push({ key: 'record', label: tt('recordProgramme', { time: formatClock(programme.start, locale) }), run: () => { void scheduleRecording(planFromProgramme(channel, programme, recordMargins(settings))).catch(() => {}) } })
+      } else {
+        extra.push({ key: 'record', label: tt('record'), run: () => { void scheduleRecording(planFromNow(channel, programme, nowMs, recordMargins(settings))).catch(() => {}) } })
+      }
     }
   }
   // Bevaka titeln (epg-watches.ts): samma program nästa gång, på vilken kanal som helst.

@@ -126,6 +126,12 @@ export function __resetRecordingsForTests(): void {
   listeners.clear()
 }
 
+/** Tester: lägg en lista i cachen utan nätverk. */
+export function __seedRecordingsForTests(list: RecordingList): void {
+  cache = list
+  emit()
+}
+
 export function getCachedRecordings(): RecordingList | null {
   return cache
 }

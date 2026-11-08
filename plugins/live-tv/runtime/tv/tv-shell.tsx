@@ -27,6 +27,7 @@ import { setChannelHidden, setChannelName, sourceName } from '../channel-overrid
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import { buildTvPlayerProps } from './tv-player-props'
+import { useRecordings } from '../recordings'
 import { multiviewFor, usePlayerSport } from '../sport/tv/player-sport'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
@@ -218,6 +219,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   const { tt, locale } = useTvText()
   const model = useLiveTvModel()
   const settings = useTvSettings()
+  // Inspelningslistan hålls varm medan Live TV är öppet: hold-OK-menyn läser den synkront.
+  useRecordings(false)
   // Hål i skalets bakgrund åt nativa videoytor (multivy, förhandsvisningar).
   // Tom lista = ingen nativ yta lever, och skalet målas precis som förut.
   const cutouts = useSurfaceCutouts()
