@@ -109,6 +109,10 @@ export async function stopRecording(id: string): Promise<Recording> {
   const rec = await request<Recording>(`${RECORD_API}/stop`, jsonInit('POST', { id }))
   mergeIntoCache(rec)
   void refreshRecordings({ afterWrite: true })
+  // Jobbet läser stoppflaggan på sekundtick; säger servern fortfarande
+  // "recording" kommer slutstatusen strax — hämta igen i stället för att
+  // låta knappen stå intryckt till nästa poll.
+  if (rec?.status === 'recording') setTimeout(() => { void refreshRecordings({ afterWrite: true }) }, 2_000)
   return rec
 }
 

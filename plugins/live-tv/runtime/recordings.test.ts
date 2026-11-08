@@ -111,4 +111,23 @@ describe('inspelningsklienten', () => {
     expect(list?.recordings.map((r) => r.id)).toEqual(['fresh'])
     expect(calls).toBe(2)
   })
+
+  it('stopRecording fetches again shortly after when the server still says recording', async () => {
+    vi.useFakeTimers()
+    __seedRecordingsForTests({ recordings: [rec({ id: 'a', status: 'recording' })], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+    let listCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/stop')) return json(rec({ id: 'a', status: 'recording' }))
+      listCalls += 1
+      return json({ recordings: [rec({ id: 'a', status: listCalls >= 2 ? 'stopped' : 'recording' })], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+    }))
+    await stopRecording('a')
+    await vi.advanceTimersByTimeAsync(10)
+    const first = listCalls
+    await vi.advanceTimersByTimeAsync(2_500)
+    expect(listCalls).toBeGreaterThan(first)
+    expect(getCachedRecordings()?.recordings[0]?.status).toBe('stopped')
+    vi.useRealTimers()
+  })
 })
