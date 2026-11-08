@@ -2837,6 +2837,8 @@
       sid,
       fileLoaded,
       fileLoadedToken,
+      // Timeshift finns bara i mpv-motorn; media3 har inget demuxercache-intervall.
+      cacheRange: null,
       // ExoPlayer har inget andraspår; texten bärs av cueText. Inlärningsläget
       // ritar andraspråket ur VTT här.
       subText: "",
@@ -3811,6 +3813,7 @@
     const [playbackRestarted, setPlaybackRestarted] = useState(false);
     const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
     const [pausedForCache, setPausedForCache] = useState(false);
+    const [cacheRange, setCacheRange] = useState(null);
     const [coreIdle, setCoreIdle] = useState(true);
     const [firstFrameRendered, setFirstFrameRendered] = useState(false);
     const [loadFailed, setLoadFailed] = useState(false);
@@ -3827,6 +3830,7 @@
       void (0, import_event2.listen)("mpv://sub-text", (e) => setSubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://secondary-sub-text", (e) => setSecondarySubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://file-loaded", () => {
+        setCacheRange(null);
         setFileLoaded(true);
         setFileLoadedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
@@ -3835,6 +3839,10 @@
         setPlaybackRestartedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event2.listen)("mpv://cache-state", (e) => {
+        const p = e.payload;
+        setCacheRange(p && typeof p.start === "number" && typeof p.end === "number" && p.end > p.start ? { start: p.start, end: p.end } : null);
+      }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://first-frame-rendered", () => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
@@ -3907,6 +3915,7 @@
       playbackRestartedToken,
       pausedForCache,
       coreIdle,
+      cacheRange,
       firstFrameRendered,
       loadFailed,
       loadFailedToken,
@@ -19474,7 +19483,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -46103,7 +46111,15 @@ ${cue.text}`).join("\n\n")}
         settingRecordNotify: "Tell me when recordings start and finish",
         settingRecordOpen: "Open Recordings",
         gigabytes: "{gb} GB",
-        recFreeSpace: "{free} free"
+        recFreeSpace: "{free} free",
+        // Timeshift (live-tv 0.20.0)
+        settingTimeshift: "Pause live TV",
+        settingTimeshiftHint: "A paused channel continues where you paused it, and you can move back and forward within the buffer. Mac, Windows and TV boxes with the mpv engine.",
+        settingTimeshiftMinutes: "Buffer",
+        goLive: "Go live",
+        behindLive: "{t} behind",
+        jumpBack30: "Back 30 s",
+        jumpForward30: "Forward 30 s"
       };
       SV2 = {
         liveFormat: "Liveformat",
@@ -47037,7 +47053,15 @@ ${cue.text}`).join("\n\n")}
         settingRecordNotify: "Meddela n\xE4r inspelningar startar och blir klara",
         settingRecordOpen: "\xD6ppna Inspelningar",
         gigabytes: "{gb} GB",
-        recFreeSpace: "{free} ledigt"
+        recFreeSpace: "{free} ledigt",
+        // Timeshift (live-tv 0.20.0)
+        settingTimeshift: "Pausa Live TV",
+        settingTimeshiftHint: "En pausad kanal forts\xE4tter d\xE4r du pausade, och du kan spola bak\xE5t och fram\xE5t inom bufferten. Mac, Windows och TV-boxar med mpv-motorn.",
+        settingTimeshiftMinutes: "Buffert",
+        goLive: "G\xE5 live",
+        behindLive: "{t} efter",
+        jumpBack30: "Bak\xE5t 30 s",
+        jumpForward30: "Fram\xE5t 30 s"
       };
       DE2 = {
         liveFormat: "Live-Stream-Format",
@@ -47965,7 +47989,15 @@ ${cue.text}`).join("\n\n")}
         settingRecordNotify: "Benachrichtigen, wenn Aufnahmen starten und fertig sind",
         settingRecordOpen: "Aufnahmen \xF6ffnen",
         gigabytes: "{gb} GB",
-        recFreeSpace: "{free} frei"
+        recFreeSpace: "{free} frei",
+        // Timeshift (live-tv 0.20.0)
+        settingTimeshift: "Live-TV pausieren",
+        settingTimeshiftHint: "Ein pausierter Sender l\xE4uft dort weiter, wo du pausiert hast, und du kannst innerhalb des Puffers vor- und zur\xFCckspulen. Mac, Windows und TV-Boxen mit mpv.",
+        settingTimeshiftMinutes: "Puffer",
+        goLive: "Live",
+        behindLive: "{t} zur\xFCck",
+        jumpBack30: "30 s zur\xFCck",
+        jumpForward30: "30 s vor"
       };
       FR2 = {
         liveFormat: "Format du direct",
@@ -48893,7 +48925,15 @@ ${cue.text}`).join("\n\n")}
         settingRecordNotify: "Me pr\xE9venir au d\xE9but et \xE0 la fin des enregistrements",
         settingRecordOpen: "Ouvrir les enregistrements",
         gigabytes: "{gb} Go",
-        recFreeSpace: "{free} libres"
+        recFreeSpace: "{free} libres",
+        // Timeshift (live-tv 0.20.0)
+        settingTimeshift: "Mettre la TV en direct en pause",
+        settingTimeshiftHint: "Une cha\xEEne en pause reprend l\xE0 o\xF9 vous l\u2019avez arr\xEAt\xE9e, et vous pouvez avancer ou reculer dans la m\xE9moire tampon. Mac, Windows et box TV avec le moteur mpv.",
+        settingTimeshiftMinutes: "M\xE9moire tampon",
+        goLive: "En direct",
+        behindLive: "{t} de retard",
+        jumpBack30: "Reculer de 30 s",
+        jumpForward30: "Avancer de 30 s"
       };
       ES2 = {
         liveFormat: "Formato de emisi\xF3n en directo",
@@ -49821,7 +49861,15 @@ ${cue.text}`).join("\n\n")}
         settingRecordNotify: "Avisarme cuando empiecen y terminen las grabaciones",
         settingRecordOpen: "Abrir Grabaciones",
         gigabytes: "{gb} GB",
-        recFreeSpace: "{free} libres"
+        recFreeSpace: "{free} libres",
+        // Timeshift (live-tv 0.20.0)
+        settingTimeshift: "Pausar la TV en directo",
+        settingTimeshiftHint: "Un canal en pausa contin\xFAa donde lo pausaste, y puedes retroceder y avanzar dentro del b\xFAfer. Mac, Windows y cajas de TV con el motor mpv.",
+        settingTimeshiftMinutes: "B\xFAfer",
+        goLive: "En directo",
+        behindLive: "{t} de retraso",
+        jumpBack30: "Atr\xE1s 30 s",
+        jumpForward30: "Adelante 30 s"
       };
       TABLES2 = { en: EN2, sv: SV2, de: DE2, fr: FR2, es: ES2 };
     }
@@ -50380,6 +50428,9 @@ ${cue.text}`).join("\n\n")}
   });
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  function nextTimeshiftMinutes(current5) {
+    return TIMESHIFT_MINUTE_OPTIONS[(TIMESHIFT_MINUTE_OPTIONS.indexOf(current5) + 1) % TIMESHIFT_MINUTE_OPTIONS.length];
+  }
   function nextFallbackAfter(current5) {
     return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current5) + 1) % FALLBACK_AFTER_OPTIONS.length];
   }
@@ -50415,7 +50466,9 @@ ${cue.text}`).join("\n\n")}
       recordingEnabled: typeof r.recordingEnabled === "boolean" ? r.recordingEnabled : DEFAULTS2.recordingEnabled,
       recordStartEarlyMin: RECORD_START_EARLY_OPTIONS.includes(r.recordStartEarlyMin) ? r.recordStartEarlyMin : DEFAULTS2.recordStartEarlyMin,
       recordEndLateMin: RECORD_END_LATE_OPTIONS.includes(r.recordEndLateMin) ? r.recordEndLateMin : DEFAULTS2.recordEndLateMin,
-      recordNotify: typeof r.recordNotify === "boolean" ? r.recordNotify : DEFAULTS2.recordNotify
+      recordNotify: typeof r.recordNotify === "boolean" ? r.recordNotify : DEFAULTS2.recordNotify,
+      timeshiftEnabled: typeof r.timeshiftEnabled === "boolean" ? r.timeshiftEnabled : DEFAULTS2.timeshiftEnabled,
+      timeshiftMinutes: TIMESHIFT_MINUTE_OPTIONS.includes(r.timeshiftMinutes) ? r.timeshiftMinutes : DEFAULTS2.timeshiftMinutes
     };
   }
   function recordMargins(s) {
@@ -50434,6 +50487,9 @@ ${cue.text}`).join("\n\n")}
     const next = sanitize4({ ...getTvSettings(), ...patch });
     writePluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, next);
     return next;
+  }
+  function onTvSettingsChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, listener);
   }
   function useTvSettings() {
     const [value, setValue] = useState(getTvSettings);
@@ -50462,7 +50518,7 @@ ${cue.text}`).join("\n\n")}
   function onActivePlaylistChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, ACTIVE_PLAYLIST_KEY, listener);
   }
-  var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
+  var TIMESHIFT_MINUTE_OPTIONS, TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
     "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
@@ -50476,6 +50532,7 @@ ${cue.text}`).join("\n\n")}
       init_v2_settings();
       init_hub_rows();
       init_remote_keys();
+      TIMESHIFT_MINUTE_OPTIONS = [15, 30, 60];
       TV_SETTINGS_KEY = "live_tv_tv_settings_v1";
       GUIDE_MODE_KEY = "live_tv_guide_mode_v1";
       ACTIVE_PLAYLIST_KEY = "live_tv_active_playlist_v1";
@@ -50511,7 +50568,9 @@ ${cue.text}`).join("\n\n")}
         recordingEnabled: true,
         recordStartEarlyMin: 1,
         recordEndLateMin: 5,
-        recordNotify: true
+        recordNotify: true,
+        timeshiftEnabled: true,
+        timeshiftMinutes: 30
       };
       GUIDE_MODES = ["now", "tl", "playlists", "grid", "nownext", "timeline", "list"];
     }
@@ -58234,6 +58293,52 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts
+  function timeshiftModel(a) {
+    const { range, timePos } = a;
+    if (!range || !(range.end > range.start)) return { available: false, behindMs: 0, fraction: 1, atLive: true };
+    const behindS = Math.max(0, range.end - timePos);
+    const atLive = behindS <= LIVE_EDGE_SLACK_S;
+    const fraction = Math.min(1, Math.max(0, (timePos - range.start) / (range.end - range.start)));
+    return { available: true, behindMs: atLive ? 0 : Math.round(behindS * 1e3), fraction: atLive ? 1 : fraction, atLive };
+  }
+  function formatBehind(ms2) {
+    const total = Math.max(0, Math.round(ms2 / 1e3));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor(total % 3600 / 60);
+    const s = total % 60;
+    const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+    return `\u2212${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+  }
+  function timeshiftBody(s) {
+    return { enabled: s.timeshiftEnabled, minutes: s.timeshiftMinutes };
+  }
+  async function pushTimeshiftSettings(s) {
+    try {
+      await fetch(TIMESHIFT_API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
+    } catch {
+    }
+  }
+  function startTimeshiftSettingsSync() {
+    let last2 = JSON.stringify(timeshiftBody(getTvSettings()));
+    void pushTimeshiftSettings(JSON.parse(last2));
+    return onTvSettingsChanged(() => {
+      const next = JSON.stringify(timeshiftBody(getTvSettings()));
+      if (next === last2) return;
+      last2 = next;
+      void pushTimeshiftSettings(JSON.parse(next));
+    });
+  }
+  var LIVE_EDGE_SLACK_S, TIMESHIFT_API;
+  var init_timeshift = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts"() {
+      "use strict";
+      init_tv_settings_store();
+      LIVE_EDGE_SLACK_S = 3;
+      TIMESHIFT_API = "/api/live-tv/timeshift/settings";
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
@@ -58282,7 +58387,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     void tick2;
     return programme ? isReminded(channel, programme) : false;
   }
-  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease, recording = false }) {
+  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease, recording = false, behindMs = 0 }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
       "div",
@@ -58303,7 +58408,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                 recording ? /* @__PURE__ */ jsxs("span", { "data-testid": "rec-badge", style: { display: "inline-flex", alignItems: "center", gap: ps(5), flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fecaca" }, children: [
                   /* @__PURE__ */ jsx("span", { style: { width: ps(8), height: ps(8), borderRadius: 999, background: "#ef4444", boxShadow: "0 0 6px rgba(239,68,68,0.9)" } }),
                   tt("recording")
-                ] }) : null
+                ] }) : null,
+                behindMs > 0 ? /* @__PURE__ */ jsx("span", { "data-testid": "behind-badge", style: { flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: "0.06em", color: "#fde68a", fontVariantNumeric: "tabular-nums" }, children: formatBehind(behindMs) }) : null
               ] }),
               info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: ps(8), fontSize: ps(12), color: "rgba(203,213,225,0.9)", minWidth: 0 }, title: displayTitle(info.now.title), children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: ps(9), fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(110,231,183,0.85)", flexShrink: 0 }, children: tt("gridNow") }),
@@ -58387,6 +58493,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         ] }),
         /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, tv.nowMs), height: ps(4), track: "rgba(255,255,255,0.2)" })
       ] }) : null,
+      controls?.timeshift ? /* @__PURE__ */ jsx(TimeshiftBar, { ts: controls.timeshift, ps, tt }) : null,
       /* @__PURE__ */ jsxs("div", { "data-testid": "control-row", "data-row": "", style: { display: "flex", alignItems: "center", gap: ps(12), overflowX: "auto", scrollbarWidth: "none", borderRadius: ps(16), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.55)", padding: `${ps(10)}px ${ps(14)}px`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }, children: [
         /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(onTogglePause, (el) => onOpenMenu(el), { "data-init": "", "aria-label": paused ? tt("menuResume") : tt("menuPause"), "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: 0 }, children: paused ? /* @__PURE__ */ jsx(PlayIcon, { size: icon }) : /* @__PURE__ */ jsx(PauseIcon, { size: icon }) }),
         controls ? /* @__PURE__ */ jsx("div", { ...station(controls.onToggleFullscreen, void 0, { "aria-label": controls.fullscreen ? tt("playerExitFullscreen") : tt("playerFullscreen"), "aria-pressed": controls.fullscreen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, controls.fullscreen), padding: 0 }, children: controls.fullscreen ? /* @__PURE__ */ jsx(ExitFullscreenIcon, { size: icon }) : /* @__PURE__ */ jsx(FullscreenIcon, { size: icon }) }) : null,
@@ -58437,6 +58544,49 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           ] })
         ] })
       ] })
+    ] });
+  }
+  function TimeshiftBar({ ts, ps, tt }) {
+    const m = timeshiftModel({ range: ts.range, timePos: ts.timePos });
+    if (!m.available) return null;
+    const onBarClick = (event2) => {
+      const rect = event2.currentTarget.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const f = Math.max(0, Math.min(1, (event2.clientX - rect.left) / rect.width));
+      ts.onSeek(ts.range.start + f * (ts.range.end - ts.range.start));
+    };
+    const onBarKey = (event2) => {
+      const delta = event2.key === "ArrowRight" ? 30 : event2.key === "ArrowLeft" ? -30 : 0;
+      if (delta === 0) return;
+      event2.preventDefault();
+      event2.stopPropagation();
+      ts.onJump(delta);
+    };
+    const btn = (label, onOk, testId, text2) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk, void 0, { "aria-label": label, "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: `0 ${ps(12)}px`, fontSize: ps(12), fontWeight: 600, whiteSpace: "nowrap" }, children: text2 });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "timeshift-bar-row", "data-row": "", style: { display: "flex", alignItems: "center", gap: ps(10), padding: `0 ${ps(4)}px`, marginBottom: ps(8) }, children: [
+      /* @__PURE__ */ jsx("span", { "data-testid": "timeshift-label", style: { flexShrink: 0, minWidth: ps(56), fontSize: ps(12), fontWeight: 700, letterSpacing: "0.06em", color: m.atLive ? "#fca5a5" : "#fde68a", fontVariantNumeric: "tabular-nums" }, children: m.atLive ? tt("live").toUpperCase() : formatBehind(m.behindMs) }),
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "timeshift-bar",
+          ...station(() => {
+          }, void 0, { "aria-label": tt("settingTimeshift"), "data-guide-row": "" }),
+          role: "slider",
+          "aria-valuemin": 0,
+          "aria-valuemax": 100,
+          "aria-valuenow": Math.round(m.fraction * 100),
+          onKeyDown: onBarKey,
+          onClick: onBarClick,
+          style: { flex: 1, height: ps(28), minHeight: ps(28), display: "flex", alignItems: "center", cursor: "pointer", borderRadius: 999 },
+          children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", width: "100%", height: ps(4), borderRadius: 999, background: "rgba(252,252,255,0.22)" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, right: `${100 - m.fraction * 100}%`, borderRadius: 999, background: m.atLive ? "#ef4444" : "#fde68a" } }),
+            /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: "50%", left: `${m.fraction * 100}%`, width: ps(12), height: ps(12), marginTop: ps(-6), marginLeft: ps(-6), borderRadius: 999, background: "#fff" } })
+          ] })
+        }
+      ),
+      btn(tt("jumpBack30"), () => ts.onJump(-30), "timeshift-back", "\u221230 s"),
+      btn(tt("jumpForward30"), () => ts.onJump(30), "timeshift-forward", "+30 s"),
+      !m.atLive ? btn(tt("goLive"), ts.onGoLive, "timeshift-live", tt("goLive")) : null
     ] });
   }
   function formatElapsed(seconds2) {
@@ -58572,6 +58722,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_tv_ui();
       init_tv_strings();
       init_display_title();
+      init_timeshift();
       init_jsx_runtime_shim();
       FAV_WINDOW = 25;
       DAY_MS2 = 864e5;
@@ -58923,7 +59074,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       // Roten släpper igenom pekaren till videon; bara fälten tar den.
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-live-tv-tv-root": "", ...isTv ? {} : { "data-live-tv-desktop": "1" }, style: { position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30 }, children: [
         /* @__PURE__ */ jsx(TvFocusStyle, {}),
-        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2, recording: !!rec.active }),
+        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2, recording: !!rec.active, behindMs: controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos }).behindMs : 0 }),
         /* @__PURE__ */ jsxs(
           "div",
           {
@@ -58975,6 +59126,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_player_chrome_parts();
       init_display_title();
       init_use_channel_recording();
+      init_timeshift();
       init_use_remote_keys();
       init_jsx_runtime_shim();
     }
@@ -60801,7 +60953,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         if (rect) engineSetBounds(rect);
       });
     };
+    const tvSettingsForPlayer = useTvSettings();
+    const timeshiftRange = engineKind === "mpv" && tvSettingsForPlayer.timeshiftEnabled ? mpvDesktop.cacheRange : null;
+    const timeshift = timeshiftRange ? {
+      range: timeshiftRange,
+      timePos: mpvTimePos,
+      onSeek: (sec) => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, Math.min(timeshiftRange.end - 1, sec))),
+      onJump: (delta) => mpvDesktop.seekRelative(delta),
+      onGoLive: () => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, timeshiftRange.end - 2))
+    } : void 0;
     const playerControls = {
+      timeshift,
       muted,
       volume: volumeLevel,
       fullscreen: desktopFullscreen,
@@ -60890,6 +61052,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       "use strict";
       "use client";
       init_react_shim();
+      init_tv_settings_store();
       import_react_dom5 = __toESM(require_react_dom(), 1);
       init_plugin_sdk();
       init_channel_history();
@@ -68085,7 +68248,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         }
       ),
       /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-record-notify", label: tt("settingRecordNotify"), checked: tvSettings.recordNotify, onChange: (recordNotify) => setTvSettings({ recordNotify }) }),
-      /* @__PURE__ */ jsx(LtChoiceRow, { testId: "lt-record-open", label: tt("settingRecordOpen"), options: [{ key: "open", label: tt("railRecordings") }], value: "", onChange: openRecordings })
+      /* @__PURE__ */ jsx(LtChoiceRow, { testId: "lt-record-open", label: tt("settingRecordOpen"), options: [{ key: "open", label: tt("railRecordings") }], value: "", onChange: openRecordings }),
+      /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-timeshift-enabled", label: tt("settingTimeshift"), desc: tt("settingTimeshiftHint"), checked: tvSettings.timeshiftEnabled, onChange: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
+      /* @__PURE__ */ jsx(
+        LtChoiceRow,
+        {
+          testId: "lt-timeshift-minutes",
+          label: tt("settingTimeshiftMinutes"),
+          options: TIMESHIFT_MINUTE_OPTIONS.map((min) => ({ key: String(min), label: tt("minutesShort", { min }) })),
+          value: String(tvSettings.timeshiftMinutes),
+          onChange: (key) => setTvSettings({ timeshiftMinutes: Number(key) })
+        }
+      )
     ] });
   }
   function RecordingSettingsRows({ settings, tt, phone = false, onOpen }) {
@@ -68094,7 +68268,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordStartEarlyMin", label: tt("settingRecordStartEarly"), right: minutesLabel(tt, settings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(settings.recordStartEarlyMin) }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordEndLateMin", label: tt("settingRecordEndLate"), right: minutesLabel(tt, settings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(settings.recordEndLateMin) }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordNotify", label: tt("settingRecordNotify"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.recordNotify }), onOk: () => setTvSettings({ recordNotify: !settings.recordNotify }) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordOpen", label: tt("settingRecordOpen"), right: "\u203A", onOk: onOpen })
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordOpen", label: tt("settingRecordOpen"), right: "\u203A", onOk: onOpen }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftEnabled", label: tt("settingTimeshift"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.timeshiftEnabled }), onOk: () => setTvSettings({ timeshiftEnabled: !settings.timeshiftEnabled }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftMinutes", label: tt("settingTimeshiftMinutes"), right: tt("minutesShort", { min: settings.timeshiftMinutes }), onOk: () => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(settings.timeshiftMinutes) }) })
     ] });
     if (phone) return rows;
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
@@ -68108,7 +68284,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-start-early", label: tt("settingRecordStartEarly"), value: minutesLabel(tt, tvSettings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(tvSettings.recordStartEarlyMin) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-end-late", label: tt("settingRecordEndLate"), value: minutesLabel(tt, tvSettings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(tvSettings.recordEndLateMin) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-notify", label: tt("settingRecordNotify"), toggle: tvSettings.recordNotify, onToggle: (recordNotify) => setTvSettings({ recordNotify }) }),
-      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-open", label: tt("settingRecordOpen"), caret: true, onOk: openRecordings })
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-open", label: tt("settingRecordOpen"), caret: true, onOk: openRecordings }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-enabled", label: tt("settingTimeshift"), hint: tt("settingTimeshiftHint"), toggle: tvSettings.timeshiftEnabled, onToggle: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-minutes", label: tt("settingTimeshiftMinutes"), value: tt("minutesShort", { min: tvSettings.timeshiftMinutes }), onOk: () => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(tvSettings.timeshiftMinutes) }) })
     ] });
   }
 
@@ -71766,6 +71944,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  init_timeshift();
   init_recordings();
   init_tv_settings_store();
   init_tv_strings();
@@ -71826,6 +72005,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }),
       []
     );
+    useEffect(() => startTimeshiftSettingsSync(), []);
     useEffect(
       () => startRecordingWatch((event2) => {
         if (!getTvSettings().recordNotify) return;
