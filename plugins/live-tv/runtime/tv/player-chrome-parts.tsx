@@ -99,7 +99,9 @@ function useReminded(channel: M3uChannel, programme: EpgProgramme | null): boole
 
 /* ---------------------------------------------------------------- Toppfält */
 
-export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }: {
+export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease, recording = false }: {
+  /** Kanalen spelas in just nu: röd punkt + "Spelar in" i toppfältet. */
+  recording?: boolean
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
@@ -120,7 +122,15 @@ export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, 
       <div style={{ minWidth: 0, flex: '1 1 0', display: 'flex', alignItems: 'center', gap: ps(12) }}>
         <SmallLogo channel={channel} size={ps(32)} radius={ps(6)} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: ps(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: ps(8), minWidth: 0 }}>
+            <div style={{ fontSize: ps(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</div>
+            {recording ? (
+              <span data-testid="rec-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: ps(5), flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fecaca' }}>
+                <span style={{ width: ps(8), height: ps(8), borderRadius: 999, background: '#ef4444', boxShadow: '0 0 6px rgba(239,68,68,0.9)' }} />
+                {tt('recording')}
+              </span>
+            ) : null}
+          </div>
           {info.now ? (
             <div style={{ display: 'flex', alignItems: 'baseline', gap: ps(8), fontSize: ps(12), color: 'rgba(203,213,225,0.9)', minWidth: 0 }} title={displayTitle(info.now.title)}>
               <span style={{ fontSize: ps(9), fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(110,231,183,0.85)', flexShrink: 0 }}>{tt('gridNow')}</span>
@@ -179,7 +189,9 @@ export function PlayerNextUpCard({ channel, next, nowMs, locale, ps }: {
 
 /* ---------------------------------------------------------------- Kontrollrad */
 
-export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches }: {
+export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches, recording }: {
+  /** Inspelningsknappen (use-channel-recording.ts). Saknas eller `enabled: false` = ingen knapp. */
+  recording?: { enabled: boolean; active: boolean; onToggle: () => void }
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
@@ -240,6 +252,11 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
         <div {...station(onToggleGuide, undefined, { 'aria-label': tt('playerGuide'), 'aria-pressed': guideOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, guideOpen), padding: 0 }}>
           <GuideIcon size={icon} />
         </div>
+        {recording?.enabled ? (
+          <div data-testid="player-record" {...station(recording.onToggle, undefined, { 'aria-label': recording.active ? tt('stopRecording') : tt('record'), 'aria-pressed': recording.active ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, recording.active), padding: 0, color: recording.active ? '#ef4444' : undefined }}>
+            <Icons.Record size={icon} filled={recording.active} />
+          </div>
+        ) : null}
         {sportAvailable && onToggleMatches ? (
           <div data-testid="player-matches" {...station(onToggleMatches, undefined, { 'aria-label': tt('sportMatches'), 'aria-pressed': matchesOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, matchesOpen), padding: `0 ${ps(14)}px`, fontSize: ps(14) }}>
             {tt('sportMatches')}

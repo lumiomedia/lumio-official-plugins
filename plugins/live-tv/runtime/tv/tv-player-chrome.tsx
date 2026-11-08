@@ -11,6 +11,7 @@ import { PlayerMatchesDrawer, PlayerSourceSwitcher, PlayerSportTicker, matchesFo
 import { PlayerReplayBadge, PlayerReplayInfo } from '../sport/tv/player-replay-badge'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 import { displayTitle } from '../display-title'
+import { useChannelRecording } from '../use-channel-recording'
 import { REMOTE_ACTION_EVENT } from './use-remote-keys'
 import type { RemoteAction } from './remote-keys'
 
@@ -76,6 +77,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   const hoverRef = useRef(false)
   const TvGlassMenu = getTvGlassMenu()
   const info = tv.nowFor(channel)
+  const rec = useChannelRecording(channel, info.now, tv.nowMs)
   // 0 = dölj aldrig (LiveTvPlayerTvProps-kommentaren). Ingen egen tröskel
   // ovanpå inställningen — README §9 anger just "4 s (inställning)", inget
   // golv.
@@ -283,6 +285,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         { key: 'pause', label: paused ? tt('menuResume') : tt('menuPause'), run: onTogglePause },
         { key: 'fav', label: tv.favourite ? tt('menuRemoveFavourite') : tt('menuAddFavourite'), run: tv.onToggleFavourite },
         { key: 'info', label: tt('menuChannelDetails'), run: tv.onOpenChannelDetails },
+        ...(rec.enabled ? [{ key: 'record', label: rec.active ? tt('stopRecording') : tt('record'), run: () => { void rec.toggle() } }] : []),
       ],
     })
   }
@@ -293,7 +296,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     // Roten släpper igenom pekaren till videon; bara fälten tar den.
     <div ref={rootRef} data-live-tv-tv-root="" {...(isTv ? {} : { 'data-live-tv-desktop': '1' })} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
       <TvFocusStyle />
-      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} />
+      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} recording={!!rec.active} />
       <div
         data-testid="banner"
         onMouseEnter={keep}
@@ -303,7 +306,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         {replay ? <PlayerReplayInfo match={replay} ps={ps} nowMs={tv.nowMs} locale={tv.locale} /> : null}
         {tv.sport && sportHere ? <PlayerSourceSwitcher sport={tv.sport} channel={channel} nowMs={tv.nowMs} ps={ps} /> : null}
         {tv.sport && sportHere && tv.sport.view === 'matchday' ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="ticker" ps={ps} /> : null}
-        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} sportAvailable={sportHere} matchesOpen={matchesOpen} onToggleMatches={() => { if (matchesOpen) closeMatches(); else { setMatchesOpen(true); setVisible(true); clearTimer() } }} />
+        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} sportAvailable={sportHere} matchesOpen={matchesOpen} onToggleMatches={() => { if (matchesOpen) closeMatches(); else { setMatchesOpen(true); setVisible(true); clearTimer() } }} recording={{ enabled: rec.enabled, active: !!rec.active, onToggle: () => { void rec.toggle() } }} />
         <PlayerFavouritesRow channel={channel} tv={tv} ps={ps} onSwitch={switchChannel} onHold={holdChip} />
       </div>
       {/* Under toppfältet (det har kanalens logotyp och namn uppe till vänster). */}

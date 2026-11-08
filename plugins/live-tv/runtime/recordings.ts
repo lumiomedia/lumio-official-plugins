@@ -119,6 +119,13 @@ let inflight: Promise<RecordingList | null> | null = null
 const listeners = new Set<() => void>()
 const emit = () => { for (const l of [...listeners]) l() }
 
+/** Tester: nollställ den delade cachen så en väntande hämtning från ett test inte läcker in i nästa. */
+export function __resetRecordingsForTests(): void {
+  cache = null
+  inflight = null
+  listeners.clear()
+}
+
 export function getCachedRecordings(): RecordingList | null {
   return cache
 }
