@@ -13,6 +13,7 @@ import { TvLibraryTitle } from './tv-library-title'
 import { TvLibraryCast } from './tv-library-cast'
 import { TvSettingsView } from './tv-settings'
 import { TvSport } from '../sport/tv/sport-shell'
+import { TvRecordings } from './tv-recordings'
 
 export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
   hub: TvHub,
@@ -26,4 +27,5 @@ export const TV_VIEWS: Record<TvView, ComponentType<TvViewProps>> = {
   cast: TvLibraryCast,
   settings: TvSettingsView,
   sport: TvSport,
+  recordings: TvRecordings,
 }

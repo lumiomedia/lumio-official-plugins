@@ -72,9 +72,10 @@ describe('Hem i rälsen (VOD)', () => {
 })
 
 describe('LiveTvTvShell', () => {
-  it('ritar ikonraden med tio stationer och exakt en data-init', () => {
+  it('ritar ikonraden med elva stationer och exakt en data-init', () => {
     mount()
-    expect(screen.getAllByTestId(/rail-/)).toHaveLength(10)
+    // Elva sedan Inspelningar (live-tv 0.20.0) ligger efter Favoriter.
+    expect(screen.getAllByTestId(/rail-/)).toHaveLength(11)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
   it('ikonradens Bibliotek ligger mellan Kanalguide och Multivy', () => {
@@ -90,6 +91,7 @@ describe('LiveTvTvShell', () => {
       'rail-library',
       'rail-multi',
       'rail-favs',
+      'rail-recordings',
       'rail-settings',
     ])
   })

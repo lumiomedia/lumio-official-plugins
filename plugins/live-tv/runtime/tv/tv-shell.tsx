@@ -90,8 +90,8 @@ function SurfaceBackdrop({ cutouts, background }: { cutouts: SurfaceCutout[]; ba
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings' | 'sport'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings', 'sport']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings' | 'sport' | 'recordings'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings', 'sport', 'recordings']
 
 /**
  * En VOD-uppspelning i APPENS spelare, inte Live TV:s.
@@ -169,7 +169,7 @@ const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
 }
 
 /** Vyerna som målas i v2-tonen (Kanaler, guiden och deras grannar i rälsen). */
-const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search'])
+const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search', 'recordings'])
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 /** Värdens Android-bakåtbrygga ber om menyn med den här händelsen när den inte ser någon öppen yta. */
@@ -890,6 +890,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
           isTv={isTv}
           narrow={narrow}
           labels={railLabels}
+          showRecordings={settings.recordingEnabled}
           onSelect={(key) => {
             if (key === 'back') requestBrowseBack()
             else if (key === 'home') goVodHome()
@@ -908,6 +909,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
           title={tt('moreActions')}
           items={[
             { key: 'favs', label: tt('sheetFavourites'), run: () => go('favs') },
+            ...(settings.recordingEnabled ? [{ key: 'recordings', label: tt('sheetRecordings'), run: () => go('recordings') }] : []),
             { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
             { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
           ]}
