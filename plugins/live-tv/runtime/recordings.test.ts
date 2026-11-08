@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { deleteRecording, formatBytes, listRecordings, recordingFor, recordingStreamUrl, scheduleRecording, stopRecording, type Recording, type RecordingList } from './recordings'
+import { __resetRecordingsForTests, __seedRecordingsForTests, deleteRecording, formatBytes, getCachedRecordings, listRecordings, recordingFor, recordingStreamUrl, refreshRecordings, scheduleRecording, stopRecording, type Recording, type RecordingList } from './recordings'
 
 function rec(partial: Partial<Recording>): Recording {
   return {
@@ -13,7 +13,7 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.unstubAllGlobals(); __resetRecordingsForTests() })
 
 describe('inspelningsklienten', () => {
   it('recordingStreamUrl ends with .ts', () => {
@@ -81,5 +81,34 @@ describe('inspelningsklienten', () => {
     expect(formatBytes(1_288_490_189, 'en-US')).toBe('1.2 GB')
     expect(formatBytes(356_515_840, 'en-US')).toBe('340 MB')
     expect(formatBytes(0, 'en-US')).toBe('0 MB')
+  })
+
+  it('scheduleRecording and stopRecording update the cache at once', async () => {
+    __seedRecordingsForTests({ recordings: [], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/schedule')) return json(rec({ id: 'new', status: 'recording' }))
+      if (url.endsWith('/stop')) return json(rec({ id: 'new', status: 'stopped' }))
+      // Listan släpar efter: den vet inget om jobbet än.
+      return json({ recordings: [], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+    }))
+    await scheduleRecording({ title: 't', channelName: 'c', channelKey: 'k', playUrl: 'u', startAt: 1, stopAt: 2 })
+    expect(getCachedRecordings()?.recordings.find((r) => r.id === 'new')?.status).toBe('recording')
+    await stopRecording('new')
+    expect(getCachedRecordings()?.recordings.find((r) => r.id === 'new')?.status).toBe('stopped')
+  })
+
+  it('refreshRecordings after a write does not hand back the request that started before it', async () => {
+    let resolveFirst!: (r: Response) => void
+    const first = new Promise<Response>((res) => { resolveFirst = res })
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(() => { calls += 1; return calls === 1 ? first : Promise.resolve(json({ recordings: [rec({ id: 'fresh' })], folder: null, freeBytes: 0, keepFreeBytes: 0 })) }))
+    const stale = refreshRecordings()
+    const afterWrite = refreshRecordings({ afterWrite: true })
+    resolveFirst(json({ recordings: [], folder: null, freeBytes: 0, keepFreeBytes: 0 }))
+    await stale
+    const list = await afterWrite
+    expect(list?.recordings.map((r) => r.id)).toEqual(['fresh'])
+    expect(calls).toBe(2)
   })
 })

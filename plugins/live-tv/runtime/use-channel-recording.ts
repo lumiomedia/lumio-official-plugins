@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { channelKey, type M3uChannel } from './live-tv-data'
 import type { EpgProgramme } from './epg/types'
 import { planFromNow } from './recording-plan'
@@ -23,12 +23,18 @@ export function useChannelRecording(channel: M3uChannel, now: EpgProgramme | nul
   const settings = useTvSettings()
   const { list } = useRecordings(false)
   const active = recordingFor(list, channelKey(channel), null)
+  // Ett tryck i taget: tills svaret kommit ignoreras nya tryck (dubbeltryck, otålig fjärr).
+  const busy = useRef(false)
   const toggle = useCallback(async () => {
+    if (busy.current) return
+    busy.current = true
     try {
       if (active) await stopRecording(active.id)
       else await scheduleRecording(planFromNow(channel, now, nowMs, recordMargins(settings)))
     } catch {
       // Appen svarar med fel (t.ex. ingen lagringsplats): listan uppdateras ändå, knappen står kvar.
+    } finally {
+      busy.current = false
     }
   }, [active, channel, now, nowMs, settings])
   return { enabled: settings.recordingEnabled, active, toggle }

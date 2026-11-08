@@ -61,4 +61,23 @@ describe('useChannelRecording', () => {
     const { result } = renderHook(() => useChannelRecording(channel, programme, NOW))
     expect(result.current.enabled).toBe(false)
   })
+
+  it('ignores presses while a toggle is still being handled', async () => {
+    const calls: { url: string }[] = []
+    let release!: () => void
+    const gate = new Promise<void>((res) => { release = res })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      calls.push({ url })
+      if (url.endsWith('/schedule')) { await gate; return json({ id: 'new', status: 'recording', title: 't', channelName: 'c', channelKey: 'SVT1::http://x/1.ts', playUrl: 'u', startAt: 1, stopAt: 2, bytes: 0, createdAt: 0 }) }
+      return json({ recordings: [], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+    }))
+    const { result } = renderHook(() => useChannelRecording(channel, programme, NOW))
+    await waitFor(() => expect(result.current.enabled).toBe(true))
+    const p1 = result.current.toggle()
+    const p2 = result.current.toggle()
+    release()
+    await act(async () => { await Promise.all([p1, p2]) })
+    expect(calls.filter((c) => c.url.endsWith('/schedule'))).toHaveLength(1)
+  })
 })

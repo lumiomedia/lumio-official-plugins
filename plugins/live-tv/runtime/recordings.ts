@@ -98,24 +98,32 @@ export async function listRecordings(): Promise<RecordingList> {
 
 export async function scheduleRecording(body: ScheduleBody): Promise<Recording> {
   const rec = await request<Recording>(`${RECORD_API}/schedule`, jsonInit('POST', body))
-  void refreshRecordings()
+  // Svaret är sanningen om jobbet: in i cachen direkt, så knappen vet att det
+  // spelas in innan nästa poll (annars blev varje tryck i 15 s ett nytt "starta").
+  mergeIntoCache(rec)
+  void refreshRecordings({ afterWrite: true })
   return rec
 }
 
 export async function stopRecording(id: string): Promise<Recording> {
   const rec = await request<Recording>(`${RECORD_API}/stop`, jsonInit('POST', { id }))
-  void refreshRecordings()
+  mergeIntoCache(rec)
+  void refreshRecordings({ afterWrite: true })
   return rec
 }
 
 export async function deleteRecording(id: string): Promise<void> {
   await request<unknown>(`${RECORD_API}?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-  void refreshRecordings()
+  if (cache) {
+    cache = { ...cache, recordings: cache.recordings.filter((r) => r.id !== id) }
+    emit()
+  }
+  void refreshRecordings({ afterWrite: true })
 }
 
 export async function saveRecordSettings(s: { folder?: string | null; keepFreeGb: number }): Promise<void> {
   await request<unknown>(`${RECORD_API}/settings`, jsonInit('POST', { folder: s.folder ?? null, keepFreeGb: s.keepFreeGb }))
-  void refreshRecordings()
+  void refreshRecordings({ afterWrite: true })
 }
 
 // ── Delad cache ────────────────────────────────────────────────────────────
@@ -142,9 +150,25 @@ export function getCachedRecordings(): RecordingList | null {
   return cache
 }
 
-/** Hämtar listan en gång för alla som frågar samtidigt; ett fel behåller den gamla listan. */
-export function refreshRecordings(): Promise<RecordingList | null> {
-  if (inflight) return inflight
+function mergeIntoCache(rec: Recording | null | undefined): void {
+  if (!rec || typeof rec !== 'object' || typeof rec.id !== 'string') return
+  const base: RecordingList = cache ?? { recordings: [], folder: null, freeBytes: null, keepFreeBytes: 0 }
+  const rest = base.recordings.filter((r) => r.id !== rec.id)
+  cache = { ...base, recordings: [...rest, rec] }
+  emit()
+}
+
+/**
+ * Hämtar listan en gång för alla som frågar samtidigt; ett fel behåller den
+ * gamla listan. `afterWrite`: en hämtning som redan pågår startade före
+ * skrivningen och kan vara gammal — vänta ut den och hämta en gång till.
+ */
+export function refreshRecordings(opts?: { afterWrite?: boolean }): Promise<RecordingList | null> {
+  if (inflight) {
+    if (!opts?.afterWrite) return inflight
+    const again = inflight.then(() => refreshRecordings())
+    return again
+  }
   inflight = listRecordings()
     .then((list) => { cache = list; return list })
     .catch(() => cache)
