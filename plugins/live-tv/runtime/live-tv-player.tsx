@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useTvSettings } from './tv/tv-settings-store'
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
@@ -1273,7 +1274,20 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
    * Tillståndet och motoranropen bor här — kromet vet varken vilken motor som
    * spelar eller om det finns ett Tauri-fönster att helskärma.
    */
+  // Timeshift (timeshift.ts): bara mpv-motorn, bara när bufferten är på och mpv rapporterat ett intervall.
+  const tvSettingsForPlayer = useTvSettings()
+  const timeshiftRange = engineKind === 'mpv' && tvSettingsForPlayer.timeshiftEnabled ? mpvDesktop.cacheRange : null
+  const timeshift: LiveTvPlayerControls['timeshift'] = timeshiftRange
+    ? {
+        range: timeshiftRange,
+        timePos: mpvTimePos,
+        onSeek: (sec) => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, Math.min(timeshiftRange.end - 1, sec))),
+        onJump: (delta) => mpvDesktop.seekRelative(delta),
+        onGoLive: () => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, timeshiftRange.end - 2)),
+      }
+    : undefined
   const playerControls: LiveTvPlayerControls = {
+    timeshift,
     muted,
     volume: volumeLevel,
     fullscreen: desktopFullscreen,

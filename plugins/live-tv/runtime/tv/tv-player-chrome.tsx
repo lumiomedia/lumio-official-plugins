@@ -12,6 +12,7 @@ import { PlayerReplayBadge, PlayerReplayInfo } from '../sport/tv/player-replay-b
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 import { displayTitle } from '../display-title'
 import { useChannelRecording } from '../use-channel-recording'
+import { timeshiftModel } from '../timeshift'
 import { REMOTE_ACTION_EVENT } from './use-remote-keys'
 import type { RemoteAction } from './remote-keys'
 
@@ -296,7 +297,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     // Roten släpper igenom pekaren till videon; bara fälten tar den.
     <div ref={rootRef} data-live-tv-tv-root="" {...(isTv ? {} : { 'data-live-tv-desktop': '1' })} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
       <TvFocusStyle />
-      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} recording={!!rec.active} />
+      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} recording={!!rec.active} behindMs={controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos }).behindMs : 0} />
       <div
         data-testid="banner"
         onMouseEnter={keep}
