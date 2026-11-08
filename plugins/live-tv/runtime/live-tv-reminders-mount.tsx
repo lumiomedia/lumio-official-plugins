@@ -10,6 +10,7 @@ import { useHubText } from './hub-strings'
 import { ToastCenter, pushToast } from './toast-center'
 import { displayTitle } from './display-title'
 import { startRecordingWatch } from './recordings-notify'
+import { startTimeshiftSettingsSync } from './timeshift'
 import { formatBytes } from './recordings'
 import { getTvSettings } from './tv/tv-settings-store'
 import { tvText } from './tv/tv-strings'
@@ -86,6 +87,8 @@ export function LiveTvRemindersMount() {
       }),
     [],
   )
+  // Timeshift: appen behöver inställningen innan första kanalen öppnas (mpv-optionerna sätts vid open).
+  useEffect(() => startTimeshiftSettingsSync(), [])
   // Inspelningar (recordings-notify.ts): start, klart och fel. Texterna via ref
   // av samma skäl som ovan — bevakningen ska inte startas om vid omritning.
   useEffect(

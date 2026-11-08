@@ -674,6 +674,7 @@ const NATIVE_PLAYER_STATE = {
   playbackRestarted: false,
   playbackRestartedToken: 0,
   pausedForCache: false,
+  cacheRange: null as { start: number; end: number } | null,
   coreIdle: true,
   firstFrameRendered: false,
   loadFailed: false,

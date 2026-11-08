@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { RECORD_END_LATE_OPTIONS, RECORD_START_EARLY_OPTIONS, type RecordEndLateMin, type RecordMargins, type RecordStartEarlyMin } from '../recording-plan'
+
+/** Timeshift-bufferten i minuter (speglas till appen, se ../timeshift.ts). */
+export const TIMESHIFT_MINUTE_OPTIONS = [15, 30, 60] as const
+export type TimeshiftMinutesSetting = (typeof TIMESHIFT_MINUTE_OPTIONS)[number]
+export function nextTimeshiftMinutes(current: TimeshiftMinutesSetting): TimeshiftMinutesSetting {
+  return TIMESHIFT_MINUTE_OPTIONS[(TIMESHIFT_MINUTE_OPTIONS.indexOf(current) + 1) % TIMESHIFT_MINUTE_OPTIONS.length]
+}
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
@@ -91,6 +98,10 @@ export interface TvSettings {
   recordEndLateMin: RecordEndLateMin
   /** Notis när en inspelning startar och blir klar. */
   recordNotify: boolean
+  /** Timeshift: pausa och spola i direktsändning (mpv-motorn). */
+  timeshiftEnabled: boolean
+  /** Bakre buffert i minuter. */
+  timeshiftMinutes: TimeshiftMinutesSetting
 }
 
 const DEFAULTS: TvSettings = {
@@ -123,6 +134,8 @@ const DEFAULTS: TvSettings = {
   recordStartEarlyMin: 1,
   recordEndLateMin: 5,
   recordNotify: true,
+  timeshiftEnabled: true,
+  timeshiftMinutes: 30,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -158,6 +171,8 @@ function sanitize(raw: unknown): TvSettings {
     recordStartEarlyMin: (RECORD_START_EARLY_OPTIONS as readonly number[]).includes(r.recordStartEarlyMin as number) ? (r.recordStartEarlyMin as RecordStartEarlyMin) : DEFAULTS.recordStartEarlyMin,
     recordEndLateMin: (RECORD_END_LATE_OPTIONS as readonly number[]).includes(r.recordEndLateMin as number) ? (r.recordEndLateMin as RecordEndLateMin) : DEFAULTS.recordEndLateMin,
     recordNotify: typeof r.recordNotify === 'boolean' ? r.recordNotify : DEFAULTS.recordNotify,
+    timeshiftEnabled: typeof r.timeshiftEnabled === 'boolean' ? r.timeshiftEnabled : DEFAULTS.timeshiftEnabled,
+    timeshiftMinutes: (TIMESHIFT_MINUTE_OPTIONS as readonly number[]).includes(r.timeshiftMinutes as number) ? (r.timeshiftMinutes as TimeshiftMinutesSetting) : DEFAULTS.timeshiftMinutes,
   }
 }
 
@@ -179,6 +194,9 @@ export function setTvSettings(patch: Partial<TvSettings>): TvSettings {
   const next = sanitize({ ...getTvSettings(), ...patch })
   writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next)
   return next
+}
+export function onTvSettingsChanged(listener: () => void): () => void {
+  return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, listener)
 }
 export function useTvSettings(): TvSettings {
   const [value, setValue] = useState(getTvSettings)

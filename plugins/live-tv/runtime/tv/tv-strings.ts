@@ -984,6 +984,14 @@ const EN = {
   settingRecordOpen: 'Open Recordings',
   gigabytes: '{gb} GB',
   recFreeSpace: '{free} free',
+  // Timeshift (live-tv 0.20.0)
+  settingTimeshift: 'Pause live TV',
+  settingTimeshiftHint: 'A paused channel continues where you paused it, and you can move back and forward within the buffer. Mac, Windows and TV boxes with the mpv engine.',
+  settingTimeshiftMinutes: 'Buffer',
+  goLive: 'Go live',
+  behindLive: '{t} behind',
+  jumpBack30: 'Back 30 s',
+  jumpForward30: 'Forward 30 s',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -1917,6 +1925,14 @@ const SV: Record<keyof typeof EN, string> = {
   settingRecordOpen: 'Öppna Inspelningar',
   gigabytes: '{gb} GB',
   recFreeSpace: '{free} ledigt',
+  // Timeshift (live-tv 0.20.0)
+  settingTimeshift: 'Pausa Live TV',
+  settingTimeshiftHint: 'En pausad kanal fortsätter där du pausade, och du kan spola bakåt och framåt inom bufferten. Mac, Windows och TV-boxar med mpv-motorn.',
+  settingTimeshiftMinutes: 'Buffert',
+  goLive: 'Gå live',
+  behindLive: '{t} efter',
+  jumpBack30: 'Bakåt 30 s',
+  jumpForward30: 'Framåt 30 s',
 }
 
 const DE: Record<keyof typeof EN, string> = {
@@ -2846,6 +2862,14 @@ const DE: Record<keyof typeof EN, string> = {
   settingRecordOpen: 'Aufnahmen öffnen',
   gigabytes: '{gb} GB',
   recFreeSpace: '{free} frei',
+  // Timeshift (live-tv 0.20.0)
+  settingTimeshift: 'Live-TV pausieren',
+  settingTimeshiftHint: 'Ein pausierter Sender läuft dort weiter, wo du pausiert hast, und du kannst innerhalb des Puffers vor- und zurückspulen. Mac, Windows und TV-Boxen mit mpv.',
+  settingTimeshiftMinutes: 'Puffer',
+  goLive: 'Live',
+  behindLive: '{t} zurück',
+  jumpBack30: '30 s zurück',
+  jumpForward30: '30 s vor',
 }
 
 const FR: Record<keyof typeof EN, string> = {
@@ -3775,6 +3799,14 @@ const FR: Record<keyof typeof EN, string> = {
   settingRecordOpen: 'Ouvrir les enregistrements',
   gigabytes: '{gb} Go',
   recFreeSpace: '{free} libres',
+  // Timeshift (live-tv 0.20.0)
+  settingTimeshift: 'Mettre la TV en direct en pause',
+  settingTimeshiftHint: 'Une chaîne en pause reprend là où vous l’avez arrêtée, et vous pouvez avancer ou reculer dans la mémoire tampon. Mac, Windows et box TV avec le moteur mpv.',
+  settingTimeshiftMinutes: 'Mémoire tampon',
+  goLive: 'En direct',
+  behindLive: '{t} de retard',
+  jumpBack30: 'Reculer de 30 s',
+  jumpForward30: 'Avancer de 30 s',
 }
 
 const ES: Record<keyof typeof EN, string> = {
@@ -4704,6 +4736,14 @@ const ES: Record<keyof typeof EN, string> = {
   settingRecordOpen: 'Abrir Grabaciones',
   gigabytes: '{gb} GB',
   recFreeSpace: '{free} libres',
+  // Timeshift (live-tv 0.20.0)
+  settingTimeshift: 'Pausar la TV en directo',
+  settingTimeshiftHint: 'Un canal en pausa continúa donde lo pausaste, y puedes retroceder y avanzar dentro del búfer. Mac, Windows y cajas de TV con el motor mpv.',
+  settingTimeshiftMinutes: 'Búfer',
+  goLive: 'En directo',
+  behindLive: '{t} de retraso',
+  jumpBack30: 'Atrás 30 s',
+  jumpForward30: 'Adelante 30 s',
 }
 
 const TABLES = { en: EN, sv: SV, de: DE, fr: FR, es: ES } as const

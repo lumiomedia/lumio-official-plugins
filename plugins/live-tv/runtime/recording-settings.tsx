@@ -7,7 +7,7 @@ import { TvRow } from './tv-settings-ui'
 import { Heading, Row } from './tv/settings-tabs'
 import { Toggle, dp } from './tv/tv-ui'
 import type { TvStringKey } from './tv/tv-strings'
-import { nextRecordEndLate, nextRecordStartEarly, setTvSettings, type TvSettings } from './tv/tv-settings-store'
+import { TIMESHIFT_MINUTE_OPTIONS, nextRecordEndLate, nextRecordStartEarly, nextTimeshiftMinutes, setTvSettings, type TimeshiftMinutesSetting, type TvSettings } from './tv/tv-settings-store'
 import { RECORD_END_LATE_OPTIONS, RECORD_KEEP_FREE_OPTIONS, RECORD_START_EARLY_OPTIONS, type RecordEndLateMin, type RecordStartEarlyMin } from './recording-plan'
 import { formatBytes, saveRecordSettings, useRecordings } from './recordings'
 import { LIVE_TV_BROWSE_PAGE_ID } from './live-tv-shell'
@@ -81,6 +81,14 @@ export function RecordingSettingsDesktop({ tvSettings, tt }: { tvSettings: TvSet
       />
       <LtToggleRow first={false} testId="lt-record-notify" label={tt('settingRecordNotify')} checked={tvSettings.recordNotify} onChange={(recordNotify) => setTvSettings({ recordNotify })} />
       <LtChoiceRow testId="lt-record-open" label={tt('settingRecordOpen')} options={[{ key: 'open', label: tt('railRecordings') }]} value="" onChange={openRecordings} />
+      <LtToggleRow first={false} testId="lt-timeshift-enabled" label={tt('settingTimeshift')} desc={tt('settingTimeshiftHint')} checked={tvSettings.timeshiftEnabled} onChange={(timeshiftEnabled) => setTvSettings({ timeshiftEnabled })} />
+      <LtChoiceRow
+        testId="lt-timeshift-minutes"
+        label={tt('settingTimeshiftMinutes')}
+        options={TIMESHIFT_MINUTE_OPTIONS.map((min) => ({ key: String(min), label: tt('minutesShort', { min }) }))}
+        value={String(tvSettings.timeshiftMinutes)}
+        onChange={(key) => setTvSettings({ timeshiftMinutes: Number(key) as TimeshiftMinutesSetting })}
+      />
     </LtRows>
   )
 }
@@ -94,6 +102,8 @@ export function RecordingSettingsRows({ settings, tt, phone = false, onOpen }: {
       <Row phone={phone} testId="setting-recordEndLateMin" label={tt('settingRecordEndLate')} right={minutesLabel(tt, settings.recordEndLateMin)} onOk={() => setTvSettings({ recordEndLateMin: nextRecordEndLate(settings.recordEndLateMin) })} />
       <Row phone={phone} testId="setting-recordNotify" label={tt('settingRecordNotify')} right={<Toggle on={settings.recordNotify} />} onOk={() => setTvSettings({ recordNotify: !settings.recordNotify })} />
       <Row phone={phone} testId="setting-recordOpen" label={tt('settingRecordOpen')} right="›" onOk={onOpen} />
+      <Row phone={phone} testId="setting-timeshiftEnabled" label={tt('settingTimeshift')} right={<Toggle on={settings.timeshiftEnabled} />} onOk={() => setTvSettings({ timeshiftEnabled: !settings.timeshiftEnabled })} />
+      <Row phone={phone} testId="setting-timeshiftMinutes" label={tt('settingTimeshiftMinutes')} right={tt('minutesShort', { min: settings.timeshiftMinutes })} onOk={() => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(settings.timeshiftMinutes) })} />
     </>
   )
   if (phone) return rows
@@ -114,6 +124,8 @@ export function RecordingSettingsTvRows({ tvSettings, tt }: { tvSettings: TvSett
       <TvRow testId="tv-record-end-late" label={tt('settingRecordEndLate')} value={minutesLabel(tt, tvSettings.recordEndLateMin)} onOk={() => setTvSettings({ recordEndLateMin: nextRecordEndLate(tvSettings.recordEndLateMin) })} />
       <TvRow testId="tv-record-notify" label={tt('settingRecordNotify')} toggle={tvSettings.recordNotify} onToggle={(recordNotify) => setTvSettings({ recordNotify })} />
       <TvRow testId="tv-record-open" label={tt('settingRecordOpen')} caret onOk={openRecordings} />
+      <TvRow testId="tv-timeshift-enabled" label={tt('settingTimeshift')} hint={tt('settingTimeshiftHint')} toggle={tvSettings.timeshiftEnabled} onToggle={(timeshiftEnabled) => setTvSettings({ timeshiftEnabled })} />
+      <TvRow testId="tv-timeshift-minutes" label={tt('settingTimeshiftMinutes')} value={tt('minutesShort', { min: tvSettings.timeshiftMinutes })} onOk={() => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(tvSettings.timeshiftMinutes) })} />
     </>
   )
 }

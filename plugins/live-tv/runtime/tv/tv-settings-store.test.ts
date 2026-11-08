@@ -38,6 +38,8 @@ describe('tv-settings-store', () => {
       recordStartEarlyMin: 1,
       recordEndLateMin: 5,
       recordNotify: true,
+      timeshiftEnabled: true,
+      timeshiftMinutes: 30,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
