@@ -186,16 +186,16 @@
   var require_tslib_es6 = __commonJS({
     "../../node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
       "use strict";
-      function __classPrivateFieldGet(receiver, state2, kind, f) {
+      function __classPrivateFieldGet(receiver, state3, kind, f) {
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state2.get(receiver);
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state3.get(receiver);
       }
-      function __classPrivateFieldSet(receiver, state2, value, kind, f) {
+      function __classPrivateFieldSet(receiver, state3, value, kind, f) {
         if (kind === "m") throw new TypeError("Private method is not writable");
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state2.set(receiver, value), value;
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state3.set(receiver, value), value;
       }
       exports.__classPrivateFieldGet = __classPrivateFieldGet;
       exports.__classPrivateFieldSet = __classPrivateFieldSet;
@@ -388,7 +388,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit8(event2, payload) {
+      async function emit10(event2, payload) {
         await core.invoke("plugin:event|emit", {
           event: event2,
           payload
@@ -402,7 +402,7 @@
           payload
         });
       }
-      exports.emit = emit8;
+      exports.emit = emit10;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once2;
@@ -436,18 +436,198 @@
   });
 
   // lib/storage-cache-keys.ts
+  function splitProfileKey(key) {
+    if (!key.startsWith(PROFILE_PREFIX)) return { profileId: null, baseKey: key };
+    const rest = key.slice(PROFILE_PREFIX.length);
+    const colon = rest.indexOf(":");
+    if (colon <= 0) return { profileId: null, baseKey: key };
+    return { profileId: rest.slice(0, colon), baseKey: rest.slice(colon + 1) };
+  }
+  function baseKeyOf(key) {
+    return splitProfileKey(key).baseKey;
+  }
+  function isDeadStorageKey(key) {
+    return /^lumio_tv_calendar_v[12]:/.test(baseKeyOf(key));
+  }
+  function isRebuildableCacheKey(key) {
+    if (isDeadStorageKey(key)) return true;
+    const baseKey = baseKeyOf(key);
+    return CACHE_BASE_PATTERNS.some((pattern) => pattern.test(baseKey));
+  }
+  function isPressureEvictableKey(key) {
+    if (isRebuildableCacheKey(key)) return true;
+    return PRESSURE_ONLY_PATTERNS.some((pattern) => pattern.test(key));
+  }
+  function profileIdsFromRaw(raw) {
+    if (raw === null || raw === void 0) return null;
+    try {
+      const parsed2 = JSON.parse(raw);
+      const list = Array.isArray(parsed2) ? parsed2 : parsed2?.profiles;
+      if (!Array.isArray(list)) return null;
+      const ids = /* @__PURE__ */ new Set();
+      for (const entry of list) {
+        const id = entry?.id;
+        if (typeof id === "string" && id) ids.add(id);
+      }
+      if (list.length > 0 && ids.size === 0) return null;
+      return ids;
+    } catch {
+      return null;
+    }
+  }
+  function isOrphanedProfileKey(key, liveIds) {
+    if (!liveIds) return false;
+    const { profileId } = splitProfileKey(key);
+    return profileId !== null && !liveIds.has(profileId);
+  }
+  function keyFamily(key) {
+    const baseKey = baseKeyOf(key);
+    const colon = baseKey.indexOf(":");
+    return colon > 0 ? baseKey.slice(0, colon) : baseKey;
+  }
+  var PROFILE_PREFIX, CACHE_BASE_PATTERNS, PRESSURE_ONLY_PATTERNS;
   var init_storage_cache_keys = __esm({
     "lib/storage-cache-keys.ts"() {
+      PROFILE_PREFIX = "profile:";
+      CACHE_BASE_PATTERNS = [
+        // Startsidans rader — lib/home-rows/row-sources.ts, en nyckel per källa/filter.
+        /^home_row_cache_/,
+        // MDBList-pluginets listcache — byggs om från MDBList, säger inget om smaken.
+        /^mdblist_list_items_/,
+        /^mdblist_lists_cache$/,
+        // SIMKL-pluginets listcache (statuslistor och trendande) — byggs om från SIMKL.
+        /^simkl_list_items_/,
+        // Skådespelarnas krediter för "Känner du igen dem?" — lib/cast-recognition.ts.
+        // Hämtas om från TMDb (TTL 7 dygn).
+        /^cast_credits_cache_v\d+$/,
+        // Egna Trakt-betyg — lib/trakt-ratings.ts. Hämtas om från Trakt (TTL 6 h).
+        /^trakt_ratings_cache_v\d+$/,
+        // Kalenderfönster — lib/use-series-schedule.ts. Alla versioner, så att nästa
+        // prefixbyte inte tyst gör fönstren synkade och omöjliga att utrymma.
+        /^lumio_tv_calendar_v\d+:/,
+        // Matchning av lokala mappar — lib/library/local-folder-provider.ts.
+        /^local_library_match_cache_/,
+        // Lumioplay-pluginets posterluckor.
+        /poster_miss_cache/,
+        // Strömstatus för releasebevakningen — release-watchlist-feed.ts.
+        /^release_watchlist_stream_status$/,
+        /^series_watchlist_stream_status/,
+        // Hero och dess platshållare — media-explorer.tsx, hero-pool.ts,
+        // tv-view-hero.ts, hero-rotation-ledger.ts.
+        /^hero_banner_playable_candidates:/,
+        /^hero_backdrops/,
+        /^hero_pool_cache$/,
+        /^hero_cooldown_ledger$/,
+        /^tv_view_hero_/,
+        // Sedan tidigare i utrymningslistan.
+        /(^|:)last_backdrop/,
+        /(^|:)backdrop_data_url/,
+        /(^|:)live-tv-cache:/,
+        /plugin:com\.lumio\.live-tv:channels:/,
+        // Kanalpluginets poolcache, tablålås, TMDb-metadata och säsongslistor —
+        // byggs om från källorna. `:channels` och `:zap` (kanalerna och zappminnet) är användardata.
+        /plugin:com\.lumio\.channels:(poolCache:|lock:|(meta|seasons|poolIndex)$)/,
+        /:epg_cache:/,
+        /(^|:)watchlist_item_cache/,
+        /(^|:)plex_library_cache/,
+        /(^|:)plugin_youtube_cache/
+      ];
+      PRESSURE_ONLY_PATTERNS = [
+        /lumio:plugin-runtime-cache:/
+      ];
     }
   });
 
   // lib/storage-quota.ts
-  var lastEmptyPassAt;
+  function storageKeys() {
+    const keys2 = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key) keys2.push(key);
+    }
+    return keys2;
+  }
+  function entrySize(key) {
+    try {
+      return key.length + (localStorage.getItem(key)?.length ?? 0);
+    } catch {
+      return key.length;
+    }
+  }
+  function liveProfileIds() {
+    try {
+      return profileIdsFromRaw(getItem("app_profiles"));
+    } catch {
+      return null;
+    }
+  }
+  function orphanedProfileKeys(keys2) {
+    const liveIds = liveProfileIds();
+    if (!liveIds) return [];
+    try {
+      const active5 = getItem("app_active_profile");
+      if (active5) liveIds.add(active5);
+    } catch {
+    }
+    return keys2.filter((key) => isOrphanedProfileKey(key, liveIds));
+  }
+  function evictionCandidates(keys2, underPressure) {
+    const isCandidateCache = underPressure ? isPressureEvictableKey : isRebuildableCacheKey;
+    const orphans = new Set(orphanedProfileKeys(keys2));
+    const hasProfiles = (liveProfileIds()?.size ?? 0) > 0;
+    const rank = (key) => {
+      if (isDeadStorageKey(key)) return 0;
+      if (orphans.has(key)) return 1;
+      if (hasProfiles && splitProfileKey(key).profileId === null) return 2;
+      return 3;
+    };
+    return keys2.filter((key) => orphans.has(key) || isCandidateCache(key)).map((key) => ({ key, size: entrySize(key), rank: rank(key) })).sort((a, b) => a.rank - b.rank || b.size - a.size).map(({ key, size }) => ({ key, size }));
+  }
+  function evictCaches(targetChars = Number.POSITIVE_INFINITY, underPressure = false) {
+    if (typeof window === "undefined") return 0;
+    let freed = 0;
+    let removed = 0;
+    try {
+      for (const { key, size } of evictionCandidates(storageKeys(), underPressure)) {
+        if (freed >= targetChars) break;
+        try {
+          localStorage.removeItem(key);
+          freed += size;
+          removed += 1;
+        } catch {
+        }
+      }
+    } catch {
+    }
+    return removed;
+  }
+  function setItemWithQuotaRecovery(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+    }
+    if (isPressureEvictableKey(key)) return false;
+    if (Date.now() - lastEmptyPassAt < EMPTY_PASS_COOLDOWN_MS) return false;
+    const removed = evictCaches(key.length + value.length + 256e3, true);
+    if (removed === 0) {
+      lastEmptyPassAt = Date.now();
+      return false;
+    }
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  var EMPTY_PASS_COOLDOWN_MS, lastEmptyPassAt;
   var init_storage_quota = __esm({
     "lib/storage-quota.ts"() {
       "use client";
       init_app_storage();
       init_storage_cache_keys();
+      EMPTY_PASS_COOLDOWN_MS = 3e4;
       lastEmptyPassAt = Number.NEGATIVE_INFINITY;
     }
   });
@@ -458,6 +638,13 @@
     const internals = window.__TAURI_INTERNALS__;
     return internals && typeof internals.invoke === "function" ? internals : null;
   }
+  function isAndroidWebview() {
+    try {
+      return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent ?? "");
+    } catch {
+      return false;
+    }
+  }
   function isMissingCommandError(error) {
     const message = error instanceof Error ? error.message : String(error ?? "");
     return /not found|unknown command|no such command|command .* not (registered|allowed)/i.test(message);
@@ -465,12 +652,36 @@
   function markRejected(error) {
     if (isMissingCommandError(error)) markNative("absent");
   }
-  function markNative(state2) {
-    if (nativeState === state2) return;
-    nativeState = state2;
-    if (state2 === "absent" && tauriInternals()) {
+  function markNative(state3) {
+    if (nativeState === state3) return;
+    nativeState = state3;
+    if (state3 === "absent" && tauriInternals()) {
       console.warn("[app-storage] ingen nativ lagring bakom invoke \u2014 localStorage \xE4r den enda durabla kopian");
     }
+  }
+  function probeNativeStore() {
+    if (nativeProbed) return;
+    nativeProbed = true;
+    const internals = tauriInternals();
+    if (!internals) {
+      nativeState = "absent";
+      return;
+    }
+    if (nativeState === "unknown" && isAndroidWebview()) nativeState = "absent";
+    try {
+      const result2 = internals.invoke("storage_get_item", { key: "app_profiles" });
+      if (result2 && typeof result2.then === "function") {
+        ;
+        result2.then(() => markNative("durable"), markRejected);
+      }
+    } catch (error) {
+      markRejected(error);
+    }
+  }
+  function nativeIsDurable() {
+    ensureStore();
+    probeNativeStore();
+    return nativeState === "durable";
   }
   function nativeInvoke(command, payload) {
     const internals = tauriInternals();
@@ -554,6 +765,49 @@
     if (typeof window === "undefined") return null;
     return ensureStore().get(key) ?? null;
   }
+  function setItem(key, value) {
+    if (typeof window === "undefined") return false;
+    ensureStore().set(key, value);
+    const nativeDurable = nativeIsDurable();
+    const durableNative = nativeInvoke("storage_set_item", { key, value }) && nativeDurable;
+    updateSnapshot(key, value);
+    if (durableNative && value.length > 2e5) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+      }
+      notifyWrite(key);
+      return true;
+    }
+    const wroteLocal = setItemWithQuotaRecovery(key, value);
+    if (!wroteLocal) {
+      if (durableNative) {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+        }
+      } else {
+        warnWriteFailed(key, value.length);
+      }
+    }
+    notifyWrite(key);
+    return durableNative || wroteLocal;
+  }
+  function warnWriteFailed(key, length) {
+    const family = keyFamily(key);
+    if (warnedFamilies.has(family)) return;
+    warnedFamilies.add(family);
+    try {
+      console.warn(`[app-storage] kunde inte spara ${family} (${length} tecken) \u2014 lagringen \xE4r full, gamla v\xE4rdet ligger kvar p\xE5 disk`);
+    } catch {
+    }
+  }
+  function notifyWrite(key) {
+    try {
+      window.dispatchEvent(new CustomEvent("lumio-storage-write", { detail: { key } }));
+    } catch {
+    }
+  }
   function removeItem(key) {
     if (typeof window === "undefined") return;
     ensureStore().delete(key);
@@ -564,7 +818,7 @@
     } catch {
     }
   }
-  var pending, nativeState, store;
+  var pending, nativeState, nativeProbed, store, warnedFamilies;
   var init_app_storage = __esm({
     "lib/app-storage.ts"() {
       "use client";
@@ -572,7 +826,9 @@
       init_storage_cache_keys();
       pending = /* @__PURE__ */ new Set();
       nativeState = "unknown";
+      nativeProbed = false;
       store = null;
+      warnedFamilies = /* @__PURE__ */ new Set();
     }
   });
 
@@ -628,15 +884,15 @@
   });
 
   // lib/plugin-state.ts
-  function normalizeState(state2, fallback) {
+  function normalizeState(state3, fallback) {
     return {
       ...fallback,
-      ...state2,
-      installed: state2?.installed ?? fallback.installed,
-      active: state2?.active ?? fallback.active,
-      order: state2?.order ?? fallback.order,
-      sourceType: state2?.sourceType ?? fallback.sourceType,
-      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
+      ...state3,
+      installed: state3?.installed ?? fallback.installed,
+      active: state3?.active ?? fallback.active,
+      order: state3?.order ?? fallback.order,
+      sourceType: state3?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state3?.runtimeAvailable ?? fallback.runtimeAvailable
     };
   }
   function readAll() {
@@ -660,8 +916,8 @@
     });
   }
   function isPluginEnabled(pluginId, defaultOrder2 = 0, defaults = {}) {
-    const state2 = getPluginPersistedState(pluginId, defaultOrder2, defaults);
-    return Boolean(state2.installed && state2.active);
+    const state3 = getPluginPersistedState(pluginId, defaultOrder2, defaults);
+    return Boolean(state3.installed && state3.active);
   }
   var STORAGE_KEY;
   var init_plugin_state = __esm({
@@ -1082,14 +1338,14 @@
   function assSubtitleTypography(prefs, fontSize, nativeFontSize) {
     const factor = ASS_SIZE_FACTOR[prefs.font];
     const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
-    const round1 = (value) => Math.round(value * 10) / 10;
+    const round12 = (value) => Math.round(value * 10) / 10;
     return {
       fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
       bold: prefs.bold,
-      assFontSize: round1(fontSize * factor),
+      assFontSize: round12(fontSize * factor),
       nativeFontSize: Math.round(nativeFontSize * factor),
-      assSpacing: round1(fontSize * em),
-      nativeSpacing: round1(nativeFontSize * em)
+      assSpacing: round12(fontSize * em),
+      nativeSpacing: round12(nativeFontSize * em)
     };
   }
   var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
@@ -1221,6 +1477,14 @@
     setScopedStorageItem(KEY_MATCH_RESOLUTION, value ? "1" : "0");
     emitPlaybackSettingsChanged();
   }
+  function getSleepFade() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_SLEEP_FADE) !== "0";
+  }
+  function setSleepFade(value) {
+    setScopedStorageItem(KEY_SLEEP_FADE, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
   function getScrubPreviews() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_SCRUB_PREVIEWS) === "1";
@@ -1244,6 +1508,10 @@
   function getAllowSoftwareVideoDecoding() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
+  }
+  function getStyledAssSubtitles() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_STYLED_ASS_SUBTITLES) !== "0";
   }
   function getDv7AsHdr10() {
     if (typeof window === "undefined") return DEFAULT_DV7_AS_HDR10;
@@ -1489,7 +1757,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_STYLED_ASS_SUBTITLES, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SLEEP_FADE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1515,6 +1783,7 @@
       KEY_MATCH_RESOLUTION = "playback_matchResolution";
       KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
       KEY_DV7_AS_HDR10 = "playback_dv7AsHdr10";
+      KEY_STYLED_ASS_SUBTITLES = "playback_styledAssSubtitles";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
       KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
       KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
@@ -1631,6 +1900,7 @@
       DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
       DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
       DEFAULT_NIGHT_MODE = "off";
+      KEY_SLEEP_FADE = "playback_sleepFade";
       KEY_SCRUB_PREVIEWS = "playback_scrubPreviews";
       KEY_SCRUB_PREVIEWS_PREPARE = "playback_scrubPreviewsPrepare";
       KEY_SCRUB_PREVIEWS_FAST = "playback_scrubPreviewsFast";
@@ -2302,6 +2572,9 @@
       allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
       // Dolby Vision profil 7 som HDR10-bas: auto/on/off, spelaren avgör auto.
       dv7AsHdr10: getDv7AsHdr10(),
+      // ASS/SSA med libass (stil, position, typsnitt) eller som text. Gäller när
+      // spelaren byggs, alltså från den här starten.
+      styledAss: getStyledAssSubtitles(),
       // Tung ström utan känd storlek (Fortsätt titta har ingen): räkna med en
       // remux, annars fick spelaren 64 MB och ~2 s framåt (2026-11-01).
       ...opts.bitrateBps && opts.bitrateBps > 0 ? { bitrateHint: Math.round(opts.bitrateBps) } : opts.heavy ? { bitrateHint: HEAVY_UNKNOWN_BITRATE_BPS } : {},
@@ -2313,6 +2586,15 @@
       // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
       ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
+  }
+  async function setNativeExternalAss(url) {
+    const res = await np({ cmd: "setExternalAss", url });
+    return res?.ok === true;
+  }
+  function looksLikeAssSubtitle(urlOrPath, content) {
+    const path = urlOrPath.split(/[?#]/)[0].toLowerCase();
+    if (/\.(ass|ssa)$/.test(path)) return true;
+    return typeof content === "string" && /^\s*(WEBVTT\s*)?\[Script Info\]/i.test(content.replace(/^\uFEFF/, ""));
   }
   function setNativeMatchResolution(on) {
     if (!isAndroidTauriEnv) return;
@@ -2670,14 +2952,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners20 = /* @__PURE__ */ new Set();
+        const listeners21 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
-        let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit8 = (patch) => {
-          state2 = { ...state2, ...patch };
-          for (const l of [...listeners20]) l(state2);
+        let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+        const emit10 = (patch) => {
+          state3 = { ...state3, ...patch };
+          for (const l of [...listeners21]) l(state3);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -2700,10 +2982,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit8({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit8({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit8({ paused: true }));
-            v.addEventListener("error", () => emit8({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit10({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit10({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit10({ paused: true }));
+            v.addEventListener("error", () => emit10({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -2750,15 +3032,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners20.add(l);
-            return () => listeners20.delete(l);
+            listeners21.add(l);
+            return () => listeners21.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit8({ loadFailed: true });
-            listeners20.clear();
+            if (reason) emit10({ loadFailed: true });
+            listeners21.clear();
           }
         };
       }
@@ -2780,8 +3062,8 @@
     closingSharedListener = false;
     if (sharedUnlisten) return;
     sharedUnlisten = (0, import_event.listen)("mpv-surface-state", (event2) => {
-      const { surface, ...state2 } = event2.payload;
-      dispatchersByRustId.get(surface)?.(state2);
+      const { surface, ...state3 } = event2.payload;
+      dispatchersByRustId.get(surface)?.(state3);
     });
   }
   function teardownSharedListenerIfIdle() {
@@ -2812,21 +3094,21 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners20 = /* @__PURE__ */ new Set();
+    const listeners21 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit8 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners20]) listener(state2);
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit10 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners21]) listener(state3);
     };
     const dispatch = (next) => {
-      state2 = next;
-      for (const listener of [...listeners20]) listener(next);
+      state3 = next;
+      for (const listener of [...listeners21]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit8({ loadFailed: true });
+        if (!destroyed) emit10({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -2848,7 +3130,7 @@
             }
           });
         } catch {
-          emit8({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit10({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -2898,15 +3180,15 @@
         }
       },
       onState(listener) {
-        listeners20.add(listener);
+        listeners21.add(listener);
         return () => {
-          listeners20.delete(listener);
+          listeners21.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit8({ loadFailed: true });
-        listeners20.clear();
+        if (reason) emit10({ loadFailed: true });
+        listeners21.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -2969,11 +3251,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners20 = /* @__PURE__ */ new Set();
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit8 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners20]) listener(state2);
+    const listeners21 = /* @__PURE__ */ new Set();
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit10 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners21]) listener(state3);
     };
     let nativeId = null;
     let destroyed = false;
@@ -3012,8 +3294,8 @@
           if (myGeneration !== generation3) return;
           const next = toSurfaceState(value);
           if (!next) return;
-          state2 = next;
-          for (const listener of [...listeners20]) listener(next);
+          state3 = next;
+          for (const listener of [...listeners21]) listener(next);
         });
       }, 250);
     }
@@ -3034,7 +3316,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit8({ loadFailed: true });
+            if (!destroyed) emit10({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -3089,17 +3371,17 @@
         return false;
       },
       onState(listener) {
-        listeners20.add(listener);
+        listeners21.add(listener);
         return () => {
-          listeners20.delete(listener);
+          listeners21.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         generation3++;
         stopPolling();
-        if (reason) emit8({ loadFailed: true });
-        listeners20.clear();
+        if (reason) emit10({ loadFailed: true });
+        listeners21.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -4288,6 +4570,7 @@
         subtitleLoadFile: "Open subtitle file\u2026",
         subtitleExternalGroup: "Own file",
         subtitleEmbeddedTrack: "Embedded track",
+        subtitleLibraryTrack: "From your server",
         subtitleFileUnsupported: "This format can only be shown by the built-in player on Mac (mpv). Use .srt or .vtt here.",
         subtitleFileUnsupportedWindows: "This format can only be shown by the built-in player (mpv). Use .srt or .vtt here.",
         subtitleFileLoadFailed: "Could not load the subtitle file. {message}",
@@ -4305,6 +4588,13 @@
         vpSecondarySubMissing: "No {lang} subtitle found",
         learningModeTitle: "Learning mode",
         learningModeHint: "Show a second subtitle language under the main one",
+        spokenSubtitlesGroup: "Spoken subtitles",
+        spokenSubtitles: "Read subtitles aloud",
+        spokenSubtitlesDesc: "Reads the current subtitle line aloud with the device's voice and lowers the film's sound while it speaks. Uses a voice for the subtitle's language when one is installed.",
+        spokenSubtitlesRate: "Reading speed",
+        spokenSubtitlesRateDesc: "How fast the voice reads the lines.",
+        spokenSubtitlesRateNormal: "Normal",
+        spokenSubtitlesRateFast: "Fast",
         subtitleSlotPrimary: "Main",
         subtitleSlotSecondary: "Second",
         subtitleSecondaryEmbeddedUnsupported: "Not supported on Android yet",
@@ -4652,6 +4942,11 @@
         plSleepEnd: "End of episode or film",
         plSleepStillThere: "Are you still there?",
         plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+        plSleepFade: "Fade out over the last 2 min",
+        incognitoBadge: "Incognito",
+        incognitoToggle: "Watch without it showing",
+        incognitoTurnOff: "Turn off incognito",
+        incognitoPlay: "Play incognito",
         plCompanions: "Who's watching",
         plWhoWatches: "Who's watching with you?",
         plCompanionsJustMe: "Just me",
@@ -6065,6 +6360,7 @@
         exitAppAction: "Quit Lumio",
         exitAppTitle: "Quit Lumio?",
         exitAppConfirm: "Quit",
+        exitAppHoldHint: "Tip: hold Back anywhere to get here.",
         quizMenuLabel: "Film quiz",
         couchMenuLabel: "Couch mode",
         couchOpenButton: "Open Couch mode",
@@ -6239,6 +6535,9 @@
         creditsThresholdTvDesc: "Only when the season has ended and no next season exists.",
         advanceAtOutro: "Skip the credits and go straight to the next episode",
         advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
+        nextEpAfterLastSub: "Next episode after the last subtitle line",
+        nextEpAfterLastSubDesc: "For episodes without a detected outro, the next-episode card appears this long after the subtitle file's last line. Waiting a little leaves room for a closing scene without dialogue; the card can always be dismissed.",
+        nextEpAfterLastSubOff: "Off",
         stayFullscreenOnClose: "Stay fullscreen when the player closes",
         stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
         showTitleOnStart: "Show title when playback starts",
@@ -6568,6 +6867,8 @@
         subtitleAutoSyncGroup: "Auto-sync",
         subtitleSyncFastReadAhead: "Faster sync (uses more data)",
         subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
+        styledAssSubtitles: "Styled ASS subtitles",
+        styledAssSubtitlesHint: "Draws ASS/SSA subtitles (anime and fansubs) with their own fonts, colours and positions. Turn off if heavy typesetting stutters on a slow box; they then show as plain text. Applies from the next playback.",
         subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
         subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
         subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
@@ -6620,6 +6921,9 @@
         subtitleBold: "Bold text",
         subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
         skipIntro: "Skip intro",
+        skipLearned: "Skip (learned)",
+        plLearnSkips: "Learn my skips",
+        plForgetLearnedSkips: "Forget learned skips for this series",
         originalFirst: "Original / first",
         noFallback: "No fallback",
         autoplayNextEpisode: "Auto-play next episode",
@@ -8224,7 +8528,20 @@
         tvEdTitlesRowStation: "Titles in the row \xB7 pin or hide",
         tvEdTitlesRowTitle: "Titles in the row",
         tvEdTitlesRefNote: "The titles come from the row this one points to \u2014 pin or hide them there.",
-        tvEdTemplateEyebrow: "Template for the theme"
+        tvEdTemplateEyebrow: "Template for the theme",
+        ratingRate: "Rate",
+        ratingRateEpisode: "Rate episode",
+        ratingRated: "Rated {n}/10",
+        ratingEyebrow: "Your rating \xB7 Trakt",
+        ratingNone: "Not rated yet",
+        ratingValue: "{stars} stars \xB7 {n}/10",
+        ratingRemove: "Remove rating",
+        ratingSaveFailed: "Couldn't save to Trakt. Try again.",
+        ratingExpired: "Your Trakt sign-in has expired. Connect Trakt again in Settings.",
+        ratingHint: "Pick a star \u2014 each half is one point on Trakt's 1\u201310 scale.",
+        castSeenIn: "You've seen them in {titles}",
+        personSeenIn: "You've seen them in",
+        personSeenInSorted: "Most recently watched first"
       };
     }
   });
@@ -8269,9 +8586,9 @@
   function lookup(lang, key) {
     const current5 = loaded();
     const pack = lang !== "en" && current5?.lang === lang ? current5.pack : null;
-    const base = en;
+    const base2 = en;
     if (windowsDesktop()) {
-      const variant = pack?.[`${key}Windows`] ?? base[`${key}Windows`];
+      const variant = pack?.[`${key}Windows`] ?? base2[`${key}Windows`];
       if (variant) return variant;
     }
     return pack?.[key] ?? en[key];
@@ -8857,7 +9174,7 @@
   function useLibraryIdSets() {
     const [mode, setMode] = useState(() => getLibraryMode());
     const key = modeKey(mode);
-    const [state2, setState] = useState(() => {
+    const [state3, setState] = useState(() => {
       const cached2 = key != null ? cachedLibraryIdSetsFor(key) : null;
       return key != null && cached2 ? { key, sets: cached2 } : null;
     });
@@ -8884,7 +9201,7 @@
       };
     }, [key]);
     if (key == null) return null;
-    return state2 && state2.key === key ? state2.sets : LIBRARY_ID_SETS_LOADING;
+    return state3 && state3.key === key ? state3.sets : LIBRARY_ID_SETS_LOADING;
   }
   var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
@@ -9025,14 +9342,14 @@
     return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
   }
   function tvSceneBoxScale(element) {
-    const read12 = (raw) => {
+    const read13 = (raw) => {
       const value = parseFloat(raw);
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    const inline = read12(element.style.getPropertyValue("--tv-scene-box-scale"));
+    const inline = read13(element.style.getPropertyValue("--tv-scene-box-scale"));
     if (inline !== null) return inline;
     if (typeof getComputedStyle === "undefined") return 1;
-    return read12(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
+    return read13(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
   var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX, applied, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
@@ -9147,9 +9464,9 @@
       return {};
     }
   }
-  function writeMatchCache(cache12) {
+  function writeMatchCache(cache13) {
     try {
-      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache12));
+      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache13));
     } catch {
     }
   }
@@ -9168,17 +9485,17 @@
     }
     return results[0] ?? null;
   }
-  async function matchCached(title, year, kind, cache12) {
+  async function matchCached(title, year, kind, cache13) {
     const key = `${kind}:${normalizeKey(title)}:${year ?? ""}`;
-    const cached2 = cache12[key];
+    const cached2 = cache13[key];
     if (cached2 && (cached2.hit || Date.now() - cached2.at < MISS_TTL_MS)) return cached2.hit;
     const hit = await searchTmdb(title, year, kind).catch(() => void 0);
     if (hit === void 0) return null;
-    cache12[key] = { hit, at: Date.now() };
+    cache13[key] = { hit, at: Date.now() };
     return hit;
   }
   async function matchTitlesByName(wanted, signal) {
-    const cache12 = readMatchCache();
+    const cache13 = readMatchCache();
     const out = new Array(wanted.length).fill(null);
     for (let index = 0; index < wanted.length; index += 2) {
       if (signal?.aborted) break;
@@ -9186,10 +9503,10 @@
         const parsed2 = parseLocalName(`${entry.title}.mkv`);
         const looksLikeEpisode = parsed2.season != null && parsed2.episode != null;
         if (looksLikeEpisode && entry.kind === "movie") return;
-        out[index + offset] = await matchCached(parsed2.title || entry.title, entry.year ?? parsed2.year, entry.kind, cache12);
+        out[index + offset] = await matchCached(parsed2.title || entry.title, entry.year ?? parsed2.year, entry.kind, cache13);
       }));
     }
-    writeMatchCache(cache12);
+    writeMatchCache(cache13);
     return out;
   }
   var QUALITY_TOKENS, MATCH_CACHE_KEY, LEGACY_MATCH_CACHE_KEY, MISS_TTL_MS;
@@ -9321,7 +9638,7 @@
     let titles = 0;
     let unmatched = 0;
     const report = (progress2) => options.onProgress?.(progress2);
-    const emit8 = async (incoming) => {
+    const emit10 = async (incoming) => {
       if (options.signal?.aborted) return;
       const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
@@ -9334,7 +9651,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result2 = options.mode === "full" ? await provider.scanAll(source, emit8, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit8, report, options.signal ?? new AbortController().signal);
+    const result2 = options.mode === "full" ? await provider.scanAll(source, emit10, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit10, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -9419,22 +9736,22 @@
       held = held.filter((candidate) => candidate !== entry);
       entry = void 0;
     }
-    let state2;
+    let state3;
     if (entry) {
       entry.last = now2;
-      state2 = { repeat: true, synthetic: !event2.repeat, heldMs: now2 - entry.since };
+      state3 = { repeat: true, synthetic: !event2.repeat, heldMs: now2 - entry.since };
     } else {
       held.push({ key: event2.key, keyCode, since: now2, last: now2 });
-      state2 = { repeat: event2.repeat, synthetic: false, heldMs: 0 };
+      state3 = { repeat: event2.repeat, synthetic: false, heldMs: 0 };
     }
-    answered.set(identity, state2);
-    return state2;
+    answered.set(identity, state3);
+    return state3;
   }
-  function heldLongerThan(state2, ms2) {
-    return state2.repeat && state2.heldMs > ms2;
+  function heldLongerThan(state3, ms2) {
+    return state3.repeat && state3.heldMs > ms2;
   }
-  function tvSeekStepSeconds(state2) {
-    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  function tvSeekStepSeconds(state3) {
+    return heldLongerThan(state3, 1e3) ? 60 : 10;
   }
   var KEY_HOLD_STALE_MS, held, installed, answered;
   var init_key_hold = __esm({
@@ -9718,7 +10035,7 @@
     const pendingKey = getPendingImageKey(bucket, src);
     const existing = pendingPluginImageLoads.get(pendingKey);
     if (existing) return existing;
-    const request = new Promise((resolve) => {
+    const request2 = new Promise((resolve) => {
       const image = new Image();
       image.onload = () => {
         getBucketSet(bucket).add(src);
@@ -9732,8 +10049,8 @@
       image.decoding = "async";
       image.src = src;
     });
-    pendingPluginImageLoads.set(pendingKey, request);
-    return request;
+    pendingPluginImageLoads.set(pendingKey, request2);
+    return request2;
   }
   var loadedPluginImageSrcs, pendingPluginImageLoads;
   var init_plugin_assets = __esm({
@@ -10708,24 +11025,24 @@
     }
   }
   function isTraktUnsynced(mediaType, tmdbId) {
-    const state2 = readTraktLimitState();
-    if (!state2) return false;
-    const unsynced = mediaType === "show" ? state2.unsyncedShows : state2.unsyncedMovies;
+    const state3 = readTraktLimitState();
+    if (!state3) return false;
+    const unsynced = mediaType === "show" ? state3.unsyncedShows : state3.unsyncedMovies;
     return unsynced.includes(tmdbId);
   }
   function getTraktLimitSummary() {
-    const state2 = readTraktLimitState();
-    if (!state2) {
+    const state3 = readTraktLimitState();
+    if (!state3) {
       return { hit: false, unsyncedShows: 0, unsyncedMovies: 0, total: 0, limit: null, used: null };
     }
-    const unsyncedShows = state2.unsyncedShows.length;
-    const unsyncedMovies = state2.unsyncedMovies.length;
+    const unsyncedShows = state3.unsyncedShows.length;
+    const unsyncedMovies = state3.unsyncedMovies.length;
     return {
       hit: unsyncedShows + unsyncedMovies > 0,
       unsyncedShows,
       unsyncedMovies,
       total: unsyncedShows + unsyncedMovies,
-      limit: readReportedWatchlistLimit(state2.reported),
+      limit: readReportedWatchlistLimit(state3.reported),
       used: null
     };
   }
@@ -10767,25 +11084,25 @@
       return {};
     }
   }
-  function write4(cache12) {
-    setScopedStorageItem(KEY7, JSON.stringify(cache12));
+  function write4(cache13) {
+    setScopedStorageItem(KEY7, JSON.stringify(cache13));
   }
   function getCachedWatchlistItems(entries2) {
-    const cache12 = read4();
+    const cache13 = read4();
     return Object.fromEntries(
-      entries2.map(({ tmdbId, type }) => [tmdbId, cache12[buildKey(tmdbId, type)] ?? null])
+      entries2.map(({ tmdbId, type }) => [tmdbId, cache13[buildKey(tmdbId, type)] ?? null])
     );
   }
   function cacheWatchlistItems(items2) {
     if (typeof window === "undefined" || items2.length === 0) return;
-    const cache12 = read4();
+    const cache13 = read4();
     let changed = false;
     for (const { tmdbId, item } of items2) {
       if (!tmdbId || !item) continue;
-      cache12[buildKey(tmdbId, item.type)] = item;
+      cache13[buildKey(tmdbId, item.type)] = item;
       changed = true;
     }
-    if (changed) write4(cache12);
+    if (changed) write4(cache13);
   }
   var KEY7;
   var init_watchlist_item_cache = __esm({
@@ -13204,7 +13521,7 @@
     return Math.round(value * unit);
   }
   function getStreamSizeBytes(stream) {
-    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file2) => sum + (Number.isFinite(file2.filesize) ? file2.filesize : 0), 0);
     if (cachedFileBytes > 0) return cachedFileBytes;
     if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
     return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
@@ -13299,6 +13616,268 @@
       };
       INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
       INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/core-streams/addon-episode-numbering.ts
+  function regularVideos(videos) {
+    return videos.filter((v) => Number.isInteger(v.season) && Number.isInteger(v.episode) && v.season > 0 && v.episode > 0).sort((a, b) => a.season - b.season || a.episode - b.episode);
+  }
+  function regularSeasons(seasons) {
+    return seasons.filter((s) => s.season > 0 && s.count > 0).sort((a, b) => a.season - b.season);
+  }
+  function seasonStructuresMatch(tmdbSeasons, videos) {
+    const tmdb = regularSeasons(tmdbSeasons);
+    const addon = /* @__PURE__ */ new Map();
+    for (const v of regularVideos(videos)) addon.set(v.season, (addon.get(v.season) ?? 0) + 1);
+    if (tmdb.length === 0 || tmdb.length !== addon.size) return false;
+    return tmdb.every((s) => addon.get(s.season) === s.count);
+  }
+  function dayNumber(raw) {
+    if (!raw) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (!m) return null;
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / 864e5;
+  }
+  function datesClose(a, b) {
+    const da = dayNumber(a);
+    const db = dayNumber(b);
+    return da !== null && db !== null && Math.abs(da - db) <= 1;
+  }
+  function normalizeName(raw) {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed || GENERIC_NAME.test(trimmed)) return null;
+    const norm2 = trimmed.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "");
+    return norm2.length >= 3 ? norm2 : null;
+  }
+  function namesMatch(a, b) {
+    const na = normalizeName(a);
+    const nb = normalizeName(b);
+    return na !== null && na === nb;
+  }
+  function absoluteEpisodeIndex(tmdbSeasons, season, episode) {
+    const seasons = regularSeasons(tmdbSeasons);
+    const own = seasons.find((s) => s.season === season);
+    if (!own || episode < 1) return null;
+    const before = seasons.filter((s) => s.season < season).reduce((sum, s) => sum + s.count, 0);
+    if (episode <= own.count) return before + episode;
+    if (episode > before && episode <= before + own.count) return episode;
+    return null;
+  }
+  function mapTmdbEpisodeToAddon(tmdbSeasons, target2, videos) {
+    const list = regularVideos(videos);
+    if (list.length === 0) return null;
+    const ref = (v) => ({ season: v.season, episode: v.episode });
+    const hasName = normalizeName(target2.name) !== null;
+    const hasEvidence = Boolean(dayNumber(target2.airDate) !== null || hasName);
+    const exact = list.find((v) => v.season === target2.season && v.episode === target2.episode) ?? null;
+    if (exact && (!hasEvidence || datesClose(exact.released, target2.airDate) || namesMatch(exact.name, target2.name))) {
+      return ref(exact);
+    }
+    const abs = absoluteEpisodeIndex(tmdbSeasons, target2.season, target2.episode);
+    const indexed = list.map((v, i) => ({ v, i }));
+    if (dayNumber(target2.airDate) !== null) {
+      let candidates = indexed.filter(({ v }) => datesClose(v.released, target2.airDate));
+      if (candidates.length > 1 && hasName) {
+        const named = candidates.filter(({ v }) => namesMatch(v.name, target2.name));
+        if (named.length >= 1) candidates = named;
+      }
+      if (candidates.length === 1) return ref(candidates[0].v);
+      if (candidates.length > 1) {
+        if (abs === null) return null;
+        const ranked = candidates.map((c) => ({ ...c, dist: Math.abs(c.i - (abs - 1)) })).sort((a, b) => a.dist - b.dist);
+        if (ranked.length > 1 && ranked[0].dist === ranked[1].dist) return null;
+        return ref(ranked[0].v);
+      }
+    }
+    if (hasName) {
+      const named = list.filter((v) => namesMatch(v.name, target2.name));
+      if (named.length === 1) return ref(named[0]);
+    }
+    return null;
+  }
+  async function defaultFetchJson(url, timeoutMs) {
+    const controller2 = new AbortController();
+    const timer5 = setTimeout(() => controller2.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller2.signal });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } finally {
+      clearTimeout(timer5);
+    }
+  }
+  function defaultStorage() {
+    try {
+      return typeof window !== "undefined" ? window.localStorage : null;
+    } catch {
+      return null;
+    }
+  }
+  function defaultLog(line2) {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(line2)}`).catch(() => {
+    });
+  }
+  function defaultDeps() {
+    return { fetchJson: defaultFetchJson, now: () => Date.now(), storage: defaultStorage(), log: defaultLog };
+  }
+  function readStore(deps2) {
+    try {
+      const raw = deps2.storage?.getItem(STORE_KEY);
+      const parsed2 = raw ? JSON.parse(raw) : null;
+      return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
+    } catch {
+      return {};
+    }
+  }
+  function writeStore(deps2, store3) {
+    try {
+      const entries2 = Object.entries(store3).sort((a, b) => b[1].at - a[1].at).slice(0, MAX_SERIES);
+      deps2.storage?.setItem(STORE_KEY, JSON.stringify(Object.fromEntries(entries2)));
+    } catch {
+    }
+  }
+  function updateSeries(deps2, imdbId, change) {
+    const store3 = readStore(deps2);
+    store3[imdbId] = change(store3[imdbId]);
+    writeStore(deps2, store3);
+  }
+  function asNumber(value) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+  function parseVideos(payload) {
+    const meta = payload?.meta;
+    const videos = Array.isArray(meta?.videos) ? meta.videos : [];
+    const out = [];
+    for (const v of videos) {
+      const season = asNumber(v.season);
+      const episode = asNumber(v.episode) ?? asNumber(v.number);
+      if (season === null || episode === null) continue;
+      const released = typeof v.released === "string" ? v.released : typeof v.firstAired === "string" ? v.firstAired : null;
+      const name = typeof v.name === "string" ? v.name : typeof v.title === "string" ? v.title : null;
+      out.push({ season, episode, released, name });
+    }
+    return out;
+  }
+  function parseSeasons(payload) {
+    const seasons = payload?.seasons;
+    if (!Array.isArray(seasons)) return [];
+    return seasons.flatMap((s) => {
+      const season = asNumber(s.season_number);
+      const count = asNumber(s.episode_count);
+      return season === null || count === null ? [] : [{ season, count }];
+    });
+  }
+  function loadSeries(imdbId, deps2) {
+    const cached2 = seriesMemo.get(imdbId);
+    if (cached2 && deps2.now() - cached2.at < cached2.ttl) return cached2.promise;
+    const promise = (async () => {
+      const tmdbPart = (async () => {
+        const found = await deps2.fetchJson(`/api/tmdb/find?imdb=${encodeURIComponent(imdbId)}&type=tv`, FETCH_TIMEOUT_MS);
+        const tmdbId = found && (typeof found.tmdbId === "string" || typeof found.tmdbId === "number") ? String(found.tmdbId) : null;
+        if (!tmdbId) return null;
+        const info = await deps2.fetchJson(`/api/tv-info?tmdbId=${encodeURIComponent(tmdbId)}`, FETCH_TIMEOUT_MS);
+        return { tmdbId, seasons: parseSeasons(info) };
+      })();
+      const [tmdb, meta] = await Promise.all([
+        tmdbPart,
+        deps2.fetchJson(`${CINEMETA_META}${encodeURIComponent(imdbId)}.json`, FETCH_TIMEOUT_MS)
+      ]);
+      if (!tmdb) return null;
+      return { ...tmdb, videos: parseVideos(meta) };
+    })();
+    const entry = { at: deps2.now(), ttl: SERIES_MEMO_MS, promise };
+    seriesMemo.set(imdbId, entry);
+    promise.catch(() => {
+      entry.ttl = FAILURE_MEMO_MS;
+    });
+    return promise;
+  }
+  async function resolveUncached(imdbId, season, episode, deps2) {
+    const original = { season, episode };
+    const data = await loadSeries(imdbId, deps2);
+    if (!data) return original;
+    if (data.videos.length === 0) {
+      updateSeries(deps2, imdbId, () => ({ at: deps2.now(), same: true, ttl: NO_DATA_TTL_MS }));
+      return original;
+    }
+    if (seasonStructuresMatch(data.seasons, data.videos)) {
+      updateSeries(deps2, imdbId, () => ({ at: deps2.now(), same: true, ttl: SAME_TTL_MS }));
+      return original;
+    }
+    const seasonPayload = await deps2.fetchJson(
+      `/api/tv-info?tmdbId=${encodeURIComponent(data.tmdbId)}&season=${season}`,
+      FETCH_TIMEOUT_MS
+    );
+    const row = (seasonPayload?.episodes ?? []).find((e) => asNumber(e.episode_number) === episode);
+    const info = {
+      season,
+      episode,
+      airDate: typeof row?.air_date === "string" ? row.air_date : null,
+      name: typeof row?.name === "string" ? row.name : null
+    };
+    const mapped = mapTmdbEpisodeToAddon(data.seasons, info, data.videos) ?? original;
+    if (mapped.season !== season || mapped.episode !== episode) {
+      deps2.log(`[episode-remap] ${imdbId} tmdb=${season}:${episode} addon=${mapped.season}:${mapped.episode}`);
+    }
+    updateSeries(deps2, imdbId, (prev) => {
+      const eps = { ...prev && !prev.same ? prev.eps : {}, [`${season}:${episode}`]: [mapped.season, mapped.episode] };
+      const trimmed = Object.entries(eps).slice(-MAX_EPISODES_PER_SERIES);
+      return { at: deps2.now(), eps: Object.fromEntries(trimmed) };
+    });
+    return mapped;
+  }
+  async function addonEpisodeFor(imdbId, season, episode, options = {}) {
+    const deps2 = { ...defaultDeps(), ...options.deps };
+    const original = { season, episode };
+    if (!/^tt\d+$/.test(imdbId) || season < 1 || episode < 1) return original;
+    const stored = readStore(deps2)[imdbId];
+    if (stored) {
+      const age = deps2.now() - stored.at;
+      if (stored.same && age < (stored.ttl ?? SAME_TTL_MS)) return original;
+      const hit = stored.eps?.[`${season}:${episode}`];
+      if (hit && age < EPISODE_TTL_MS) return { season: hit[0], episode: hit[1] };
+    }
+    const key = `${imdbId}:${season}:${episode}`;
+    let pending5 = pendingEpisodes.get(key);
+    if (!pending5) {
+      pending5 = resolveUncached(imdbId, season, episode, deps2).catch(() => original);
+      pendingEpisodes.set(key, pending5);
+      void pending5.finally(() => pendingEpisodes.delete(key));
+    }
+    const budgetMs = options.budgetMs ?? ADDON_NUMBERING_BUDGET_MS;
+    let timer5;
+    const timeout = new Promise((resolve) => {
+      timer5 = setTimeout(() => resolve(original), budgetMs);
+    });
+    try {
+      return await Promise.race([pending5, timeout]);
+    } finally {
+      if (timer5) clearTimeout(timer5);
+    }
+  }
+  var GENERIC_NAME, CINEMETA_META, STORE_KEY, SAME_TTL_MS, NO_DATA_TTL_MS, EPISODE_TTL_MS, MAX_SERIES, MAX_EPISODES_PER_SERIES, SERIES_MEMO_MS, FAILURE_MEMO_MS, FETCH_TIMEOUT_MS, ADDON_NUMBERING_BUDGET_MS, seriesMemo, pendingEpisodes;
+  var init_addon_episode_numbering = __esm({
+    "lib/core-streams/addon-episode-numbering.ts"() {
+      "use strict";
+      "use client";
+      GENERIC_NAME = /^(episode|episodio|épisode|epizod|folge|avsnitt|afsnit|jakso|aflevering|odcinek|ep)\s*\d+$/i;
+      CINEMETA_META = "https://v3-cinemeta.strem.io/meta/series/";
+      STORE_KEY = "__addon_episode_numbering_v1";
+      SAME_TTL_MS = 7 * 24 * 36e5;
+      NO_DATA_TTL_MS = 24 * 36e5;
+      EPISODE_TTL_MS = 7 * 24 * 36e5;
+      MAX_SERIES = 150;
+      MAX_EPISODES_PER_SERIES = 80;
+      SERIES_MEMO_MS = 6 * 36e5;
+      FAILURE_MEMO_MS = 5 * 6e4;
+      FETCH_TIMEOUT_MS = 1e4;
+      ADDON_NUMBERING_BUDGET_MS = 4e3;
+      seriesMemo = /* @__PURE__ */ new Map();
+      pendingEpisodes = /* @__PURE__ */ new Map();
     }
   });
 
@@ -13502,9 +14081,15 @@
     inflight2.set(key, run3);
     return run3;
   }
-  async function lookupCoreStreamsUncached(target2, options = {}) {
+  async function toAddonNumbering(target2) {
+    if (target2.type !== "series" || target2.season == null || target2.episode == null) return target2;
+    const mapped = await addonEpisodeFor(target2.imdbId, target2.season, target2.episode);
+    return mapped.season === target2.season && mapped.episode === target2.episode ? target2 : { ...target2, ...mapped };
+  }
+  async function lookupCoreStreamsUncached(tmdbTarget, options = {}) {
     const addons = options.addons ?? getEnabledCoreStreamAddons();
     if (addons.length === 0) return { streams: [], reports: [] };
+    const target2 = await toAddonNumbering(tmdbTarget);
     const seen2 = /* @__PURE__ */ new Set();
     const merged = [];
     const reports = [];
@@ -13534,6 +14119,7 @@
       init_async_utils();
       init_stream_utils();
       init_mode();
+      init_addon_episode_numbering();
       cooldownUntil = /* @__PURE__ */ new Map();
       COOLDOWN_MS = 9e4;
       FRESH_SOURCE_MS = 10 * 6e4;
@@ -13580,9 +14166,9 @@
       return {};
     }
   }
-  function writeStreamCache(cache12) {
+  function writeStreamCache(cache13) {
     if (typeof window === "undefined") return;
-    setScopedStorageItem(STREAM_CACHE_KEY, JSON.stringify(cache12));
+    setScopedStorageItem(STREAM_CACHE_KEY, JSON.stringify(cache13));
   }
   function getCacheKey(imdbId, season, episode) {
     const filters = getStreamFilters();
@@ -13708,8 +14294,8 @@
   async function checkEpisodeHasStream(imdbId, season, episode) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey3 = getCacheKey(imdbId, season, episode);
-    const cache12 = readStreamCache();
-    const cached2 = cache12[cacheKey3];
+    const cache13 = readStreamCache();
+    const cached2 = cache13[cacheKey3];
     if (cached2 && Date.now() - cached2.checkedAt < streamCacheTtl(cached2.hasStream)) {
       return cached2.hasStream;
     }
@@ -13718,14 +14304,14 @@
     const existing = streamCheckInFlight.get(cacheKey3);
     if (existing) return existing;
     const filters = getStreamFilters();
-    const request = (async () => {
+    const request2 = (async () => {
       if (!providerLookupInProgress.has(cacheKey3)) {
         providerLookupInProgress.add(cacheKey3);
         try {
           const providerResult = await resolveEpisodeStreamAvailabilityFromProviders(imdbId, season, episode);
           if (providerResult === true) {
-            cache12[cacheKey3] = { checkedAt: Date.now(), hasStream: true };
-            writeStreamCache(cache12);
+            cache13[cacheKey3] = { checkedAt: Date.now(), hasStream: true };
+            writeStreamCache(cache13);
             return true;
           }
         } finally {
@@ -13733,15 +14319,15 @@
         }
       }
       if (coreLookupAnsweredEmpty({ imdbId, type: "series", season, episode })) {
-        cache12[cacheKey3] = { checkedAt: Date.now(), hasStream: false };
-        writeStreamCache(cache12);
+        cache13[cacheKey3] = { checkedAt: Date.now(), hasStream: false };
+        writeStreamCache(cache13);
         return false;
       }
       const streams = await fetchEpisodeStreamResults(imdbId, season, episode);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache12[cacheKey3] = { checkedAt: Date.now(), hasStream };
-      writeStreamCache(cache12);
+      cache13[cacheKey3] = { checkedAt: Date.now(), hasStream };
+      writeStreamCache(cache13);
       return hasStream;
     })().catch(() => {
       rememberFailedCheck(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS);
@@ -13749,8 +14335,8 @@
     }).finally(() => {
       streamCheckInFlight.delete(cacheKey3);
     });
-    streamCheckInFlight.set(cacheKey3, request);
-    return request;
+    streamCheckInFlight.set(cacheKey3, request2);
+    return request2;
   }
   var STREAM_CACHE_KEY, STREAM_CACHE_TTL_MS, STREAM_CACHE_POSITIVE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, streamCheckInFlight, providerLookupInProgress, FAILED_CHECK_RETRY_MS, failedCheckRetryAt;
   var init_series_watchlist_feed = __esm({
@@ -13791,9 +14377,9 @@
       return {};
     }
   }
-  function writeStreamCache2(cache12) {
+  function writeStreamCache2(cache13) {
     if (typeof window === "undefined") return;
-    setScopedStorageItem(STREAM_CACHE_KEY2, JSON.stringify(cache12));
+    setScopedStorageItem(STREAM_CACHE_KEY2, JSON.stringify(cache13));
   }
   function getCacheKey2(imdbId) {
     const filters = getStreamFilters();
@@ -13912,8 +14498,8 @@
   async function checkMovieHasStream(imdbId) {
     if (typeof window === "undefined" || !imdbId) return null;
     const cacheKey3 = getCacheKey2(imdbId);
-    const cache12 = readStreamCache2();
-    const cached2 = cache12[cacheKey3];
+    const cache13 = readStreamCache2();
+    const cached2 = cache13[cacheKey3];
     if (cached2 && Date.now() - cached2.checkedAt < streamCacheTtl2(cached2.hasStream)) {
       return cached2.hasStream;
     }
@@ -13922,14 +14508,14 @@
     const existing = movieStreamInFlight.get(cacheKey3);
     if (existing) return existing;
     const filters = getStreamFilters();
-    const request = (async () => {
+    const request2 = (async () => {
       if (!providerLookupInProgress2.has(cacheKey3)) {
         providerLookupInProgress2.add(cacheKey3);
         try {
           const providerResult = await resolveMovieStreamAvailabilityFromProviders(imdbId);
           if (providerResult !== null) {
-            cache12[cacheKey3] = { checkedAt: Date.now(), hasStream: providerResult };
-            writeStreamCache2(cache12);
+            cache13[cacheKey3] = { checkedAt: Date.now(), hasStream: providerResult };
+            writeStreamCache2(cache13);
             return providerResult;
           }
         } finally {
@@ -13939,8 +14525,8 @@
       const streams = await fetchStreamResults(imdbId);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache12[cacheKey3] = { checkedAt: Date.now(), hasStream };
-      writeStreamCache2(cache12);
+      cache13[cacheKey3] = { checkedAt: Date.now(), hasStream };
+      writeStreamCache2(cache13);
       return hasStream;
     })().catch(() => {
       rememberFailedCheck2(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS2);
@@ -13948,8 +14534,8 @@
     }).finally(() => {
       movieStreamInFlight.delete(cacheKey3);
     });
-    movieStreamInFlight.set(cacheKey3, request);
-    return request;
+    movieStreamInFlight.set(cacheKey3, request2);
+    return request2;
   }
   var STREAM_CACHE_KEY2, STREAM_CACHE_TTL_MS2, STREAM_CACHE_POSITIVE_TTL_MS2, movieStreamInFlight, providerLookupInProgress2, FAILED_CHECK_RETRY_MS2, failedCheckRetryAt2;
   var init_release_watchlist_feed = __esm({
@@ -14573,7 +15159,12 @@
   function getNextEpPreloadLeadSeconds() {
     return FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
   }
-  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
+  function getNextEpAfterLastSubSeconds() {
+    if (typeof window === "undefined") return DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+    const v = parseInt(getScopedStorageItem(KEY_AFTER_LAST_SUB) ?? "");
+    return NEXT_EP_AFTER_LAST_SUB_OPTIONS.includes(v) ? v : DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+  }
+  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS, KEY_AFTER_LAST_SUB, NEXT_EP_AFTER_LAST_SUB_OPTIONS, DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
   var init_autoplay_settings = __esm({
     "lib/autoplay-settings.ts"() {
       "use strict";
@@ -14585,6 +15176,9 @@
       KEY_ADVANCE_AT_OUTRO = "autoplay_advanceAtOutro";
       OUTRO_FIRED_KEY = "__lumioOutroFired";
       FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS = 300;
+      KEY_AFTER_LAST_SUB = "nextEpAfterLastSubSeconds";
+      NEXT_EP_AFTER_LAST_SUB_OPTIONS = [0, 10, 20, 45, 90];
+      DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS = 20;
     }
   });
 
@@ -14608,10 +15202,10 @@
   });
 
   // lib/zapp-runtime.ts
-  function requestZappLaunch(request = {}) {
+  function requestZappLaunch(request2 = {}) {
     for (const listener of listeners3) {
       try {
-        listener(request);
+        listener(request2);
       } catch {
       }
     }
@@ -14632,9 +15226,9 @@
   });
 
   // lib/open-item-runtime.ts
-  function requestOpenMediaItem(request) {
+  function requestOpenMediaItem(request2) {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(OPEN_ITEM_EVENT, { detail: request }));
+    window.dispatchEvent(new CustomEvent(OPEN_ITEM_EVENT, { detail: request2 }));
   }
   function onOpenMediaItemRequested(listener) {
     if (typeof window === "undefined") return () => {
@@ -14658,9 +15252,9 @@
       w.__lumioOpenItemListeners = Math.max(0, (w.__lumioOpenItemListeners ?? 1) - 1);
     };
   }
-  function requestPlaySeriesEpisode(request) {
+  function requestPlaySeriesEpisode(request2) {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(PLAY_EPISODE_EVENT, { detail: request }));
+    window.dispatchEvent(new CustomEvent(PLAY_EPISODE_EVENT, { detail: request2 }));
   }
   function onPlaySeriesEpisodeRequested(listener) {
     if (typeof window === "undefined") return () => {
@@ -14681,14 +15275,14 @@
     if (!holder.__lumioBrowsePageBus) holder.__lumioBrowsePageBus = { listeners: 0, pending: null };
     return holder.__lumioBrowsePageBus;
   }
-  function requestOpenBrowsePage(request) {
+  function requestOpenBrowsePage(request2) {
     if (typeof window === "undefined") return;
     const bus = browsePageBus();
     if (bus.listeners === 0) {
-      bus.pending = { request, at: Date.now() };
+      bus.pending = { request: request2, at: Date.now() };
       return;
     }
-    window.dispatchEvent(new CustomEvent(OPEN_BROWSE_PAGE_EVENT, { detail: request }));
+    window.dispatchEvent(new CustomEvent(OPEN_BROWSE_PAGE_EVENT, { detail: request2 }));
   }
   function onOpenBrowsePageRequested(listener) {
     if (typeof window === "undefined") return () => {
@@ -14973,6 +15567,14 @@
           /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z" }),
           /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
         ] });
+      case "incognito":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11h18" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 11l1.6-5.2A1.5 1.5 0 0 1 8 4.8h8a1.5 1.5 0 0 1 1.4 1L19 11" }),
+          /* @__PURE__ */ jsx("circle", { cx: "7.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("circle", { cx: "16.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("path", { d: "M10.3 16c1.1-.8 2.3-.8 3.4 0" })
+        ] });
       case "previews":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "8", height: "6", rx: "1" }),
@@ -15001,6 +15603,11 @@
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
           /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
         ] });
+      case "speak":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 10v4h3l4 3.5v-11L7 10z" }),
+          /* @__PURE__ */ jsx("path", { d: "M15 9.5a3.5 3.5 0 0 1 0 5M17.8 7a7 7 0 0 1 0 10" })
+        ] });
     }
   }
   function clipUploadIcon(cls) {
@@ -15011,8 +15618,8 @@
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
-      playerIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-      playerLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerIconButtonClass = (state3 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerLabelButtonClass = (state3 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     }
   });
 
@@ -15798,8 +16405,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners20 = this.listeners[event$1];
-              listeners20.splice(listeners20.indexOf(handler), 1);
+              const listeners21 = this.listeners[event$1];
+              listeners21.splice(listeners21.indexOf(handler), 1);
             };
           }
           return event2.listen(event$1, handler, {
@@ -15828,8 +16435,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners20 = this.listeners[event$1];
-              listeners20.splice(listeners20.indexOf(handler), 1);
+              const listeners21 = this.listeners[event$1];
+              listeners21.splice(listeners21.indexOf(handler), 1);
             };
           }
           return event2.once(event$1, handler, {
@@ -17058,10 +17665,10 @@
          *
          * @return A promise indicating the success or failure of the operation.
          */
-        async setProgressBar(state2) {
+        async setProgressBar(state3) {
           return core.invoke("plugin:window|set_progress_bar", {
             label: this.label,
-            value: state2
+            value: state3
           });
         }
         /**
@@ -17492,6 +18099,50 @@
     }
   });
 
+  // lib/incognito.ts
+  function state() {
+    const g = globalThis;
+    let s = g[GLOBAL_KEY];
+    if (!s) {
+      s = { on: false, since: null };
+      g[GLOBAL_KEY] = s;
+    }
+    return s;
+  }
+  function isIncognito() {
+    return state().on === true;
+  }
+  function incognitoBlocks(path) {
+    void path;
+    return isIncognito();
+  }
+  function setIncognito(on) {
+    const s = state();
+    if (s.on === on) return;
+    s.on = on;
+    s.since = on ? Date.now() : null;
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new CustomEvent(INCOGNITO_EVENT, { detail: { on } }));
+      } catch {
+      }
+    }
+  }
+  function onIncognitoChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = () => listener(isIncognito());
+    window.addEventListener(INCOGNITO_EVENT, handler);
+    return () => window.removeEventListener(INCOGNITO_EVENT, handler);
+  }
+  var INCOGNITO_EVENT, GLOBAL_KEY;
+  var init_incognito = __esm({
+    "lib/incognito.ts"() {
+      INCOGNITO_EVENT = "lumio-incognito-changed";
+      GLOBAL_KEY = "__lumioIncognitoSession";
+    }
+  });
+
   // lib/library/progress.ts
   function isLibraryStreamUrl(url) {
     return Boolean(url && /X-Plex-Token=|[?&]api_key=|MediaBrowser Token/i.test(url));
@@ -17507,6 +18158,7 @@
   }
   function reportLibraryProgress(entry) {
     if (!getLibraryMode() || !isLibraryStreamUrl(entry.url)) return;
+    if (incognitoBlocks("library-progress")) return;
     if (entry.type !== "movie" && entry.type !== "tv") return;
     const scopeKey = `${entry.id}:${entry.season ?? ""}:${entry.episode ?? ""}`;
     const customPct = getWatchedThresholdPct();
@@ -17542,6 +18194,7 @@
       init_mode();
       init_source_provider();
       init_watched_threshold();
+      init_incognito();
       REPORT_EVERY_MS = 15e3;
       TITLE_TTL_MS = 5 * 6e4;
       lastReport = /* @__PURE__ */ new Map();
@@ -17764,7 +18417,8 @@
       if (!kept.has(entryKey(entry.id, entry.season, entry.episode))) deleteContinueFrame(entry);
     }
   }
-  function saveStreamProgress(entry) {
+  function saveStreamProgress(entry, opts) {
+    if (!opts?.bypassIncognito && incognitoBlocks("progress")) return;
     const sanitizedEntry = sanitizeEntry(entry);
     const before = read7();
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
@@ -17795,6 +18449,7 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
+      init_incognito();
       init_progress_finished();
       EVENT11 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
@@ -17856,20 +18511,20 @@
       chosen = null;
       return deps2.defaultCoViewers?.() ?? [];
     }
-    function close() {
+    function close2() {
       if (open2 && open2.played >= MIN_PLAYED_S) deps2.persist({ ...open2 }, true);
       open2 = null;
       openKey = "";
     }
     function finish() {
-      close();
+      close2();
       chosen = null;
     }
     function tick2(input, final = false) {
       if (input.type === "audiobook" || !(input.duration > 0)) return;
       const nowMs = deps2.now();
       const key = viewingKey(input);
-      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close2();
       const iso = new Date(nowMs).toISOString();
       if (!open2) {
         open2 = {
@@ -18137,6 +18792,7 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
   function journalTick(input, final = false) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.tick(input, final);
     } catch (error) {
@@ -18158,6 +18814,7 @@
     }
   }
   function journalMarkAsleep(pos, atMs) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.markAsleep(pos, atMs);
     } catch (error) {
@@ -18171,6 +18828,7 @@
       init_recorder_core();
       init_store();
       init_weather();
+      init_incognito();
       LAST_COMPANIONS_KEY = "journal_last_companions_v1";
       last = null;
       if (typeof window !== "undefined") {
@@ -18257,22 +18915,350 @@
   function armSleepTimer(mode, nowMs) {
     return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
   }
-  function sleepTimerRemainingMs(state2, nowMs) {
-    if (typeof state2.mode !== "number" || state2.armedAtMs == null) return null;
-    return Math.max(0, state2.armedAtMs + state2.mode * 6e4 - nowMs);
+  function sleepTimerRemainingMs(state3, nowMs) {
+    if (typeof state3.mode !== "number" || state3.armedAtMs == null) return null;
+    return Math.max(0, state3.armedAtMs + state3.mode * 6e4 - nowMs);
   }
-  function sleepTimerDue(state2, c) {
-    if (state2.mode === "off" || state2.armedAtMs == null) return false;
-    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
-    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  function sleepTimerDue(state3, c) {
+    if (state3.mode === "off" || state3.armedAtMs == null) return false;
+    if (state3.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state3.armedAtMs >= state3.mode * 6e4;
   }
-  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  function sleepFadeLevel(state3, c, fadeMs = SLEEP_FADE_MS) {
+    if (state3.mode === "off" || state3.armedAtMs == null || fadeMs <= 0) return 1;
+    let remainingMs;
+    if (state3.mode === "end") {
+      if (c.ended) return 0;
+      if (!(c.duration > 0)) return 1;
+      remainingMs = (c.duration - SLEEP_END_MARGIN_S - c.position) * 1e3;
+    } else {
+      remainingMs = state3.armedAtMs + state3.mode * 6e4 - c.nowMs;
+    }
+    if (remainingMs >= fadeMs) return 1;
+    return Math.max(0, Math.min(1, remainingMs / fadeMs));
+  }
+  function sleepFadedVolume(userVolume, level) {
+    const l = Math.max(0, Math.min(1, level));
+    return Math.max(0, userVolume) * l * l;
+  }
+  function sleepDimOpacity(level) {
+    return (1 - Math.max(0, Math.min(1, level))) * SLEEP_DIM_MAX;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED, SLEEP_FADE_MS, SLEEP_DIM_MAX;
   var init_sleep_timer = __esm({
     "lib/sleep-timer.ts"() {
       SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
       SLEEP_PROMPT_SECONDS = 60;
       SLEEP_END_MARGIN_S = 20;
       DISARMED = { mode: "off", armedAtMs: null };
+      SLEEP_FADE_MS = 12e4;
+      SLEEP_DIM_MAX = 0.85;
+    }
+  });
+
+  // lib/spoken-subtitles.ts
+  function speechRateFor(rate) {
+    return rate === "fast" ? 1.35 : 1;
+  }
+  function cleanSpokenText(raw) {
+    if (!raw) return "";
+    const text2 = raw.replace(/\r\n?/g, "\n").replace(/\{\\[^}]*\}/g, "").replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'");
+    const lines2 = text2.split("\n").map((line2) => {
+      if (/[♪♫♬♩]/.test(line2) || /^\s*#.*#\s*$/.test(line2)) return "";
+      return line2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^\s*[-–—]+\s*/, "").replace(/^\s*[A-ZÅÄÖÜÉÈÑ][A-ZÅÄÖÜÉÈÑ0-9 .'’-]{1,24}:\s*/u, "").replace(/\s{2,}/g, " ").trim();
+    });
+    const spoken = lines2.filter((line2) => /[\p{L}\p{N}]/u.test(line2)).map((line2) => /[.!?…:;,]$/.test(line2) ? line2 : `${line2}.`).join(" ").trim();
+    return spoken;
+  }
+  function pickVoice(voices, language, uiLanguage) {
+    if (voices.length === 0) return null;
+    const base2 = (code) => (code ?? "").toLowerCase().replace("_", "-").split("-")[0];
+    const want = base2(language) || base2(uiLanguage);
+    if (!want) return voices.find((v) => v.default) ?? null;
+    const matching = voices.filter((v) => base2(v.lang) === want);
+    if (matching.length === 0) return null;
+    const ui = (uiLanguage ?? "").toLowerCase().replace("_", "-");
+    return matching.find((v) => ui && v.lang.toLowerCase().replace("_", "-") === ui) ?? matching.find((v) => v.default) ?? matching.find((v) => v.localService) ?? matching[0];
+  }
+  function rampLevel(from, to, elapsedMs, durationMs) {
+    if (durationMs <= 0 || elapsedMs >= durationMs) return to;
+    if (elapsedMs <= 0) return from;
+    return from + (to - from) * (elapsedMs / durationMs);
+  }
+  var DUCK_LEVEL, DUCK_ATTACK_MS, DUCK_RELEASE_MS, DUCK_HOLD_MS, SpokenSubtitleQueue;
+  var init_spoken_subtitles = __esm({
+    "lib/spoken-subtitles.ts"() {
+      DUCK_LEVEL = 0.35;
+      DUCK_ATTACK_MS = 180;
+      DUCK_RELEASE_MS = 600;
+      DUCK_HOLD_MS = 350;
+      SpokenSubtitleQueue = class {
+        constructor(engine, options = {}) {
+          __publicField(this, "engine");
+          __publicField(this, "now");
+          __publicField(this, "staleMs");
+          __publicField(this, "maxLagMs");
+          __publicField(this, "onSpeakingChange");
+          __publicField(this, "speaking", false);
+          __publicField(this, "startedAt", 0);
+          /** Bumped on every speak/cancel so a late onEnd from a cut line is ignored. */
+          __publicField(this, "generation", 0);
+          __publicField(this, "pending", null);
+          __publicField(this, "lastLine", "");
+          __publicField(this, "lang", null);
+          __publicField(this, "rate", 1);
+          this.engine = engine;
+          this.now = options.now ?? (() => Date.now());
+          this.staleMs = options.staleMs ?? 3e3;
+          this.maxLagMs = options.maxLagMs ?? 4500;
+          this.onSpeakingChange = options.onSpeakingChange;
+        }
+        configure(options) {
+          if (options.lang !== void 0) this.lang = options.lang;
+          if (options.rate !== void 0) this.rate = options.rate;
+        }
+        get isSpeaking() {
+          return this.speaking;
+        }
+        get pendingText() {
+          return this.pending?.text ?? null;
+        }
+        /** The subtitle on screen changed (raw text; '' or null = nothing on screen). */
+        line(raw) {
+          const text2 = cleanSpokenText(raw);
+          if (!text2) {
+            if (!(raw ?? "").trim()) this.lastLine = "";
+            return;
+          }
+          if (text2 === this.lastLine) return;
+          this.lastLine = text2;
+          const at = this.now();
+          if (!this.speaking) {
+            this.start(text2);
+            return;
+          }
+          if (at - this.startedAt >= this.maxLagMs) {
+            this.pending = null;
+            this.cut();
+            this.start(text2);
+            return;
+          }
+          this.pending = { text: text2, at };
+        }
+        /** Playback paused: stop talking, forget what was waiting. */
+        pause() {
+          this.pending = null;
+          if (this.speaking) this.cut();
+          this.setSpeaking(false);
+        }
+        /** Seek, track change or close: as pause, and the current line counts as new. */
+        reset() {
+          this.pause();
+          this.lastLine = "";
+        }
+        start(text2) {
+          const gen = ++this.generation;
+          this.startedAt = this.now();
+          this.setSpeaking(true);
+          this.engine.speak(text2, { lang: this.lang, rate: this.rate }, () => this.ended(gen));
+        }
+        cut() {
+          this.generation++;
+          this.engine.cancel();
+        }
+        ended(gen) {
+          if (gen !== this.generation) return;
+          const next = this.pending;
+          this.pending = null;
+          if (next && this.now() - next.at <= this.staleMs) {
+            this.start(next.text);
+            return;
+          }
+          this.setSpeaking(false);
+        }
+        setSpeaking(value) {
+          if (this.speaking === value) return;
+          this.speaking = value;
+          this.onSpeakingChange?.(value);
+        }
+      };
+    }
+  });
+
+  // lib/spoken-subtitles-engine.ts
+  function estimatedSpeechMs(text2, rate) {
+    const words2 = text2.split(/\s+/).filter(Boolean).length;
+    return Math.round(words2 / 2.7 * 1e3 / Math.max(0.5, rate)) + 1500;
+  }
+  function hasWebSpeech() {
+    return typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
+  }
+  function spokenSubtitlesSupported() {
+    return isAndroidTauriEnv || hasWebSpeech();
+  }
+  function createWebSpeechEngine(uiLanguage) {
+    const synth = window.speechSynthesis;
+    let voices = [];
+    const loadVoices = () => {
+      try {
+        voices = synth.getVoices();
+      } catch {
+        voices = [];
+      }
+    };
+    loadVoices();
+    try {
+      synth.addEventListener?.("voiceschanged", loadVoices);
+    } catch {
+    }
+    let current5 = null;
+    let finish = null;
+    let guard;
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        let done = false;
+        const end = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(guard);
+          if (finish === end) {
+            finish = null;
+            current5 = null;
+          }
+          onEnd();
+        };
+        if (voices.length === 0) loadVoices();
+        const utterance = new SpeechSynthesisUtterance(text2);
+        const voice = pickVoice(voices, lang, uiLanguage());
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
+        } else if (lang) utterance.lang = lang;
+        utterance.rate = rate;
+        utterance.onend = end;
+        utterance.onerror = end;
+        current5 = utterance;
+        finish = end;
+        guard = window.setTimeout(end, estimatedSpeechMs(text2, rate) + 4e3);
+        try {
+          synth.speak(utterance);
+        } catch {
+          end();
+        }
+      },
+      cancel() {
+        const pendingEnd = finish;
+        try {
+          synth.cancel();
+        } catch {
+        }
+        pendingEnd?.();
+      }
+    };
+  }
+  function createAndroidEngine() {
+    let seq3 = 0;
+    let poll;
+    let finish = null;
+    let currentId = null;
+    const stopPolling = () => {
+      if (poll !== void 0) {
+        window.clearInterval(poll);
+        poll = void 0;
+      }
+    };
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        const id = `s${++seq3}`;
+        let done = false;
+        const startedAt = Date.now();
+        const limit = estimatedSpeechMs(text2, rate) + 4e3;
+        const end = () => {
+          if (done) return;
+          done = true;
+          if (finish === end) {
+            finish = null;
+            stopPolling();
+          }
+          onEnd();
+        };
+        stopPolling();
+        finish = end;
+        currentId = id;
+        void np({ cmd: "ttsSpeak", id, text: text2, lang: lang ?? "", rate }, 3e3).then((res) => {
+          const ok = Boolean(res && typeof res === "object" && res.ok);
+          if (!ok) {
+            end();
+            return;
+          }
+          poll = window.setInterval(() => {
+            if (done) {
+              stopPolling();
+              return;
+            }
+            if (Date.now() - startedAt > limit) {
+              end();
+              return;
+            }
+            void np({ cmd: "ttsStatus" }, 1500).then((status) => {
+              const s = status;
+              if (!s || !s.speaking || s.id !== id) end();
+            });
+          }, 250);
+        });
+      },
+      cancel() {
+        const pendingEnd = finish;
+        stopPolling();
+        if (currentId) void np({ cmd: "ttsStop", id: currentId }, 1500);
+        currentId = null;
+        pendingEnd?.();
+      }
+    };
+  }
+  function createSpeechEngine(uiLanguage) {
+    if (typeof window === "undefined") return null;
+    if (isAndroidTauriEnv) return createAndroidEngine();
+    if (hasWebSpeech()) return createWebSpeechEngine(uiLanguage);
+    return null;
+  }
+  var init_spoken_subtitles_engine = __esm({
+    "lib/spoken-subtitles-engine.ts"() {
+      init_spoken_subtitles();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/spoken-subtitles-settings.ts
+  function emit2() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(SPOKEN_SUBTITLES_CHANGED_EVENT));
+  }
+  function getSpokenSubtitles() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_ENABLED3) === "1";
+  }
+  function setSpokenSubtitles(value) {
+    setScopedStorageItem(KEY_ENABLED3, value ? "1" : "0");
+    emit2();
+  }
+  function getSpokenSubtitlesRate() {
+    if (typeof window === "undefined") return "normal";
+    return getScopedStorageItem(KEY_RATE) === "fast" ? "fast" : "normal";
+  }
+  function onSpokenSubtitlesChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+  }
+  var KEY_ENABLED3, KEY_RATE, SPOKEN_SUBTITLES_CHANGED_EVENT;
+  var init_spoken_subtitles_settings = __esm({
+    "lib/spoken-subtitles-settings.ts"() {
+      init_profile_storage_shim();
+      KEY_ENABLED3 = "spokenSubtitles";
+      KEY_RATE = "spokenSubtitlesRate";
+      SPOKEN_SUBTITLES_CHANGED_EVENT = "lumio:spoken-subtitles-changed";
     }
   });
 
@@ -18420,10 +19406,10 @@
     if (mediaType === "audiobook") return null;
     const kind = mediaType === "tv" ? "tv" : "movie";
     const tmdb = tmdbId == null || tmdbId === "" ? null : String(tmdbId);
-    const base = mediaId && TITLE_ID.test(mediaId) ? mediaId : tmdb && /^\d+$/.test(tmdb) ? `${kind}-${tmdb}` : null;
-    if (!base) return null;
-    if (kind !== "tv") return base;
-    return season != null && episode != null ? `${base}:S${season}E${episode}` : null;
+    const base2 = mediaId && TITLE_ID.test(mediaId) ? mediaId : tmdb && /^\d+$/.test(tmdb) ? `${kind}-${tmdb}` : null;
+    if (!base2) return null;
+    if (kind !== "tv") return base2;
+    return season != null && episode != null ? `${base2}:S${season}E${episode}` : null;
   }
   var TITLE_ID;
   var init_barcode_id = __esm({
@@ -18488,7 +19474,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -18497,29 +19482,29 @@
   function createSamplerState() {
     return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0, pauseUntil: 0 };
   }
-  function recordSampleResult(state2, ok, now2 = Date.now()) {
-    state2.inFlight = false;
+  function recordSampleResult(state3, ok, now2 = Date.now()) {
+    state3.inFlight = false;
     if (ok) {
-      state2.failures = 0;
+      state3.failures = 0;
       return false;
     }
-    state2.failures += 1;
-    if (state2.failures < MAX_FAILED_SAMPLES) return false;
-    state2.failures = 0;
-    state2.pauseUntil = now2 + FAILURE_PAUSE_MS;
+    state3.failures += 1;
+    if (state3.failures < MAX_FAILED_SAMPLES) return false;
+    state3.failures = 0;
+    state3.pauseUntil = now2 + FAILURE_PAUSE_MS;
     return true;
   }
-  function decideSample(input, state2) {
+  function decideSample(input, state3) {
     const { now: now2, time, duration, columns, colors } = input;
-    const prev = state2.lastTime;
+    const prev = state3.lastTime;
     const jumped = !Number.isFinite(prev) || Math.abs(time - prev) > SEEK_JUMP_S;
     const advancing = Number.isFinite(prev) && time - prev > MIN_ADVANCE_S;
-    state2.lastTime = time;
+    state3.lastTime = time;
     if (jumped) {
-      state2.settleUntil = now2 + SETTLE_MS;
+      state3.settleUntil = now2 + SETTLE_MS;
       return -1;
     }
-    if (!advancing || state2.inFlight || now2 < state2.pauseUntil || now2 < state2.settleUntil) return -1;
+    if (!advancing || state3.inFlight || now2 < state3.pauseUntil || now2 < state3.settleUntil) return -1;
     const i = columnIndex(time, duration, columns);
     if (i < 0) return -1;
     if (colors && colors[i]) return -1;
@@ -18543,7 +19528,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit2() {
+  function emit3() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -18576,7 +19561,7 @@
       }
       loadedFor2 = profile;
       loading = null;
-      emit2();
+      emit3();
       return listBarcodes();
     })();
     return loading;
@@ -18612,6 +19597,7 @@
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
+    if (incognitoBlocks("barcode")) return;
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
     const current5 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
     const next = withColumn(current5, i, color, now2);
@@ -18619,7 +19605,7 @@
     items.set(meta.id, next);
     dirty.add(meta.id);
     schedule2(meta.id);
-    emit2();
+    emit3();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -18630,11 +19616,12 @@
     if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
+    if (incognitoBlocks("barcode")) return;
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit2();
+    emit3();
     await flushBarcode(id);
     emitSyncWorthy();
   }
@@ -18642,7 +19629,7 @@
     const b = items.get(id);
     if (!b) return;
     items.set(id, { ...b, meta });
-    emit2();
+    emit3();
     await put2(id);
   }
   function onBarcodesChanged(listener) {
@@ -18666,6 +19653,7 @@
       "use strict";
       init_profile_storage_shim();
       init_barcode_model();
+      init_incognito();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
@@ -18945,7 +19933,7 @@
     }
     const existing = inflight3.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
-    const request = (async () => {
+    const request2 = (async () => {
       const release2 = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
       try {
         if (isPluginDesktopHost()) {
@@ -18990,8 +19978,8 @@
     }).finally(() => {
       inflight3.delete(key);
     });
-    inflight3.set(key, request);
-    return withAbortSignal(request, options.signal);
+    inflight3.set(key, request2);
+    return withAbortSignal(request2, options.signal);
   }
   var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight3, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
   var init_api_json_cache = __esm({
@@ -19036,7 +20024,7 @@
     }
     const existing = inflight4.get(key);
     if (existing) return withAbortSignal2(existing, options.signal);
-    const request = fetchApiJsonCached(`/api/wiki?${key}`, {
+    const request2 = fetchApiJsonCached(`/api/wiki?${key}`, {
       timeoutMs: options.timeoutMs ?? 5200,
       retries: options.retries ?? 1,
       retryDelayMs: options.retryDelayMs ?? 260,
@@ -19053,8 +20041,8 @@
     }).finally(() => {
       inflight4.delete(key);
     });
-    inflight4.set(key, request);
-    return withAbortSignal2(request, options.signal);
+    inflight4.set(key, request2);
+    return withAbortSignal2(request2, options.signal);
   }
   var WIKI_TTL_MS, cache4, inflight4;
   var init_wiki_request_cache = __esm({
@@ -19223,7 +20211,7 @@
     useEffect(() => {
       if (!applies || !id) return;
       void loadBarcodes();
-      const state2 = createSamplerState();
+      const state3 = createSamplerState();
       const columns = settings.columns;
       const timer5 = setInterval(() => {
         const snap = args.snapshotRef.current;
@@ -19235,12 +20223,12 @@
           duration: snap.totalDuration,
           columns: n,
           colors: existing?.colors ?? null
-        }, state2);
+        }, state3);
         if (i < 0) return;
-        state2.inFlight = true;
+        state3.inFlight = true;
         const now2 = metaRef.current;
         void sampleColor(now2.engine, now2.videoRef?.current ?? null).then((color) => {
-          const pausing = recordSampleResult(state2, color != null);
+          const pausing = recordSampleResult(state3, color != null);
           if (!color) {
             if (pausing) {
               logDisabled(`${id}: ${MAX_FAILED_SAMPLES} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 paus ${FAILURE_PAUSE_MS / 1e3} s, sedan nytt f\xF6rs\xF6k`);
@@ -19418,36 +20406,36 @@
       init_barcode_strip();
       init_jsx_runtime_shim();
       CHIP_MS = 5e3;
-      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state2, duration, tv, hoverable }) {
+      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state3, duration, tv, hoverable }) {
         const { t } = useLang();
-        const [barcode, setBarcode] = useState(() => state2.id ? getBarcode(state2.id) : null);
+        const [barcode, setBarcode] = useState(() => state3.id ? getBarcode(state3.id) : null);
         const [unseen, setUnseen] = useState(() => getBarcodeSettings().unseenStyle);
         const [hover, setHover] = useState(null);
         const [chipUntil, setChipUntil] = useState(0);
         useEffect(() => {
-          if (!state2.id) return;
-          const id = state2.id;
-          const read12 = () => setBarcode(getBarcode(id));
-          read12();
-          return onBarcodesChanged(read12);
-        }, [state2.id]);
+          if (!state3.id) return;
+          const id = state3.id;
+          const read13 = () => setBarcode(getBarcode(id));
+          read13();
+          return onBarcodesChanged(read13);
+        }, [state3.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
-          if (!state2.status) return;
+          if (!state3.status) return;
           setChipUntil(Date.now() + CHIP_MS);
           const timer5 = setTimeout(() => setChipUntil(0), CHIP_MS);
           return () => clearTimeout(timer5);
-        }, [state2.status]);
+        }, [state3.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
-          if (!state2.id || !state2.recording) return null;
+          if (!state3.id || !state3.recording) return null;
           const columns = getBarcodeSettings().columns;
-          return { id: state2.id, tmdbId: null, title: "", year: null, posterUrl: null, duration, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
-        }, [barcode, state2.id, state2.recording, duration]);
-        if (!state2.showStrip || !shown) return null;
+          return { id: state3.id, tmdbId: null, title: "", year: null, posterUrl: null, duration, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
+        }, [barcode, state3.id, state3.recording, duration]);
+        if (!state3.showStrip || !shown) return null;
         const d = shown.duration > 0 ? shown.duration : duration;
         const hoverColor = hover != null ? shown.colors[columnIndex(hover * d, d, shown.columns)] : null;
-        const chipText = state2.status === "recording" ? t("barcodeRecording") : state2.status === "paused" ? t("barcodePaused") : state2.status === "off" ? t("barcodeOff") : null;
+        const chipText = state3.status === "recording" ? t("barcodeRecording") : state3.status === "paused" ? t("barcodePaused") : state3.status === "off" ? t("barcodeOff") : null;
         const onMove = (e) => {
           if (!hoverable) return;
           const r = e.currentTarget.getBoundingClientRect();
@@ -19741,11 +20729,11 @@
   function audioLanguageLabel(code, uiLang) {
     const normalized = normalizeLanguageCode(code);
     if (!normalized) return null;
-    const base = normalizeLanguageCode(normalized.split(/[-_]/)[0]) ?? normalized;
-    if (UNKNOWN_LANGUAGES.has(base)) return null;
+    const base2 = normalizeLanguageCode(normalized.split(/[-_]/)[0]) ?? normalized;
+    if (UNKNOWN_LANGUAGES.has(base2)) return null;
     try {
-      const name = new Intl.DisplayNames([uiLang], { type: "language" }).of(base);
-      if (!name || name.toLowerCase() === base) return null;
+      const name = new Intl.DisplayNames([uiLang], { type: "language" }).of(base2);
+      if (!name || name.toLowerCase() === base2) return null;
       return name.charAt(0).toLocaleUpperCase(uiLang) + name.slice(1);
     } catch {
       return null;
@@ -19891,7 +20879,7 @@
     return !entry || entry.genres.length === 0 || entry.imdbRating == null && entry.tmdbRating == null || entry.runtimeMinutes == null;
   }
   function schedulePlayerTitleMetaFetch(input, onUpdate, overrides = {}) {
-    const deps2 = { ...defaultDeps, ...overrides };
+    const deps2 = { ...defaultDeps2, ...overrides };
     const { kind, playbackStarted } = input;
     if (!playbackStarted || kind !== "movie" && kind !== "tv") return () => {
     };
@@ -19970,7 +20958,7 @@
       cancelIdle?.();
     };
   }
-  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners5;
+  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps2, attempted, listeners5;
   var init_player_title_meta = __esm({
     "lib/player-title-meta.ts"() {
       init_api_json_cache();
@@ -19982,7 +20970,7 @@
       imdbToTmdb = /* @__PURE__ */ new Map();
       PLAYER_META_FETCH_DELAY_MS = 5e3;
       PLAYER_META_RETRY_DELAY_MS = 6e4;
-      defaultDeps = {
+      defaultDeps2 = {
         fetchItem: async (kind, tmdbId) => {
           const data = await fetchApiJsonCached(
             `/api/item?tmdbId=${encodeURIComponent(tmdbId)}&type=${kind}`,
@@ -20204,6 +21192,7 @@
       init_session_host();
       init_lookup();
       init_prepare();
+      init_incognito();
       init_stream_utils();
       SLATE_MIN_BYTES = 256 * 1024;
       DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
@@ -20303,6 +21292,42 @@
     }
   });
 
+  // lib/playback-watched.ts
+  function markPlaybackEpisodeWatched(input) {
+    if (incognitoBlocks("watched")) return false;
+    setWatched(input.tmdbId, input.season, input.episode, true, { imdbId: input.imdbId ?? null });
+    removeStreamProgress(`tv-${input.tmdbId}`, input.season, input.episode);
+    return true;
+  }
+  function markPlaybackMovieWatched(entry) {
+    if (incognitoBlocks("watched")) return false;
+    setMovieWatched(entry, true);
+    return true;
+  }
+  var init_playback_watched = __esm({
+    "lib/playback-watched.ts"() {
+      "use client";
+      init_incognito();
+      init_watched_episodes();
+      init_watched_movies();
+      init_video_progress();
+    }
+  });
+
+  // lib/use-incognito.ts
+  function useIncognito() {
+    return useSyncExternalStore(subscribe2, isIncognito, () => false);
+  }
+  var subscribe2;
+  var init_use_incognito = __esm({
+    "lib/use-incognito.ts"() {
+      "use client";
+      init_react_shim();
+      init_incognito();
+      subscribe2 = (listener) => onIncognitoChanged(() => listener());
+    }
+  });
+
   // lib/trakt-scrobble.ts
   function identityKey(identity) {
     const id = identity.imdbId || `tmdb:${identity.tmdbId ?? ""}`;
@@ -20396,6 +21421,7 @@
     return `${event2.action}${event2.pulse ? "~" : ""}:${event2.tmdbId ?? event2.imdbId}:${event2.season ?? ""}:${event2.episode ?? ""}:${Math.round(event2.progress)}`;
   }
   async function scrobbleAll(action, identity, progressPercent, opts) {
+    if (incognitoBlocks("scrobble")) return;
     const event2 = buildTrackerEvent(action, identity, progressPercent, opts);
     const key = trackerEventKey(event2);
     const now2 = Date.now();
@@ -20423,9 +21449,203 @@
       init_plugin_registry();
       init_plugin_state();
       init_trakt_scrobble();
+      init_incognito();
       DUPLICATE_WINDOW_MS2 = 5e3;
       lastTrackerKey = "";
       lastTrackerAt = -Infinity;
+    }
+  });
+
+  // lib/learned-skip.ts
+  function classifySkip(start3, end, duration) {
+    if (!(duration > 0) || !Number.isFinite(start3) || !Number.isFinite(end)) return null;
+    if (end - start3 < MIN_SKIP_S) return null;
+    if (start3 < 0 || start3 > duration) return null;
+    if (start3 <= duration * START_REGION_FRACTION) return "start";
+    if (start3 >= duration * (1 - END_REGION_FRACTION)) return "end";
+    return null;
+  }
+  function round1(n) {
+    return Math.round(n * 10) / 10;
+  }
+  function recordSkip(store3, seriesId, obs, now2) {
+    if (!seriesId) return store3;
+    const prev = store3[seriesId]?.obs ?? [];
+    const kept = prev.filter((o) => !(o.season === obs.season && o.episode === obs.episode && o.region === obs.region));
+    const nextObs = [...kept, { ...obs, start: round1(obs.start), end: round1(obs.end), at: now2 }].slice(-MAX_OBS_PER_SERIES);
+    const next = { ...store3, [seriesId]: { obs: nextObs, at: now2 } };
+    return capSeries(next);
+  }
+  function forgetSeries(store3, seriesId) {
+    if (!(seriesId in store3)) return store3;
+    const next = { ...store3 };
+    delete next[seriesId];
+    return next;
+  }
+  function capSeries(store3) {
+    const ids = Object.keys(store3);
+    if (ids.length <= MAX_SERIES2) return store3;
+    const keep = ids.sort((a, b) => (store3[b].at ?? 0) - (store3[a].at ?? 0)).slice(0, MAX_SERIES2);
+    const next = {};
+    for (const id of keep) next[id] = store3[id];
+    return next;
+  }
+  function isNextEpisode(a, b) {
+    if (b.season === a.season) return b.episode === a.episode + 1;
+    return b.season === a.season + 1 && b.episode === 1;
+  }
+  function close(a, b) {
+    return Math.abs(a.start - b.start) <= MATCH_TOLERANCE_S && Math.abs(a.end - b.end) <= MATCH_TOLERANCE_S;
+  }
+  function median(values) {
+    const s = [...values].sort((x, y) => x - y);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+  function learnedInterval(series, region) {
+    if (!series) return null;
+    const inRegion = series.obs.filter((o) => o.region === region).sort((a, b) => a.season - b.season || a.episode - b.episode);
+    if (inRegion.length < LEARN_STREAK) return null;
+    const run3 = inRegion.slice(-LEARN_STREAK);
+    for (let i = 1; i < run3.length; i++) {
+      if (!isNextEpisode(run3[i - 1], run3[i])) return null;
+    }
+    for (let i = 0; i < run3.length; i++) {
+      for (let j = i + 1; j < run3.length; j++) {
+        if (!close(run3[i], run3[j])) return null;
+      }
+    }
+    return { start: median(run3.map((o) => o.start)), end: median(run3.map((o) => o.end)) };
+  }
+  function usableLearnedSkip(learned, region, ctx) {
+    if (!learned) return null;
+    if (region === "start" && ctx.intro) return null;
+    if (region === "end" && ctx.outro) return null;
+    for (const seg of [ctx.intro, ctx.outro]) {
+      if (seg && learned.start < seg.end && seg.start < learned.end) return null;
+    }
+    if (ctx.duration > 0) {
+      if (learned.start >= ctx.duration - 1) return null;
+      const end = Math.min(learned.end, ctx.duration - 0.5);
+      if (end - learned.start < MIN_SKIP_S / 2) return null;
+      return { start: learned.start, end };
+    }
+    return learned;
+  }
+  function trackSeekSample(state3, pos, wall, playing2) {
+    if (!Number.isFinite(pos)) return { state: state3, done: null };
+    if (state3.lastPos == null || state3.lastWall == null) {
+      return { state: { ...state3, lastPos: pos, lastWall: wall, steadySince: wall }, done: null };
+    }
+    const elapsedS = Math.max(0, (wall - state3.lastWall) / 1e3);
+    const expected = playing2 ? elapsedS * 2 : 0;
+    const delta = pos - state3.lastPos;
+    let pending5 = state3.pending;
+    let steadySince = state3.steadySince;
+    let done = null;
+    const inWindow = pending5 != null && wall - pending5.lastJumpWall <= MERGE_WINDOW_MS;
+    if (delta > expected + JUMP_SLACK_S) {
+      if (pending5 && inWindow) {
+        pending5 = { ...pending5, end: pos, lastJumpWall: wall };
+      } else {
+        if (pending5) done = { start: pending5.start, end: pending5.end };
+        const steady = steadySince != null && wall - steadySince >= STEADY_MS;
+        pending5 = steady ? { start: state3.lastPos, end: pos, lastJumpWall: wall } : null;
+      }
+      steadySince = wall;
+    } else if (delta < -JUMP_SLACK_S) {
+      if (pending5 && inWindow) {
+        pending5 = pos <= pending5.start + 1 ? null : { ...pending5, end: pos, lastJumpWall: wall };
+      } else if (pending5) {
+        done = { start: pending5.start, end: pending5.end };
+        pending5 = null;
+      }
+      steadySince = wall;
+    } else if (pending5 && !inWindow) {
+      done = { start: pending5.start, end: pending5.end };
+      pending5 = null;
+    }
+    return { state: { lastPos: pos, lastWall: wall, steadySince, pending: pending5 }, done };
+  }
+  function flushSeekTracker(state3) {
+    return state3.pending ? { start: state3.pending.start, end: state3.pending.end } : null;
+  }
+  var START_REGION_FRACTION, END_REGION_FRACTION, MIN_SKIP_S, MATCH_TOLERANCE_S, LEARN_STREAK, MAX_OBS_PER_SERIES, MAX_SERIES2, MERGE_WINDOW_MS, STEADY_MS, JUMP_SLACK_S, SEEK_TRACKER_INITIAL;
+  var init_learned_skip = __esm({
+    "lib/learned-skip.ts"() {
+      START_REGION_FRACTION = 0.25;
+      END_REGION_FRACTION = 0.15;
+      MIN_SKIP_S = 15;
+      MATCH_TOLERANCE_S = 5;
+      LEARN_STREAK = 3;
+      MAX_OBS_PER_SERIES = 8;
+      MAX_SERIES2 = 60;
+      MERGE_WINDOW_MS = 4e3;
+      STEADY_MS = 2e3;
+      JUMP_SLACK_S = 4;
+      SEEK_TRACKER_INITIAL = { lastPos: null, lastWall: null, steadySince: null, pending: null };
+    }
+  });
+
+  // lib/learned-skip-store.ts
+  function read8() {
+    try {
+      const raw = getScopedStorageItem(KEY15);
+      const parsed2 = raw ? JSON.parse(raw) : null;
+      return parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2) ? parsed2 : {};
+    } catch {
+      return {};
+    }
+  }
+  function write6(store3) {
+    try {
+      if (Object.keys(store3).length === 0) setScopedStorageItem(KEY15, "{}");
+      else setScopedStorageItem(KEY15, JSON.stringify(store3));
+    } catch {
+    }
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function getLearnSkipsEnabled() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_ENABLED4) !== "0";
+  }
+  function setLearnSkipsEnabled(on) {
+    setScopedStorageItem(KEY_ENABLED4, on ? "1" : "0");
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function recordLearnedSkip(seriesId, obs) {
+    if (!seriesId || !getLearnSkipsEnabled()) return;
+    write6(recordSkip(read8(), seriesId, obs, Date.now()));
+  }
+  function getLearnedSkips(seriesId) {
+    if (!seriesId || !getLearnSkipsEnabled()) return { start: null, end: null };
+    const series = read8()[seriesId];
+    return { start: learnedInterval(series, "start"), end: learnedInterval(series, "end") };
+  }
+  function hasLearnedSkipData(seriesId) {
+    return Boolean(seriesId && (read8()[seriesId]?.obs.length ?? 0) > 0);
+  }
+  function forgetLearnedSkips(seriesId) {
+    if (!seriesId) return;
+    const store3 = read8();
+    if (!(seriesId in store3)) return;
+    write6(forgetSeries(store3, seriesId));
+  }
+  function onLearnedSkipsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(LEARNED_SKIPS_EVENT, listener);
+    return () => window.removeEventListener(LEARNED_SKIPS_EVENT, listener);
+  }
+  var KEY15, KEY_ENABLED4, LEARNED_SKIPS_EVENT;
+  var init_learned_skip_store = __esm({
+    "lib/learned-skip-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_learned_skip();
+      KEY15 = "learned_skips_v1";
+      KEY_ENABLED4 = "playback_learnSkips";
+      LEARNED_SKIPS_EVENT = "lumio-learned-skips-changed";
     }
   });
 
@@ -20452,7 +21672,7 @@
   function getStoredVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY15);
+      const raw = getScopedStorageItem(KEY16);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed2 = JSON.parse(raw);
       const clamp5 = (v, lo, hi, dflt) => {
@@ -20471,7 +21691,7 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY15, JSON.stringify(tuning));
+    setScopedStorageItem(KEY16, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onVideoTuningChanged(listener) {
@@ -20537,7 +21757,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY15, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY16, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -20550,7 +21770,7 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY15 = "video_tuning";
+      KEY16 = "video_tuning";
       EVENT13 = "lumio-video-tuning-changed";
       filmTuning = null;
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
@@ -20571,7 +21791,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY16);
+      const raw = getScopedStorageItem(KEY17);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed2 = JSON.parse(raw);
       return {
@@ -20585,7 +21805,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY16, JSON.stringify(tuning));
+    setScopedStorageItem(KEY17, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
   }
   function onAudioTuningChanged(listener) {
@@ -20601,7 +21821,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY16, EVENT14;
+  var DEFAULT_AUDIO_TUNING, KEY17, EVENT14;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -20612,7 +21832,7 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY16 = "audio_tuning";
+      KEY17 = "audio_tuning";
       EVENT14 = "lumio-audio-tuning-changed";
     }
   });
@@ -20818,7 +22038,7 @@
             /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("advCustomShadersTitle") }),
             shaderStatusText ? /* @__PURE__ */ jsx("div", { "data-shader-status": "", className: "px-3 pb-1.5 text-[12px] text-slate-400", children: shaderStatusText }) : null,
             customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[12px] text-slate-500", children: t("rtShadersEmpty") }) : null,
-            (customShaders.files ?? []).map((file) => toggle(`shader:${file.name}`, file.name, customShaders.selected.includes(file.name), () => customShaders.toggle(file.name))),
+            (customShaders.files ?? []).map((file2) => toggle(`shader:${file2.name}`, file2.name, customShaders.selected.includes(file2.name), () => customShaders.toggle(file2.name))),
             /* @__PURE__ */ jsx("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: customShaders.openFolder, children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("advCustomShadersOpen") }) })
           ] }) : null
         ] }),
@@ -20982,17 +22202,17 @@
               shaderStatusText ? /* @__PURE__ */ jsx("p", { "data-shader-status": "", className: `mb-2 text-[10.5px] ${shaders?.status && (shaders.status.anime4k || shaders.status.custom > 0) ? "text-accent-200" : "text-slate-400"}`, children: shaderStatusText }) : null,
               /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
                 customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-[10.5px] text-slate-500", children: t("rtShadersEmpty") }) : null,
-                (customShaders.files ?? []).map((file) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file.name, children: file.name }),
+                (customShaders.files ?? []).map((file2) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file2.name, children: file2.name }),
                   /* @__PURE__ */ jsx(
                     MiniToggle,
                     {
                       tv: isTv,
-                      checked: customShaders.selected.includes(file.name),
-                      onChange: () => customShaders.toggle(file.name)
+                      checked: customShaders.selected.includes(file2.name),
+                      onChange: () => customShaders.toggle(file2.name)
                     }
                   )
-                ] }, file.name)),
+                ] }, file2.name)),
                 /* @__PURE__ */ jsx(
                   "button",
                   {
@@ -21463,7 +22683,7 @@
     const headers = {};
     if (spotifyClientId) headers["x-lumio-spotify-client-id"] = spotifyClientId;
     if (spotifyClientSecret) headers["x-lumio-spotify-client-secret"] = spotifyClientSecret;
-    const request = (async () => {
+    const request2 = (async () => {
       try {
         const value = await fetchJsonWithRetry(`/api/soundtrack?${params.toString()}`, {
           ...spotifyClientId || spotifyClientSecret ? { headers } : {}
@@ -21482,10 +22702,10 @@
       }
     })().finally(() => {
       const active5 = inflightByKey.get(key);
-      if (active5 === request) inflightByKey.delete(key);
+      if (active5 === request2) inflightByKey.delete(key);
     });
-    inflightByKey.set(key, request);
-    return request;
+    inflightByKey.set(key, request2);
+    return request2;
   }
   var SOUNDTRACK_TTL_MS, cachedByKey, inflightByKey;
   var init_soundtrack_request_cache = __esm({
@@ -21523,12 +22743,12 @@
       await withAbort(running2, signal);
       return;
     }
-    const request = fn().catch(() => {
+    const request2 = fn().catch(() => {
     }).finally(() => {
       inflight6.delete(key);
     });
-    inflight6.set(key, request);
-    await withAbort(request, signal);
+    inflight6.set(key, request2);
+    await withAbort(request2, signal);
     cache6.set(key, Date.now() + PREFETCH_TTL_MS);
     if (cache6.size > 500) {
       const now3 = Date.now();
@@ -21711,7 +22931,7 @@
       let lastError = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const controller2 = new AbortController();
-        const timeout = setTimeout(() => controller2.abort(), FETCH_TIMEOUT_MS);
+        const timeout = setTimeout(() => controller2.abort(), FETCH_TIMEOUT_MS2);
         try {
           const res = await fetch(url, { cache: "no-store", signal: controller2.signal });
           if (!res.ok) {
@@ -21734,7 +22954,7 @@
       }
       throw lastError ?? new Error("Subtitle search failed");
     };
-    const request = (async () => {
+    const request2 = (async () => {
       const raw = await fetchOnce();
       const subtitles = raw.map((s) => ({
         language: LANG3_TO_22[s.lang] ?? s.lang,
@@ -21753,16 +22973,16 @@
     })().finally(() => {
       inflight7.delete(cacheKey3);
     });
-    inflight7.set(cacheKey3, request);
-    return request;
+    inflight7.set(cacheKey3, request2);
+    return request2;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS2, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
       NON_EMPTY_CACHE_TTL_MS = 2e4;
       EMPTY_CACHE_TTL_MS = 3e3;
-      FETCH_TIMEOUT_MS = 4800;
+      FETCH_TIMEOUT_MS2 = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
       inflight7 = /* @__PURE__ */ new Map();
@@ -21863,7 +23083,8 @@
     onCreditClick,
     defaultExpanded = false,
     className = "",
-    variant = "standalone"
+    variant = "standalone",
+    seenCredits
   }) {
     const { t } = useLang();
     const [person, setPerson] = useState(null);
@@ -22011,6 +23232,16 @@
               person.alsoKnownAs.join(", ")
             ] }) : null
           ] }),
+          seenCredits && seenCredits.length > 0 ? /* @__PURE__ */ jsx(
+            CreditRail,
+            {
+              credits: seenCredits,
+              onCreditClick,
+              movieLabel,
+              seriesLabel,
+              title: t("personSeenIn")
+            }
+          ) : null,
           /* @__PURE__ */ jsx(
             CreditRail,
             {
@@ -22474,7 +23705,7 @@
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
-    const [state2, setState] = useState("loading");
+    const [state3, setState] = useState("loading");
     const [result2, setResult] = useState(null);
     const [errorKind, setErrorKind] = useState(null);
     useEffect(() => {
@@ -22537,7 +23768,7 @@
       const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure2) : null;
       ro?.observe(el);
       return () => ro?.disconnect();
-    }, [isTv, state2]);
+    }, [isTv, state3]);
     const wanted = 1.25 / (tvSceneScale() || 1);
     const embedZoom = isTv && embedBox && embedBox.w > 0 ? Math.min(wanted, embedBox.w / SPOTIFY_MIN_LAYOUT_PX) : 1;
     const embedZoomStyle = !isTv || !embedBox ? {} : {
@@ -22571,13 +23802,13 @@
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state2 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state2 !== "embed" ? { "data-scroll": "" } : {}, children: [
-            state2 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
-            state2 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
+          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state3 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state3 !== "embed" ? { "data-scroll": "" } : {}, children: [
+            state3 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
+            state3 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               t("soundtrackLoadError"),
               errorKind === "timeout" ? " (timeout)" : ""
             ] }),
-            state2 === "fallback" && result2 && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
+            state3 === "fallback" && result2 && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
               /* @__PURE__ */ jsx("svg", { className: "h-10 w-10 text-green-400", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" }) }),
               /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("noSoundtrackFound") }),
               /* @__PURE__ */ jsxs(
@@ -22595,7 +23826,7 @@
                 }
               )
             ] }),
-            state2 === "embed" && result2?.embedUrl && /**
+            state3 === "embed" && result2?.embedUrl && /**
              * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
              *
              * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
@@ -23011,14 +24242,14 @@
     const m = mode === "end" ? "end" : Number(mode);
     return armSleepTimer(m, nowMs);
   }
-  function couchSleep(state2, nowMs, pos, dur) {
-    if (state2.mode === "off") return { mode: "off" };
-    if (state2.mode === "end") {
+  function couchSleep(state3, nowMs, pos, dur) {
+    if (state3.mode === "off") return { mode: "off" };
+    if (state3.mode === "end") {
       const left = Math.max(0, dur - pos - SLEEP_END_MARGIN_S);
       return { mode: "end", endsAt: nowMs + left * 1e3 };
     }
-    const remaining2 = sleepTimerRemainingMs(state2, nowMs);
-    const mode = String(state2.mode);
+    const remaining2 = sleepTimerRemainingMs(state3, nowMs);
+    const mode = String(state3.mode);
     return remaining2 == null ? { mode } : { mode, endsAt: nowMs + remaining2 };
   }
   function nextEpisodeOf(ep) {
@@ -23050,8 +24281,8 @@
     if (!text2) return buffer;
     const last2 = buffer[buffer.length - 1];
     if (last2 && last2.text === text2) return buffer;
-    const base = last2 && last2.start > cue.start ? [] : buffer;
-    const kept = base.filter((c) => c.start >= now2 - SAID_WINDOW_S);
+    const base2 = last2 && last2.start > cue.start ? [] : buffer;
+    const kept = base2.filter((c) => c.start >= now2 - SAID_WINDOW_S);
     kept.push({ text: text2, start: cue.start });
     return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
   }
@@ -23085,6 +24316,7 @@
 
   // lib/continue-frame-capture.ts
   async function captureContinueFrame(engine, ref, video) {
+    if (incognitoBlocks("continue-frame")) return false;
     const key = continueFrameKey(ref);
     try {
       if (engine === "mpv") {
@@ -23117,6 +24349,7 @@
       init_continue_frames();
       init_tauri_mpv();
       init_tauri_native_player();
+      init_incognito();
     }
   });
 
@@ -23249,7 +24482,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY17);
+      const raw = getScopedStorageItem(KEY18);
       if (!raw) return {};
       const parsed2 = JSON.parse(raw);
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
@@ -23278,11 +24511,11 @@
   function hasCommandModifier(e) {
     return e.metaKey || e.ctrlKey || e.altKey;
   }
-  var KEY17, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
+  var KEY18, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY17 = "keyboard_shortcuts";
+      KEY18 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -23306,28 +24539,90 @@
     }
   });
 
+  // lib/credits-from-subs.ts
+  function stripCueMarkup(text2) {
+    return text2.replace(/\{\\[^}]*\}/g, " ").replace(/<[^>]+>/g, " ").replace(/\\[Nn]/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+  }
+  function isTailNoiseCue(rawText) {
+    const text2 = stripCueMarkup(rawText);
+    if (!text2) return true;
+    if (MUSIC_RE.test(text2)) return true;
+    if (URL_RE.test(text2)) return true;
+    if (CREDIT_RE.test(text2)) return true;
+    const spoken = text2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^[-–—\s]*[A-ZÅÄÖÜ0-9 .'-]{2,}:\s*/u, "").replace(/[-–—.…!?,\s]+/g, " ").trim();
+    if (!spoken) return true;
+    if (END_CARD_RE.test(spoken)) return true;
+    return false;
+  }
+  function estimateCreditsStartFromCues(cues, durationSeconds, options = {}) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds < MIN_DURATION_SECONDS) return { start: null, reason: "short" };
+    const offset = Number.isFinite(options.offsetSeconds) ? options.offsetSeconds : 0;
+    const timed = cues.filter((c) => Number.isFinite(c.start) && Number.isFinite(c.end) && c.end > c.start).map((c) => ({ start: c.start + offset, end: c.end + offset, text: c.text ?? "" })).filter((c) => c.end > 0).sort((a, b) => a.start - b.start || a.end - b.end);
+    if (timed.length === 0) return { start: null, reason: "no_cues" };
+    const dialogueCount = timed.reduce((n, c) => n + (isTailNoiseCue(c.text) ? 0 : 1), 0);
+    if (dialogueCount < MIN_DIALOGUE_CUES || dialogueCount < durationSeconds / 60 * MIN_CUES_PER_MINUTE) {
+      return { start: null, reason: "sparse" };
+    }
+    const lastEnd = timed.reduce((m, c) => Math.max(m, c.end), 0);
+    if (lastEnd > durationSeconds + PAST_END_TOLERANCE) return { start: null, reason: "past_end" };
+    const noiseFloor = durationSeconds * (1 - NOISE_SKIP_FRACTION);
+    let lastDialogueEnd = null;
+    const byEnd = [...timed].sort((a, b) => b.end - a.end);
+    for (const cue of byEnd) {
+      if (cue.end >= noiseFloor && isTailNoiseCue(cue.text)) continue;
+      lastDialogueEnd = cue.end;
+      break;
+    }
+    if (lastDialogueEnd == null) return { start: null, reason: "no_dialogue" };
+    if (lastDialogueEnd < durationSeconds * (1 - TAIL_FRACTION)) return { start: null, reason: "too_early" };
+    const delay = Number.isFinite(options.delayAfterLastLineSeconds) && options.delayAfterLastLineSeconds >= 0 ? options.delayAfterLastLineSeconds : DEFAULT_DELAY_AFTER_LAST_LINE;
+    const candidate = lastDialogueEnd + delay;
+    if (durationSeconds - candidate < MIN_SECONDS_BEFORE_END) return { start: null, reason: "too_late" };
+    return { start: candidate, reason: "ok" };
+  }
+  var TAIL_FRACTION, MIN_SECONDS_BEFORE_END, MIN_DURATION_SECONDS, MIN_DIALOGUE_CUES, MIN_CUES_PER_MINUTE, DEFAULT_DELAY_AFTER_LAST_LINE, PAST_END_TOLERANCE, NOISE_SKIP_FRACTION, URL_RE, CREDIT_RE, END_CARD_RE, MUSIC_RE;
+  var init_credits_from_subs = __esm({
+    "lib/credits-from-subs.ts"() {
+      TAIL_FRACTION = 0.12;
+      MIN_SECONDS_BEFORE_END = 30;
+      MIN_DURATION_SECONDS = 480;
+      MIN_DIALOGUE_CUES = 60;
+      MIN_CUES_PER_MINUTE = 3;
+      DEFAULT_DELAY_AFTER_LAST_LINE = 20;
+      PAST_END_TOLERANCE = 5;
+      NOISE_SKIP_FRACTION = 0.25;
+      URL_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|org|net|tv|io|me|info|se|de|fr|es|nl|ru|ro|pl)\b)/i;
+      CREDIT_RE = new RegExp(
+        "(?<![\\p{L}\\p{N}])(subtitles?|subtitled|subs|captions?|captioned|captioning|closed captioning|translat\\w*|transcri\\w*|synced|sync(?:ed|hronized)?\\s+(by|and)|resync\\w*|re-?synced|corrected\\s+by|corrections\\s+by|proofread\\w*|encoded\\s+by|ripped\\s+by|timed\\s+by|timing\\s+by|opensubtitles|addic7ed|podnapisi|subscene|yify|yts|rarbg|osdb|undertext\\w*|svensk text|\xF6versatt\\w*|\xF6vers\xE4ttning|textning|textad\\w*|untertitel\\w*|\xFCbersetz\\w*|sous-titr\\w*|traduct\\w*|traduit|subt[i\xED]tul\\w*|traducci[o\xF3]n|traducido)(?![\\p{L}\\p{N}])",
+        "iu"
+      );
+      END_CARD_RE = /^(the end|to be continued|fin|slut|ende|continuará|à suivre|fortsättning följer|fortsetzung folgt)[.!…]*$/i;
+      MUSIC_RE = /[♪♫♬♩]|^#|#$/;
+    }
+  });
+
   // lib/player-reveal-hold.ts
-  function state() {
+  function state2() {
     const g = globalThis;
-    if (!g[KEY18]) g[KEY18] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY18];
+    if (!g[KEY19]) g[KEY19] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY19];
   }
   function isPlayerRevealHeld() {
-    return state().holders > 0;
+    return state2().holders > 0;
   }
   function markPlayerReadyToReveal() {
-    if (state().holders > 0) state().ready = true;
+    if (state2().holders > 0) state2().ready = true;
   }
   function captureUserMutedOnce(current5) {
-    const s = state();
+    const s = state2();
     if (s.userMuted === null) s.userMuted = current5;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY18;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY19;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY18 = "__lumioRevealHold";
+      KEY19 = "__lumioRevealHold";
     }
   });
 
@@ -23748,7 +25043,7 @@
     const key = buildCacheKey(type, tmdbId);
     const running2 = inflightRequests.get(key);
     if (running2) return running2;
-    const request = (async () => {
+    const request2 = (async () => {
       const controller2 = new AbortController();
       const timeout = setTimeout(() => controller2.abort(), 6e3);
       try {
@@ -23769,8 +25064,8 @@
         inflightRequests.delete(key);
       }
     })();
-    inflightRequests.set(key, request);
-    return request;
+    inflightRequests.set(key, request2);
+    return request2;
   }
   var LOGO_CACHE_TTL_MS, LOGO_NEGATIVE_CACHE_TTL_MS, logoCache, inflightRequests;
   var init_title_logo_cache = __esm({
@@ -23783,33 +25078,33 @@
   });
 
   // lib/gesture-settings.ts
-  function read8(key) {
+  function read9(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read8(KEY_LEFT);
+    const stored = read9(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read8(KEY_RIGHT);
+    const stored = read9(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read8(KEY_HORIZONTAL);
+    const stored = read9(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read8(KEY_BRIGHTNESS_TARGET);
+    const stored = read9(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read8(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read9(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read8(KEY_HOLD_SPEED) === "1";
+    return read9(KEY_HOLD_SPEED) === "1";
   }
   var VERTICAL_GESTURE_ACTIONS, HORIZONTAL_GESTURE_ACTIONS, BRIGHTNESS_TARGETS, DOUBLE_TAP_SECONDS, KEY_LEFT, KEY_RIGHT, KEY_HORIZONTAL, KEY_BRIGHTNESS_TARGET, KEY_DOUBLE_TAP, KEY_HOLD_SPEED;
   var init_gesture_settings = __esm({
@@ -23849,7 +25144,7 @@
   });
 
   // lib/subtitle-delay-store.ts
-  function readStore() {
+  function readStore2() {
     if (typeof window === "undefined") return {};
     try {
       const raw = getScopedStorageItem(STORAGE_KEY5);
@@ -23860,7 +25155,7 @@
       return {};
     }
   }
-  function writeStore(store3) {
+  function writeStore2(store3) {
     if (typeof window === "undefined") return;
     try {
       const keys2 = Object.keys(store3);
@@ -23879,7 +25174,7 @@
     return `${mediaType ?? "media"}:${id}`;
   }
   function getSavedSubtitleDelay(mediaKey, season, episode) {
-    const store3 = readStore();
+    const store3 = readStore2();
     if (season != null && episode != null) {
       const exact = store3[`${mediaKey}:s${season}e${episode}`];
       if (exact && Number.isFinite(exact.d)) return exact.d;
@@ -23888,7 +25183,7 @@
     return series && Number.isFinite(series.d) ? series.d : null;
   }
   function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
-    const store3 = readStore();
+    const store3 = readStore2();
     const pick3 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
     if (season != null && episode != null) {
       const exact = pick3(store3[`${mediaKey}:s${season}e${episode}`]);
@@ -23897,7 +25192,7 @@
     return pick3(store3[mediaKey]);
   }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
-    const store3 = readStore();
+    const store3 = readStore2();
     const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
     if (delay === 0) {
       if (exactKey) delete store3[exactKey];
@@ -23907,7 +25202,7 @@
       if (exactKey) store3[exactKey] = entry;
       store3[mediaKey] = entry;
     }
-    writeStore(store3);
+    writeStore2(store3);
   }
   var STORAGE_KEY5, MAX_ENTRIES4;
   var init_subtitle_delay_store = __esm({
@@ -24017,8 +25312,8 @@
   // lib/subtitle-sync/plan.ts
   function subtitleLangGroup(value) {
     const normalized = normalizeLanguageCode(value) ?? "und";
-    const [base] = normalized.split(/[-_]/);
-    return normalizeLanguageCode(base) ?? normalized;
+    const [base2] = normalized.split(/[-_]/);
+    return normalizeLanguageCode(base2) ?? normalized;
   }
   function buildCandidates(selected, all, max = 4) {
     const lang = subtitleLangGroup(selected.lang3);
@@ -24257,7 +25552,7 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/subtitle-sync/opt-out.ts
-  function read9() {
+  function read10() {
     try {
       const parsed2 = JSON.parse(getScopedStorageItem(STORAGE_KEY6) ?? "{}");
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
@@ -24266,10 +25561,10 @@ ${effectiveName(url, id)}`;
     }
   }
   function isAutoSyncOptedOut(mediaKey, subtitleId) {
-    return `${mediaKey}|${subtitleId}` in read9();
+    return `${mediaKey}|${subtitleId}` in read10();
   }
   function setAutoSyncOptOut(mediaKey, subtitleId) {
-    const store3 = read9();
+    const store3 = read10();
     const key = `${mediaKey}|${subtitleId}`;
     delete store3[key];
     const next = Math.max(0, ...Object.values(store3)) + 1;
@@ -24463,7 +25758,7 @@ ${effectiveName(url, id)}`;
       const sel2 = a.selected;
       const key = a.mediaKey ?? `file:${a.fileName ?? a.mediaUrl}`;
       const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
-      const file = fileLabel(a.mediaUrl, identity);
+      const file2 = fileLabel(a.mediaUrl, identity);
       const savedDelay = () => {
         const l = latest2.current;
         return bindingSavedDelay(l.mediaKey ? getSavedSubtitleDelayEntry(l.mediaKey, l.season ?? null, l.episode ?? null) : null);
@@ -24493,7 +25788,7 @@ ${effectiveName(url, id)}`;
         if (loggedSkipRef.current !== logKey) {
           loggedSkipRef.current = logKey;
           const delay = reason === "saved-delay" ? saved : reason === "manual-delay" ? u.currentDelay : null;
-          logSubsyncClient(describeSkip(reason, { file, sub: sel2 ? subLabel(sel2.id) : "-", source: sel2?.source ?? "-", delay }));
+          logSubsyncClient(describeSkip(reason, { file: file2, sub: sel2 ? subLabel(sel2.id) : "-", source: sel2?.source ?? "-", delay }));
         }
         if (!waitsForPlayback(reason)) handledTokenRef.current = args.selectionToken;
         return;
@@ -24513,7 +25808,7 @@ ${effectiveName(url, id)}`;
         if (!dropLogged) {
           dropLogged = true;
           const why = !current5() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
-          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel2.id)}`);
+          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file2} undertext=${subLabel(sel2.id)}`);
         }
         if (current5() && inFlightRef.current) {
           inFlightRef.current = false;
@@ -24530,7 +25825,7 @@ ${effectiveName(url, id)}`;
       const undoAction = (other) => () => {
         if (other) setAutoSyncOptOut(key, other.id);
         setAutoSyncOptOut(key, sel2.id);
-        logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel2.id)} fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel2.id)} fil=${file2}`);
         controller2.abort();
         void live2().restoreOriginal(sel2, { undo: true });
       };
@@ -24546,7 +25841,7 @@ ${effectiveName(url, id)}`;
         const done = await applyWithRetry(
           () => live2().applySynced(sel2, vttUrl),
           waitReady,
-          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sel2.id)} fil=${file}`)
+          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sel2.id)} fil=${file2}`)
         );
         if (!done) {
           inFlightRef.current = true;
@@ -24556,7 +25851,7 @@ ${effectiveName(url, id)}`;
         applied2 = r.vttUrl;
         const path = pathLabel(r.path);
         const late = playedSoFar > 0 ? ` efter ${Math.round(playedSoFar)}s spelat` : "";
-        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel2.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel2.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file2}`);
         const offset = formatCorrection(r.correctionMs ?? 0);
         if (refined) {
           l.setStatus({ type: "done", message: l.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
@@ -24572,7 +25867,7 @@ ${effectiveName(url, id)}`;
         const other = l.options.find((o) => o.id === r.subtitleId) ?? null;
         const usable = r.status === "already_synced" || r.status === "synced" && !!r.vttUrl;
         if (!other || !usable) {
-          logSubsyncClient(`${CLIENT_PREFIX} svar om en annan undertext (${subLabel(r.subtitleId ?? "-")}, ${r.status}) utan byte: g\xE4ller inte den valda undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} svar om en annan undertext (${subLabel(r.subtitleId ?? "-")}, ${r.status}) utan byte: g\xE4ller inte den valda undertext=${subLabel(sel2.id)} fil=${file2}`);
           return false;
         }
         if (!valid()) {
@@ -24588,7 +25883,7 @@ ${effectiveName(url, id)}`;
           const done = await applyWithRetry(
             () => live2().applySynced(other, vttUrl),
             waitReady,
-            () => logSubsyncClient(`${CLIENT_PREFIX} byte misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(other.id)} fil=${file}`)
+            () => logSubsyncClient(`${CLIENT_PREFIX} byte misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(other.id)} fil=${file2}`)
           );
           if (!done) {
             switched = null;
@@ -24604,7 +25899,7 @@ ${effectiveName(url, id)}`;
           markFinal(r);
           await live2().restoreOriginal(other);
         }
-        logSubsyncClient(`${CLIENT_PREFIX} bytte till ${subLabel(other.id)} (${r.status}${r.provisional ? " provisoriskt" : ""}${pathLabel(r.path) ? ` v\xE4g=${pathLabel(r.path)}` : ""}) fr\xE5n ${subLabel(sel2.id)}: den valda gick inte att synka fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} bytte till ${subLabel(other.id)} (${r.status}${r.provisional ? " provisoriskt" : ""}${pathLabel(r.path) ? ` v\xE4g=${pathLabel(r.path)}` : ""}) fr\xE5n ${subLabel(sel2.id)}: den valda gick inte att synka fil=${file2}`);
         const message = l.t("subtitleAutoSyncSwapped");
         l.showNotice({ message, actionLabel: l.t("subtitleAutoSyncUndo"), onAction: undoAction(other) });
         l.setStatus({ type: "done", message });
@@ -24644,7 +25939,7 @@ ${effectiveName(url, id)}`;
           const s = seekStep(seek, now2);
           seek = s.st;
           if (s.fire) {
-            logSubsyncClient(`${CLIENT_PREFIX} hopp till ${Math.round(now2)}s: fr\xE5gar direkt undertext=${subLabel(sel2.id)} fil=${file}`);
+            logSubsyncClient(`${CLIENT_PREFIX} hopp till ${Math.round(now2)}s: fr\xE5gar direkt undertext=${subLabel(sel2.id)} fil=${file2}`);
             return played;
           }
         }
@@ -24664,13 +25959,13 @@ ${effectiveName(url, id)}`;
       const handleSelected = async (r, final, wait) => {
         if (r.otherEdit && !otherEditSeen && sel2.source !== "embedded") {
           otherEditSeen = true;
-          logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel2.id)} fil=${file2}`);
           live2().onOtherEdit?.(sel2);
         }
         if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
-          logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel2.id)} fil=${file2}`);
         } else if (final && r.status === "reference_pending") {
-          logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel2.id)} fil=${file2}`);
         }
         if (r.status === "reference_pending") {
           if (applied2 === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
@@ -24688,7 +25983,7 @@ ${effectiveName(url, id)}`;
           applied2 = null;
           restored = true;
           inFlightRef.current = false;
-          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel2.id)} fil=${file2}`);
           await live2().restoreOriginal(sel2);
           live2().clearNotice?.();
           finish(r);
@@ -24702,7 +25997,7 @@ ${effectiveName(url, id)}`;
           applied2 = null;
           restored = true;
           inFlightRef.current = false;
-          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel2.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel2.id)} fil=${file2}`);
           await live2().restoreOriginal(sel2);
           live2().clearNotice?.();
           live2().setStatus({ type: "done", message: live2().t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
@@ -24715,7 +26010,7 @@ ${effectiveName(url, id)}`;
             request: () => {
               attempt += 1;
               const candidates = buildCandidates(toCandidate(sel2), live2().options.filter((o) => o.source === "opensubtitles").map(toCandidate));
-              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file} undertext=${subLabel(sel2.id)} spr\xE5k=${sel2.lang3 || "-"} kandidater=${candidates.length}`);
+              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file2} undertext=${subLabel(sel2.id)} spr\xE5k=${sel2.lang3 || "-"} kandidater=${candidates.length}`);
               const l = live2();
               const health = l.getPlaybackHealth?.();
               return requestSubtitleSync({
@@ -24741,7 +26036,7 @@ ${effectiveName(url, id)}`;
           if (!last2 || !current5()) return;
           if (last2.status === "ambiguous" && last2.jobId) {
             if (await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS) === false) return;
-            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel2.id)}`);
+            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file2} undertext=${subLabel(sel2.id)}`);
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller2.signal);
             logSubsyncClient(describeResult(v, "ljud"));
             if (!current5()) return;
@@ -24762,7 +26057,7 @@ ${effectiveName(url, id)}`;
           }
           if (applied2 === null && !restored && switched === null) finish(last2);
         } catch (err) {
-          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel2.id)}`);
+          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file2} undertext=${subLabel(sel2.id)}`);
           drop();
         } finally {
           stopWatch();
@@ -24800,17 +26095,17 @@ ${effectiveName(url, id)}`;
   function createOwnTrackOffers() {
     const offered = /* @__PURE__ */ new Set();
     const choices = /* @__PURE__ */ new Map();
-    const key = (file, subId) => `${file}|${subId}`;
+    const key = (file2, subId) => `${file2}|${subId}`;
     return {
-      shouldOffer: (file, subId) => !offered.has(key(file, subId)),
-      markOffered: (file, subId) => {
-        offered.add(key(file, subId));
+      shouldOffer: (file2, subId) => !offered.has(key(file2, subId)),
+      markOffered: (file2, subId) => {
+        offered.add(key(file2, subId));
       },
-      decide: (file, subId, choice) => {
-        offered.add(key(file, subId));
-        choices.set(key(file, subId), choice);
+      decide: (file2, subId, choice) => {
+        offered.add(key(file2, subId));
+        choices.set(key(file2, subId), choice);
       },
-      choice: (file, subId) => choices.get(key(file, subId)) ?? null
+      choice: (file2, subId) => choices.get(key(file2, subId)) ?? null
     };
   }
   function languageName(code, uiLang) {
@@ -24895,13 +26190,13 @@ ${effectiveName(url, id)}`;
       return null;
     }
   }
-  async function removeOwned(deps2, state2, keep) {
+  async function removeOwned(deps2, state3, keep) {
     const tracks = await readTracks(deps2);
     if (!tracks) return;
     const listed = /* @__PURE__ */ new Set();
     for (const t of tracks) {
       const p = t.external ? t.externalFilename : null;
-      if (!p || !state2.owned.has(p)) continue;
+      if (!p || !state3.owned.has(p)) continue;
       listed.add(p);
       if (p === keep) continue;
       try {
@@ -24910,34 +26205,34 @@ ${effectiveName(url, id)}`;
       } catch {
       }
     }
-    state2.owned = new Set([...state2.owned].filter((p) => listed.has(p) || p === keep));
+    state3.owned = new Set([...state3.owned].filter((p) => listed.has(p) || p === keep));
   }
-  async function swapSyncedTrack(deps2, state2, mediaUrl, path) {
-    if (state2.mediaUrl !== mediaUrl) {
-      state2.mediaUrl = mediaUrl;
-      state2.current = null;
-      state2.owned = /* @__PURE__ */ new Set();
+  async function swapSyncedTrack(deps2, state3, mediaUrl, path) {
+    if (state3.mediaUrl !== mediaUrl) {
+      state3.mediaUrl = mediaUrl;
+      state3.current = null;
+      state3.owned = /* @__PURE__ */ new Set();
     }
     const sidRaw = await Promise.resolve(deps2.command(["get_property", "sid"])).catch(() => null);
     const sid = sidRaw === null || sidRaw === void 0 ? null : String(sidRaw);
     const off = sid === "no" || sid === "false";
     let select;
-    if (state2.current === null) {
+    if (state3.current === null) {
       select = !off;
     } else {
       const tracks = await readTracks(deps2) ?? [];
-      const ours = tracks.find((t) => t.external && t.externalFilename === state2.current);
+      const ours = tracks.find((t) => t.external && t.externalFilename === state3.current);
       select = !off && ours !== void 0 && sid === String(ours.sid);
     }
     await deps2.command(["sub-add", path, select ? "select" : "auto"]);
-    state2.owned.add(path);
-    state2.current = path;
-    await removeOwned(deps2, state2, path);
+    state3.owned.add(path);
+    state3.current = path;
+    await removeOwned(deps2, state3, path);
     return select;
   }
-  async function forgetSyncedTracks(deps2, state2) {
-    await removeOwned(deps2, state2, null);
-    state2.current = null;
+  async function forgetSyncedTracks(deps2, state3) {
+    await removeOwned(deps2, state3, null);
+    state3.current = null;
   }
   var init_mpv_swap = __esm({
     "lib/subtitle-sync/mpv-swap.ts"() {
@@ -24996,10 +26291,10 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/binge-runtime.ts
-  function requestBingeAdvance(request = {}) {
+  function requestBingeAdvance(request2 = {}) {
     for (const listener of advanceListeners) {
       try {
-        listener(request);
+        listener(request2);
       } catch {
       }
     }
@@ -25320,7 +26615,7 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/moment-link.ts
-  function buildMomentLink(base, target2) {
+  function buildMomentLink(base2, target2) {
     const params = new URLSearchParams();
     params.set("watch", `${target2.mediaType}-${target2.tmdbId}`);
     if (target2.mediaType === "tv" && target2.season != null && target2.episode != null) {
@@ -25332,7 +26627,7 @@ ${effectiveName(url, id)}`;
     if (target2.endSeconds != null && Math.floor(target2.endSeconds) > start3) {
       params.set("end", String(Math.floor(target2.endSeconds)));
     }
-    return `${base.replace(/\/+$/, "")}/?${params.toString()}`;
+    return `${base2.replace(/\/+$/, "")}/?${params.toString()}`;
   }
   function isShareableOrigin(origin) {
     try {
@@ -25362,15 +26657,15 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-share-button.tsx
-  function ClipShareButton({ state: state2, onClick, t, variant }) {
+  function ClipShareButton({ state: state3, onClick, t, variant }) {
     const ref = useRef(null);
-    const label = state2.kind === "ready" ? t("clipShareNow") : state2.kind === "rendering" ? state2.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state2.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
+    const label = state3.kind === "ready" ? t("clipShareNow") : state3.kind === "rendering" ? state3.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state3.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
     return /* @__PURE__ */ jsxs(
       "button",
       {
         ref,
         type: "button",
-        disabled: state2.kind === "rendering",
+        disabled: state3.kind === "rendering",
         onClick: () => {
           if (ref.current) onClick(ref.current.getBoundingClientRect());
         },
@@ -25408,11 +26703,11 @@ ${effectiveName(url, id)}`;
     if (duration <= CLIP_WINDOW_SEC) return 0;
     return ms(clamp(anchorSec - CLIP_WINDOW_SEC / 2, 0, duration - CLIP_WINDOW_SEC));
   }
-  function clipWindowEnd(state2) {
-    return Math.min(state2.duration, state2.windowStart + CLIP_WINDOW_SEC);
+  function clipWindowEnd(state3) {
+    return Math.min(state3.duration, state3.windowStart + CLIP_WINDOW_SEC);
   }
-  function clipLength(state2) {
-    return ms(state2.outSec - state2.inSec);
+  function clipLength(state3) {
+    return ms(state3.outSec - state3.inSec);
   }
   function formatClipTime(sec) {
     const total = Math.max(0, Math.floor(sec));
@@ -25442,7 +26737,7 @@ ${effectiveName(url, id)}`;
     const range = args.inSec != null && args.outSec != null ? { inSec: args.inSec, outSec: args.outSec } : null;
     const anchor = range ? (range.inSec + range.outSec) / 2 : args.anchorSec;
     const outSec = range ? range.outSec : args.anchorSec;
-    const base = {
+    const base2 = {
       inSec: range ? range.inSec : outSec - CLIP_DEFAULT_SEC,
       outSec,
       windowStart: clipWindowStart(anchor, args.duration),
@@ -25454,29 +26749,29 @@ ${effectiveName(url, id)}`;
       activeHandle: null,
       scrubbing: false
     };
-    return normalize(base, base.inSec <= base.windowStart ? "in" : "out");
+    return normalize(base2, base2.inSec <= base2.windowStart ? "in" : "out");
   }
-  function clipReducer(state2, action) {
+  function clipReducer(state3, action) {
     switch (action.type) {
       case "setHandle": {
         const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
         const other = action.handle === "in" ? "out" : "in";
-        return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+        return normalize({ ...state3, ...moved, activeHandle: action.handle, scrubbing: true }, other);
       }
       case "nudge": {
-        const current5 = action.handle === "in" ? state2.inSec : state2.outSec;
-        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current5 + action.delta });
+        const current5 = action.handle === "in" ? state3.inSec : state3.outSec;
+        return clipReducer(state3, { type: "setHandle", handle: action.handle, sec: current5 + action.delta });
       }
       case "setLength": {
-        const len = Math.min(action.sec, maxLengthFor(state2.format));
-        return normalize({ ...state2, inSec: state2.outSec - len }, "out");
+        const len = Math.min(action.sec, maxLengthFor(state3.format));
+        return normalize({ ...state3, inSec: state3.outSec - len }, "out");
       }
       case "setFormat":
-        return normalize({ ...state2, format: action.format }, "out");
+        return normalize({ ...state3, format: action.format }, "out");
       case "setTitle":
-        return { ...state2, title: action.title, titleEdited: true };
+        return { ...state3, title: action.title, titleEdited: true };
       case "scrubEnd":
-        return { ...state2, scrubbing: false };
+        return { ...state3, scrubbing: false };
     }
   }
   var CLIP_WINDOW_SEC, CLIP_MIN_SEC, CLIP_MAX_SEC, GIF_MAX_SEC, CLIP_DEFAULT_SEC, clamp, ms;
@@ -25493,10 +26788,10 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-panel.tsx
-  function ClipLengthButtons({ state: state2, dispatch, heightClass, roundedClass, tv = false }) {
-    if (state2.format === "still") return null;
-    const len = Math.round(clipLength(state2));
-    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state2.format).map((sec) => {
+  function ClipLengthButtons({ state: state3, dispatch, heightClass, roundedClass, tv = false }) {
+    if (state3.format === "still") return null;
+    const len = Math.round(clipLength(state3));
+    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state3.format).map((sec) => {
       const on = len === sec;
       return /* @__PURE__ */ jsxs(
         "button",
@@ -25515,7 +26810,7 @@ ${effectiveName(url, id)}`;
       );
     }) });
   }
-  function ClipFormatSegment({ state: state2, dispatch, formats, heightClass, t }) {
+  function ClipFormatSegment({ state: state3, dispatch, formats, heightClass, t }) {
     if (formats.length <= 1) return null;
     const formatLabel = { mp4: "MP4", gif: "GIF", still: t("clipFormatStill") };
     return /* @__PURE__ */ jsx("div", { className: "flex self-start rounded-[10px] bg-white/[0.04] p-[3px]", children: formats.map((format) => /* @__PURE__ */ jsx(
@@ -25523,17 +26818,17 @@ ${effectiveName(url, id)}`;
       {
         type: "button",
         onClick: () => dispatch({ type: "setFormat", format }),
-        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state2.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
+        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state3.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
         children: formatLabel[format]
       },
       format
     )) });
   }
-  function ClipTitleField({ state: state2, dispatch }) {
+  function ClipTitleField({ state: state3, dispatch }) {
     return /* @__PURE__ */ jsx(
       "input",
       {
-        value: state2.title,
+        value: state3.title,
         onChange: (event2) => dispatch({ type: "setTitle", title: event2.target.value }),
         onKeyDown: (event2) => {
           if (event2.key !== "Escape") event2.stopPropagation();
@@ -25558,8 +26853,8 @@ ${effectiveName(url, id)}`;
     ] });
   }
   function ClipPanel(p) {
-    const { state: state2, dispatch, t } = p;
-    const len = Math.round(clipLength(state2));
+    const { state: state3, dispatch, t } = p;
+    const len = Math.round(clipLength(state3));
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs("button", { type: "button", onClick, disabled, className: `${p.rowClass} disabled:opacity-50`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${p.rowTextClass}`, children: label })
@@ -25576,15 +26871,15 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
             /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-lg bg-black/60", children: [
               p.previewClip?.kind === "mp4" ? /* @__PURE__ */ jsx("video", { src: p.previewClip.src, autoPlay: true, loop: true, muted: true, playsInline: true, className: "h-full w-full object-cover" }) : p.previewClip?.kind === "gif" ? /* @__PURE__ */ jsx("img", { src: p.previewClip.src, alt: "", className: "h-full w-full object-cover" }) : p.previewSrc ? /* @__PURE__ */ jsx("img", { src: p.previewSrc, alt: "", className: "h-full w-full object-cover" }) : null,
-              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state2.inSec)) }),
+              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state3.inSec)) }),
               /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: formatClipTime(len) })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
             /* @__PURE__ */ jsx("div", { className: "px-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("clipShareSection") }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
-              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state2.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
+              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state3.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
               row("save", downloadIcon(p.iconClass), t("clipSaveFile"), p.onSaveFile, p.busy !== null),
               row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
             ] }),
@@ -25616,13 +26911,13 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-trimmer.tsx
-  function ClipTrimmer({ state: state2, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
+  function ClipTrimmer({ state: state3, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
     const touch = size === "touch";
     const tv = size === "tv";
     const trackRef = useRef(null);
     const lastHandle = useRef("out");
-    const start3 = state2.windowStart;
-    const end = clipWindowEnd(state2);
+    const start3 = state3.windowStart;
+    const end = clipWindowEnd(state3);
     const span = Math.max(1, end - start3);
     const percent = (sec) => Math.min(100, Math.max(0, (sec - start3) / span * 100));
     const secAt = (clientX) => {
@@ -25690,12 +26985,12 @@ ${effectiveName(url, id)}`;
             "div",
             {
               className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
-              style: { left: `${percent(state2.inSec)}%`, width: `${percent(state2.outSec) - percent(state2.inSec)}%` }
+              style: { left: `${percent(state3.inSec)}%`, width: `${percent(state3.outSec) - percent(state3.inSec)}%` }
             }
           ),
           tv ? /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute -bottom-1 -top-1 w-[2px] -translate-x-1/2 bg-white", style: { left: `${percent(position)}%` } }) : null,
-          renderHandle("in", state2.inSec),
-          renderHandle("out", state2.outSec)
+          renderHandle("in", state3.inSec),
+          renderHandle("out", state3.outSec)
         ]
       }
     );
@@ -25799,9 +27094,9 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-phone-panels.tsx
   function ClipLandscapePanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
-    const len = Math.round(clipLength(state2));
+    const len = Math.round(clipLength(state3));
     const tile = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -25827,14 +27122,14 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx(
             ClipPanelHeader,
             {
-              label: t("clipNewWithLength").replace("{len}", state2.format === "still" ? t("clipFormatStill") : `${len} s`),
+              label: t("clipNewWithLength").replace("{len}", state3.format === "still" ? t("clipFormatStill") : `${len} s`),
               onClose: p.onClose,
               t
             }
           ),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-8", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-8", t }),
             /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1.5", children: [
               tile("link", gearRowIcon("link", "h-[18px] w-[18px]"), t("clipTileLink"), p.onCopyLink),
               tile("save", clipDownloadIcon("h-[18px] w-[18px]"), t("clipTileSave"), p.onSave, busy),
@@ -25847,7 +27142,7 @@ ${effectiveName(url, id)}`;
     );
   }
   function ClipPortraitSheet(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
@@ -25874,9 +27169,9 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
           /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               row("link", gearRowIcon("link", "h-5 w-5 flex-none text-slate-300"), t("clipCopyLink"), p.onCopyLink),
               row("save", clipDownloadIcon("h-5 w-5 flex-none text-slate-300"), t("clipSavePhotos"), p.onSave, busy),
@@ -25901,7 +27196,7 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-tv-panel.tsx
   function ClipTvPanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const row = (key, icon, label, onClick, extra) => /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", "data-clip-station": "row", "data-clip-row": key, onClick, className: `${p.rowClass} py-3`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left text-[length:var(--st-body)] ${p.rowTextClass}`, children: label }),
@@ -25922,14 +27217,14 @@ ${effectiveName(url, id)}`;
               /* @__PURE__ */ jsx("div", { className: "h-[63px] w-[112px] flex-none overflow-hidden rounded-md bg-black/60", children: p.stillSrc ? /* @__PURE__ */ jsx("img", { src: p.stillSrc, alt: "", className: "h-full w-full object-cover" }) : null }),
               /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
                 /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] font-semibold tabular-nums text-white", children: [
-                  formatClipTime(state2.inSec),
+                  formatClipTime(state3.inSec),
                   " \u2013 ",
-                  formatClipTime(state2.outSec)
+                  formatClipTime(state3.outSec)
                 ] }),
                 /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-small)] text-slate-400", children: t("clipTvStill") })
               ] })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               p.phones.map((phone) => row(`send-${phone.id}`, phoneIcon(p.iconClass), t("clipSendTo").replace("{phone}", phone.name), () => p.onSend(phone.id))),
               p.canShowQr === false ? null : row("qr", qrIcon(p.iconClass), t("clipShowQr"), p.onShowQr),
@@ -26752,10 +28047,10 @@ ${effectiveName(url, id)}`;
       if (!result2?.ok) throw new Error(result2?.error ?? "delning misslyckades");
       return "shared";
     }
-    const file = new File([blob], name, { type: "image/png" });
+    const file2 = new File([blob], name, { type: "image/png" });
     const nav = navigator;
-    if (nav.share && nav.canShare?.({ files: [file] })) {
-      await nav.share({ files: [file], title });
+    if (nav.share && nav.canShare?.({ files: [file2] })) {
+      await nav.share({ files: [file2], title });
       return "shared";
     }
     await saveCanvasPng(canvas2, name);
@@ -26818,10 +28113,10 @@ ${effectiveName(url, id)}`;
   function anchorArgs(anchor) {
     return { x: anchor.x, y: anchor.y, w: anchor.width, h: anchor.height };
   }
-  async function webShareFile(file) {
+  async function webShareFile(file2) {
     const nav = navigator;
-    if (!nav.share || !nav.canShare?.({ files: [file] })) return false;
-    await nav.share({ files: [file] });
+    if (!nav.share || !nav.canShare?.({ files: [file2] })) return false;
+    await nav.share({ files: [file2] });
     return true;
   }
   async function saveRenderedClip(clip2, name, ext) {
@@ -26869,11 +28164,11 @@ ${effectiveName(url, id)}`;
     const blob = await (await fetchImpl(routes.file(clip2.id))).blob();
     return new File([blob], name, { type: mime });
   }
-  async function shareWebFile(file, nav = navigator) {
+  async function shareWebFile(file2, nav = navigator) {
     const n = nav;
-    if (!n.share || !n.canShare?.({ files: [file] })) return "unsupported";
+    if (!n.share || !n.canShare?.({ files: [file2] })) return "unsupported";
     try {
-      await n.share({ files: [file] });
+      await n.share({ files: [file2] });
       return "shared";
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return "cancelled";
@@ -27096,56 +28391,56 @@ ${effectiveName(url, id)}`;
     }
     return `movie:${id}`;
   }
-  function read10() {
+  function read11() {
     try {
-      const raw = getScopedStorageItem(KEY19);
+      const raw = getScopedStorageItem(KEY20);
       const parsed2 = raw ? JSON.parse(raw) : null;
       return parsed2 && typeof parsed2 === "object" ? parsed2 : {};
     } catch {
       return {};
     }
   }
-  function write6(store3) {
+  function write7(store3) {
     const nycklar = Object.keys(store3);
     if (nycklar.length > MAX_TITLES) {
       nycklar.sort((a, b) => store3[a].at - store3[b].at);
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store3[nyckel];
     }
     try {
-      setScopedStorageItem(KEY19, JSON.stringify(store3));
+      setScopedStorageItem(KEY20, JSON.stringify(store3));
     } catch {
     }
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT15));
   }
   function getMoments(titleKey2) {
     if (!titleKey2) return [];
-    return [...read10()[titleKey2]?.t ?? []];
+    return [...read11()[titleKey2]?.t ?? []];
   }
   function addMoment(titleKey2, seconds2, nowMs = Date.now()) {
     const sekund = Math.max(0, Math.floor(seconds2));
-    const store3 = read10();
+    const store3 = read11();
     const lista = store3[titleKey2]?.t ?? [];
     const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
     if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
     const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
     store3[titleKey2] = { at: nowMs, t: n\u00E4sta };
-    write6(store3);
+    write7(store3);
     return { kind: "added", seconds: sekund };
   }
   function removeMoment(titleKey2, seconds2) {
-    const store3 = read10();
+    const store3 = read11();
     const lista = store3[titleKey2]?.t;
     if (!lista) return;
     const kvar = lista.filter((t) => t !== seconds2);
     if (kvar.length === 0) delete store3[titleKey2];
     else store3[titleKey2] = { at: Date.now(), t: kvar };
-    write6(store3);
+    write7(store3);
   }
   function clearMoments(titleKey2) {
-    const store3 = read10();
+    const store3 = read11();
     if (!store3[titleKey2]) return;
     delete store3[titleKey2];
-    write6(store3);
+    write7(store3);
   }
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -27153,11 +28448,11 @@ ${effectiveName(url, id)}`;
     window.addEventListener(EVENT15, listener);
     return () => window.removeEventListener(EVENT15, listener);
   }
-  var KEY19, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY20, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY19 = "player_moments_v1";
+      KEY20 = "player_moments_v1";
       EVENT15 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
@@ -27204,7 +28499,7 @@ ${effectiveName(url, id)}`;
     });
   }
   function cuesToSrt(cues) {
-    const stamp = (sec) => {
+    const stamp2 = (sec) => {
       const ms2 = Math.max(0, Math.round(sec * 1e3));
       const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
       const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
@@ -27213,12 +28508,12 @@ ${effectiveName(url, id)}`;
       return `${h}:${m}:${s},${rest}`;
     };
     return cues.map((cue, i) => `${i + 1}
-${stamp(cue.start)} --> ${stamp(cue.end)}
+${stamp2(cue.start)} --> ${stamp2(cue.end)}
 ${cue.text}
 `).join("\n");
   }
   function cuesToVtt(cues, delay) {
-    const stamp = (sec) => {
+    const stamp2 = (sec) => {
       const ms2 = Math.max(0, Math.round((sec + delay) * 1e3));
       const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
       const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
@@ -27228,7 +28523,7 @@ ${cue.text}
     };
     return `WEBVTT
 
-${cues.map((cue) => `${stamp(cue.start)} --> ${stamp(cue.end)}
+${cues.map((cue) => `${stamp2(cue.start)} --> ${stamp2(cue.end)}
 ${cue.text}`).join("\n\n")}
 `;
   }
@@ -27253,9 +28548,9 @@ ${cue.text}`).join("\n\n")}
     const cues = [];
     for (const block of vtt.replace(/\r\n/g, "\n").split(/\n\n+/)) {
       const lines2 = block.trim().split("\n");
-      const timeLine2 = lines2.find((l) => l.includes("-->"));
-      if (!timeLine2) continue;
-      const [s, e] = timeLine2.split("-->");
+      const timeLine3 = lines2.find((l) => l.includes("-->"));
+      if (!timeLine3) continue;
+      const [s, e] = timeLine3.split("-->");
       const start3 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
       const text2 = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
@@ -27265,14 +28560,14 @@ ${cue.text}`).join("\n\n")}
   }
   function toSubtitleLangGroup(value) {
     const normalized = normalizeLanguageCode(value) ?? "und";
-    const [base] = normalized.split(/[-_]/);
-    return base || normalized;
+    const [base2] = normalized.split(/[-_]/);
+    return base2 || normalized;
   }
   function toAudioLangGroup(value) {
     const normalized = normalizeLanguageCode(value);
     if (!normalized) return null;
-    const [base] = normalized.split(/[-_]/);
-    return base || normalized;
+    const [base2] = normalized.split(/[-_]/);
+    return base2 || normalized;
   }
   function subtitleOptionMatchesLanguage(option, preferredLanguage) {
     const preferred = toSubtitleLangGroup(preferredLanguage);
@@ -27598,7 +28893,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp, librarySubtitles }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     useEffect(() => {
       if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
@@ -27823,7 +29118,10 @@ ${cue.text}`).join("\n\n")}
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
     const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
     const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const incognito = useIncognito();
     const sleepFiredAtRef = useRef(0);
+    const sleepFadeCancelRef = useRef(() => {
+    });
     const [companionIds, setCompanionIds] = useState([]);
     const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
@@ -27872,8 +29170,8 @@ ${cue.text}`).join("\n\n")}
     const anchorCacheRef = useRef({ surface: null, w: 0, h: 0, styles: /* @__PURE__ */ new Map() });
     const anchoredMenuStyle = (trigger, menuWidth = 0) => {
       if (!trigger || typeof window === "undefined") return getAnchoredMenuStyle(trigger, menuWidth);
-      const cache12 = anchorCacheRef.current;
-      if (cache12.surface !== openSurface || cache12.w !== window.innerWidth || cache12.h !== window.innerHeight) {
+      const cache13 = anchorCacheRef.current;
+      if (cache13.surface !== openSurface || cache13.w !== window.innerWidth || cache13.h !== window.innerHeight) {
         anchorCacheRef.current = { surface: openSurface, w: window.innerWidth, h: window.innerHeight, styles: /* @__PURE__ */ new Map() };
       }
       const byTrigger = anchorCacheRef.current.styles;
@@ -27986,9 +29284,9 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity]);
     const effectiveVideoTuning = useMemo(
       () => {
-        const base = dvColorFallbackActive ? { ...DEFAULT_TUNING, ...TUNING_PRESETS.vivid.patch } : videoTuning;
-        if (!gestureBrightness) return base;
-        return { ...base, brightness: Math.min(50, Math.max(-50, base.brightness + gestureBrightness)) };
+        const base2 = dvColorFallbackActive ? { ...DEFAULT_TUNING, ...TUNING_PRESETS.vivid.patch } : videoTuning;
+        if (!gestureBrightness) return base2;
+        return { ...base2, brightness: Math.min(50, Math.max(-50, base2.brightness + gestureBrightness)) };
       },
       [dvColorFallbackActive, videoTuning, gestureBrightness]
     );
@@ -28070,9 +29368,9 @@ ${cue.text}`).join("\n\n")}
       if (!hasStarted || isDroidEngine) return void 0;
       if (isMpvEngine) {
         let cancelled = false;
-        const read12 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
+        const read13 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
         const timer5 = window.setTimeout(() => {
-          void Promise.all([read12("video-params/w"), read12("video-params/h"), read12("video-params/gamma"), read12("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
+          void Promise.all([read13("video-params/w"), read13("video-params/h"), read13("video-params/gamma"), read13("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
             if (cancelled) return;
             const width = Number(w);
             const height = Number(h);
@@ -28112,9 +29410,9 @@ ${cue.text}`).join("\n\n")}
       }
       if (isMpvEngine) {
         const customSelected = getCustomShaders();
-        const request = `${renderTuning.anime4k ? 1 : 0}|${customSelected.join("\n")}`;
-        const changed = lastShaderRequestRef.current !== null && lastShaderRequestRef.current !== request;
-        lastShaderRequestRef.current = request;
+        const request2 = `${renderTuning.anime4k ? 1 : 0}|${customSelected.join("\n")}`;
+        const changed = lastShaderRequestRef.current !== null && lastShaderRequestRef.current !== request2;
+        lastShaderRequestRef.current = request2;
         const seq3 = ++shaderApplySeqRef.current;
         void Promise.all([
           renderTuning.anime4k ? fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => paths ?? []).catch(() => []) : Promise.resolve([]),
@@ -28326,6 +29624,7 @@ ${cue.text}`).join("\n\n")}
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [externalSubtitles, setExternalSubtitles] = useState([]);
     const externalVttRef = useRef(/* @__PURE__ */ new Map());
+    const nativeAssSubIdRef = useRef(null);
     const externalFileInputRef = useRef(null);
     const [subVerticalPos, setSubVerticalPos] = useState(() => getDefaultSubtitleVerticalPosition());
     const [subOpacity, setSubOpacity] = useState(() => getDefaultSubtitleOpacity());
@@ -28992,12 +30291,12 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv || !streams) return;
       const id = window.setInterval(() => {
         const now2 = Date.now();
-        const state2 = starveStateRef.current;
+        const state3 = starveStateRef.current;
         const pos = realTimeRef.current;
-        if (state2.at > 0 && Math.abs(pos - state2.pos) > (now2 - state2.at) / 1e3 + 3) starvationRef.current.seeked(now2);
-        state2.pos = pos;
-        state2.at = now2;
-        if (!starvationRef.current.update(state2.buffering, now2)) return;
+        if (state3.at > 0 && Math.abs(pos - state3.pos) > (now2 - state3.at) / 1e3 + 3) starvationRef.current.seeked(now2);
+        state3.pos = pos;
+        state3.at = now2;
+        if (!starvationRef.current.update(state3.buffering, now2)) return;
         if (starvedOfferedRef.current === url) return;
         starvedOfferedRef.current = url;
         const lighter = pickLighterStream(streams.items, streams.currentUrl);
@@ -29337,7 +30636,7 @@ ${cue.text}`).join("\n\n")}
         }
         const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
         if (cancelled) return;
-        const [codec, hwdec, w, h, bitrate, fps, drops, cache12, acodec, arate, spd] = values;
+        const [codec, hwdec, w, h, bitrate, fps, drops, cache13, acodec, arate, spd] = values;
         const num7 = (v) => {
           if (typeof v === "number") return Number.isFinite(v) ? v : null;
           if (typeof v === "string") {
@@ -29351,7 +30650,7 @@ ${cue.text}`).join("\n\n")}
           `Video  ${String(codec ?? "\u2013")}  ${num7(w) ?? "?"}\xD7${num7(h) ?? "?"}  ${num7(fps) != null ? `${num7(fps).toFixed(1)} fps` : ""}`,
           `Hwdec  ${String(hwdec ?? "no")}`,
           `Bitrate  ${num7(bitrate) != null ? `${(num7(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
-          `Drops  ${num7(drops) ?? 0}   Cache  ${num7(cache12) != null ? `${num7(cache12).toFixed(0)} s` : "\u2013"}`,
+          `Drops  ${num7(drops) ?? 0}   Cache  ${num7(cache13) != null ? `${num7(cache13).toFixed(0)} s` : "\u2013"}`,
           `Audio  ${String(acodec ?? "\u2013")}  ${num7(arate) != null ? `${num7(arate)} Hz` : ""}`,
           `Speed  ${num7(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ];
@@ -29504,6 +30803,7 @@ ${cue.text}`).join("\n\n")}
     }
     const togglePlay = useCallback(() => {
       const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (sleepPromptUp) return;
       if (useMpv) {
@@ -29560,6 +30860,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, [useMpv, videoSrc]);
     const seek = useCallback((delta) => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       castSeekRef.current?.(realTimeRef.current + delta);
       if (useMpv) {
@@ -29600,6 +30901,7 @@ ${cue.text}`).join("\n\n")}
       }, 220);
     }, [useMpv, videoSrc, url, videoCodec, audioTracks, effectiveProxyAudioMode, nightMode, realTime, showStillWatchingPrompt, activeAudioTrack, shouldForceProxyTranscode, applyStreamSrc]);
     const toggleMute = useCallback(() => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (useMpv) {
         const next = !muted;
@@ -30555,6 +31857,23 @@ ${cue.text}`).join("\n\n")}
       setSubtitleClientDebugInfo(null);
       subtitlePreferenceRef.current = nextSubtitlePreference(subtitlePreferenceRef.current, sub, Boolean(options?.manual));
       if (options?.manual) saveSeriesSubtitlePreference(seriesTrackTmdbRef.current, subtitlePreferenceRef.current);
+      if (isDroidEngine && nativeAssSubIdRef.current && nativeAssSubIdRef.current !== sub?.id) {
+        nativeAssSubIdRef.current = null;
+        await setNativeExternalAss(null);
+      }
+      const tryNativeAss = async (target2, content2) => {
+        if (!isDroidEngine || !getStyledAssSubtitles() || !looksLikeAssSubtitle(target2.url, content2)) return false;
+        if (!(await getDeviceCapabilities())?.styledAss) return false;
+        const raw = `${window.location.origin}/api/subtitles/raw?${new URLSearchParams({ url: target2.url }).toString()}`;
+        if (!await setNativeExternalAss(raw)) return false;
+        nativeAssSubIdRef.current = target2.id;
+        if (subtitleDownloadRequestIdRef.current === requestId) {
+          setCues([]);
+          setSubtitleLoadError(null);
+          setLoadingSub(false);
+        }
+        return true;
+      };
       if (!sub) {
         setActiveSubId(null);
         setCues([]);
@@ -30579,6 +31898,7 @@ ${cue.text}`).join("\n\n")}
       if (sub.source === "external") {
         setActiveSubId(sub.id);
         setSubtitleLoadError(null);
+        if (await tryNativeAss(sub)) return;
         if (useMpv) {
           try {
             await mpvCommand2(["sub-add", sub.url, "select"]);
@@ -30598,6 +31918,10 @@ ${cue.text}`).join("\n\n")}
           setSubtitleLoadError(t("subtitleFileUnsupported"));
         }
         setLoadingSub(false);
+        return;
+      }
+      if (await tryNativeAss(sub)) {
+        setActiveSubId(sub.id);
         return;
       }
       setLoadingSub(true);
@@ -30705,6 +32029,7 @@ ${cue.text}`).join("\n\n")}
           );
         }
         if (subtitleDownloadRequestIdRef.current !== requestId) return;
+        if (await tryNativeAss(sub, subtitleVtt)) return;
         setCues(parseVtt(subtitleVtt));
         setSubtitleLoadError(null);
       } catch (error) {
@@ -30717,7 +32042,7 @@ ${cue.text}`).join("\n\n")}
         clearTimeout(loadingGuard);
         if (subtitleDownloadRequestIdRef.current === requestId) setLoadingSub(false);
       }
-    }, [refreshMpvSubtitleTracks, useMpv]);
+    }, [refreshMpvSubtitleTracks, useMpv, isDroidEngine]);
     const selectSecondarySubtitle = useCallback(async (sub, options) => {
       const requestId = ++secondaryRequestIdRef.current;
       const stale = () => secondaryRequestIdRef.current !== requestId;
@@ -31114,13 +32439,13 @@ ${cue.text}`).join("\n\n")}
       const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("movie", realTime, totalDuration);
       if (!shouldMarkWatched) return;
       if (!wikiTmdbId && !resolvedImdbId && !imdbId) return;
-      setMovieWatched({
+      if (!markPlaybackMovieWatched({
         tmdbId: wikiTmdbId ?? null,
         imdbId: resolvedImdbId ?? imdbId ?? null,
         title,
         year: year ?? null,
         posterUrl: posterUrl ?? null
-      }, true);
+      })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, hasEndedPlayback, hasStarted, imdbId, mediaType, posterUrl, realTime, resolvedImdbId, title, totalDuration, wikiTmdbId]);
     useEffect(() => {
@@ -31153,11 +32478,96 @@ ${cue.text}`).join("\n\n")}
       if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
       setSleepTimer(DISARMED);
       sleepFiredAtRef.current = Date.now();
-      if (useMpv) void setMpvPause2(true);
-      else videoRef.current?.pause();
+      sleepFadeEndingRef.current = sleepFadeRef.current < 1;
+      const paused = useMpv ? Promise.resolve(setMpvPause2(true)).catch(() => {
+      }) : Promise.resolve(videoRef.current?.pause());
+      void paused.finally(() => {
+        if (!sleepFadeEndingRef.current) return;
+        sleepFadeEndingRef.current = false;
+        sleepFadeApplyRef.current(1);
+      });
       setStillWatchingReason("sleep");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    const [sleepFadeOn, setSleepFadeOn] = useState(() => getSleepFade());
+    const [sleepFade, setSleepFadeState] = useState(1);
+    const sleepFadeRef = useRef(1);
+    const sleepFadeCancelledForRef = useRef(null);
+    const sleepFadeEndingRef = useRef(false);
+    const sleepTimerRef = useRef(sleepTimer);
+    sleepTimerRef.current = sleepTimer;
+    const sleepUserVolumeRef = useRef(volume);
+    sleepUserVolumeRef.current = volume;
+    const sleepFadeApplyRef = useRef(() => {
+    });
+    sleepFadeApplyRef.current = (level) => {
+      const next = Math.max(0, Math.min(1, level));
+      const prev = sleepFadeRef.current;
+      if (next >= 1 && prev >= 1) return;
+      if (next < 1 && next > 0 && Math.abs(next - prev) < 0.01) return;
+      if (next === prev) return;
+      sleepFadeRef.current = next;
+      setSleepFadeState(next);
+      const user = sleepUserVolumeRef.current;
+      const val = (next >= 1 ? user : sleepFadedVolume(user, next)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    const spokenDuckRef = useRef(1);
+    const writeSpokenDuckRef = useRef(() => {
+    });
+    writeSpokenDuckRef.current = () => {
+      const user = sleepUserVolumeRef.current;
+      const fade = sleepFadeRef.current;
+      const val = (fade >= 1 ? user : sleepFadedVolume(user, fade)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    sleepFadeCancelRef.current = () => {
+      if (sleepFadeRef.current >= 1 || sleepFadeEndingRef.current) return;
+      sleepFadeCancelledForRef.current = sleepTimerRef.current.armedAtMs;
+      sleepFadeApplyRef.current(1);
+    };
+    useEffect(() => {
+      if (sleepFadeEndingRef.current) return;
+      const armed = sleepTimer.mode !== "off" && sleepTimer.armedAtMs != null;
+      const cancelled = armed && sleepFadeCancelledForRef.current === sleepTimer.armedAtMs;
+      const level = !sleepFadeOn || !armed || cancelled || showStillWatchingPrompt || !hasStarted ? 1 : sleepFadeLevel(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback });
+      sleepFadeApplyRef.current(level);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepFadeOn, sleepTimer, totalDuration]);
+    useEffect(() => {
+      if (sleepFade >= 1) return;
+      const cancel = () => sleepFadeCancelRef.current();
+      const onPointerMove = (e) => {
+        if (e.movementX !== 0 || e.movementY !== 0) cancel();
+      };
+      const opts = { capture: true, passive: true };
+      const events = ["pointerdown", "keydown", "wheel", "touchstart"];
+      for (const ev of events) window.addEventListener(ev, cancel, opts);
+      window.addEventListener("pointermove", onPointerMove, opts);
+      return () => {
+        for (const ev of events) window.removeEventListener(ev, cancel, opts);
+        window.removeEventListener("pointermove", onPointerMove, opts);
+      };
+    }, [sleepFade]);
+    useEffect(() => () => {
+      sleepFadeEndingRef.current = false;
+      sleepFadeApplyRef.current(1);
+    }, []);
     useEffect(() => {
       if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
     }, [isTv, showStillWatchingPrompt, tvFocus]);
@@ -31183,8 +32593,7 @@ ${cue.text}`).join("\n\n")}
       const watchedEnoughThisSession = watchedThisSession >= Math.min(120, Math.max(30, totalDuration * 0.03));
       const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("episode", realTime, totalDuration);
       if (!shouldMarkWatched) return;
-      setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-      removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
+      if (!markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, episode, hasEndedPlayback, hasStarted, mediaType, realTime, season, totalDuration, wikiTmdbId]);
     useEffect(() => {
@@ -31376,6 +32785,46 @@ ${cue.text}`).join("\n\n")}
         });
       }
     }, [mpvChapters, introDataReady, introSegment, url]);
+    const learnedSeriesId = mediaType === "tv" && wikiTmdbId ? `tmdb:${wikiTmdbId}` : null;
+    const [learnSkipsOn, setLearnSkipsOn] = useState(() => getLearnSkipsEnabled());
+    const [learnedSkips, setLearnedSkips] = useState({ start: null, end: null });
+    const [learnedHasData, setLearnedHasData] = useState(false);
+    useEffect(() => {
+      const sync2 = () => {
+        setLearnSkipsOn(getLearnSkipsEnabled());
+        setLearnedSkips(learnedSeriesId ? getLearnedSkips(learnedSeriesId) : { start: null, end: null });
+        setLearnedHasData(learnedSeriesId ? hasLearnedSkipData(learnedSeriesId) : false);
+      };
+      sync2();
+      return onLearnedSkipsChanged(sync2);
+    }, [learnedSeriesId]);
+    const seekTrackerRef = useRef(SEEK_TRACKER_INITIAL);
+    const learnCtxRef = useRef(null);
+    const commitLearnedSkipRef = useRef(() => {
+    });
+    commitLearnedSkipRef.current = (interval) => {
+      const c = learnCtxRef.current;
+      if (!interval || !c) return;
+      const region = classifySkip(interval.start, interval.end, c.duration);
+      if (!region) return;
+      recordLearnedSkip(c.seriesId, { season: c.season, episode: c.episode, region, start: interval.start, end: interval.end });
+    };
+    useEffect(() => {
+      seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+      return () => {
+        commitLearnedSkipRef.current(flushSeekTracker(seekTrackerRef.current));
+        seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+        learnCtxRef.current = null;
+      };
+    }, [learnedSeriesId, season, episode, url]);
+    useEffect(() => {
+      if (!learnSkipsOn || !learnedSeriesId || season == null || episode == null) return;
+      if (!hasStarted || !hasStartedForUrlRef.current || !(totalDuration > 0)) return;
+      learnCtxRef.current = { seriesId: learnedSeriesId, season, episode, duration: totalDuration };
+      const result2 = trackSeekSample(seekTrackerRef.current, realTime, Date.now(), isPlaying);
+      seekTrackerRef.current = result2.state;
+      commitLearnedSkipRef.current(result2.done);
+    }, [realTime, isPlaying, hasStarted, learnSkipsOn, learnedSeriesId, season, episode, totalDuration]);
     function resumeAfterSleepPrompt() {
       setStillWatchingReason("episodes");
       if (useMpv) {
@@ -31810,11 +33259,30 @@ ${cue.text}`).join("\n\n")}
         label: track.title ?? void 0
       }));
     }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine, detectedEmbeddedLanguages, t]);
+    const librarySubtitleOptions = useMemo(() => (librarySubtitles ?? []).map((sub, index) => {
+      const language = toSubtitleLangGroup(sub.language || sub.label);
+      return {
+        language,
+        lang3: language,
+        url: sub.url,
+        id: `library:${index}:${sub.url}`,
+        source: "library",
+        hashMatch: true,
+        release: sub.label,
+        label: sub.label,
+        ...sub.forced ? { forced: true } : {},
+        ...sub.sdh ? { sdh: true } : {}
+      };
+    }), [librarySubtitles]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
         ...externalSubtitles,
-        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
+        // Serverns sidofiler: lika mycket filens egna som de inbäddade spåren.
+        // Tvingade (bara skyltar) sist, så automatvalet aldrig tar dem före en hel text.
+        ...librarySubtitleOptions.filter((option) => !option.forced),
+        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions],
+        ...librarySubtitleOptions.filter((option) => option.forced)
       ];
       const seen2 = /* @__PURE__ */ new Set();
       return merged.filter((option) => {
@@ -31822,7 +33290,7 @@ ${cue.text}`).join("\n\n")}
         seen2.add(option.id);
         return true;
       });
-    }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
+    }, [subtitles, embeddedSubtitleOptions, externalSubtitles, librarySubtitleOptions]);
     const applySyncedSubtitle = useCallback(async (sub, vttUrl) => {
       const current5 = activeSubIdRef.current;
       if (!current5 || current5.startsWith("embedded:")) {
@@ -32108,18 +33576,20 @@ ${cue.text}`).join("\n\n")}
     }
     const volumeCeiling = useMpv ? 2 : 1;
     function pushVolume(val) {
+      const out = val * spokenDuckRef.current;
       if (useMpv) {
-        if (val > 1) void mpvCommand2(["set_property", "volume-max", 200]);
-        void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
+        if (out > 1) void mpvCommand2(["set_property", "volume-max", 200]);
+        void mpvCommand2(["set_property", "volume", Math.round(out * 100)]);
         void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
         return;
       }
       const v = videoRef.current;
       if (!v) return;
-      v.volume = Math.min(1, val);
+      v.volume = Math.min(1, out);
       v.muted = val === 0;
     }
     function applyVolume(raw) {
+      sleepFadeCancelRef.current();
       const val = Math.min(volumeCeiling, Math.max(0, raw));
       setVolume(val);
       setMuted(val === 0);
@@ -32140,6 +33610,17 @@ ${cue.text}`).join("\n\n")}
     const shouldShowSkipIntroButton = Boolean(
       hasStarted && !autoSkipIntro && activeIntro && introDataReady && !skipButtonExpired && !skipIntroDismissed
     );
+    const learnedSkipCtx = {
+      duration: totalDuration,
+      intro: introSegment ? { start: introSegment.startMs / 1e3, end: introSegment.endMs / 1e3 } : null,
+      outro: outroSegment ? { start: outroSegment.startMs / 1e3, end: outroSegment.endMs / 1e3 } : null
+    };
+    const activeLearnedSkip = learnSkipsOn && introDataReady && !activeIntro ? [usableLearnedSkip(learnedSkips.start, "start", learnedSkipCtx), usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx)].find((seg) => seg != null && realTime >= seg.start && realTime < seg.end) ?? null : null;
+    const shouldShowLearnedSkipButton = Boolean(
+      hasStarted && activeLearnedSkip && !skipIntroDismissed && !(skipButtonAutoHideSeconds > 0 && activeLearnedSkip && realTime - activeLearnedSkip.start > skipButtonAutoHideSeconds)
+    );
+    const skipButtonUp = shouldShowSkipIntroButton && activeIntro != null || shouldShowLearnedSkipButton;
+    const skipButtonEnd = shouldShowSkipIntroButton && activeIntro ? activeIntro.endMs / 1e3 : activeLearnedSkip?.end ?? 0;
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted || hasStarted;
     const collapseMpvTopBar = useMpv && !controlsVisible && !desktopFullscreen;
     const isLastEpisodeOfSeason = useMemo(() => {
@@ -32178,11 +33659,30 @@ ${cue.text}`).join("\n\n")}
     const creditsModeAllowed = Boolean(
       getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? getCreditsRecommendationsTv() && isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
     );
+    const nextEpAfterLastSubSeconds = getNextEpAfterLastSubSeconds();
+    const hasLearnedEndSkip = learnSkipsOn && usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx) != null;
+    const creditsCueSource = useMemo(() => {
+      if (cues.length > 0) return cues;
+      const vtt = activeSubId ? externalVttRef.current.get(activeSubId) : null;
+      return vtt ? parseVtt(vtt) : [];
+    }, [cues, activeSubId]);
+    const roundedDuration = Math.round(totalDuration);
+    const subtitleCreditsStart = useMemo(() => {
+      if (mediaType !== "tv" || nextEpAfterLastSubSeconds <= 0) return null;
+      if (!introDataReady || outroSegment || hasLearnedEndSkip) return null;
+      if (!durationConfirmed || roundedDuration <= 0 || creditsCueSource.length === 0) return null;
+      const result2 = estimateCreditsStartFromCues(creditsCueSource, roundedDuration, {
+        offsetSeconds: subDelay,
+        delayAfterLastLineSeconds: nextEpAfterLastSubSeconds
+      });
+      queueDebugLog(`[credits-subs] ${result2.reason}${result2.start != null ? ` vid ${Math.round(result2.start)}s` : ""} av ${roundedDuration}s (${creditsCueSource.length} rader, +${nextEpAfterLastSubSeconds}s)`);
+      return result2.start;
+    }, [mediaType, nextEpAfterLastSubSeconds, introDataReady, outroSegment, hasLearnedEndSkip, durationConfirmed, roundedDuration, creditsCueSource, subDelay]);
     const creditsTriggerSeconds = (() => {
       if (totalDuration <= 600) return null;
       const tailSeconds = (mediaType === "tv" ? getCreditsThresholdMinutesTv() : getCreditsThresholdMinutes()) * 60;
       const lateThreshold = Math.max(0, totalDuration - tailSeconds);
-      if (!outroSegment) return lateThreshold;
+      if (!outroSegment) return subtitleCreditsStart ?? lateThreshold;
       const outroEndsAt = outroSegment.endMs / 1e3;
       if (totalDuration - outroEndsAt > tailSeconds) return lateThreshold;
       return outroSegment.startMs / 1e3;
@@ -32414,16 +33914,34 @@ ${cue.text}`).join("\n\n")}
       outroFiredRef.current = true;
       markOutroFired(true);
       if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current && durationConfirmedRef.current) {
-        setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-        removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
-        watchedMarkedRef.current = true;
+        if (markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) watchedMarkedRef.current = true;
       }
-      onOutroStartRef.current?.();
+      onOutroStartRef.current?.({ source: "segment" });
     }, [episode, hasStarted, imdbId, mediaType, outroSegment, realTime, season, wikiTmdbId]);
-    const handleExternalSubtitleFile = useCallback(async (file) => {
+    const subtitleCreditsArmedRef = useRef(false);
+    useEffect(() => {
+      subtitleCreditsArmedRef.current = false;
+    }, [url]);
+    useEffect(() => {
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
+      if (outroFiredRef.current || outroSegment || subtitleCreditsStart == null) return;
+      if (realTime < subtitleCreditsStart) {
+        subtitleCreditsArmedRef.current = false;
+        return;
+      }
+      if (!subtitleCreditsArmedRef.current) {
+        subtitleCreditsArmedRef.current = true;
+        return;
+      }
+      if (totalDuration - realTime < 5) return;
+      outroFiredRef.current = true;
+      queueDebugLog(`[credits-subs] kortet vid ${Math.round(realTime)}s (uppskattat ${Math.round(subtitleCreditsStart)}s)`);
+      onOutroStartRef.current?.({ source: "subtitles" });
+    }, [hasStarted, outroSegment, subtitleCreditsStart, realTime, totalDuration]);
+    const handleExternalSubtitleFile = useCallback(async (file2) => {
       setSubtitleLoadError(null);
       try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        const bytes = new Uint8Array(await file2.arrayBuffer());
         const decode2 = (label, fatal) => new TextDecoder(label, { fatal }).decode(bytes);
         let content2;
         if (bytes[0] === 255 && bytes[1] === 254 || bytes[0] === 254 && bytes[1] === 255) {
@@ -32439,7 +33957,7 @@ ${cue.text}`).join("\n\n")}
         const response = await fetch("/api/subtitles/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: file.name, content: content2 })
+          body: JSON.stringify({ name: file2.name, content: content2 })
         });
         if (!response.ok) throw new Error(`upload ${response.status}`);
         const payload = await response.json();
@@ -32451,11 +33969,11 @@ ${cue.text}`).join("\n\n")}
           lang3: "ext",
           url: payload.path,
           source: "external",
-          label: file.name
+          label: file2.name
         };
         externalVttRef.current.set(id, payload.vtt ?? null);
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
-          `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
+          `[ext-sub] ${file2.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
         setExternalSubtitles((current5) => [option, ...current5]);
@@ -32880,12 +34398,12 @@ ${cue.text}`).join("\n\n")}
     const clipTvSend = async (phoneId) => {
       if (!clip2) return;
       const phone = clipPhones.find((ph) => ph.id === phoneId);
-      const base = clipLinkBase;
-      if (!base || !clipSendSource) {
+      const base2 = clipLinkBase;
+      if (!base2 || !clipSendSource) {
         clipToast("clipFailed");
         return;
       }
-      const link = tmdbId ? buildMomentLink(base, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : base;
+      const link = tmdbId ? buildMomentLink(base2, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : base2;
       const offer = buildClipOffer({
         state: clip2,
         tvName: describeThisDevice(isTv, isAndroidTauriEnv),
@@ -33132,9 +34650,9 @@ ${cue.text}`).join("\n\n")}
             return;
           }
           const seq3 = clipRenderSeqRef.current;
-          const file = await prepareWebShareFile(rendered, name, clipMime(clip2.format));
+          const file2 = await prepareWebShareFile(rendered, name, clipMime(clip2.format));
           if (seq3 !== clipRenderSeqRef.current) return;
-          clipWebFileRef.current = file;
+          clipWebFileRef.current = file2;
           setClipShareState({ kind: "ready" });
           return;
         }
@@ -33179,6 +34697,11 @@ ${cue.text}`).join("\n\n")}
       gearValue(value)
     ] });
     const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
+    const toggleSleepFade = () => {
+      const next = !sleepFadeOn;
+      setSleepFade(next);
+      setSleepFadeOn(next);
+    };
     const nightLabel = (mode) => t(nightModeLabelKey(mode, true));
     const applySpeed = (next) => {
       setPlaybackSpeedState(next);
@@ -33193,6 +34716,8 @@ ${cue.text}`).join("\n\n")}
         playerIcon("clip", dtMoreIconClass),
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("clipTitle") })
       ] }, "clip") : null,
+      gearToggleRow("incognito", "incognito", t("incognitoToggle"), incognito, () => setIncognito(!incognito)),
+      spokenSubsSupported ? gearToggleRow("spokenSubs", "speak", t("spokenSubtitles"), spokenSubsOn, () => setSpokenSubtitles(!spokenSubsOn)) : null,
       gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
       gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
       gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
@@ -33203,6 +34728,11 @@ ${cue.text}`).join("\n\n")}
         setAutoSkipIntro(next);
         setAutoSkipIntroState(next);
       }) : null,
+      mediaType === "tv" ? gearToggleRow("learnSkips", "skip", t("plLearnSkips"), learnSkipsOn, () => setLearnSkipsEnabled(!learnSkipsOn)) : null,
+      mediaType === "tv" && learnedSeriesId && learnedHasData ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => forgetLearnedSkips(learnedSeriesId), className: dtMoreRowClass, children: [
+        gearRowIcon("skip", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plForgetLearnedSkips") })
+      ] }, "forgetLearnedSkips") : null,
       resolutionSwitch ? gearToggleRow("resolution", "resolution", t("matchResolution"), matchResolutionOn, () => {
         const next = !matchResolutionOn;
         setMatchResolution(next);
@@ -33242,7 +34772,8 @@ ${cue.text}`).join("\n\n")}
         case "sleep":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
             gearSubHeader(t("plSleepTimer"), sleepStateLabel()),
-            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
+            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now()))),
+            gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade)
           ] });
         case "night":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -33381,15 +34912,15 @@ ${cue.text}`).join("\n\n")}
       if (!getScrubPreviewsPrepare() || !scrubPreviewsOnRef.current) return;
       const preview = scrubPreviewProp ?? grabScrubPreview(url, totalDuration, scrubIdentity(sourceInfoHash, season, episode), scrubTitle(imdbId, tmdbId, season, episode));
       if (!preview || !preview.urlTemplate.includes("/api/trickplay/grab")) return;
-      const base = preview.urlTemplate.replace("{index}", "0");
-      void fetch(`${base}&progress=1`).then((r) => r.ok ? r.json() : null).then((progress3) => {
+      const base2 = preview.urlTemplate.replace("{index}", "0");
+      void fetch(`${base2}&progress=1`).then((r) => r.ok ? r.json() : null).then((progress3) => {
         if (!progress3 || progress3.total <= 0 || progress3.done >= progress3.total) return;
         setPlaybackPaused(true);
-        const warmUrl = `${base}&warm=1`;
+        const warmUrl = `${base2}&warm=1`;
         scrubWarmedRef.current = warmUrl;
         void fetch(warmUrl).catch(() => {
         });
-        setScrubPrepare({ ...progress3, base, startedAt: Date.now() });
+        setScrubPrepare({ ...progress3, base: base2, startedAt: Date.now() });
       }).catch(() => {
       });
     }, [isPlaying, totalDuration > 0, url]);
@@ -33954,8 +35485,8 @@ ${cue.text}`).join("\n\n")}
           tvScrubResumeRef.current = true;
           togglePlay();
         }
-        const base = tvScrubTargetRef.current ?? realTime;
-        const target2 = Math.min(Math.max(0, base + (event2.key === "ArrowLeft" ? -step2 : step2)), Math.max(0, totalDuration - 1));
+        const base2 = tvScrubTargetRef.current ?? realTime;
+        const target2 = Math.min(Math.max(0, base2 + (event2.key === "ArrowLeft" ? -step2 : step2)), Math.max(0, totalDuration - 1));
         tvScrubTargetRef.current = target2;
         setScrubPercent(target2 / totalDuration * 100);
         if (tvScrubTimerRef.current !== null) window.clearTimeout(tvScrubTimerRef.current);
@@ -34015,6 +35546,96 @@ ${cue.text}`).join("\n\n")}
       const now2 = realTimeRef.current;
       saidBufferRef.current = pushCue(saidBufferRef.current, { text: text2, start: now2 }, now2);
     }, [saidText]);
+    const [spokenSubsOn, setSpokenSubsOn] = useState(() => getSpokenSubtitles());
+    const [spokenSubsRate, setSpokenSubsRate] = useState(() => getSpokenSubtitlesRate());
+    const [spokenSubsSupported, setSpokenSubsSupported] = useState(false);
+    useEffect(() => {
+      setSpokenSubsSupported(spokenSubtitlesSupported());
+    }, []);
+    useEffect(() => onSpokenSubtitlesChanged(() => {
+      setSpokenSubsOn(getSpokenSubtitles());
+      setSpokenSubsRate(getSpokenSubtitlesRate());
+    }), []);
+    const spokenActive = spokenSubsOn && spokenSubsSupported;
+    const spokenUiLangRef = useRef(lang);
+    spokenUiLangRef.current = lang;
+    const spokenQueueRef = useRef(null);
+    const spokenRampRef = useRef({ timer: void 0, hold: void 0 });
+    const spokenRampTo = useCallback((target2, durationMs) => {
+      const ramp = spokenRampRef.current;
+      window.clearInterval(ramp.timer);
+      ramp.timer = void 0;
+      const from = spokenDuckRef.current;
+      if (from === target2) return;
+      const startedAt = Date.now();
+      const stepMs = isDroidEngine ? 90 : 40;
+      const step2 = () => {
+        const level = rampLevel(from, target2, Date.now() - startedAt, durationMs);
+        spokenDuckRef.current = level;
+        writeSpokenDuckRef.current();
+        if (level === target2) {
+          window.clearInterval(ramp.timer);
+          ramp.timer = void 0;
+        }
+      };
+      step2();
+      if (spokenDuckRef.current !== target2) ramp.timer = window.setInterval(step2, stepMs);
+    }, [isDroidEngine]);
+    const spokenSpeakingChange = useCallback((speaking) => {
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      ramp.hold = void 0;
+      if (speaking) {
+        spokenRampTo(DUCK_LEVEL, DUCK_ATTACK_MS);
+        return;
+      }
+      ramp.hold = window.setTimeout(() => spokenRampTo(1, DUCK_RELEASE_MS), DUCK_HOLD_MS);
+    }, [spokenRampTo]);
+    const spokenStopNow = useCallback(() => {
+      spokenQueueRef.current?.reset();
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      window.clearInterval(ramp.timer);
+      ramp.hold = void 0;
+      ramp.timer = void 0;
+      if (spokenDuckRef.current !== 1) {
+        spokenDuckRef.current = 1;
+        writeSpokenDuckRef.current();
+      }
+    }, []);
+    useEffect(() => {
+      if (!spokenActive) {
+        spokenStopNow();
+        return;
+      }
+      if (!spokenQueueRef.current) {
+        const engine = createSpeechEngine(() => spokenUiLangRef.current);
+        if (!engine) return;
+        spokenQueueRef.current = new SpokenSubtitleQueue(engine, { onSpeakingChange: (speaking) => spokenSpeakingChange(speaking) });
+      }
+    }, [spokenActive]);
+    useEffect(() => () => spokenStopNow(), [spokenStopNow]);
+    const activeSubtitleOption = activeSubId ? subtitleOptions.find((o) => o.id === activeSubId) ?? null : null;
+    const spokenLang = normalizeLanguageCode(activeSubtitleOption?.lang3 || activeSubtitleOption?.language) ?? null;
+    useEffect(() => {
+      spokenQueueRef.current?.configure({ lang: spokenLang, rate: speechRateFor(spokenSubsRate) });
+    }, [spokenActive, spokenLang, spokenSubsRate]);
+    useEffect(() => {
+      if (!isPlaying) spokenQueueRef.current?.pause();
+    }, [isPlaying]);
+    useEffect(() => {
+      spokenQueueRef.current?.reset();
+    }, [url, activeSubId]);
+    const spokenLastTimeRef = useRef(realTime);
+    useEffect(() => {
+      const prev = spokenLastTimeRef.current;
+      spokenLastTimeRef.current = realTime;
+      if (Math.abs(realTime - prev) > 3) spokenQueueRef.current?.reset();
+    }, [realTime]);
+    useEffect(() => {
+      if (!spokenActive || !isPlaying) return;
+      spokenQueueRef.current?.line(saidText ?? "");
+    }, [spokenActive, isPlaying, saidText]);
     const couchRef = useRef({ snapshot: () => null, run: () => {
     }, said: () => [] });
     couchRef.current = {
@@ -34343,10 +35964,10 @@ ${cue.text}`).join("\n\n")}
     const keySeekHudRef = useRef({ total: 0, at: 0 });
     showKeySeekHudRef.current = (delta) => {
       const now2 = Date.now();
-      const state2 = keySeekHudRef.current;
-      state2.total = now2 - state2.at < 900 ? state2.total + delta : delta;
-      state2.at = now2;
-      showGestureHud("skip", state2.total);
+      const state3 = keySeekHudRef.current;
+      state3.total = now2 - state3.at < 900 ? state3.total + delta : delta;
+      state3.at = now2;
+      showGestureHud("skip", state3.total);
       gestureHudTimerRef.current = window.setTimeout(() => setGestureHud(null), 700);
     };
     const onGesturePointerDown = (event2) => {
@@ -34647,7 +36268,7 @@ ${cue.text}`).join("\n\n")}
     const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
     const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
     const phoneClusterIds = phoneDedicatedIds.filter((id) => showsControl(id) && Boolean(phoneControls[id]));
-    const phoneStateClass = (state2, idleClass = "text-slate-200") => state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
+    const phoneStateClass = (state3, idleClass = "text-slate-200") => state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
     const renderPhoneTile = (id, spec) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -35204,6 +36825,7 @@ ${cue.text}`).join("\n\n")}
                       }
                     },
                     onVolumeChange: (e) => {
+                      if (sleepFadeRef.current < 1) return;
                       setMuted(e.currentTarget.muted);
                       setVolume(e.currentTarget.volume);
                     },
@@ -35729,7 +37351,7 @@ ${cue.text}`).join("\n\n")}
                                 /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
                                   /* @__PURE__ */ jsx("div", { className: isActive ? dtActiveTextClass : "text-slate-300", children: sub.source === "external" ? sub.label ?? t("subtitleExternalGroup") : LANG_NAMES[selectedLang] ?? selectedLang }),
                                   /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-500", children: secondaryBlocked ? sub.id === activeSubId ? t("subtitleSlotPrimary") : t("subtitleSecondaryEmbeddedUnsupported") : [
-                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : t("subtitleProvider"),
+                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : sub.source === "library" ? sub.label ? `${t("subtitleLibraryTrack")} \xB7 ${sub.label}` : t("subtitleLibraryTrack") : t("subtitleProvider"),
                                     sub.forced ? t("subtitleForced") : null,
                                     sub.sdh ? t("subtitleSdh") : null
                                   ].filter(Boolean).join(" \xB7 ") })
@@ -35762,6 +37384,21 @@ ${cue.text}`).join("\n\n")}
                             ]
                           }
                         ) }),
+                        spokenSubsSupported && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2", children: /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            "aria-pressed": spokenSubsOn,
+                            onClick: () => setSpokenSubtitles(!spokenSubsOn),
+                            className: `flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition ${spokenSubsOn ? "border-white/25 bg-white/10 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"}`,
+                            title: t("spokenSubtitlesDesc"),
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("spokenSubtitles") }),
+                              /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(spokenSubsOn ? "on" : "off") })
+                            ]
+                          }
+                        ) }),
                         /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
                           /* @__PURE__ */ jsx(
                             "input",
@@ -35771,9 +37408,9 @@ ${cue.text}`).join("\n\n")}
                               accept: ".srt,.vtt,.ass,.ssa,.sub,.txt,text/vtt,text/plain,application/x-subrip",
                               className: "hidden",
                               onChange: (event2) => {
-                                const file = event2.target.files?.[0];
+                                const file2 = event2.target.files?.[0];
                                 event2.target.value = "";
-                                if (file) void handleExternalSubtitleFile(file);
+                                if (file2) void handleExternalSubtitleFile(file2);
                               }
                             }
                           ),
@@ -35868,6 +37505,15 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ] }) }),
+                sleepFade < 1 && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    "data-sleep-fade-dim": "",
+                    "aria-hidden": true,
+                    className: "pointer-events-none absolute inset-0 z-[57] bg-black",
+                    style: { opacity: sleepDimOpacity(sleepFade), transition: "opacity 1.2s linear" }
+                  }
+                ),
                 showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
                   /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
@@ -35921,7 +37567,7 @@ ${cue.text}`).join("\n\n")}
                   },
                   momentNotice.id
                 ) : null,
-                shouldShowSkipIntroButton && activeIntro && openSurface === null && /* @__PURE__ */ jsxs(
+                skipButtonUp && openSurface === null && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     inert: !controlsVisible,
@@ -35940,10 +37586,10 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
+                          onClick: () => seekToAbsolute(skipButtonEnd),
                           className: "flex items-center gap-2 py-1.5 pr-2 text-sm font-medium text-white",
                           children: [
-                            t("skipIntro"),
+                            shouldShowSkipIntroButton && activeIntro ? t("skipIntro") : t("skipLearned"),
                             /* @__PURE__ */ jsx("svg", { className: "h-[15px] w-[15px]", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) })
                           ]
                         }
@@ -36808,7 +38454,8 @@ ${cue.text}`).join("\n\n")}
                                 },
                                 String(mode)
                               );
-                            })
+                            }),
+                            /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] pt-1", children: gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade) })
                           ]
                         }
                       ),
@@ -37052,6 +38699,10 @@ ${cue.text}`).join("\n\n")}
       init_profile_storage_shim();
       init_profile_avatar();
       init_sleep_timer();
+      init_playback_settings();
+      init_spoken_subtitles();
+      init_spoken_subtitles_engine();
+      init_spoken_subtitles_settings();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -37063,9 +38714,12 @@ ${cue.text}`).join("\n\n")}
       init_android_media_keys();
       init_resume_playback();
       init_subtitle_autopick();
-      init_watched_episodes();
-      init_watched_movies();
+      init_playback_watched();
+      init_incognito();
+      init_use_incognito();
       init_scrobble_fanout();
+      init_learned_skip();
+      init_learned_skip_store();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -37103,6 +38757,7 @@ ${cue.text}`).join("\n\n")}
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
+      init_credits_from_subs();
       init_player_reveal_hold();
       init_player_silent_start();
       init_credits_recommendations();
@@ -37175,6 +38830,299 @@ ${cue.text}`).join("\n\n")}
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
+    }
+  });
+
+  // lib/cast-recognition-core.ts
+  function normalizeTitle3(value) {
+    if (typeof value !== "string") return null;
+    const normalized = value.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  function stamp(value) {
+    const t = typeof value === "string" ? Date.parse(value) : Number.NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function keepLatest(map, key, at) {
+    const prev = map.get(key);
+    if (prev === void 0 || at > prev) map.set(key, at);
+  }
+  function buildWatchedIndex(movies, episodes) {
+    const index = { movies: /* @__PURE__ */ new Map(), moviesByTitle: /* @__PURE__ */ new Map(), series: /* @__PURE__ */ new Map() };
+    for (const m of movies) {
+      const at = stamp(m.watchedAt);
+      if (m.tmdbId && /^\d+$/.test(m.tmdbId)) keepLatest(index.movies, m.tmdbId, at);
+      else {
+        const title = normalizeTitle3(m.title);
+        if (title && typeof m.year === "number") keepLatest(index.moviesByTitle, `${title}|${m.year}`, at);
+      }
+    }
+    for (const e of episodes) {
+      if (e.tmdbId && /^\d+$/.test(e.tmdbId)) keepLatest(index.series, e.tmdbId, stamp(e.watchedAt));
+    }
+    return index;
+  }
+  function isWatchedIndexEmpty(index) {
+    return index.movies.size === 0 && index.moviesByTitle.size === 0 && index.series.size === 0;
+  }
+  function encodeCredit(c) {
+    const title = c.title.replace(/\s+/g, " ").trim().slice(0, TITLE_MAX_CHARS);
+    return `${c.mediaType === "tv" ? "t" : "m"}${c.id}|${c.year ?? ""}|${title}`;
+  }
+  function decodeCredit(raw) {
+    const match = /^([mt])(\d+)\|(\d{0,4})\|(.*)$/.exec(raw);
+    if (!match) return null;
+    const year = match[3] ? Number(match[3]) : null;
+    return { mediaType: match[1] === "t" ? "tv" : "movie", id: match[2], year, title: match[4] };
+  }
+  function compactCreditsFromApi(credits) {
+    if (!Array.isArray(credits)) return [];
+    const out = [];
+    const seen2 = /* @__PURE__ */ new Set();
+    for (const raw of credits) {
+      if (!raw || typeof raw !== "object") continue;
+      const r = raw;
+      const id = typeof r.id === "number" || typeof r.id === "string" ? String(r.id) : "";
+      if (!/^\d+$/.test(id)) continue;
+      const mediaType = r.mediaType === "tv" ? "tv" : "movie";
+      const title = typeof r.title === "string" ? r.title.trim() : "";
+      if (!title) continue;
+      const key = `${mediaType}-${id}`;
+      if (seen2.has(key)) continue;
+      seen2.add(key);
+      out.push({ mediaType, id, title, year: typeof r.year === "number" && Number.isFinite(r.year) ? r.year : null });
+      if (out.length >= CREDITS_PER_PERSON) break;
+    }
+    return out;
+  }
+  function watchedAtOf(c, index) {
+    const id = String(c.id);
+    if (c.mediaType === "tv") return index.series.get(id);
+    const at = index.movies.get(id);
+    if (at !== void 0 || c.year == null) return at;
+    const title = normalizeTitle3(c.title);
+    return title ? index.moviesByTitle.get(`${title}|${c.year}`) : void 0;
+  }
+  function matchWatchedCreditItems(credits, index, exclude = null) {
+    const hits = [];
+    const seen2 = /* @__PURE__ */ new Set();
+    for (const c of credits) {
+      if (exclude && c.mediaType === exclude.mediaType && String(c.id) === exclude.id) continue;
+      const at = watchedAtOf(c, index);
+      if (at === void 0) continue;
+      const key = `${c.mediaType}-${c.id}`;
+      const norm2 = normalizeTitle3(c.title) ?? c.title;
+      if (seen2.has(key) || seen2.has(norm2)) continue;
+      seen2.add(key);
+      seen2.add(norm2);
+      hits.push({ credit: c, at });
+    }
+    hits.sort((a, b) => b.at - a.at);
+    return hits.map((h) => h.credit);
+  }
+  function matchWatchedCredits(credits, index, exclude, limit = 3) {
+    return matchWatchedCreditItems(credits, index, exclude).slice(0, Math.max(0, limit)).map((c) => c.title);
+  }
+  function parseCreditsCache(raw) {
+    if (!raw) return {};
+    try {
+      const parsed2 = JSON.parse(raw);
+      if (!parsed2 || typeof parsed2 !== "object" || Array.isArray(parsed2)) return {};
+      const out = {};
+      for (const [id, value] of Object.entries(parsed2)) {
+        if (!/^\d+$/.test(id) || !value || typeof value !== "object") continue;
+        const v = value;
+        if (typeof v.at !== "number" || !Array.isArray(v.c)) continue;
+        out[id] = { at: v.at, c: v.c.filter((s) => typeof s === "string") };
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  }
+  function isCachedPersonFresh(entry, now2, ttlMs = CREDITS_TTL_MS) {
+    if (!entry) return false;
+    const age = now2 - entry.at;
+    return age >= 0 && age < ttlMs;
+  }
+  function putCachedPerson(file2, personId, credits, now2, max = CACHE_MAX_PERSONS) {
+    const next = { ...file2, [personId]: { at: now2, c: credits.map(encodeCredit) } };
+    const ids = Object.keys(next);
+    if (ids.length <= max) return next;
+    ids.sort((a, b) => next[b].at - next[a].at);
+    const trimmed = {};
+    for (const id of ids.slice(0, max)) trimmed[id] = next[id];
+    return trimmed;
+  }
+  function creditsOf(entry) {
+    if (!entry) return [];
+    const out = [];
+    for (const raw of entry.c) {
+      const c = decodeCredit(raw);
+      if (c) out.push(c);
+    }
+    return out;
+  }
+  var MAX_PERSONS_PER_TITLE, CREDITS_TTL_MS, CACHE_MAX_PERSONS, CREDITS_PER_PERSON, TITLE_MAX_CHARS;
+  var init_cast_recognition_core = __esm({
+    "lib/cast-recognition-core.ts"() {
+      MAX_PERSONS_PER_TITLE = 6;
+      CREDITS_TTL_MS = 7 * 864e5;
+      CACHE_MAX_PERSONS = 80;
+      CREDITS_PER_PERSON = 200;
+      TITLE_MAX_CHARS = 60;
+    }
+  });
+
+  // lib/cast-recognition.ts
+  function loadFile() {
+    if (file) return file;
+    try {
+      file = parseCreditsCache(getItem(CACHE_KEY));
+    } catch {
+      file = {};
+    }
+    return file;
+  }
+  function scheduleSave() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      if (!file) return;
+      try {
+        setItem(CACHE_KEY, JSON.stringify(file));
+      } catch {
+      }
+    }, SAVE_DEBOUNCE_MS);
+  }
+  function getCachedCredits(personId, now2 = Date.now()) {
+    const entry = loadFile()[personId];
+    return isCachedPersonFresh(entry, now2) ? creditsOf(entry) : null;
+  }
+  function loadPersonCredits(personId) {
+    if (!/^\d+$/.test(personId)) return Promise.resolve(null);
+    const cached2 = getCachedCredits(personId);
+    if (cached2) return Promise.resolve(cached2);
+    const stale = loadFile()[personId];
+    const failed = failedAt.get(personId);
+    if (failed !== void 0 && Date.now() - failed < FAILURE_BACKOFF_MS) {
+      return Promise.resolve(stale ? creditsOf(stale) : null);
+    }
+    const running2 = inflight8.get(personId);
+    if (running2) return running2;
+    const request2 = (async () => {
+      try {
+        const data = await fetchApiJsonCached(
+          `/api/person?id=${encodeURIComponent(personId)}`,
+          { ttlMs: CREDITS_TTL_MS, retries: 0, priority: "low" }
+        );
+        const credits = compactCreditsFromApi(data?.person?.credits);
+        file = putCachedPerson(loadFile(), personId, credits, Date.now());
+        failedAt.delete(personId);
+        scheduleSave();
+        return credits;
+      } catch {
+        failedAt.set(personId, Date.now());
+        return stale ? creditsOf(stale) : null;
+      } finally {
+        inflight8.delete(personId);
+      }
+    })();
+    inflight8.set(personId, request2);
+    return request2;
+  }
+  function readWatchedIndex() {
+    try {
+      return buildWatchedIndex(getWatchedMovies(), getWatchedEpisodes());
+    } catch {
+      return buildWatchedIndex([], []);
+    }
+  }
+  function useWatchedIndex(enabled) {
+    const [index, setIndex] = useState(null);
+    useEffect(() => {
+      if (!enabled) return;
+      const refresh2 = () => setIndex(readWatchedIndex());
+      refresh2();
+      const offs = [onWatchedMoviesChanged(refresh2), onWatchedEpisodesChanged(refresh2), onProfileChanged(refresh2)];
+      return () => {
+        for (const off of offs) off();
+      };
+    }, [enabled]);
+    return index;
+  }
+  function useCastRecognition(input) {
+    const { active: active5, exclude, limit = 3 } = input;
+    const ids = useMemo(
+      () => Array.from(new Set(input.personIds.map(String).filter((id) => /^\d+$/.test(id)))).slice(0, MAX_PERSONS_PER_TITLE),
+      [input.personIds.slice(0, MAX_PERSONS_PER_TITLE * 2).join(",")]
+    );
+    const index = useWatchedIndex(active5 && ids.length > 0);
+    const [credits, setCredits] = useState({});
+    useEffect(() => {
+      if (!active5 || !index || isWatchedIndexEmpty(index) || ids.length === 0) return;
+      let cancelled = false;
+      for (const id of ids) {
+        const cached2 = getCachedCredits(id);
+        if (cached2) {
+          setCredits((prev) => prev[id] === void 0 ? { ...prev, [id]: cached2 } : prev);
+          continue;
+        }
+        void loadPersonCredits(id).then((list) => {
+          if (cancelled || !list) return;
+          setCredits((prev) => ({ ...prev, [id]: list }));
+        });
+      }
+      return () => {
+        cancelled = true;
+      };
+    }, [active5, index, ids]);
+    const excludeKey = exclude ? `${exclude.mediaType}-${exclude.id}` : "";
+    return useMemo(() => {
+      const out = {};
+      if (!index || isWatchedIndexEmpty(index)) return out;
+      for (const id of ids) {
+        const list = credits[id];
+        if (!list) continue;
+        const titles = matchWatchedCredits(list, index, exclude, limit);
+        if (titles.length > 0) out[id] = titles;
+      }
+      return out;
+    }, [credits, index, ids, excludeKey, limit]);
+  }
+  function primePersonCredits(personId, credits) {
+    const id = String(personId);
+    if (!/^\d+$/.test(id) || getCachedCredits(id)) return;
+    const list = compactCreditsFromApi(credits);
+    if (list.length === 0) return;
+    file = putCachedPerson(loadFile(), id, list, Date.now());
+    scheduleSave();
+  }
+  function useWatchedCreditsOf(credits) {
+    const index = useWatchedIndex(Boolean(credits && credits.length > 0));
+    return useMemo(() => {
+      if (!credits || credits.length === 0 || !index || isWatchedIndexEmpty(index)) return [];
+      return matchWatchedCreditItems(credits, index);
+    }, [credits, index]);
+  }
+  var CACHE_KEY, FAILURE_BACKOFF_MS, SAVE_DEBOUNCE_MS, file, saveTimer, inflight8, failedAt;
+  var init_cast_recognition = __esm({
+    "lib/cast-recognition.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_api_json_cache();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      init_cast_recognition_core();
+      CACHE_KEY = "cast_credits_cache_v1";
+      FAILURE_BACKOFF_MS = 10 * 6e4;
+      SAVE_DEBOUNCE_MS = 400;
+      file = null;
+      saveTimer = null;
+      inflight8 = /* @__PURE__ */ new Map();
+      failedAt = /* @__PURE__ */ new Map();
     }
   });
 
@@ -37473,20 +39421,20 @@ ${cue.text}`).join("\n\n")}
       focusOnOpen.current = false;
       optionRefs.current[Math.max(0, selectedIndex)]?.focus();
     }, [open2, menuPos, selectedIndex]);
-    const close = (returnFocus) => {
+    const close2 = (returnFocus) => {
       setOpen(false);
       if (returnFocus) triggerRef.current?.focus();
     };
     const choose = (o, returnFocus) => {
       if (onChange) onChange(o.value);
-      close(returnFocus);
+      close2(returnFocus);
     };
     const onTriggerKeyDown = (e) => {
       if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         if (open2) {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") optionRefs.current[Math.max(0, selectedIndex)]?.focus();
-          else close(false);
+          else close2(false);
           return;
         }
         focusOnOpen.current = true;
@@ -37494,7 +39442,7 @@ ${cue.text}`).join("\n\n")}
       } else if (e.key === "Escape" && open2) {
         e.preventDefault();
         e.stopPropagation();
-        close(false);
+        close2(false);
       }
     };
     const onMenuKeyDown = (e) => {
@@ -37526,11 +39474,11 @@ ${cue.text}`).join("\n\n")}
         case "Escape":
           e.preventDefault();
           e.stopPropagation();
-          close(true);
+          close2(true);
           break;
         case "Tab":
           e.preventDefault();
-          close(true);
+          close2(true);
           break;
       }
     };
@@ -38091,7 +40039,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
-    const raw = getScopedStorageItem(KEY20);
+    const raw = getScopedStorageItem(KEY21);
     return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
@@ -38100,12 +40048,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY20, DEFAULT_TV_KEYBOARD_MODE;
+  var KEY21, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY20 = "tv_keyboard_mode_v1";
+      KEY21 = "tv_keyboard_mode_v1";
       DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
@@ -38616,6 +40564,15 @@ ${cue.text}`).join("\n\n")}
       else if (sort === "popularity") list.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
       return list;
     }, [data, debouncedQuery, sort, lang]);
+    const seenCredits = useWatchedCreditsOf(person?.credits ?? null);
+    useEffect(() => {
+      if (person?.credits) primePersonCredits(person.id, person.credits);
+    }, [person]);
+    const castRecognition = useCastRecognition({
+      personIds: (data?.cast ?? []).map((member) => member.id),
+      active: data != null && tab === "cast" && personId == null,
+      exclude: { mediaType, id: tmdbId }
+    });
     const visibleCrew = useMemo(() => {
       let list = crew.filter((member) => member.department === tab);
       if (debouncedQuery) list = list.filter((member) => `${member.name} ${member.job}`.toLowerCase().includes(debouncedQuery));
@@ -38822,7 +40779,8 @@ ${cue.text}`).join("\n\n")}
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-0.5 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3.5", children: [
                     /* @__PURE__ */ jsx("p", { className: `truncate text-slate-100 transition group-hover:text-white text-sm`, children: member.name }),
                     /* @__PURE__ */ jsx("p", { className: `truncate text-slate-400 text-xs`, children: member.character }),
-                    episodeLabel(member.episodeCount) ? /* @__PURE__ */ jsx("p", { className: "truncate text-slate-500 text-[11px]", children: episodeLabel(member.episodeCount) }) : null
+                    episodeLabel(member.episodeCount) ? /* @__PURE__ */ jsx("p", { className: "truncate text-slate-500 text-[11px]", children: episodeLabel(member.episodeCount) }) : null,
+                    castRecognition[String(member.id)] ? /* @__PURE__ */ jsx("p", { "data-cast-seen-in": "", className: "line-clamp-2 pt-0.5 text-xs leading-snug text-accent-400/80", children: t("castSeenIn").replace("{titles}", castRecognition[String(member.id)].join(", ")) }) : null
                   ] })
                 ]
               },
@@ -38932,7 +40890,8 @@ ${cue.text}`).join("\n\n")}
                 personName: person?.name ?? "",
                 defaultExpanded: true,
                 variant: "sidebar",
-                onCreditClick: (credit) => onOpenCredit({ id: credit.id, mediaType: credit.mediaType })
+                onCreditClick: (credit) => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
+                seenCredits
               }
             ),
             (person?.credits?.length ?? 0) > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-4", children: [
@@ -38987,6 +40946,26 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 !isTv || bioClipped || bioExpanded ? /* @__PURE__ */ jsx("button", { type: "button", ...station3, onClick: () => setBioExpanded((value) => !value), className: "mt-2.5 text-[0.65rem] font-normal uppercase tracking-[0.22em] text-slate-400 transition hover:text-white focus-visible:text-white focus-visible:outline-none", children: bioExpanded ? t("readLess") : t("readMore") }) : null
+              ] }) : null,
+              seenCredits.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-person-seen-in": "", children: [
+                /* @__PURE__ */ jsxs("div", { className: "mb-2.5 flex items-baseline gap-3", children: [
+                  /* @__PURE__ */ jsx("p", { className: `font-semibold text-slate-50 ${isTv ? "text-lg sm:text-2xl" : "text-base"}`, children: t("personSeenIn") }),
+                  /* @__PURE__ */ jsx("p", { className: `text-slate-500 text-xs`, children: t("personSeenInSorted") })
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]", ...isTv ? { "data-row": "" } : {}, children: seenCredits.map((credit) => /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    ...station3,
+                    onClick: () => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
+                    className: `focus-poster-ring group shrink-0 text-left ${isTv ? "w-[104px] sm:w-[150px]" : "w-[104px] sm:w-[120px]"}`,
+                    children: [
+                      /* @__PURE__ */ jsx("div", { className: "focus-poster-surface relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/5 ring-1 ring-white/10 transition group-hover:ring-white/40", children: credit.posterUrl ? /* @__PURE__ */ jsx("img", { src: credit.posterUrl, alt: credit.title, loading: "lazy", className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx(InitialTile, { name: credit.title, textClass: "text-2xl" }) }),
+                      /* @__PURE__ */ jsx("p", { className: `mt-1.5 truncate text-slate-300 ${isTv ? "text-xs sm:text-base" : "text-xs"}`, children: credit.title })
+                    ]
+                  },
+                  `seen-${credit.mediaType}-${credit.id}`
+                )) })
               ] }) : null,
               person.topCredits.length > 0 ? /* @__PURE__ */ jsxs("div", { children: [
                 /* @__PURE__ */ jsxs("div", { className: "mb-2.5 flex items-baseline gap-3", children: [
@@ -39056,6 +41035,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_focus_shim();
       init_wiki_request_cache();
       init_api_json_cache();
+      init_cast_recognition();
       init_person_banner();
       init_tv_settings_rows();
       init_jsx_runtime_shim();
@@ -39475,8 +41455,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners20 = this.eventListeners[eventName];
-            for (const listener of listeners20)
+            const listeners21 = this.eventListeners[eventName];
+            for (const listener of listeners21)
               listener(arg);
             return true;
           }
@@ -40049,9 +42029,9 @@ ${cue.text}`).join("\n\n")}
     channelHost()?.rememberChannelStream?.(token);
   }
   function channelSourceCacheSetting() {
-    const cache12 = channelHost()?.sourceCache;
-    if (!cache12 || !cache12.isAndroid()) return null;
-    return { isPhone: cache12.isPhone(), get: cache12.get, set: cache12.set };
+    const cache13 = channelHost()?.sourceCache;
+    if (!cache13 || !cache13.isAndroid()) return null;
+    return { isPhone: cache13.isPhone(), get: cache13.get, set: cache13.set };
   }
   function resolvePluginText(text2, lang) {
     if (typeof text2 === "string") return text2;
@@ -40098,10 +42078,10 @@ ${cue.text}`).join("\n\n")}
       directory,
       extensions: extensions ?? null
     });
-    return files?.map((file) => ({
-      path: file.path,
-      fileName: file.fileName ?? file.file_name ?? "",
-      sizeBytes: file.sizeBytes ?? file.size_bytes ?? null
+    return files?.map((file2) => ({
+      path: file2.path,
+      fileName: file2.fileName ?? file2.file_name ?? "",
+      sizeBytes: file2.sizeBytes ?? file2.size_bytes ?? null
     })) ?? null;
   }
   async function executePluginDesktopCommand(options) {
@@ -40185,11 +42165,11 @@ ${cue.text}`).join("\n\n")}
     if (requests.length === 0) return { streams: [], failures: [] };
     const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
     return invoke7("desktop_stream_lookup_batch", {
-      requests: requests.map((request) => ({
-        url: request.url,
-        streamProviderName: request.streamProviderName ?? null,
-        timeoutMs: request.timeoutMs ?? null,
-        retryCount: request.retryCount ?? null
+      requests: requests.map((request2) => ({
+        url: request2.url,
+        streamProviderName: request2.streamProviderName ?? null,
+        timeoutMs: request2.timeoutMs ?? null,
+        retryCount: request2.retryCount ?? null
       }))
     });
   }
@@ -40198,11 +42178,11 @@ ${cue.text}`).join("\n\n")}
     if (requests.length === 0) return { streams: [], failures: [] };
     const { invoke: invoke7 } = await Promise.resolve().then(() => __toESM(require_core()));
     return invoke7("desktop_stream_lookup_batch_ranked", {
-      requests: requests.map((request) => ({
-        url: request.url,
-        streamProviderName: request.streamProviderName ?? null,
-        timeoutMs: request.timeoutMs ?? null,
-        retryCount: request.retryCount ?? null
+      requests: requests.map((request2) => ({
+        url: request2.url,
+        streamProviderName: request2.streamProviderName ?? null,
+        timeoutMs: request2.timeoutMs ?? null,
+        retryCount: request2.retryCount ?? null
       })),
       mediaType,
       season: Number.isFinite(season) ? season : null,
@@ -40417,7 +42397,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-filter.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-category-filter.ts
   function readMap() {
     const parsed2 = readPluginJson(LIVE_TV_PLUGIN_ID, FILTER_KEY2, {});
     if (!parsed2 || typeof parsed2 !== "object" || Array.isArray(parsed2)) return {};
@@ -40487,11 +42467,11 @@ ${cue.text}`).join("\n\n")}
     return excluded;
   }
   function useVodChoiceMade(source) {
-    const read12 = () => source ? !isVodChoiceMigrated() || isVodChoiceMade(source) : true;
-    const [made, setMade] = useState(read12);
+    const read13 = () => source ? !isVodChoiceMigrated() || isVodChoiceMade(source) : true;
+    const [made, setMade] = useState(read13);
     useEffect(() => {
-      setMade(read12());
-      return onVodCategoryChoiceChanged(() => setMade(read12()));
+      setMade(read13());
+      return onVodCategoryChoiceChanged(() => setMade(read13()));
     }, [source]);
     return made;
   }
@@ -40521,7 +42501,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, FILTER_KEY2, MIGRATED_KEY, VOD_MERGE_PREFIX;
   var init_vod_category_filter = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-filter.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-category-filter.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40533,13 +42513,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-shift.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-shift.ts
   function getEpgShiftMinutes() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, KEY21, null);
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, KEY22, null);
     return typeof raw === "number" ? clamp2(raw) : 0;
   }
   function setEpgShiftMinutes(min) {
-    writePluginJson(LIVE_TV_PLUGIN_ID2, KEY21, clamp2(min));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, KEY22, clamp2(min));
   }
   function shiftTimes(p, ms2) {
     if (!p) return null;
@@ -40553,13 +42533,13 @@ ${cue.text}`).join("\n\n")}
     const m = abs % 60;
     return `${sign}${h ? `${h} h` : ""}${h && m ? " " : ""}${m ? `${m} min` : ""}`;
   }
-  var KEY21, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN, clamp2, epgShiftMs;
+  var KEY22, EPG_SHIFT_LIMIT_MIN, EPG_SHIFT_STEP_MIN, clamp2, epgShiftMs;
   var init_epg_shift = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-shift.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-shift.ts"() {
       "use strict";
       init_plugin_sdk();
       init_live_tv_data();
-      KEY21 = "live_tv_epg_shift_v1";
+      KEY22 = "live_tv_epg_shift_v1";
       EPG_SHIFT_LIMIT_MIN = 12 * 60;
       EPG_SHIFT_STEP_MIN = 30;
       clamp2 = (min) => {
@@ -40571,7 +42551,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -40760,7 +42740,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       init_epg_shift();
@@ -40772,7 +42752,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -40861,14 +42841,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/group-order.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/group-order.ts
   function sanitizeGroupOrder(raw) {
     return GROUP_ORDERS.includes(raw) ? raw : DEFAULT_GROUP_ORDER;
   }
@@ -40928,7 +42908,7 @@ ${cue.text}`).join("\n\n")}
   }
   var GROUP_ORDERS, DEFAULT_GROUP_ORDER, collator, rawOrderBySource;
   var init_group_order = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/group-order.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/group-order.ts"() {
       "use strict";
       GROUP_ORDERS = ["playlist", "name", "count"];
       DEFAULT_GROUP_ORDER = "playlist";
@@ -40937,7 +42917,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/list-curation.ts
   function splitGroups2(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -41035,13 +43015,13 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
       init_group_order();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-format.ts
   function sanitizeLiveFormat(raw) {
     return raw === "ts" || raw === "hls" ? raw : "auto";
   }
@@ -41087,7 +43067,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_FORMATS, XTREAM_LIVE_RE, hlsFailedUrls, isHlsPlayUrl;
   var init_live_format = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-format.ts"() {
       "use strict";
       LIVE_FORMATS = ["auto", "ts", "hls"];
       XTREAM_LIVE_RE = /^(https?:\/\/[^/?#]+)\/live\/([^/?#]+)\/([^/?#]+)\/(\d+)\.(ts|m3u8)((?:[?#].*)?)$/i;
@@ -41096,7 +43076,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -41717,12 +43697,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
   async function fetchXtreamVodCategories(login) {
-    const read12 = async (action) => {
+    const read13 = async (action) => {
       const payload = await fetchXtreamJson(xtreamApiUrl(login, { action })).catch(() => null);
       if (!Array.isArray(payload)) return [];
       return payload.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({ id: String(entry.category_id ?? "").trim(), name: String(entry.category_name ?? "").trim() })).filter((entry) => entry.id && entry.name);
     };
-    const [movie, series] = await Promise.all([read12("get_vod_categories"), read12("get_series_categories")]);
+    const [movie, series] = await Promise.all([read13("get_vod_categories"), read13("get_series_categories")]);
     return { movie, series };
   }
   async function fetchXtreamCategories(login) {
@@ -41744,7 +43724,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID2, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, logoSrcCache, LOGO_SRC_CACHE_MAX, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_vod_category_filter();
@@ -41773,7 +43753,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/lang.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/lang.ts
   function textLang(lang) {
     return lang === "sv" || lang === "de" || lang === "fr" || lang === "es" ? lang : "en";
   }
@@ -41785,13 +43765,13 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCALES;
   var init_lang = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/lang.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/lang.ts"() {
       "use strict";
       LOCALES = { en: "en-GB", sv: "sv-SE", de: "de-DE", fr: "fr-FR", es: "es-ES" };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES6) {
@@ -41823,7 +43803,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES6, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -41832,7 +43812,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -41873,7 +43853,7 @@ ${cue.text}`).join("\n\n")}
   function getReminders(now2 = Date.now()) {
     return load().list.filter((r) => r.start + REMINDER_GRACE_MS > now2);
   }
-  function write7(list) {
+  function write8(list) {
     dropParsed();
     writePluginJson(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, list);
   }
@@ -41900,7 +43880,7 @@ ${cue.text}`).join("\n\n")}
         createdAt: now2
       }
     ].sort((left, right) => left.start - right.start);
-    write7(next);
+    write8(next);
     return next;
   }
   function replaceSportReminders(next, now2 = Date.now()) {
@@ -41918,11 +43898,11 @@ ${cue.text}`).join("\n\n")}
     const seen2 = /* @__PURE__ */ new Set();
     const auto = next.filter((r) => !otherIds.has(r.id) && !seen2.has(r.id) && seen2.add(r.id)).map((r) => ({ ...r, origin, notifiedAt: previous.get(r.id)?.notifiedAt }));
     const merged = [...others, ...auto].sort((left, right) => left.start - right.start);
-    if (JSON.stringify(merged) !== JSON.stringify(current5)) write7(merged);
+    if (JSON.stringify(merged) !== JSON.stringify(current5)) write8(merged);
     return merged;
   }
   function markReminderNotified(id, now2 = Date.now()) {
-    write7(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
+    write8(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
   }
   function onRemindersChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, REMINDERS_KEY, listener);
@@ -41983,7 +43963,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS, parsed, dropParsed, shownHere;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42000,7 +43980,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-title.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/playlist-title.ts
   function hostOf2(url) {
     try {
       return new URL(url).host || url;
@@ -42024,13 +44004,13 @@ ${cue.text}`).join("\n\n")}
     return `${host3} (${sameHost.findIndex((other) => other.id === list.id) + 1})`;
   }
   var init_playlist_title = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-title.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/playlist-title.ts"() {
       "use strict";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-playlist-proxy.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hls-playlist-proxy.ts
   function detectHlsPlaylistProxy() {
     if (available !== null) return Promise.resolve(available);
     if (probe) return probe;
@@ -42058,7 +44038,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HLS_PLAYLIST_PROXY_FEATURE, HLS_PLAYLIST_PROXY_PATH, available, probe;
   var init_hls_playlist_proxy = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hls-playlist-proxy.ts"() {
       "use strict";
       init_live_format();
       HLS_PLAYLIST_PROXY_FEATURE = "hlsPlaylistProxy";
@@ -42068,7 +44048,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format-resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-format-resolve.ts
   function decode(part) {
     try {
       return decodeURIComponent(part);
@@ -42080,15 +44060,15 @@ ${cue.text}`).join("\n\n")}
     const parsed2 = parseXtreamLiveUrl(url);
     const none = { kind: null, format: "auto", allowedFormats: null, login: null, list: null };
     if (!parsed2) return none;
-    const base = normalizeXtreamBase(parsed2.origin);
+    const base2 = normalizeXtreamBase(parsed2.origin);
     const user = decode(parsed2.username);
     const lists = getLiveTvLists();
-    const login = getXtreamLogins().find((entry) => entry.base === base && (entry.username === user || entry.username === parsed2.username)) ?? null;
+    const login = getXtreamLogins().find((entry) => entry.base === base2 && (entry.username === user || entry.username === parsed2.username)) ?? null;
     if (login) {
       const list2 = lists.find((entry) => entry.kind === "xtream" && entry.xtreamLoginId === login.id) ?? null;
       return { kind: "xtream", format: getLiveTvListFormat(list2), allowedFormats: login.allowedFormats ?? null, login, list: list2 };
     }
-    const sameHost = lists.filter((entry) => entry.kind === "m3u" && entry.url && normalizeXtreamBase(entry.url) === base);
+    const sameHost = lists.filter((entry) => entry.kind === "m3u" && entry.url && normalizeXtreamBase(entry.url) === base2);
     const list = sameHost.find((entry) => {
       try {
         return new URL(entry.url).searchParams.get("username") === user;
@@ -42176,7 +44156,7 @@ ${cue.text}`).join("\n\n")}
   }
   var askedLogins, hlsBrokenAccounts, accountStreamEndedAt;
   var init_live_format_resolve = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-format-resolve.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-format-resolve.ts"() {
       "use strict";
       init_live_tv_data();
       init_hls_playlist_proxy();
@@ -42187,7 +44167,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -42241,7 +44221,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42253,7 +44233,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       const next = pendingLogoLoads.shift();
@@ -42352,7 +44332,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42365,7 +44345,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/intl-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/intl-cache.ts
   function cachedDateTimeFormat(locale, options) {
     const key = `${Array.isArray(locale) ? locale.join(",") : locale ?? ""}|${JSON.stringify(options)}`;
     let formatter = formatters.get(key);
@@ -42385,7 +44365,7 @@ ${cue.text}`).join("\n\n")}
   }
   var formatters, CLOCK, clocks;
   var init_intl_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/intl-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/intl-cache.ts"() {
       "use strict";
       formatters = /* @__PURE__ */ new Map();
       CLOCK = { hour: "2-digit", minute: "2-digit" };
@@ -42393,7 +44373,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words2 = name.trim().split(/\s+/).filter(Boolean);
     const letters = words2.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -42407,7 +44387,7 @@ ${cue.text}`).join("\n\n")}
     return clockFormat(locale).format(ms2);
   }
   function Tag({ variant = "neutral", children, style }) {
-    const base = {
+    const base2 = {
       display: "inline-flex",
       alignItems: "center",
       gap: 6,
@@ -42419,7 +44399,7 @@ ${cue.text}`).join("\n\n")}
       whiteSpace: "nowrap"
     };
     const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
-    return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style }, children });
+    return /* @__PURE__ */ jsx("span", { style: { ...base2, ...look, ...style }, children });
   }
   function LiveTag({ label }) {
     return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
@@ -42440,7 +44420,7 @@ ${cue.text}`).join("\n\n")}
     style,
     tvStation
   }) {
-    const base = {
+    const base2 = {
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -42484,7 +44464,7 @@ ${cue.text}`).join("\n\n")}
         "aria-label": ariaLabel,
         "aria-pressed": pressed,
         className: "transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-        style: { ...base, ...look, ...style },
+        style: { ...base2, ...look, ...style },
         children
       }
     );
@@ -42610,7 +44590,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42651,17 +44631,17 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read12 = () => {
+      const read13 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box !== null;
       };
-      const sync2 = () => setInBox(read12());
+      const sync2 = () => setInBox(read13());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -42674,24 +44654,24 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read12 = () => {
+      const read13 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
       };
-      const sync2 = () => setNarrow(read12());
+      const sync2 = () => setNarrow(read13());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -42704,19 +44684,19 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read12 = () => {
+      const read13 = () => {
         const getScale = tvSceneBoxScale2;
         if (typeof getScale !== "function") return null;
         const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
@@ -42724,7 +44704,7 @@ ${cue.text}`).join("\n\n")}
         const value = getScale(box);
         return Number.isFinite(value) && value > 0 ? value : null;
       };
-      const sync2 = () => setScale(read12());
+      const sync2 = () => setScale(read13());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -42737,7 +44717,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -42745,7 +44725,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -42872,7 +44852,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
   function Tag2({ variant, children, style, title }) {
-    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
+    const base2 = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
     const look = {
       live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.liveSoft, color: TV2.liveText, textTransform: "uppercase" },
       neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, color: TV2.text },
@@ -42881,7 +44861,7 @@ ${cue.text}`).join("\n\n")}
       reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV2.text },
       audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.acc, color: TV2.onAcc, textTransform: "uppercase" }
     };
-    return /* @__PURE__ */ jsxs("span", { title, style: { ...base, ...look[variant], ...style }, children: [
+    return /* @__PURE__ */ jsxs("span", { title, style: { ...base2, ...look[variant], ...style }, children: [
       variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV2.live } }) : null,
       children
     ] });
@@ -42994,7 +44974,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCENE_TOP_INSET, TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43091,6 +45071,8 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("path", { d: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" }),
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
         ] }), filled),
+        /** Inspelning: en cirkel, fylld medan det spelas in. */
+        Record: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "7" }), filled),
         Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
         Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
@@ -43123,7 +45105,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = TABLES2[textLang(lang)];
     let out = table[key] ?? EN2[key];
@@ -43139,7 +45121,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2, DE2, FR2, ES2, TABLES2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44084,7 +46066,43 @@ ${cue.text}`).join("\n\n")}
         sportRowOptionScores: "Scores",
         sportRowShowScores: "Show",
         sportRowHideScores: "Hide scores",
-        sportRowFollowNote: "You follow {name}"
+        sportRowFollowNote: "You follow {name}",
+        // Inspelning (live-tv 0.20.0)
+        railRecordings: "Recordings",
+        sheetRecordings: "Recordings",
+        tabRecordings: "Recordings",
+        record: "Record",
+        recordProgramme: "Record at {time}",
+        cancelRecording: "Cancel recording",
+        stopRecording: "Stop recording",
+        recording: "Recording",
+        recordingsEmpty: "No recordings yet",
+        recordingsEmptyHint: "Press Record in the channel player, or hold OK on a programme in the guide and choose Record.",
+        recSectionActive: "Recording now",
+        recSectionScheduled: "Scheduled",
+        recSectionDone: "Finished",
+        recSectionFailed: "Failed",
+        recStatusMissed: "Missed \u2014 the app was not running",
+        recStatusDiskFull: "Stopped \u2014 disk full",
+        recStatusFailed: "Failed",
+        recStatusStopped: "Stopped",
+        recPlay: "Play",
+        recDelete: "Delete",
+        recDeleteConfirm: "Delete the recording and its file?",
+        recStarted: "Recording {title}",
+        recFinished: "{title} is ready \xB7 {size}",
+        recFailed: "Recording of {title} failed",
+        settingRecording: "Recording",
+        settingRecordingHint: "Record buttons in the player and the guide, and Recordings in the side menu. The app has to be running while a recording is in progress.",
+        settingRecordFolder: "Save recordings to",
+        settingRecordFolderPick: "Choose folder",
+        settingRecordKeepFree: "Keep free",
+        settingRecordStartEarly: "Start early",
+        settingRecordEndLate: "End late",
+        settingRecordNotify: "Tell me when recordings start and finish",
+        settingRecordOpen: "Open Recordings",
+        gigabytes: "{gb} GB",
+        recFreeSpace: "{free} free"
       };
       SV2 = {
         liveFormat: "Liveformat",
@@ -44982,7 +47000,43 @@ ${cue.text}`).join("\n\n")}
         sportRowOptionScores: "St\xE4llning",
         sportRowShowScores: "Visa",
         sportRowHideScores: "D\xF6lj st\xE4llning",
-        sportRowFollowNote: "Du f\xF6ljer {name}"
+        sportRowFollowNote: "Du f\xF6ljer {name}",
+        // Inspelning (live-tv 0.20.0)
+        railRecordings: "Inspelningar",
+        sheetRecordings: "Inspelningar",
+        tabRecordings: "Inspelningar",
+        record: "Spela in",
+        recordProgramme: "Spela in kl. {time}",
+        cancelRecording: "Avbryt inspelningen",
+        stopRecording: "Stoppa inspelningen",
+        recording: "Spelar in",
+        recordingsEmpty: "Inga inspelningar \xE4n",
+        recordingsEmptyHint: "Tryck p\xE5 Spela in i kanalspelaren, eller h\xE5ll OK p\xE5 ett program i guiden och v\xE4lj Spela in.",
+        recSectionActive: "P\xE5g\xE5r",
+        recSectionScheduled: "Planerade",
+        recSectionDone: "Klara",
+        recSectionFailed: "Misslyckade",
+        recStatusMissed: "Missad \u2013 appen var inte ig\xE5ng",
+        recStatusDiskFull: "Stoppad \u2013 disken \xE4r full",
+        recStatusFailed: "Misslyckades",
+        recStatusStopped: "Stoppad",
+        recPlay: "Spela upp",
+        recDelete: "Radera",
+        recDeleteConfirm: "Radera inspelningen och filen?",
+        recStarted: "Spelar in {title}",
+        recFinished: "{title} \xE4r klar \xB7 {size}",
+        recFailed: "Inspelningen av {title} misslyckades",
+        settingRecording: "Inspelning",
+        settingRecordingHint: "Inspelningsknappar i spelaren och guiden, och Inspelningar i sidomenyn. Appen m\xE5ste vara ig\xE5ng medan inspelningen p\xE5g\xE5r.",
+        settingRecordFolder: "Spara inspelningar i",
+        settingRecordFolderPick: "V\xE4lj mapp",
+        settingRecordKeepFree: "H\xE5ll ledigt",
+        settingRecordStartEarly: "Starta tidigt",
+        settingRecordEndLate: "Sluta sent",
+        settingRecordNotify: "Meddela n\xE4r inspelningar startar och blir klara",
+        settingRecordOpen: "\xD6ppna Inspelningar",
+        gigabytes: "{gb} GB",
+        recFreeSpace: "{free} ledigt"
       };
       DE2 = {
         liveFormat: "Live-Stream-Format",
@@ -45874,7 +47928,43 @@ ${cue.text}`).join("\n\n")}
         sportRowFollowNote: "Du folgst {name}",
         epgShift: "Programmf\xFChrer verschieben",
         epgShiftNone: "Keine",
-        epgShiftHint: "Liegt der ganze Programmf\xFChrer Stunden daneben? Verschiebe alle Sendungen um denselben Betrag."
+        epgShiftHint: "Liegt der ganze Programmf\xFChrer Stunden daneben? Verschiebe alle Sendungen um denselben Betrag.",
+        // Inspelning (live-tv 0.20.0)
+        railRecordings: "Aufnahmen",
+        sheetRecordings: "Aufnahmen",
+        tabRecordings: "Aufnahmen",
+        record: "Aufnehmen",
+        recordProgramme: "Um {time} aufnehmen",
+        cancelRecording: "Aufnahme abbrechen",
+        stopRecording: "Aufnahme stoppen",
+        recording: "Aufnahme l\xE4uft",
+        recordingsEmpty: "Noch keine Aufnahmen",
+        recordingsEmptyHint: "Dr\xFCcke Aufnehmen im Senderplayer oder halte OK auf einer Sendung im Guide und w\xE4hle Aufnehmen.",
+        recSectionActive: "L\xE4uft gerade",
+        recSectionScheduled: "Geplant",
+        recSectionDone: "Fertig",
+        recSectionFailed: "Fehlgeschlagen",
+        recStatusMissed: "Verpasst \u2013 die App lief nicht",
+        recStatusDiskFull: "Gestoppt \u2013 Speicher voll",
+        recStatusFailed: "Fehlgeschlagen",
+        recStatusStopped: "Gestoppt",
+        recPlay: "Abspielen",
+        recDelete: "L\xF6schen",
+        recDeleteConfirm: "Aufnahme und Datei l\xF6schen?",
+        recStarted: "{title} wird aufgenommen",
+        recFinished: "{title} ist fertig \xB7 {size}",
+        recFailed: "Aufnahme von {title} fehlgeschlagen",
+        settingRecording: "Aufnahme",
+        settingRecordingHint: "Aufnahmetasten im Player und im Guide sowie Aufnahmen im Seitenmen\xFC. Die App muss laufen, solange eine Aufnahme l\xE4uft.",
+        settingRecordFolder: "Aufnahmen speichern unter",
+        settingRecordFolderPick: "Ordner w\xE4hlen",
+        settingRecordKeepFree: "Frei lassen",
+        settingRecordStartEarly: "Fr\xFCher starten",
+        settingRecordEndLate: "Sp\xE4ter beenden",
+        settingRecordNotify: "Benachrichtigen, wenn Aufnahmen starten und fertig sind",
+        settingRecordOpen: "Aufnahmen \xF6ffnen",
+        gigabytes: "{gb} GB",
+        recFreeSpace: "{free} frei"
       };
       FR2 = {
         liveFormat: "Format du direct",
@@ -46766,7 +48856,43 @@ ${cue.text}`).join("\n\n")}
         sportRowFollowNote: "Vous suivez {name}",
         epgShift: "D\xE9calage du guide",
         epgShiftNone: "Aucun",
-        epgShiftHint: "Tout le guide est d\xE9cal\xE9 de plusieurs heures ? D\xE9placez tous les programmes du m\xEAme \xE9cart."
+        epgShiftHint: "Tout le guide est d\xE9cal\xE9 de plusieurs heures ? D\xE9placez tous les programmes du m\xEAme \xE9cart.",
+        // Inspelning (live-tv 0.20.0)
+        railRecordings: "Enregistrements",
+        sheetRecordings: "Enregistrements",
+        tabRecordings: "Enregistrements",
+        record: "Enregistrer",
+        recordProgramme: "Enregistrer \xE0 {time}",
+        cancelRecording: "Annuler l\u2019enregistrement",
+        stopRecording: "Arr\xEAter l\u2019enregistrement",
+        recording: "Enregistrement",
+        recordingsEmpty: "Aucun enregistrement pour l\u2019instant",
+        recordingsEmptyHint: "Appuyez sur Enregistrer dans le lecteur de cha\xEEne, ou maintenez OK sur un programme du guide et choisissez Enregistrer.",
+        recSectionActive: "En cours",
+        recSectionScheduled: "Programm\xE9s",
+        recSectionDone: "Termin\xE9s",
+        recSectionFailed: "\xC9chou\xE9s",
+        recStatusMissed: "Manqu\xE9 \u2013 l\u2019application n\u2019\xE9tait pas lanc\xE9e",
+        recStatusDiskFull: "Arr\xEAt\xE9 \u2013 disque plein",
+        recStatusFailed: "\xC9chec",
+        recStatusStopped: "Arr\xEAt\xE9",
+        recPlay: "Lire",
+        recDelete: "Supprimer",
+        recDeleteConfirm: "Supprimer l\u2019enregistrement et son fichier ?",
+        recStarted: "Enregistrement de {title}",
+        recFinished: "{title} est pr\xEAt \xB7 {size}",
+        recFailed: "L\u2019enregistrement de {title} a \xE9chou\xE9",
+        settingRecording: "Enregistrement",
+        settingRecordingHint: "Boutons d\u2019enregistrement dans le lecteur et le guide, et Enregistrements dans le menu lat\xE9ral. L\u2019application doit rester ouverte pendant un enregistrement.",
+        settingRecordFolder: "Enregistrer dans",
+        settingRecordFolderPick: "Choisir un dossier",
+        settingRecordKeepFree: "Garder libre",
+        settingRecordStartEarly: "Commencer en avance",
+        settingRecordEndLate: "Terminer plus tard",
+        settingRecordNotify: "Me pr\xE9venir au d\xE9but et \xE0 la fin des enregistrements",
+        settingRecordOpen: "Ouvrir les enregistrements",
+        gigabytes: "{gb} Go",
+        recFreeSpace: "{free} libres"
       };
       ES2 = {
         liveFormat: "Formato de emisi\xF3n en directo",
@@ -47658,13 +49784,49 @@ ${cue.text}`).join("\n\n")}
         sportRowFollowNote: "Sigues a {name}",
         epgShift: "Desplazar la gu\xEDa",
         epgShiftNone: "Ninguno",
-        epgShiftHint: "\xBFToda la gu\xEDa va desfasada varias horas? Mueve todos los programas la misma cantidad."
+        epgShiftHint: "\xBFToda la gu\xEDa va desfasada varias horas? Mueve todos los programas la misma cantidad.",
+        // Inspelning (live-tv 0.20.0)
+        railRecordings: "Grabaciones",
+        sheetRecordings: "Grabaciones",
+        tabRecordings: "Grabaciones",
+        record: "Grabar",
+        recordProgramme: "Grabar a las {time}",
+        cancelRecording: "Cancelar la grabaci\xF3n",
+        stopRecording: "Detener la grabaci\xF3n",
+        recording: "Grabando",
+        recordingsEmpty: "A\xFAn no hay grabaciones",
+        recordingsEmptyHint: "Pulsa Grabar en el reproductor del canal, o mant\xE9n OK sobre un programa de la gu\xEDa y elige Grabar.",
+        recSectionActive: "En curso",
+        recSectionScheduled: "Programadas",
+        recSectionDone: "Terminadas",
+        recSectionFailed: "Fallidas",
+        recStatusMissed: "Perdida: la app no estaba abierta",
+        recStatusDiskFull: "Detenida: disco lleno",
+        recStatusFailed: "Fall\xF3",
+        recStatusStopped: "Detenida",
+        recPlay: "Reproducir",
+        recDelete: "Eliminar",
+        recDeleteConfirm: "\xBFEliminar la grabaci\xF3n y su archivo?",
+        recStarted: "Grabando {title}",
+        recFinished: "{title} est\xE1 lista \xB7 {size}",
+        recFailed: "La grabaci\xF3n de {title} fall\xF3",
+        settingRecording: "Grabaci\xF3n",
+        settingRecordingHint: "Botones de grabaci\xF3n en el reproductor y la gu\xEDa, y Grabaciones en el men\xFA lateral. La app debe estar abierta mientras dura la grabaci\xF3n.",
+        settingRecordFolder: "Guardar grabaciones en",
+        settingRecordFolderPick: "Elegir carpeta",
+        settingRecordKeepFree: "Mantener libre",
+        settingRecordStartEarly: "Empezar antes",
+        settingRecordEndLate: "Terminar despu\xE9s",
+        settingRecordNotify: "Avisarme cuando empiecen y terminen las grabaciones",
+        settingRecordOpen: "Abrir Grabaciones",
+        gigabytes: "{gb} GB",
+        recFreeSpace: "{free} libres"
       };
       TABLES2 = { en: EN2, sv: SV2, de: DE2, fr: FR2, es: ES2 };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   function TvKeyboard({ value, onChange, onDone, initFocus }) {
     const { tt } = useTvText();
     const [symbols, setSymbols] = useState(false);
@@ -47690,7 +49852,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LETTERS, SYMBOLS;
   var init_tv_keyboard = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47702,7 +49864,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   function isComposing(event2) {
     return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
   }
@@ -47840,7 +50002,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_text_entry = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47852,7 +50014,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-shell.tsx
   function encodeChannelParams(channel) {
     return {
       url: channel.url,
@@ -47864,14 +50026,76 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID;
   var init_live_tv_shell = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-shell.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-shell.tsx"() {
       "use strict";
       LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
       LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/start-view.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/display-title.ts
+  function displayTitle(title) {
+    if (!title) return title;
+    if (!MARKERS.test(title)) {
+      MARKERS.lastIndex = 0;
+      return title;
+    }
+    MARKERS.lastIndex = 0;
+    return title.replace(MARKERS, " ").replace(/\s{2,}/g, " ").trim();
+  }
+  function titleKey(title) {
+    return displayTitle(title).toLowerCase().replace(/\s+/g, " ").trim();
+  }
+  var MARKERS;
+  var init_display_title = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/display-title.ts"() {
+      "use strict";
+      MARKERS = /[ᴬ-ᵪᶛ-ᶿⁱⁿʰ-ʸˠ-ˤ]+/g;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recording-plan.ts
+  function base(channel) {
+    return { channelName: channel.name, channelKey: channelKey(channel), playUrl: channel.url, logo: channel.logo ?? void 0 };
+  }
+  function planFromProgramme(channel, programme, margins) {
+    return {
+      ...base(channel),
+      title: displayTitle(programme.title) || channel.name,
+      startAt: programme.start - margins.startEarlyMin * MIN,
+      stopAt: programme.stop + margins.endLateMin * MIN,
+      programmeStart: programme.start,
+      programmeStop: programme.stop
+    };
+  }
+  function planFromNow(channel, now2, nowMs, margins) {
+    if (!now2) {
+      return { ...base(channel), title: channel.name, startAt: nowMs, stopAt: nowMs + RECORD_NO_EPG_MS };
+    }
+    return {
+      ...base(channel),
+      title: displayTitle(now2.title) || channel.name,
+      startAt: nowMs,
+      stopAt: now2.stop + margins.endLateMin * MIN,
+      programmeStart: now2.start,
+      programmeStop: now2.stop
+    };
+  }
+  var RECORD_START_EARLY_OPTIONS, RECORD_END_LATE_OPTIONS, RECORD_KEEP_FREE_OPTIONS, RECORD_NO_EPG_MS, MIN;
+  var init_recording_plan = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recording-plan.ts"() {
+      "use strict";
+      init_live_tv_data();
+      init_display_title();
+      RECORD_START_EARLY_OPTIONS = [0, 1, 2, 5];
+      RECORD_END_LATE_OPTIONS = [0, 5, 10, 15];
+      RECORD_KEEP_FREE_OPTIONS = [1, 2, 5, 10];
+      RECORD_NO_EPG_MS = 3 * 60 * 60 * 1e3;
+      MIN = 6e4;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/start-view.ts
   function sanitizeStartView(raw) {
     return START_VIEWS.includes(raw) ? raw : DEFAULT_START_VIEW;
   }
@@ -47904,14 +50128,14 @@ ${cue.text}`).join("\n\n")}
   }
   var START_VIEWS, DEFAULT_START_VIEW;
   var init_start_view = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/start-view.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/start-view.ts"() {
       "use strict";
       START_VIEWS = ["home", "hub", "guide", "sport", "library", "favs"];
       DEFAULT_START_VIEW = "home";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-settings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/v2-settings.ts
   function pick2(list, raw, fallback = list[0]) {
     return list.includes(raw) ? raw : fallback;
   }
@@ -47932,7 +50156,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HUB_LAYOUTS, GUIDE_CATEGORY_LAYOUTS, LIVE_BACKGROUNDS, DEFAULT_HUB_LAYOUT, sanitizeHubLayout, sanitizeGuideCategoryLayout, sanitizeLiveBackground, nextHubLayout, nextGuideCategoryLayout, nextLiveBackground, LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES;
   var init_v2_settings = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-settings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/v2-settings.ts"() {
       "use strict";
       HUB_LAYOUTS = ["classic", "experience"];
       GUIDE_CATEGORY_LAYOUTS = ["column", "chips"];
@@ -47949,7 +50173,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-rows.ts
   function sanitizeHubRows(raw) {
     const out = [];
     const seen2 = /* @__PURE__ */ new Set();
@@ -47986,7 +50210,7 @@ ${cue.text}`).join("\n\n")}
   }
   var BUILTIN_HUB_ROWS, LIST_PREFIX, listRowId, listIdOf, isBuiltinHubRow;
   var init_hub_rows = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-rows.ts"() {
       "use strict";
       BUILTIN_HUB_ROWS = ["onNow", "sport", "continue", "yours", "soon", "explore"];
       LIST_PREFIX = "list:";
@@ -47996,7 +50220,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/remote-keys.ts
   function isReservedRemoteKey(key) {
     return RESERVED.has(key) || /^[0-9]$/.test(key);
   }
@@ -48073,7 +50297,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMOTE_ACTIONS, DPAD_REMOTE_KEYS, MEDIA_REMOTE_KEYS, PRESET_REMOTE_KEYS, DEFAULT_SHORT, DEFAULT_REMOTE_BINDINGS, RESERVED, isAction, MAX_LEARNED;
   var init_remote_keys = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-keys.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/remote-keys.ts"() {
       "use strict";
       REMOTE_ACTIONS = [
         "none",
@@ -48154,7 +50378,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function nextFallbackAfter(current5) {
     return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current5) + 1) % FALLBACK_AFTER_OPTIONS.length];
   }
@@ -48186,8 +50410,21 @@ ${cue.text}`).join("\n\n")}
       hubRows: sanitizeHubRows(r.hubRows),
       remoteKeys: sanitizeRemoteBindings(r.remoteKeys),
       railHidden: typeof r.railHidden === "boolean" ? r.railHidden : DEFAULTS2.railHidden,
-      heroFull: typeof r.heroFull === "boolean" ? r.heroFull : DEFAULTS2.heroFull
+      heroFull: typeof r.heroFull === "boolean" ? r.heroFull : DEFAULTS2.heroFull,
+      recordingEnabled: typeof r.recordingEnabled === "boolean" ? r.recordingEnabled : DEFAULTS2.recordingEnabled,
+      recordStartEarlyMin: RECORD_START_EARLY_OPTIONS.includes(r.recordStartEarlyMin) ? r.recordStartEarlyMin : DEFAULTS2.recordStartEarlyMin,
+      recordEndLateMin: RECORD_END_LATE_OPTIONS.includes(r.recordEndLateMin) ? r.recordEndLateMin : DEFAULTS2.recordEndLateMin,
+      recordNotify: typeof r.recordNotify === "boolean" ? r.recordNotify : DEFAULTS2.recordNotify
     };
+  }
+  function recordMargins(s) {
+    return { startEarlyMin: s.recordStartEarlyMin, endLateMin: s.recordEndLateMin };
+  }
+  function nextRecordStartEarly(current5) {
+    return RECORD_START_EARLY_OPTIONS[(RECORD_START_EARLY_OPTIONS.indexOf(current5) + 1) % RECORD_START_EARLY_OPTIONS.length];
+  }
+  function nextRecordEndLate(current5) {
+    return RECORD_END_LATE_OPTIONS[(RECORD_END_LATE_OPTIONS.indexOf(current5) + 1) % RECORD_END_LATE_OPTIONS.length];
   }
   function getTvSettings() {
     return sanitize4(readPluginJson(LIVE_TV_PLUGIN_ID2, TV_SETTINGS_KEY, DEFAULTS2));
@@ -48226,10 +50463,11 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
+      init_recording_plan();
       init_plugin_sdk();
       init_live_tv_data();
       init_start_view();
@@ -48268,25 +50506,29 @@ ${cue.text}`).join("\n\n")}
         hubRows: sanitizeHubRows(void 0),
         remoteKeys: sanitizeRemoteBindings(void 0),
         railHidden: false,
-        heroFull: false
+        heroFull: false,
+        recordingEnabled: true,
+        recordStartEarlyMin: 1,
+        recordEndLateMin: 5,
+        recordNotify: true
       };
       GUIDE_MODES = ["now", "tl", "playlists", "grid", "nownext", "timeline", "list"];
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}|${getEpgShiftMinutes()}`;
   }
@@ -48333,7 +50575,7 @@ ${cue.text}`).join("\n\n")}
     const key = snapshotKey(listId, source);
     const cached2 = snapshots.get(key);
     if (!opts?.force && cached2 && Date.now() - cached2.loadedAt < TTL_MS) return cached2;
-    const existing = inflight8.get(key);
+    const existing = inflight9.get(key);
     if (existing) return existing;
     const full = () => epgNow({ listId: epgStoreId(listId), source: source ?? void 0 }).then((data) => ({
       at: data.at,
@@ -48349,7 +50591,7 @@ ${cue.text}`).join("\n\n")}
       incrementalUnsupported = true;
       return full();
     }) : full();
-    const request = load2.then((snapshot3) => {
+    const request2 = load2.then((snapshot3) => {
       snapshots.set(key, snapshot3);
       publish2({ snapshot: snapshot3, failed: false });
       return snapshot3;
@@ -48357,10 +50599,10 @@ ${cue.text}`).join("\n\n")}
       publish2({ snapshot: snapshots.get(key) ?? null, failed: true });
       throw err;
     }).finally(() => {
-      inflight8.delete(key);
+      inflight9.delete(key);
     });
-    inflight8.set(key, request);
-    return request;
+    inflight9.set(key, request2);
+    return request2;
   }
   function publish2(next) {
     active3 = next;
@@ -48375,9 +50617,9 @@ ${cue.text}`).join("\n\n")}
       listeners10.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, MAX_INCREMENTAL_KEYS, incrementalUnsupported, active3, listeners10;
+  var TTL_MS, snapshots, inflight9, NOW_SNAPSHOT_MAX_AGE_MS, MAX_INCREMENTAL_KEYS, incrementalUnsupported, active3, listeners10;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -48385,7 +50627,7 @@ ${cue.text}`).join("\n\n")}
       init_store_id();
       TTL_MS = 6e4;
       snapshots = /* @__PURE__ */ new Map();
-      inflight8 = /* @__PURE__ */ new Map();
+      inflight9 = /* @__PURE__ */ new Map();
       NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
       MAX_INCREMENTAL_KEYS = 4e3;
       incrementalUnsupported = false;
@@ -48394,7 +50636,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri2() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -48408,14 +50650,14 @@ ${cue.text}`).join("\n\n")}
     return "tl";
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts3 = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -48473,7 +50715,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -48483,7 +50725,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-history.ts
   function sanitize5(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -48530,7 +50772,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -48540,7 +50782,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-overrides.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-overrides.ts
   function sanitize6(raw) {
     if (!raw || typeof raw !== "object") return EMPTY4;
     const r = raw;
@@ -48556,13 +50798,13 @@ ${cue.text}`).join("\n\n")}
   function getChannelOverrides() {
     return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, EMPTY4));
   }
-  function write9(next) {
+  function write10(next) {
     writePluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, next);
   }
   function setChannelHidden(key, hidden3) {
     const current5 = getChannelOverrides();
     const rest = current5.hidden.filter((k) => k !== key);
-    write9({ ...current5, hidden: hidden3 ? [...rest, key] : rest });
+    write10({ ...current5, hidden: hidden3 ? [...rest, key] : rest });
   }
   function setChannelName(key, name) {
     const current5 = getChannelOverrides();
@@ -48570,7 +50812,7 @@ ${cue.text}`).join("\n\n")}
     const trimmed = name?.trim() ?? "";
     if (trimmed) names[key] = trimmed.slice(0, 120);
     else delete names[key];
-    write9({ ...current5, names });
+    write10({ ...current5, names });
   }
   function onChannelOverridesChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, listener);
@@ -48597,7 +50839,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_OVERRIDES_KEY, EMPTY4, sourceName;
   var init_channel_overrides = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/channel-overrides.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/channel-overrides.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48609,7 +50851,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -48766,7 +51008,7 @@ ${cue.text}`).join("\n\n")}
     if (existing) return existing;
     const controller2 = typeof AbortController === "function" ? new AbortController() : null;
     if (controller2) channelAborts.set(cacheKey3, controller2);
-    const request = (async () => {
+    const request2 = (async () => {
       await ensureBootstrap();
       const items2 = source === null ? await loadEveryChannel(controller2?.signal) : await loadAllChannels(source, void 0, controller2?.signal);
       if (source !== null) applyLogoFallbackSwitch(source, items2);
@@ -48775,11 +51017,11 @@ ${cue.text}`).join("\n\n")}
       setPluginMemoryCache(LIVE_TV_PLUGIN_ID2, cacheKey3, curated);
       return curated;
     })().finally(() => {
-      if (channelLoads.get(cacheKey3) === request) channelLoads.delete(cacheKey3);
+      if (channelLoads.get(cacheKey3) === request2) channelLoads.delete(cacheKey3);
       if (channelAborts.get(cacheKey3) === controller2) channelAborts.delete(cacheKey3);
     });
-    channelLoads.set(cacheKey3, request);
-    return request;
+    channelLoads.set(cacheKey3, request2);
+    return request2;
   }
   function subscribeChannelGeneration(listener) {
     ensureIndexSubscription();
@@ -49061,7 +51303,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -49097,10 +51339,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp22, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         // Live TV:s färgval (Jerry 2026-10-31: "TV:ns färgschema är mycket bättre"):
@@ -49183,7 +51425,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, list, items: items2, onClose, pushLayer, testId, header, footer, activeKey }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -49260,7 +51502,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -49270,10 +51512,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -49352,19 +51594,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
   var init_mobile_toggle = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
       "use strict";
       init_mobile_tokens();
       init_jsx_runtime_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -49458,9 +51700,9 @@ ${cue.text}`).join("\n\n")}
   }
   function hockeyEvent(game, e) {
     const m = num(e?.minute);
-    const base = PERIOD_OFFSET[String(e?.period)] ?? 0;
+    const base2 = PERIOD_OFFSET[String(e?.period)] ?? 0;
     const type = e?.type === "goal" ? "goal" : e?.type === "penalty" ? "penalty" : "other";
-    return { minute: m == null ? null : base + m, extra: null, side: sideOf(game?.teams?.home?.id, game?.teams?.away?.id, e?.team?.id), type, detail: String(e?.comment ?? ""), player: str(arr(e?.players)[0]), assist: str(arr(e?.assists)[0]) };
+    return { minute: m == null ? null : base2 + m, extra: null, side: sideOf(game?.teams?.home?.id, game?.teams?.away?.id, e?.team?.id), type, detail: String(e?.comment ?? ""), player: str(arr(e?.players)[0]), assist: str(arr(e?.assists)[0]) };
   }
   function footballStandingRow(row) {
     return { rank: num(row?.rank) ?? 0, team: team(row?.team), played: num(row?.all?.played) ?? 0, points: num(row?.points) ?? 0, goalDiff: num(row?.goalsDiff), form: str(row?.form), group: str(row?.group) };
@@ -49479,7 +51721,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -49621,7 +51863,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -49676,7 +51918,7 @@ ${cue.text}`).join("\n\n")}
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -49771,7 +52013,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sportapi.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sportapi.ts
   function sportApiMinute(v) {
     if (typeof v === "number" && Number.isFinite(v)) return { minute: v, extra: null };
     const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?/.exec(String(v ?? ""));
@@ -49863,7 +52105,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORTAPI_REGISTER_URL, ESPN_CREST, arr3, num3, str3, enc3, foldTeamKey, STATUS, side2, STAT_LABELS, listOf, okBody, sportApi;
   var init_sportapi = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sportapi.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sportapi.ts"() {
       "use strict";
       SPORTAPI_REGISTER_URL = "https://sportapi.ai/pricing";
       ESPN_CREST = "https://a.espncdn.com/i/teamlogos/soccer/500";
@@ -49925,10 +52167,10 @@ ${cue.text}`).join("\n\n")}
         },
         fixture(sport, id, opts) {
           const ttl = opts.finished ? -1 : 60;
-          const base = `/fixtures/${enc3(id)}`;
+          const base2 = `/fixtures/${enc3(id)}`;
           return {
             // Uppställningen ändras sällan under match: tio minuter räcker.
-            requests: [{ sport, path: base, ttlS: ttl }, { sport, path: `${base}/stats`, ttlS: ttl }, { sport, path: `${base}/lineups`, ttlS: opts.finished ? -1 : 600 }],
+            requests: [{ sport, path: base2, ttlS: ttl }, { sport, path: `${base2}/stats`, ttlS: ttl }, { sport, path: `${base2}/lineups`, ttlS: opts.finished ? -1 : 600 }],
             parse: (bodies) => {
               const body = bodies[0];
               if (!okBody(body)) return null;
@@ -49975,7 +52217,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/day-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/day-plan.ts
   function planKey(c) {
     return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
   }
@@ -50030,13 +52272,13 @@ ${cue.text}`).join("\n\n")}
     return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
   }
   var init_day_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/day-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/day-plan.ts"() {
       "use strict";
       init_intl_cache();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/espn.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/espn.ts
   function espnRecent(sport, slug, date, tz2) {
     if (!pathOf(sport, slug)) return { requests: [], parse: () => [] };
     const end = localDay(date, tz2).start;
@@ -50065,11 +52307,11 @@ ${cue.text}`).join("\n\n")}
   }
   function statusOf(raw) {
     const name = String(raw?.type?.name ?? "");
-    const state2 = String(raw?.type?.state ?? "");
+    const state3 = String(raw?.type?.state ?? "");
     if (/POSTPONED|CANCELED|CANCELLED|ABANDONED|SUSPENDED|DELAYED|FORFEIT/.test(name)) return "postponed";
     if (/HALFTIME/.test(name)) return "ht";
-    if (state2 === "in") return "live";
-    if (state2 === "post") return "finished";
+    if (state3 === "in") return "live";
+    if (state3 === "post") return "finished";
     return "scheduled";
   }
   function espnMinute(displayClock) {
@@ -50222,7 +52464,7 @@ ${cue.text}`).join("\n\n")}
   }
   var ESPN_LEAGUES, ESPN_SLUG_BY_LEAGUE, ymdLocal, LIVE_FALLBACK, SPORT_PATH, SLUG_PATH, pathOf, arr4, num4, str4, ymd2, leaguesToday, focus, boards, scoreboard, STAT, covered, espn;
   var init_espn = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/espn.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/espn.ts"() {
       "use strict";
       init_day_plan();
       ESPN_LEAGUES = {
@@ -50356,7 +52598,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
     return id === "thesportsdb" ? theSportsDb : id === "sportapi" ? sportApi : id === "espn" ? espn : apiSports;
   }
@@ -50377,7 +52619,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PROVIDER_IDS, KEYLESS_IDS, ALL_IDS, PROVIDER_LABEL, isKeyless;
   var init_providers = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
@@ -50391,7 +52633,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -50433,7 +52675,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -50441,7 +52683,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-direct.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-direct.ts
   function remember2(key, data, at, final) {
     cache7.delete(key);
     cache7.set(key, { data, at, final });
@@ -50460,7 +52702,7 @@ ${cue.text}`).join("\n\n")}
     const hit = cache7.get(url);
     if (args.mode === "cache-only") return hit ? result(hit.data, true, isFresh(hit, args.req, now2()), hit.at, null) : result(null, true, false, null, null);
     if (hit && isFresh(hit, args.req, now2())) return result(hit.data, true, true, hit.at, null);
-    const running2 = inflight9.get(url);
+    const running2 = inflight10.get(url);
     if (running2) return running2;
     let release2 = () => {
     };
@@ -50485,16 +52727,16 @@ ${cue.text}`).join("\n\n")}
       } catch {
         return result(hit?.data ?? null, !!hit, false, hit?.at ?? null, "network");
       } finally {
-        inflight9.delete(url);
+        inflight10.delete(url);
       }
     })();
-    inflight9.set(url, run3);
+    inflight10.set(url, run3);
     release2();
     return run3;
   }
-  var BASES, MAX_ENTRIES7, cache7, inflight9, result;
+  var BASES, MAX_ENTRIES7, cache7, inflight10, result;
   var init_sport_direct = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-direct.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-direct.ts"() {
       "use strict";
       "use client";
       BASES = {
@@ -50502,12 +52744,12 @@ ${cue.text}`).join("\n\n")}
       };
       MAX_ENTRIES7 = 120;
       cache7 = /* @__PURE__ */ new Map();
-      inflight9 = /* @__PURE__ */ new Map();
+      inflight10 = /* @__PURE__ */ new Map();
       result = (data, cached2, fresh, fetchedAt, error) => ({ data, cached: cached2, fresh, fetchedAt, quota: null, error });
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/budget.ts
   function pooled(items2, limit, run3) {
     let active5 = 0;
     const queue3 = [];
@@ -50529,7 +52771,7 @@ ${cue.text}`).join("\n\n")}
   }
   var RETRY_MS2, KEYLESS_PARALLEL, DAY_MS, unknownQuota, Budget;
   var init_budget = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
       init_sport_fetch();
@@ -50789,7 +53031,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
   }
@@ -50803,7 +53045,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
   var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-model.ts"() {
       "use strict";
       SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
       SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
@@ -50811,7 +53053,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-store.ts
   function cardOpacity(cards, tv) {
     const own = tv ? cards.tvOpacity : cards.opacity;
     return typeof own === "number" ? own : tv ? CARD_OPACITY_DEFAULT.tv : CARD_OPACITY_DEFAULT.desktop;
@@ -50944,11 +53186,11 @@ ${cue.text}`).join("\n\n")}
     delete keys2[id];
     return setSportSettings({ keys: keys2 });
   }
-  function useStored(key, read12) {
-    const [value, setValue] = useState(read12);
+  function useStored(key, read13) {
+    const [value, setValue] = useState(read13);
     useEffect(() => {
-      setValue(read12());
-      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, () => setValue(read12()));
+      setValue(read13());
+      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, key, () => setValue(read13()));
     }, [key]);
     return value;
   }
@@ -51067,7 +53309,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_KEYS_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, ownImageDefaults, BACKDROPS_REV, CARD_OPACITY_DEFAULT, CARDS_REV, isMode, pct2, DEFAULT_CARDS, ALL_PROVIDERS, DEFAULT_SETTINGS, isProvider, KEY_RE, LEGACY_PROVIDERS, followAlert, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51112,7 +53354,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -51147,7 +53389,7 @@ ${cue.text}`).join("\n\n")}
     removeProviderKey(provider ?? getSportSettings().provider);
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -51156,7 +53398,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-handoff.ts
   async function startKeyHandoff() {
     try {
       const res = await fetch(BASE2, { method: "POST" });
@@ -51228,7 +53470,7 @@ ${cue.text}`).join("\n\n")}
   }
   var BASE2, POLL_MS3;
   var init_key_handoff = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-handoff.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-handoff.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51237,7 +53479,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/router.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/router.ts
   function lacksLiveData(f, now2) {
     return (f.status === "live" || f.status === "ht") && f.score == null && f.minute == null && now2 - f.kickoff >= NO_LIVE_GRACE_MS;
   }
@@ -51261,7 +53503,7 @@ ${cue.text}`).join("\n\n")}
   }
   var keylessSources, FALL_THROUGH, NO_LIVE_GRACE_MS, SportRouter, current2, budgets;
   var init_router = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/router.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/router.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -51478,10 +53720,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/surface.ts
   var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface2, sportCardStyle, SPORT_DRAWER_PADDING, sportDrawerStyle, SPORT_SOLID_BG, sportStackedStyle, focusAttr, ACC, TINT, ON, F, ROW_DECL, SPORT_FOCUS_CSS;
   var init_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/surface.ts"() {
       "use strict";
       init_tv_ui();
       sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
@@ -51533,7 +53775,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-card.tsx
   function KeyCard({ variant, onDone, pushLayer, provider: fixed2, current: current5, onRemove }) {
     const { tt } = useTvText();
     const tv = useTvMode();
@@ -51629,7 +53871,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SPORT_NAMES, SIGNUP;
   var init_key_card = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-card.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-card.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51657,7 +53899,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -51699,17 +53941,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { text: `${head}${left}${via}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
       init_providers();
       init_lang();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/event-index.ts
   var WINDOW_MS, fold, aliasKey, EventIndex;
   var init_event_index = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-index.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/event-index.ts"() {
       "use strict";
       init_sport_store();
       WINDOW_MS = 15 * 6e4;
@@ -51769,7 +54011,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -51899,7 +54141,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -51915,7 +54157,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-events.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/goal-events.ts
   function diffGoals(prev, next, now2, keyOf2 = (f) => f.id) {
     const out = [];
     for (const f of next) {
@@ -51952,13 +54194,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var listeners11;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
       listeners11 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -52046,7 +54288,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var pad2, SportEndpointMissing, TTL_MS2, cache8;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52063,7 +54305,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.rerun) return now2 < m.start ? "upcoming" : "finished";
     if (m.phase === "postponed") return "upcoming";
@@ -52208,7 +54450,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const sorted = [...matches].sort((a, b) => a.start - b.start);
     const out = /* @__PURE__ */ new Set();
     for (let i = 0; i < sorted.length; i += 1) {
-      for (let j = i + 1; j < sorted.length && sorted[j].start - sorted[i].start < minutes * MIN; j += 1) {
+      for (let j = i + 1; j < sorted.length && sorted[j].start - sorted[i].start < minutes * MIN2; j += 1) {
         out.add(sorted[i].id);
         out.add(sorted[j].id);
       }
@@ -52287,19 +54529,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const focusIndex = firstLive >= 0 ? firstLive : Math.min(started.length, Math.max(items2.length - 1, 0));
     return { items: items2, nowIndex: started.length, focusIndex };
   }
-  var HOUR, MIN, WINDOW_HOURS, WINDOW, LEAD, MERGE_GAP_MS, LEAGUE_COLORS;
+  var HOUR, MIN2, WINDOW_HOURS, WINDOW, LEAD, MERGE_GAP_MS, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
       init_sport_store();
       HOUR = 36e5;
-      MIN = 6e4;
+      MIN2 = 6e4;
       WINDOW_HOURS = 10;
       WINDOW = WINDOW_HOURS * HOUR;
       LEAD = 2 * HOUR;
-      MERGE_GAP_MS = 5 * MIN;
+      MERGE_GAP_MS = 5 * MIN2;
       LEAGUE_COLORS = {
         allsvenskan: "#3b82f6",
         superettan: "#60a5fa",
@@ -52322,7 +54564,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
@@ -52456,7 +54698,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TWO_HOURS, REPLAY_GAP, REPLAY_LOOKBACK, STATUS2, phaseOf, fixtureKeys, TeamIndex, fitsTeams;
   var init_merge = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       init_sport_store();
@@ -52489,7 +54731,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-link.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-link.ts
   async function linkFixtures(args) {
     if (args.fixtures.length === 0) return {};
     try {
@@ -52512,7 +54754,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_sport_link = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-link.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-link.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
@@ -52522,7 +54764,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/detail-fill.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/detail-fill.ts
   function sameTeam(a, b) {
     const x = words(a);
     const y = words(b);
@@ -52561,7 +54803,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var fold2, AFFIX, words, KICKOFF_SLACK_MS, flipStat, flipLineup, lacksDetail;
   var init_detail_fill = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/detail-fill.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/detail-fill.ts"() {
       "use strict";
       fold2 = (name) => name.replace(/[øØ]/g, "o").replace(/[æÆ]/g, "ae").replace(/ß/g, "ss").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
       AFFIX = /* @__PURE__ */ new Set(["fc", "cf", "afc", "sc", "ac", "ssc", "fk", "sk", "if", "ik", "bk", "ff", "cd", "ud", "sv", "vfb", "vfl", "tsg", "rc", "as", "us", "club", "de"]);
@@ -52573,7 +54815,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/evening-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/evening-plan.ts
   function getEveningPlan(now2 = Date.now()) {
     const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, null);
     return Array.isArray(raw) ? raw.filter((e) => e && typeof e.start === "number" && e.start + KEEP_MS > now2) : [];
@@ -52592,12 +54834,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function addPlanned(m, title, now2 = Date.now()) {
     const plan = getEveningPlan(now2);
     if (plan.some((e) => samePlanned(e, m))) return;
-    write10([...plan, { id: m.id, kind: m.kind, homeKey: m.homeKey ?? null, awayKey: m.awayKey ?? null, event: m.event ?? null, title, start: m.start }]);
+    write11([...plan, { id: m.id, kind: m.kind, homeKey: m.homeKey ?? null, awayKey: m.awayKey ?? null, event: m.event ?? null, title, start: m.start }]);
   }
   function removePlanned(m, now2 = Date.now()) {
     const plan = getEveningPlan(now2);
     const next = plan.filter((e) => !samePlanned(e, m));
-    if (next.length !== plan.length) write10(next);
+    if (next.length !== plan.length) write11(next);
   }
   function useEveningPlan() {
     const [plan, setPlan] = useState(() => getEveningPlan());
@@ -52613,9 +54855,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }
     }, [matches, plan]);
   }
-  var EVENING_PLAN_KEY, KEEP_MS, SLACK_MS, write10;
+  var EVENING_PLAN_KEY, KEEP_MS, SLACK_MS, write11;
   var init_evening_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/evening-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/evening-plan.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -52625,11 +54867,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       EVENING_PLAN_KEY = "sport_evening_plan_v1";
       KEEP_MS = 12 * 36e5;
       SLACK_MS = 3 * 36e5;
-      write10 = (list) => writePluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, list);
+      write11 = (list) => writePluginJson(LIVE_TV_PLUGIN_ID2, EVENING_PLAN_KEY, list);
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/spoiler.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/spoiler.ts
   function spoilerKey(m) {
     if (m.rerun) {
       const f = m.replayOf?.fixture;
@@ -52649,7 +54891,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (prev == null) added = true;
       if (prev == null || until > prev) protectedUntil.set(key, until);
     }
-    if (added) emit3();
+    if (added) emit4();
   }
   function readTvReveals() {
     const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, {});
@@ -52659,7 +54901,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function revealTv(key, now2) {
     const fresh = Object.fromEntries(Object.entries(readTvReveals()).filter(([, at]) => at > now2));
     writePluginJson(LIVE_TV_PLUGIN_ID2, SPOILER_TV_KEY, { ...fresh, [key]: now2 + REVEAL_TV_MS });
-    emit3();
+    emit4();
   }
   function revealPhone(key, phoneId) {
     let set = phoneReveals.get(key);
@@ -52669,7 +54911,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     if (set.has(phoneId)) return;
     set.add(phoneId);
-    emit3();
+    emit4();
   }
   function keyProtected(key, now2) {
     const until = key ? protectedUntil.get(key) : void 0;
@@ -52712,9 +54954,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, []);
     return v;
   }
-  var SPOILER_KEEP_MS, REVEAL_TV_MS, SPOILER_TV_KEY, protectedUntil, phoneReveals, listeners12, emit3;
+  var SPOILER_KEEP_MS, REVEAL_TV_MS, SPOILER_TV_KEY, protectedUntil, phoneReveals, listeners12, emit4;
   var init_spoiler = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/spoiler.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -52726,13 +54968,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       protectedUntil = /* @__PURE__ */ new Map();
       phoneReveals = /* @__PURE__ */ new Map();
       listeners12 = /* @__PURE__ */ new Set();
-      emit3 = () => {
+      emit4 = () => {
         for (const cb of [...listeners12]) cb();
       };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
     const router = currentRouter();
     if (!router) {
@@ -52832,7 +55074,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, FILL_REFRESH_MS, STANDINGS_MISS_MS, HISTORY_DAYS, ResultsController, current3, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53309,13 +55551,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           const used = this.router.quotaFor(s);
           if (!used) return { ...none, state: "ok" };
           const q = used.quota;
-          const base = { ...none, provider: used.provider };
+          const base2 = { ...none, provider: used.provider };
           const paid = isPaidPlan(q.plan ?? getSportSettings().keys[used.provider]?.plan ?? null, used.provider);
           if (!this.router.activeProvider(s)) {
             const until = this.router.pausedUntil(s);
-            if (until != null) return { ...base, state: q.reason === "rate-limited" ? "rate-limited" : "paused", pausedUntil: until, remainingToday: q.remaining, paid };
+            if (until != null) return { ...base2, state: q.reason === "rate-limited" ? "rate-limited" : "paused", pausedUntil: until, remainingToday: q.remaining, paid };
           }
-          return { ...base, state: "ok", intervalMs: hot ? this.router.liveIntervalMs(s, hot.windowEndsAt) : null, remainingToday: q.remaining, paid };
+          return { ...base2, state: "ok", intervalMs: hot ? this.router.liveIntervalMs(s, hot.windowEndsAt) : null, remainingToday: q.remaining, paid };
         }
         /**
          * Den sammanslagna listan, som spelaren läser (MÅL!, efterfrågan). Den
@@ -53351,7 +55593,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const plan = input.plan ?? [];
@@ -53466,7 +55708,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var KIND_KEYS, NOOP;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53492,7 +55734,121 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recordings.ts
+  function recordingStreamUrl(id) {
+    return `${RECORD_API}/stream/${encodeURIComponent(id)}.ts`;
+  }
+  async function request(path, init) {
+    const res = await fetch(path, init);
+    let data = null;
+    if (typeof res.text === "function") {
+      const text2 = await res.text();
+      try {
+        data = text2 ? JSON.parse(text2) : null;
+      } catch {
+        data = null;
+      }
+    } else if (typeof res.json === "function") {
+      data = await res.json().catch(() => null);
+    }
+    if (!res.ok) {
+      const message = data && typeof data === "object" && typeof data.error === "string" ? data.error : `HTTP ${res.status}`;
+      throw new Error(message);
+    }
+    return data;
+  }
+  async function listRecordings() {
+    const list = await request(`${RECORD_API}/list`);
+    return { recordings: Array.isArray(list?.recordings) ? list.recordings : [], folder: list?.folder ?? null, freeBytes: typeof list?.freeBytes === "number" ? list.freeBytes : null, keepFreeBytes: typeof list?.keepFreeBytes === "number" ? list.keepFreeBytes : 0 };
+  }
+  async function scheduleRecording(body) {
+    const rec = await request(`${RECORD_API}/schedule`, jsonInit("POST", body));
+    void refreshRecordings();
+    return rec;
+  }
+  async function stopRecording(id) {
+    const rec = await request(`${RECORD_API}/stop`, jsonInit("POST", { id }));
+    void refreshRecordings();
+    return rec;
+  }
+  async function deleteRecording(id) {
+    await request(`${RECORD_API}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    void refreshRecordings();
+  }
+  async function saveRecordSettings(s) {
+    await request(`${RECORD_API}/settings`, jsonInit("POST", { folder: s.folder ?? null, keepFreeGb: s.keepFreeGb }));
+    void refreshRecordings();
+  }
+  function getCachedRecordings() {
+    return cache9;
+  }
+  function refreshRecordings() {
+    if (inflight11) return inflight11;
+    inflight11 = listRecordings().then((list) => {
+      cache9 = list;
+      return list;
+    }).catch(() => cache9).finally(() => {
+      inflight11 = null;
+      emit5();
+    });
+    return inflight11;
+  }
+  function onRecordingsChanged(listener) {
+    listeners14.add(listener);
+    return () => {
+      listeners14.delete(listener);
+    };
+  }
+  function hasPendingRecordings(list) {
+    return !!list?.recordings.some((r) => r.status === "scheduled" || r.status === "recording");
+  }
+  function useRecordings(active5) {
+    const [list, setList] = useState(cache9);
+    const pending5 = hasPendingRecordings(list);
+    useEffect(() => onRecordingsChanged(() => setList(cache9)), []);
+    useEffect(() => {
+      void refreshRecordings();
+      const period = active5 || pending5 ? RECORDINGS_POLL_ACTIVE_MS : RECORDINGS_POLL_IDLE_MS;
+      const timer5 = setInterval(() => {
+        void refreshRecordings();
+      }, period);
+      return () => clearInterval(timer5);
+    }, [active5, pending5]);
+    return { list, refresh: refreshRecordings };
+  }
+  function recordingFor(list, channelKey2, programmeStart) {
+    if (!list) return void 0;
+    if (programmeStart != null) {
+      return list.recordings.find((r) => r.channelKey === channelKey2 && r.programmeStart === programmeStart && (r.status === "scheduled" || r.status === "recording"));
+    }
+    return list.recordings.find((r) => r.channelKey === channelKey2 && r.status === "recording");
+  }
+  function formatBytes(n, locale) {
+    const GB = 1024 ** 3;
+    const MB = 1024 ** 2;
+    if (n >= GB) return `${(n / GB).toLocaleString(locale, { maximumFractionDigits: 1 })} GB`;
+    return `${Math.round(n / MB).toLocaleString(locale)} MB`;
+  }
+  var RECORD_API, RECORDINGS_POLL_ACTIVE_MS, RECORDINGS_POLL_IDLE_MS, jsonInit, cache9, inflight11, listeners14, emit5;
+  var init_recordings = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recordings.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      RECORD_API = "/api/live-tv/record";
+      RECORDINGS_POLL_ACTIVE_MS = 15e3;
+      RECORDINGS_POLL_IDLE_MS = 6e4;
+      jsonInit = (method, body) => ({ method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      cache9 = null;
+      inflight11 = null;
+      listeners14 = /* @__PURE__ */ new Set();
+      emit5 = () => {
+        for (const l of [...listeners14]) l();
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -53508,24 +55864,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         send: () => {
           batches.delete(id);
           const wanted = [...entry.keys];
-          const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items2) => {
+          const request2 = epgSchedule(epgStoreId(listId), wanted, from, to).then((items2) => {
             const storedAt = Date.now();
             for (const key of wanted) {
-              cache9.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
+              cache10.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
             }
             evict(storedAt);
             return items2;
           });
-          for (const key of wanted) inflight10.set(entryKey2(listId, key, from, to), request);
-          request.catch(() => {
+          for (const key of wanted) inflight12.set(entryKey2(listId, key, from, to), request2);
+          request2.catch(() => {
           }).finally(() => {
             for (const key of wanted) {
-              if (inflight10.get(entryKey2(listId, key, from, to)) === request) {
-                inflight10.delete(entryKey2(listId, key, from, to));
+              if (inflight12.get(entryKey2(listId, key, from, to)) === request2) {
+                inflight12.delete(entryKey2(listId, key, from, to));
               }
             }
           });
-          settle(request);
+          settle(request2);
         }
       };
       batch = entry;
@@ -53542,13 +55898,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `${epgStoreId(listId)}|${key}|${from}|${to}|${getEpgShiftMinutes()}`;
   }
   function evict(now2) {
-    for (const [key, entry] of cache9) {
-      if (now2 - entry.storedAt >= TTL_MS3) cache9.delete(key);
+    for (const [key, entry] of cache10) {
+      if (now2 - entry.storedAt >= TTL_MS3) cache10.delete(key);
     }
-    while (cache9.size > MAX_ENTRIES8) {
-      const oldest = cache9.keys().next();
+    while (cache10.size > MAX_ENTRIES8) {
+      const oldest = cache10.keys().next();
       if (oldest.done) break;
-      cache9.delete(oldest.value);
+      cache10.delete(oldest.value);
     }
   }
   function split(listId, keys2, from, to, now2) {
@@ -53556,11 +55912,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const missing = [];
     for (const key of keys2) {
       const id = entryKey2(listId, key, from, to);
-      const entry = cache9.get(id);
+      const entry = cache10.get(id);
       if (entry && now2 - entry.storedAt < TTL_MS3) {
         hits[key] = entry.programmes;
-        cache9.delete(id);
-        cache9.set(id, entry);
+        cache10.delete(id);
+        cache10.set(id, entry);
       } else {
         missing.push(key);
       }
@@ -53578,7 +55934,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const waiting = /* @__PURE__ */ new Set();
     const queue3 = [];
     for (const key of missing) {
-      const pending5 = inflight10.get(entryKey2(listId, key, from, to));
+      const pending5 = inflight12.get(entryKey2(listId, key, from, to));
       if (pending5) waiting.add(pending5);
       else queue3.push(key);
     }
@@ -53593,7 +55949,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           break;
         }
       }
-      merged[key] = value ?? cache9.get(entryKey2(listId, key, from, to))?.programmes ?? [];
+      merged[key] = value ?? cache10.get(entryKey2(listId, key, from, to))?.programmes ?? [];
     }
     return merged;
   }
@@ -53601,9 +55957,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS3, MAX_ENTRIES8, cache9, batches, inflight10, HOUR_MS;
+  var TTL_MS3, MAX_ENTRIES8, cache10, batches, inflight12, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -53611,14 +55967,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_store_id();
       TTL_MS3 = 5 * 60 * 1e3;
       MAX_ENTRIES8 = 600;
-      cache9 = /* @__PURE__ */ new Map();
+      cache10 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
-      inflight10 = /* @__PURE__ */ new Map();
+      inflight12 = /* @__PURE__ */ new Map();
       HOUR_MS = 36e5;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -53647,38 +56003,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var EMPTY6;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY6 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-title.ts
-  function displayTitle(title) {
-    if (!title) return title;
-    if (!MARKERS.test(title)) {
-      MARKERS.lastIndex = 0;
-      return title;
-    }
-    MARKERS.lastIndex = 0;
-    return title.replace(MARKERS, " ").replace(/\s{2,}/g, " ").trim();
-  }
-  function titleKey(title) {
-    return displayTitle(title).toLowerCase().replace(/\s+/g, " ").trim();
-  }
-  var MARKERS;
-  var init_display_title = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-title.ts"() {
-      "use strict";
-      MARKERS = /[ᴬ-ᵪᶛ-ᶿⁱⁿʰ-ʸˠ-ˤ]+/g;
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
-    const [state2, setState] = useState(() => ({ schedules: EMPTY8, loading: false }));
+    const [state3, setState] = useState(() => ({ schedules: EMPTY8, loading: false }));
     useEffect(() => {
       if (!listId || keys2.length === 0 || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
         setState({ schedules: EMPTY8, loading: false });
@@ -53700,11 +56035,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         live2 = false;
       };
     }, [listId, keysId, from, to]);
-    return state2;
+    return state3;
   }
   var EMPTY8;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -53714,7 +56049,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/couch-channel-player.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/couch-channel-player.ts
   function channelSnapshot(a) {
     return {
       kind: "channel",
@@ -53746,12 +56081,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
   var init_couch_channel_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/couch-channel-player.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/couch-channel-player.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-recovery.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hls-recovery.ts
   function nextRecoveryStep(failures) {
     if (failures >= HLS_REOPEN_BACKOFF_MS.length) return { kind: "fallback-ts" };
     return { kind: "reopen", delayMs: HLS_REOPEN_BACKOFF_MS[Math.max(0, failures)], attempt: Math.max(0, failures) + 1 };
@@ -53772,7 +56107,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HLS_STALL_MS, HLS_REOPEN_BACKOFF_MS, HLS_RECOVERY_RESET_MS, RECENT_ACCOUNT_SESSION_MS, HLS_DEMUXER_LAVF_O, HLS_DEMUXER_LAVF_O_PROXIED;
   var init_hls_recovery = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hls-recovery.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hls-recovery.ts"() {
       "use strict";
       HLS_STALL_MS = 8e3;
       HLS_REOPEN_BACKOFF_MS = [3e3, 6e3, 12e3];
@@ -53783,7 +56118,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -53932,19 +56267,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useOrientation.ts
-  function read11() {
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useOrientation.ts
+  function read12() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
   }
   function useOrientation() {
-    const [orientation, setOrientation] = useState(read11);
+    const [orientation, setOrientation] = useState(read12);
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       const mql = window.matchMedia(QUERY);
@@ -53957,14 +56292,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -54013,13 +56348,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [active5]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -54030,13 +56365,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -54056,7 +56391,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -54069,7 +56404,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -54113,7 +56448,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -54127,7 +56462,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/score-model.ts
   function scoreHidden(m, now2 = Date.now()) {
     if (!spoilerProtected(m, now2)) return false;
     return hiddenOnTv(m, now2, getSportSettings());
@@ -54180,7 +56515,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return f.crest ?? null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
       init_spoiler();
@@ -54188,7 +56523,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -54209,7 +56544,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -54286,7 +56621,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card", px }) {
     const blink = useGoalBlink(match);
     useSpoilerVersion();
@@ -54337,7 +56672,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54356,15 +56691,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
   var init_sport_icons2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
       "use strict";
       init_sport_icons();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/crest.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/crest.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -54374,7 +56709,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(colorKey), color: "#fff", fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: crestText(name) });
   }
   var init_crest = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/crest.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/crest.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54386,7 +56721,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function LeagueDot({ leagueKey, size = dp(12) }) {
     return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: dp(3), background: leagueColor(leagueKey), flexShrink: 0 } });
   }
@@ -54465,7 +56800,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn, GRID_MIN_CARD;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54504,7 +56839,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -54695,7 +57030,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54720,7 +57055,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/results-model.ts
   function groupResults(matches, filter, follows = []) {
     const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
     const isFollowed = (m) => followState(m, follows).any;
@@ -54747,7 +57082,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var isLive, isMine, FORM_COLOR;
   var init_results_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/results-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/results-model.ts"() {
       "use strict";
       init_sport_day_model();
       isLive = (m) => m.status === "live";
@@ -54756,7 +57091,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/league-jump.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/league-jump.ts
   function foldText(s) {
     return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
   }
@@ -54816,7 +57151,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var YOUR_LEAGUES_MAX, TOP_LEAGUES_MAX, OPEN_COUNTRIES, HOME_COUNTRIES, isHomeCountry, byCount;
   var init_league_jump = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/league-jump.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/league-jump.ts"() {
       "use strict";
       init_merge();
       init_sport_day_model();
@@ -54829,7 +57164,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
   function sectionTarget(key, current5 = "sport") {
     return key === current5 ? null : key;
   }
@@ -54853,11 +57188,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { ...axis, rows, nowPct };
   }
   function phoneResults(matches, opts, follows) {
-    const base = opts.watchable ? matches.filter(watchable) : matches;
-    const all = groupResults(base, "all", follows);
+    const base2 = opts.watchable ? matches.filter(watchable) : matches;
+    const all = groupResults(base2, "all", follows);
     const entries2 = leagueEntries(all.groups, follows);
     if (opts.scope === "all") return { groups: all.groups, entries: entries2, followedCount: all.followedCount };
-    if (opts.scope === "followed") return { groups: groupResults(base, "followed", follows).groups, entries: entries2, followedCount: all.followedCount };
+    if (opts.scope === "followed") return { groups: groupResults(base2, "followed", follows).groups, entries: entries2, followedCount: all.followedCount };
     return { groups: onlyLeague(all.groups, opts.scope), entries: entries2, followedCount: all.followedCount };
   }
   function eveningPlan(later, isReminded2) {
@@ -54873,7 +57208,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_SECTIONS, watchable;
   var init_phone_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
       "use strict";
       init_sport_day_model();
       init_results_model();
@@ -54889,7 +57224,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
   function usePhonePlatform() {
     return phonePlatform(typeof navigator === "undefined" ? "" : navigator.userAgent || "", isAndroidTauriEnv);
   }
@@ -54953,7 +57288,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHEET_BG, sheetTitle, overline2;
   var init_phone_sport_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -54968,7 +57303,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
   function Row2({ entry, on, showCountry, sportLabel: sportLabel2, onPick }) {
     const sub = [showCountry ? entry.country : null, sportLabel2].filter(Boolean).join(" \xB7 ");
     return /* @__PURE__ */ jsxs(SheetRow, { testId: `phone-league-row-${entry.key}`, on, height: 50, onPress: onPick, children: [
@@ -55034,7 +57369,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var dot;
   var init_sport_league_sheet_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55048,7 +57383,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
   function PhoneTeamCrest({ name, colorKey, src, size }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: colorKey ?? name, src, size });
   }
@@ -55125,7 +57460,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var P, cardStyle2, svg4, PIcons;
   var init_phone_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55208,7 +57543,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
   function PhoneCrest({ name, src, size = 22 }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: name, src, size });
   }
@@ -55377,7 +57712,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
   var init_sport_results_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55401,7 +57736,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
   function PhoneMatchList({ sport, currentKey, nowMs, locale, picked, onTogglePick, onDone }) {
     const { tt } = useTvText();
     const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
@@ -55439,7 +57774,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }, g.start ?? "now")) });
   }
   var init_player_matches_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
       "use strict";
       "use client";
       init_live_tv_ui();
@@ -55455,7 +57790,33 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/use-channel-recording.ts
+  function useChannelRecording(channel, now2, nowMs) {
+    const settings = useTvSettings();
+    const { list } = useRecordings(false);
+    const active5 = recordingFor(list, channelKey(channel), null);
+    const toggle = useCallback(async () => {
+      try {
+        if (active5) await stopRecording(active5.id);
+        else await scheduleRecording(planFromNow(channel, now2, nowMs, recordMargins(settings)));
+      } catch {
+      }
+    }, [active5, channel, now2, nowMs, settings]);
+    return { enabled: settings.recordingEnabled, active: active5, toggle };
+  }
+  var init_use_channel_recording = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/use-channel-recording.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_recording_plan();
+      init_recordings();
+      init_tv_settings_store();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -55476,6 +57837,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [sheet, setSheet] = useState(null);
     const timerRef = useRef(null);
     const info = tv.nowFor(channel);
+    const rec = useChannelRecording(channel, info.now, tv.nowMs);
     const hideMs = tv.bannerHideMs;
     const clearTimer = useCallback(() => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -55533,7 +57895,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [tv.neighbours, pinnedSet, channel]);
     const numberName = `${tv.channelNumber ? `${tv.channelNumber} \xB7 ` : ""}${channel.name}`;
     const minutesLeft = info.now ? tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) }) : null;
-    const timeLine2 = info.now ? `${formatClock2(info.now.start, tv.locale)}\u2013${formatClock2(info.now.stop, tv.locale)} \xB7 ${minutesLeft}` : null;
+    const timeLine3 = info.now ? `${formatClock2(info.now.start, tv.locale)}\u2013${formatClock2(info.now.stop, tv.locale)} \xB7 ${minutesLeft}` : null;
     const nextLine = info.next ? `${tt("nextLabel")} ${displayTitle(info.next.title)} \xB7 ${formatClock2(info.next.start, tv.locale)}` : null;
     const progress2 = info.now ? progressOf(info.now.start, info.now.stop, tv.nowMs) : 0;
     const qualityLabel = tv.quality ?? tt("autoQuality");
@@ -55546,7 +57908,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
       { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
       { key: "fav", label: favLabel, run: tv.onToggleFavourite },
-      { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
+      { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails },
+      ...rec.enabled ? [{ key: "record", label: rec.active ? tt("stopRecording") : tt("record"), run: () => {
+        void rec.toggle();
+      } }] : []
     ];
     const currentKey = channelKey(channel);
     const matchSources = tv.sport ? currentMatchSources(tv.sport, currentKey, tv.nowMs) : null;
@@ -55605,8 +57970,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: 16 }, children: [
               /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-info", style: { flex: 1, minWidth: "0px", display: "flex", flexDirection: "column", gap: 4 }, children: [
                 /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis2 }, children: displayTitle(info.now?.title) ?? channel.name }),
-                timeLine2 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: [
-                  timeLine2,
+                timeLine3 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: [
+                  timeLine3,
                   nextLine ? ` \xB7 ${nextLine}` : ""
                 ] }) : null
               ] }),
@@ -55648,7 +58013,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           /* @__PURE__ */ jsx(Round, { size: 44, label: favLabel, onPress: tv.onToggleFavourite, background: tv.favourite ? MT.accMix(22) : MT.s10, children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: tv.favourite ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: tv.favourite }) }) })
         ] }),
         /* @__PURE__ */ jsx("div", { "data-testid": "phone-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp22 }, children: displayTitle(info.now?.title) ?? channel.name }),
-        timeLine2 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: timeLine2 }) : null,
+        timeLine3 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: timeLine3 }) : null,
         nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis2 }, children: nextLine }) : null,
         /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
           /* @__PURE__ */ jsx(GridBtn, { label: tt("audioSubs"), onPress: () => setSheet("audio") }),
@@ -55685,7 +58050,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer2, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55702,6 +58067,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_player_matches_phone();
       init_sport_day_model();
       init_display_title();
+      init_use_channel_recording();
       init_jsx_runtime_shim();
       PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
       ZAP_WINDOW = 25;
@@ -55712,7 +58078,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/presence.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/presence.ts
   function sync() {
     const want = seen.size > 0;
     if (want && !release) release = acquirePollDemand("couch");
@@ -55720,7 +58086,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       release();
       release = null;
     }
-    for (const cb of [...listeners14]) cb();
+    for (const cb of [...listeners15]) cb();
   }
   function markPresence(phoneId, on, now2) {
     if (on) seen.set(phoneId, now2);
@@ -55736,19 +58102,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (changed) sync();
   }
   function onPresenceChanged(cb) {
-    listeners14.add(cb);
+    listeners15.add(cb);
     return () => {
-      listeners14.delete(cb);
+      listeners15.delete(cb);
     };
   }
-  var PRESENCE_TTL_MS, seen, listeners14, release, hasCouchPresence, TIP_PRESENCE_PREFIX, hasPhonePresence;
+  var PRESENCE_TTL_MS, seen, listeners15, release, hasCouchPresence, TIP_PRESENCE_PREFIX, hasPhonePresence;
   var init_presence = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/presence.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/presence.ts"() {
       "use strict";
       init_live_poller();
       PRESENCE_TTL_MS = 6e4;
       seen = /* @__PURE__ */ new Map();
-      listeners14 = /* @__PURE__ */ new Set();
+      listeners15 = /* @__PURE__ */ new Set();
       release = null;
       hasCouchPresence = () => seen.size > 0;
       TIP_PRESENCE_PREFIX = "tip:";
@@ -55756,7 +58122,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx
   function useHidden(match) {
     useSpoilerVersion();
     return scoreHidden(match);
@@ -55818,7 +58184,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var ellipsis4;
   var init_player_replay_badge = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-replay-badge.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -55838,7 +58204,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -55886,7 +58252,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     void tick2;
     return programme ? isReminded(channel, programme) : false;
   }
-  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }) {
+  function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease, recording = false }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
       "div",
@@ -55899,9 +58265,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 0", display: "flex", alignItems: "center", gap: ps(12) }, children: [
             /* @__PURE__ */ jsx(SmallLogo, { channel, size: ps(32), radius: ps(6) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsxs("div", { style: { fontSize: ps(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
-                tv.channelNumber ? `${tv.channelNumber} \xB7 ` : "",
-                channel.name
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(8), minWidth: 0 }, children: [
+                /* @__PURE__ */ jsxs("div", { style: { fontSize: ps(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+                  tv.channelNumber ? `${tv.channelNumber} \xB7 ` : "",
+                  channel.name
+                ] }),
+                recording ? /* @__PURE__ */ jsxs("span", { "data-testid": "rec-badge", style: { display: "inline-flex", alignItems: "center", gap: ps(5), flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fecaca" }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { width: ps(8), height: ps(8), borderRadius: 999, background: "#ef4444", boxShadow: "0 0 6px rgba(239,68,68,0.9)" } }),
+                  tt("recording")
+                ] }) : null
               ] }),
               info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: ps(8), fontSize: ps(12), color: "rgba(203,213,225,0.9)", minWidth: 0 }, title: displayTitle(info.now.title), children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: ps(9), fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(110,231,183,0.85)", flexShrink: 0 }, children: tt("gridNow") }),
@@ -55954,7 +58326,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       )
     ] });
   }
-  function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches }) {
+  function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches, recording }) {
     const { tt } = useTvText();
     const icon = ps(20);
     const volumePercent = Math.round((controls?.volume ?? 0) * 100);
@@ -55989,6 +58361,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         /* @__PURE__ */ jsx("div", { ref: dotsRef, ...station(onTogglePause, (el) => onOpenMenu(el), { "data-init": "", "aria-label": paused ? tt("menuResume") : tt("menuPause"), "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: 0 }, children: paused ? /* @__PURE__ */ jsx(PlayIcon, { size: icon }) : /* @__PURE__ */ jsx(PauseIcon, { size: icon }) }),
         controls ? /* @__PURE__ */ jsx("div", { ...station(controls.onToggleFullscreen, void 0, { "aria-label": controls.fullscreen ? tt("playerExitFullscreen") : tt("playerFullscreen"), "aria-pressed": controls.fullscreen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, controls.fullscreen), padding: 0 }, children: controls.fullscreen ? /* @__PURE__ */ jsx(ExitFullscreenIcon, { size: icon }) : /* @__PURE__ */ jsx(FullscreenIcon, { size: icon }) }) : null,
         /* @__PURE__ */ jsx("div", { ...station(onToggleGuide, void 0, { "aria-label": tt("playerGuide"), "aria-pressed": guideOpen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, guideOpen), padding: 0 }, children: /* @__PURE__ */ jsx(GuideIcon, { size: icon }) }),
+        recording?.enabled ? /* @__PURE__ */ jsx("div", { "data-testid": "player-record", ...station(recording.onToggle, void 0, { "aria-label": recording.active ? tt("stopRecording") : tt("record"), "aria-pressed": recording.active ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, recording.active), padding: 0, color: recording.active ? "#ef4444" : void 0 }, children: /* @__PURE__ */ jsx(Icons.Record, { size: icon, filled: recording.active }) }) : null,
         sportAvailable && onToggleMatches ? /* @__PURE__ */ jsx("div", { "data-testid": "player-matches", ...station(onToggleMatches, void 0, { "aria-label": tt("sportMatches"), "aria-pressed": matchesOpen ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps, matchesOpen), padding: `0 ${ps(14)}px`, fontSize: ps(14) }, children: tt("sportMatches") }) : null,
         controls ? /* @__PURE__ */ jsxs("div", { style: { display: "inline-flex", alignItems: "center", gap: ps(8), flexShrink: 0 }, children: [
           /* @__PURE__ */ jsx("div", { ...station(controls.onToggleMute, void 0, { "aria-label": controls.muted ? tt("playerUnmute") : tt("playerMute"), "aria-pressed": controls.muted ? "true" : "false", "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: 0 }, children: controls.muted || controls.volume === 0 ? /* @__PURE__ */ jsx(SpeakerOff, { size: icon }) : /* @__PURE__ */ jsx(SpeakerOn, { size: icon, level: controls.volume }) }),
@@ -56155,7 +58528,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FAV_WINDOW, DAY_MS2, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56200,7 +58573,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/use-remote-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/use-remote-keys.ts
   function dispatchRemoteAction(action) {
     const event2 = new CustomEvent(REMOTE_ACTION_EVENT, { detail: { action }, cancelable: true });
     window.dispatchEvent(event2);
@@ -56220,14 +58593,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       };
       const hold = createRemoteHold({ holdMs: TV_HOLD_MS, fire });
       const lookup2 = (event2) => {
-        const state2 = stateRef.current;
+        const state3 = stateRef.current;
         const id = remoteKeyId(event2);
-        if (!state2 || !id) return null;
-        const binding = state2.bindings.find((b) => b.key === id);
+        if (!state3 || !id) return null;
+        const binding = state3.bindings.find((b) => b.key === id);
         if (!binding) return null;
         const dpad = DPAD_REMOTE_KEYS.includes(id);
-        if (dpad && !state2.playerOpen) return null;
-        if (state2.blocked(event2.target)) return null;
+        if (dpad && !state3.playerOpen) return null;
+        if (state3.blocked(event2.target)) return null;
         return { id, binding, dpad };
       };
       const onDown = (event2) => {
@@ -56258,8 +58631,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         fire(action);
       };
       const onHostMedia = (event2) => {
-        const state2 = stateRef.current;
-        if (!state2 || state2.playerOpen || state2.blocked(document.activeElement)) return;
+        const state3 = stateRef.current;
+        if (!state3 || state3.playerOpen || state3.blocked(document.activeElement)) return;
         const action = media(event2.detail?.action);
         if (action) fire(action);
       };
@@ -56278,7 +58651,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var REMOTE_ACTION_EVENT, REMOTE_MEDIA_EVENT;
   var init_use_remote_keys = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/use-remote-keys.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/use-remote-keys.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56289,7 +58662,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -56315,6 +58688,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const hoverRef = useRef(false);
     const TvGlassMenu = getTvGlassMenu();
     const info = tv.nowFor(channel);
+    const rec = useChannelRecording(channel, info.now, tv.nowMs);
     const hideMs = tv.bannerHideMs;
     const clearTimer = useCallback(() => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -56507,7 +58881,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
           { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
           { key: "fav", label: tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite"), run: tv.onToggleFavourite },
-          { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
+          { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails },
+          ...rec.enabled ? [{ key: "record", label: rec.active ? tt("stopRecording") : tt("record"), run: () => {
+            void rec.toggle();
+          } }] : []
         ]
       });
     };
@@ -56516,7 +58893,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       // Roten släpper igenom pekaren till videon; bara fälten tar den.
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-live-tv-tv-root": "", ...isTv ? {} : { "data-live-tv-desktop": "1" }, style: { position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30 }, children: [
         /* @__PURE__ */ jsx(TvFocusStyle, {}),
-        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2 }),
+        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2, recording: !!rec.active }),
         /* @__PURE__ */ jsxs(
           "div",
           {
@@ -56535,7 +58912,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                   setVisible(true);
                   clearTimer();
                 }
-              } }),
+              }, recording: { enabled: rec.enabled, active: !!rec.active, onToggle: () => {
+                void rec.toggle();
+              } } }),
               /* @__PURE__ */ jsx(PlayerFavouritesRow, { channel, tv, ps, onSwitch: switchChannel, onHold: holdChip })
             ]
           }
@@ -56552,7 +58931,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56565,12 +58944,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_player_replay_badge();
       init_player_chrome_parts();
       init_display_title();
+      init_use_channel_recording();
       init_use_remote_keys();
       init_jsx_runtime_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
     const direct = merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId);
     if (direct || !e.aliases?.length) return direct ?? null;
@@ -56604,7 +58984,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var playing, playingListeners;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
@@ -56612,7 +58992,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
     const controller2 = useResultsController();
@@ -56647,7 +59027,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56665,7 +59045,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback-prompt.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/stream-fallback-prompt.tsx
   function StreamFallbackPrompt({ target: target2, seconds: seconds2 = FALLBACK_COUNTDOWN_S, onSwitch, onStay }) {
     const { tt } = useTvText();
     const auto = seconds2 > 0;
@@ -56691,7 +59071,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var FALLBACK_COUNTDOWN_S;
   var init_stream_fallback_prompt = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56702,7 +59082,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
   function unique(matches) {
     const seen2 = /* @__PURE__ */ new Set();
     return matches.filter((m) => {
@@ -56787,7 +59167,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var HOUR2, WEEK_MS, ofSport, watchable2, byStart;
   var init_rows_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
       "use strict";
       init_live_tv_shell();
       init_score_model();
@@ -56802,9 +59182,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
-  function emit4() {
-    for (const cb of [...listeners15]) cb();
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  function emit6() {
+    for (const cb of [...listeners16]) cb();
   }
   function bindController() {
     const next = currentResults();
@@ -56849,7 +59229,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     noteLeagues(out);
     snapshot = { matches: out, ready: true };
-    emit4();
+    emit6();
   }
   function noteLeagues(matches) {
     let added = false;
@@ -56934,15 +59314,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (timer4 != null) clearInterval(timer4);
     timer4 = null;
   }
-  function subscribe2(cb, week) {
-    listeners15.add(cb);
+  function subscribe3(cb, week) {
+    listeners16.add(cb);
     if (week) weekWanted += 1;
-    if (listeners15.size === 1) start2();
+    if (listeners16.size === 1) start2();
     else if (week && weekWanted === 1) void refresh();
     return () => {
-      listeners15.delete(cb);
+      listeners16.delete(cb);
       if (week) weekWanted -= 1;
-      if (listeners15.size === 0) stop();
+      if (listeners16.size === 0) stop();
     };
   }
   function useSportRows(opts = {}) {
@@ -56956,9 +59336,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     return [...seenLeagues].map(([key, name]) => ({ key, name }));
   }
-  var REFRESH_MS, WEEK_DAYS, listeners15, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer4, generation2, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
+  var REFRESH_MS, WEEK_DAYS, listeners16, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer4, generation2, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
   var init_rows_feed = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -56975,7 +59355,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_sport_store();
       REFRESH_MS = 6e4;
       WEEK_DAYS = [2, 3, 4, 5, 6];
-      listeners15 = /* @__PURE__ */ new Set();
+      listeners16 = /* @__PURE__ */ new Set();
       weekWanted = 0;
       snapshot = { matches: [], ready: false };
       epg = /* @__PURE__ */ new Map();
@@ -56990,14 +59370,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       seenLeagues = /* @__PURE__ */ new Map();
       unbindController = () => {
       };
-      subscribeDay = (cb) => subscribe2(cb, false);
-      subscribeWeek = (cb) => subscribe2(cb, true);
+      subscribeDay = (cb) => subscribe3(cb, false);
+      subscribeWeek = (cb) => subscribe3(cb, true);
       getSnapshot = () => snapshot;
       leaguesPrimedAt = -Infinity;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/name-match.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/name-match.ts
   function foldDiacritics(text2) {
     return text2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ø/g, "o").replace(/æ/g, "ae").replace(/œ/g, "oe").replace(/ß/g, "ss").replace(/đ/g, "d").replace(/ł/g, "l");
   }
@@ -57006,7 +59386,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
   var init_name_match2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/name-match.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/name-match.ts"() {
       "use strict";
       COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
       COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
@@ -57016,7 +59396,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/stream-fallback.ts
   function stallStep(s, e) {
     if (e.type === "start") return { state: { startedAt: e.at, stallSince: null, stalls: [], fired: false }, trigger: false };
     const inGrace = (at) => at - s.startedAt < GRACE_MS;
@@ -57059,7 +59439,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var GRACE_MS, LONG_STALL_MS, STALL_WINDOW_MS, STALLS_TO_TRIGGER, initialStall, RANK, rankOf;
   var init_stream_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/stream-fallback.ts"() {
       "use strict";
       init_name_match2();
       init_channel_overrides();
@@ -57075,7 +59455,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/use-stream-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/use-stream-fallback.ts
   function sportSourcesFor(key, matches, now2) {
     const m = matches.find((x) => x.start <= now2 && now2 < x.stop && x.sources.some((s) => s.channelKey === key));
     return m ? rankedSources(m, getOverrides()).map(sourceChannel) : [];
@@ -57085,7 +59465,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const key = channelKey(channel);
     const rows = useSportRows();
     const settings = useTvSettings();
-    const [state2, dispatch] = useReducer((s, e) => {
+    const [state3, dispatch] = useReducer((s, e) => {
       const r = stallStep(s.st, e);
       return { st: r.state, hit: r.trigger ? s.hit + 1 : s.hit };
     }, { st: initialStall, hit: 0 });
@@ -57108,12 +59488,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => clearInterval(t);
     }, [stalled]);
     useEffect(() => {
-      if (state2.hit === 0 || !onSwitch || !getTvSettings().streamFallback) return;
+      if (state3.hit === 0 || !onSwitch || !getTvSettings().streamFallback) return;
       const now2 = Date.now();
       const matches = [...currentResults()?.merged() ?? [], ...rows.matches];
       const next = fallbackCandidates(channel, { sportSources: sportSourcesFor(key, matches, now2), channels, tried: tried.current })[0];
       if (next) setTarget(next);
-    }, [state2.hit]);
+    }, [state3.hit]);
     const switchNow = useCallback(() => {
       if (!target2 || !onSwitch) return;
       tried.current.add(key);
@@ -57126,7 +59506,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var TICK_MS2;
   var init_use_stream_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/use-stream-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/use-stream-fallback.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -57142,13 +59522,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
   function publish3() {
     snapshot2 = [...cutouts.values()];
-    for (const listener of [...listeners16]) listener();
+    for (const listener of [...listeners17]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -57164,9 +59544,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return snapshot2;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners16.add(listener);
+    listeners17.add(listener);
     return () => {
-      listeners16.delete(listener);
+      listeners17.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -57200,19 +59580,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners16, snapshot2;
+  var cutouts, listeners17, snapshot2;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners16 = /* @__PURE__ */ new Set();
+      listeners17 = /* @__PURE__ */ new Set();
       snapshot2 = [];
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -57225,12 +59605,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     for (const w of waiters2) w(reacquire);
   }
   async function releaseAllSurfaces() {
-    const close = ownerClose;
+    const close2 = ownerClose;
     owner = null;
     ownerClose = null;
     const hosts = [...hostSurfaces];
     hostSurfaces.clear();
-    if (close) await close().catch(() => {
+    if (close2) await close2().catch(() => {
     });
     for (const closeHost of hosts) await closeHost().catch(() => {
     });
@@ -57521,7 +59901,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -57543,7 +59923,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer,
@@ -58476,7 +60856,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var import_react_dom5, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS, TS_REFILL_ON_UNDERRUN;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -58512,7 +60892,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -58522,14 +60902,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-watches-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -58752,14 +61132,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var LT_NARROW_QUERY = "(max-width: 639px)";
   function useLtNarrow() {
-    const read12 = () => {
+    const read13 = () => {
       try {
         return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(LT_NARROW_QUERY).matches;
       } catch {
         return false;
       }
     };
-    const [narrow, setNarrow] = useState(read12);
+    const [narrow, setNarrow] = useState(read13);
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       let mql;
@@ -59063,7 +61443,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   init_lang();
   var EN = {
@@ -60299,7 +62679,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-watches.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_index_client();
@@ -60330,7 +62710,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function getEpgWatches() {
     return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID2, EPG_WATCHES_KEY, []));
   }
-  function write8(list) {
+  function write9(list) {
     writePluginJson(LIVE_TV_PLUGIN_ID2, EPG_WATCHES_KEY, list);
   }
   function normalizeWatchQuery(query) {
@@ -60341,13 +62721,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const current5 = getEpgWatches();
     if (q.length < EPG_WATCH_MIN_QUERY || current5.some((w) => w.query.toLowerCase() === q.toLowerCase())) return current5;
     const next = [...current5, { id: `w${now2.toString(36)}${Math.random().toString(36).slice(2, 6)}`, query: q, createdAt: now2 }];
-    write8(next);
+    write9(next);
     syncNow?.();
     return next;
   }
   function removeEpgWatch(id) {
     const next = getEpgWatches().filter((w) => w.id !== id);
-    write8(next);
+    write9(next);
     return next;
   }
   function hasEpgWatch(query) {
@@ -60390,11 +62770,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const seen2 = [.../* @__PURE__ */ new Set([...watch.seen ?? [], ...reminders.map((r) => r.id)])].filter((id) => (startOfId(id) ?? now2) > now2);
     return { watch: { ...watch, primedAt: watch.primedAt ?? now2, seen: seen2 }, discovered };
   }
-  var defaultDeps2 = {
+  var defaultDeps3 = {
     search: epgSearch,
     resolve: (keys2) => resolveChannelKeys(keys2)
   };
-  async function syncEpgWatches(now2 = Date.now(), deps2 = defaultDeps2) {
+  async function syncEpgWatches(now2 = Date.now(), deps2 = defaultDeps3) {
     const watches = getEpgWatches();
     if (watches.length === 0) {
       replaceKeywordReminders([], now2);
@@ -60433,7 +62813,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const next = updated.filter((w) => stillThere.has(w.id));
     const added = latest2.filter((w) => !updated.some((u) => u.id === w.id));
     const merged = [...next, ...added];
-    if (JSON.stringify(merged) !== JSON.stringify(latest2)) write8(merged);
+    if (JSON.stringify(merged) !== JSON.stringify(latest2)) write9(merged);
     return discovered;
   }
   var hidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
@@ -60483,7 +62863,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-watches-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-watches-settings.tsx
   init_jsx_runtime_shim();
   function useEpgWatches() {
     const [list, setList] = useState(() => getEpgWatches());
@@ -60537,7 +62917,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -60585,16 +62965,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -60659,10 +63039,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -60714,7 +63094,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, urls, refreshing, refresh: refresh2, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -60806,10 +63186,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_playlist_title();
   init_live_tv_data();
@@ -60819,7 +63199,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -60851,7 +63231,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function useVodCategories(requested) {
     const source = useVodSource(requested);
-    const [state2, setState] = useState({
+    const [state3, setState] = useState({
       categories: [],
       total: 0,
       known: false,
@@ -60892,12 +63272,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const excluded = useVodExcluded(source);
     const merges = useVodMerges(source);
     return useMemo(() => {
-      if (excluded.size === 0 && merges.length === 0) return { ...state2, reload };
-      const kept = state2.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)));
+      if (excluded.size === 0 && merges.length === 0) return { ...state3, reload };
+      const kept = state3.categories.filter((c) => !excluded.has(vodCategoryKey(c.id, c.name)));
       const categories = applyVodMerges(kept, merges);
       const total = categories.reduce((sum, c) => sum + (c.count ?? 0), 0);
-      return { ...state2, categories, total, reload };
-    }, [state2, reload, excluded, merges]);
+      return { ...state3, categories, total, reload };
+    }, [state3, reload, excluded, merges]);
   }
   function applyVodMerges(categories, merges) {
     if (merges.length === 0) return categories;
@@ -61019,7 +63399,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -61105,15 +63485,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -61186,7 +63566,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -61208,7 +63588,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_vod_category_filter();
   init_live_tv_data();
@@ -61217,8 +63597,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
-  var defaultDeps3 = { query: queryVod, status: vodStatus, categories: listVodCategories, excluded: getVodExcluded };
-  async function scanVodSource(libraryId, emit8, progress2, signal, deps2 = defaultDeps3) {
+  var defaultDeps4 = { query: queryVod, status: vodStatus, categories: listVodCategories, excluded: getVodExcluded };
+  async function scanVodSource(libraryId, emit10, progress2, signal, deps2 = defaultDeps4) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps2.status();
@@ -61241,7 +63621,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         const page = await deps2.query({ source, categoryId, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
         const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
         if (upsert.length > 0) {
-          await emit8({ upsert });
+          await emit10({ upsert });
           titles += upsert.length;
           progress2({ phase: "titles", done: titles });
         }
@@ -61266,15 +63646,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     id: VOD_LIBRARY_PROVIDER_ID,
     label: { en: "Xtream VOD", sv: "Xtream VOD", de: "Xtream VOD", fr: "Xtream VOD", es: "Xtream VOD" },
     pluginId: "com.lumio.live-tv",
-    async scanAll(source, emit8, progress2, signal) {
-      const out = await scanVodSource(source.id, emit8, progress2, signal);
+    async scanAll(source, emit10, progress2, signal) {
+      const out = await scanVodSource(source.id, emit10, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
-    async scanDelta(source, cursor, emit8, progress2, signal) {
+    async scanDelta(source, cursor, emit10, progress2, signal) {
       const account = vodSourceFromLibraryId(source.id);
       const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
       if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
-      const out = await scanVodSource(source.id, emit8, progress2, signal);
+      const out = await scanVodSource(source.id, emit10, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
     /**
@@ -61318,7 +63698,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -61352,7 +63732,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         await runLibraryScan2(
           vodLibraryProvider,
           { id: row.libraryId, name: row.label, cursor },
-          { mode: "full", onProgress: (state2) => setProgress({ libraryId: row.libraryId, done: state2.done }) }
+          { mode: "full", onProgress: (state3) => setProgress({ libraryId: row.libraryId, done: state3.done }) }
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -61366,13 +63746,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -61418,7 +63798,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function TvRow({ label, hint, value, valueTone = "accent", caret = false, glyph, toggle, onToggle, onOk, size = "page", testId, init = false, disabled = false, style }) {
     void size;
-    const base = {
+    const base2 = {
       display: "flex",
       flex: "none",
       alignItems: "center",
@@ -61446,7 +63826,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       extra["aria-checked"] = toggle ? "true" : "false";
       extra["aria-label"] = typeof label === "string" ? label : "";
     }
-    const props = interactive ? { ...station(act2, void 0, extra), style: { ...base, cursor: disabled ? "default" : "pointer" } } : { style: base };
+    const props = interactive ? { ...station(act2, void 0, extra), style: { ...base2, cursor: disabled ? "default" : "pointer" } } : { style: base2 };
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...props, children: [
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }, children: [
         /* @__PURE__ */ jsx("div", { style: { font: `500 ${tvFont2(25)}/1.2 ${TV_FONT2}`, minWidth: 0, overflowWrap: "anywhere" }, children: label }),
@@ -61559,18 +63939,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_tv_strings();
   init_vod_client();
   init_vod_category_filter();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-apply.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-category-apply.ts
   init_plugin_sdk();
   init_vod_category_filter();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_live_tv_shell();
   init_tv_settings_store();
@@ -61609,7 +63989,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-category-apply.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-category-apply.ts
   var WAIT_LIMIT_MS = 15 * 6e4;
   var WAIT_STEP_MS = 2e3;
   var sleep3 = (ms2) => new Promise((resolve) => {
@@ -61669,7 +64049,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/picker-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/picker-panel.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -61696,12 +64076,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const openerPropRef = useRef(opener);
     useEffect(() => {
       openerRef.current = openerPropRef.current ?? document.activeElement;
-      const close = () => {
+      const close2 = () => {
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      closeRef.current = close;
-      const off = navRef.current.pushLayer(close);
+      closeRef.current = close2;
+      const off = navRef.current.pushLayer(close2);
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
     }, []);
@@ -61739,7 +64119,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { ...box, color: TV2.acc, fontSize: dp(24) }, children: "\u2713" });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-categories-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-categories-picker.tsx
   init_tv_ui();
   init_jsx_runtime_shim();
   function useVodCategoryDraft(source) {
@@ -61985,12 +64365,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             draft.byKind[k].length,
             ")"
           ] }, k)) }),
-          rows: (close) => /* @__PURE__ */ jsxs(Fragment2, { children: [
+          rows: (close2) => /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-save", ...station(() => {
               if (draft.categories !== null) void draft.save();
-              close();
+              close2();
             }, void 0, { "data-init": "" }), style: { ...rowStyle3, color: TV2.acc }, children: tt("vodCategoriesSave") }),
-            /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-cancel", ...station(close), style: rowStyle3, children: tt("vodCategoriesCancel") }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-cancel", ...station(close2), style: rowStyle3, children: tt("vodCategoriesCancel") }),
             any ? /* @__PURE__ */ jsx("div", { "data-testid": "vod-picker-merge-mode", ...station(() => {
               if (draft.marking) draft.stopMarking();
               else draft.startMarking();
@@ -62154,18 +64534,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return has;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -62216,7 +64596,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/group-chips.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/group-chips.ts
   var MAX_GROUP_CHIPS = 12;
   var MORE_GROUPS = "__more_groups";
   var FAVS = "__favs";
@@ -62246,7 +64626,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return counts3;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
@@ -62292,14 +64672,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     nownext: { width: gp(48), height: gp(30) }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/group-sheet-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -62351,7 +64731,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-group-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-group-picker.tsx
   init_jsx_runtime_shim();
   var GROUP_PANEL_STEP = 40;
   var PREFETCH_ROWS = 5;
@@ -62408,7 +64788,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           testId: "group-picker",
           opener,
           chips: search,
-          rows: (close) => /* @__PURE__ */ jsxs(Fragment2, { children: [
+          rows: (close2) => /* @__PURE__ */ jsxs(Fragment2, { children: [
             shown.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "group-search-empty", style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noResults") }) : null,
             shown.map((group, index) => {
               const on = group === value;
@@ -62419,7 +64799,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                   "data-testid": `group-row-${group}`,
                   ...station(() => {
                     onPick(group);
-                    close();
+                    close2();
                   }, void 0, tvMode && index === initIndex ? { "data-init": "" } : void 0),
                   onFocus: more && index >= shown.length - PREFETCH_ROWS ? () => setVisible((v) => v + GROUP_PANEL_STEP) : void 0,
                   style: { height: dp(56), minHeight: dp(56), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(12), padding: `0 ${dp(12)}px`, cursor: "pointer", background: on ? TV2.s08 : "transparent" },
@@ -62441,15 +64821,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function useGroupPicker({ nav, phone, groups, counts: counts3, value, onPick }) {
     const [isOpen, setOpen] = useState(false);
-    const close = () => setOpen(false);
+    const close2 = () => setOpen(false);
     let node = null;
     if (isOpen) {
-      node = phone ? /* @__PURE__ */ jsx(GroupSheetPhone, { groups, counts: counts3, value, onPick, onClose: close, pushLayer: nav.pushLayer }) : /* @__PURE__ */ jsx(TvGroupPanel, { nav, groups, counts: counts3, value, onPick, onClose: close });
+      node = phone ? /* @__PURE__ */ jsx(GroupSheetPhone, { groups, counts: counts3, value, onPick, onClose: close2, pushLayer: nav.pushLayer }) : /* @__PURE__ */ jsx(TvGroupPanel, { nav, groups, counts: counts3, value, onPick, onClose: close2 });
     }
     return { open: () => setOpen(true), node };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
     const { tt } = useTvText();
@@ -62542,7 +64922,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         chips: null,
         testId: "choice-panel",
         surface,
-        rows: (close) => options.map((option, index) => {
+        rows: (close2) => options.map((option, index) => {
           const on = option.key === value;
           return /* @__PURE__ */ jsxs(
             "div",
@@ -62550,7 +64930,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               "data-testid": `choice-row-${option.label}`,
               ...station(() => {
                 onPick(option.key);
-                close();
+                close2();
               }, void 0, index === initIndex ? { "data-init": "" } : void 0),
               style: { height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: "flex", alignItems: "center", gap: gp(12), padding: `0 ${gp(12)}px`, cursor: "pointer", background: on ? TV2.s08 : "transparent" },
               children: [
@@ -62566,7 +64946,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -62736,10 +65116,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/help-content.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/help-content.ts
   var en2 = [
     { id: "menu", title: "The channel menu", steps: [
       "Hold OK on a channel or programme to open its menu. On a computer, right-click or use the \u2026 button; on a phone, press and hold.",
@@ -62834,14 +65214,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return lang === "sv" ? sv : en2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_epg_shift();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/phone-add-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/phone-add-panel.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/phone-form.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/phone-form.ts
   init_react_shim();
   var BASE = "/api/phone-form";
   var POLL_MS2 = 2e3;
@@ -62937,7 +65317,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { urls: [...new Set(urls)], xtream: server && username && password ? { server, username, password } : null };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/phone-add-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/phone-add-panel.tsx
   init_tv_ui();
   init_jsx_runtime_shim();
   function playlistPhoneSpec(tt, lang) {
@@ -62963,10 +65343,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         testId: "phone-add",
         chips: null,
         onClose,
-        rows: (close) => /* @__PURE__ */ jsx(Body, { tt, spec, onValues: (v) => {
-          close();
+        rows: (close2) => /* @__PURE__ */ jsx(Body, { tt, spec, onValues: (v) => {
+          close2();
           onValues(v);
-        }, onCancel: close })
+        }, onCancel: close2 })
       }
     );
   }
@@ -62995,7 +65375,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_mobile_tokens();
@@ -63275,14 +65655,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }, "username");
     }, "url");
     async function connectXtream(server, username, password, reuseLoginId) {
-      const base = normalizeXtreamBase(server);
-      if (!base) {
+      const base2 = normalizeXtreamBase(server);
+      if (!base2) {
         toast(tt("xtreamLoginFailed"));
         return;
       }
       let account;
       try {
-        account = await fetchXtreamAccount({ base, username, password }, { force: true });
+        account = await fetchXtreamAccount({ base: base2, username, password }, { force: true });
       } catch {
         toast(tt("xtreamLoginFailed"));
         return;
@@ -63291,10 +65671,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         toast(tt("xtreamLoginFailed"));
         return;
       }
-      const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === username);
+      const existing = getXtreamLogins().find((entry) => entry.base === base2 && entry.username === username);
       const login = {
         id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
-        base,
+        base: base2,
         username,
         password,
         format: account.allowedFormats.length === 0 || account.allowedFormats.includes("ts") ? "ts" : "m3u8",
@@ -63721,14 +66101,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           testId: "epg-shift-picker",
           chips: /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 14 : dp(17), color: TV2.muted, lineHeight: 1.4 }, children: tt("epgShiftHint") }),
           onClose: () => setShiftOpen(false),
-          rows: (close) => /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(6) }, children: EPG_SHIFT_CHOICES.map((min) => /* @__PURE__ */ jsxs(
+          rows: (close2) => /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(6) }, children: EPG_SHIFT_CHOICES.map((min) => /* @__PURE__ */ jsxs(
             "div",
             {
               "data-testid": `epg-shift-${min}`,
               ...station(() => {
                 setEpgShiftMinutes(min);
                 setShift(min);
-                close();
+                close2();
               }),
               ...min === shift ? { "data-init": "" } : {},
               style: { minHeight: phone ? 48 : dp(56), padding: phone ? "0 14px" : `0 ${dp(18)}px`, borderRadius: phone ? 0 : dp(10), background: min === shift ? TV2.s06 : "transparent", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: phone ? 15 : dp(19), cursor: "pointer" },
@@ -63852,14 +66232,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
   init_key_card();
   init_key_flow();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/key-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/key-model.ts
   init_key_flow();
   init_providers();
   init_sport_model();
@@ -63888,12 +66268,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function keyRows(s, budget, now2) {
     return PROVIDER_IDS.map((id) => {
       const k = s.keys[id];
-      const base = { id, label: PROVIDER_LABEL[id], state: "none", masked: null, until: null, quotas: [], noDailyLimit: id === "thesportsdb" };
-      if (!k) return base;
+      const base2 = { id, label: PROVIDER_LABEL[id], state: "none", masked: null, until: null, quotas: [], noDailyLimit: id === "thesportsdb" };
+      if (!k) return base2;
       const b = budget(id);
       const masked = maskKey(k.key);
-      if (!b) return { ...base, state: "ok", masked };
-      if (b.isInvalid()) return { ...base, state: "invalid", masked };
+      if (!b) return { ...base2, state: "ok", masked };
+      if (b.isInvalid()) return { ...base2, state: "invalid", masked };
       const quotas = [];
       const untils = [];
       for (const bucket of bucketsOf(id)) {
@@ -63901,7 +66281,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         if (q.limit != null && q.remaining != null) quotas.push({ bucket, used: Math.max(0, q.limit - q.remaining), limit: q.limit });
         if (q.blockedUntil != null && q.blockedUntil > now2) untils.push(q.blockedUntil);
       }
-      return { ...base, masked, quotas, state: untils.length ? "paused" : "ok", until: untils.length ? Math.min(...untils) : null };
+      return { ...base2, masked, quotas, state: untils.length ? "paused" : "ok", until: untils.length ? Math.min(...untils) : null };
     });
   }
   function keyStatus(r, tt, opts) {
@@ -63926,7 +66306,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return tt("sportKeyLeftPerSport", { list });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_providers();
   init_rate_line();
   init_results_controller();
@@ -64110,7 +66490,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -64120,10 +66500,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_ctx();
   init_sport_epg();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/rail-tint.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/rail-tint.ts
   init_react_shim();
   var current4 = null;
   var listeners13 = /* @__PURE__ */ new Set();
@@ -64155,7 +66535,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `linear-gradient(180deg, ${rgba(t, 0.92)} 0%, ${rgba(t, 0.8)} 55%, ${rgba([12, 14, 18], 0.9)} 100%)`;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/backdrop.ts
   init_plugin_sdk();
   init_router();
   init_sport_store();
@@ -64312,9 +66692,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, []);
     return uploads;
   }
-  async function uploadBackdrop(slot, file) {
+  async function uploadBackdrop(slot, file2) {
     try {
-      const res = await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: "POST", headers: { "content-type": file.type || "application/octet-stream" }, body: file });
+      const res = await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: "POST", headers: { "content-type": file2.type || "application/octet-stream" }, body: file2 });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         return { ok: false, error: body.error ?? "failed" };
@@ -64473,7 +66853,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/backdrop-handoff.ts
   init_react_shim();
   var BASE3 = "/api/live-tv/sport/backdrop-handoff";
   var POLL_MS4 = 2e3;
@@ -64495,21 +66875,21 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       setUrl(null);
       const loop = async () => {
         if (stopped || done || !code) return;
-        let state2 = "waiting";
+        let state3 = "waiting";
         try {
           const res = await fetch(`${BASE3}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
-          state2 = res.ok ? (await res.json()).state ?? "waiting" : "expired";
+          state3 = res.ok ? (await res.json()).state ?? "waiting" : "expired";
         } catch {
         }
         if (stopped) return;
-        if (state2 === "received") {
+        if (state3 === "received") {
           done = true;
           setReceived(true);
           notifyBackdropUploadsChanged();
           onReceivedRef.current?.();
           return;
         }
-        if (state2 === "expired") {
+        if (state3 === "expired") {
           done = true;
           setExpired(true);
           return;
@@ -64539,7 +66919,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { url, expired, received, restart };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
   var SCOPES = ["all", ...BACKDROP_SPORTS];
@@ -64561,11 +66941,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const slotRef = useRef("all");
     const [status, setStatus] = useState(null);
     const onFile = (e) => {
-      const file = e.target.files?.[0];
+      const file2 = e.target.files?.[0];
       e.target.value = "";
-      if (!file) return;
+      if (!file2) return;
       setStatus(tt("sportBackdropUploading"));
-      void uploadBackdrop(slotRef.current, file).then((r) => setStatus(r.ok ? null : tt("sportBackdropUploadFailed")));
+      void uploadBackdrop(slotRef.current, file2).then((r) => setStatus(r.ok ? null : tt("sportBackdropUploadFailed")));
     };
     const input = /* @__PURE__ */ jsx("input", { ref: inputRef, "data-testid": "sport-backdrop-file", type: "file", accept: ACCEPT, onChange: onFile, style: { display: "none" } });
     const pick3 = useCallback((slot) => {
@@ -64741,12 +67121,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var noLayer = () => () => {
   };
-  function HandoffBody({ close, received, url, text: text2, only, cancel }) {
+  function HandoffBody({ close: close2, received, url, text: text2, only, cancel }) {
     useEffect(() => {
       if (!received) return;
-      const t = window.setTimeout(close, 1200);
+      const t = window.setTimeout(close2, 1200);
       return () => window.clearTimeout(t);
-    }, [received, close]);
+    }, [received, close2]);
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(20), alignItems: "flex-start" }, children: [
       /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-only", style: { fontSize: dp(23), fontWeight: 600 }, children: only }),
       url && !received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(12), borderRadius: dp(12) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: url, size: dp(240) }) }) : null,
@@ -64754,7 +67134,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(
         "div",
         {
-          ...station(close, void 0, { "data-init": "" }),
+          ...station(close2, void 0, { "data-init": "" }),
           "data-testid": "sport-backdrop-handoff-cancel",
           style: { minHeight: dp(56), padding: `0 ${dp(24)}px`, borderRadius: dp(12), background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: dp(21), fontWeight: 600, cursor: "pointer" },
           children: cancel
@@ -64844,10 +67224,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             chips: null,
             opener: document.querySelector(`[data-testid="sport-backdrop-row-${qrSlot}"]`),
             onClose: () => setQrSlot(null),
-            rows: (close) => /* @__PURE__ */ jsx(
+            rows: (close2) => /* @__PURE__ */ jsx(
               HandoffBody,
               {
-                close,
+                close: close2,
                 received: handoff.received,
                 url: handoff.url,
                 text: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : tt("sportBackdropPhoneHint"),
@@ -64874,7 +67254,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-spoiler-settings.tsx
   init_mobile_toggle();
   init_mobile_tokens();
   init_tv_ui();
@@ -64895,7 +67275,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx("div", { "data-testid": "sport-spoiler-settings", children: /* @__PURE__ */ jsx(LtRows, { children: /* @__PURE__ */ jsx(LtToggleRow, { testId: "sport-spoiler-toggle", label: tt("sportSpoilerSetting"), desc: tt("sportSpoilerSettingHint"), checked: on, onChange: (v) => setSportSettings({ spoilerReplays: v }) }) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -64909,14 +67289,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const { h, locale } = useHubText();
     const [account, setAccount] = useState(null);
     const [failed, setFailed] = useState(false);
-    const base = login?.base ?? null;
+    const base2 = login?.base ?? null;
     const username = login?.username ?? null;
     const password = login?.password ?? null;
     useEffect(() => {
-      if (!base || !username || password === null) return;
+      if (!base2 || !username || password === null) return;
       let cancelled = false;
       setFailed(false);
-      void fetchXtreamAccount({ base, username, password }).then((next) => {
+      void fetchXtreamAccount({ base: base2, username, password }).then((next) => {
         if (!cancelled) setAccount(next);
       }).catch(() => {
         if (!cancelled) setFailed(true);
@@ -64924,7 +67304,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => {
         cancelled = true;
       };
-    }, [base, username, password]);
+    }, [base2, username, password]);
     if (!login) return null;
     if (failed) return { text: h("xtreamAccountUnavailable"), failed: true };
     if (!account) return { text: h("listRefetching"), failed: false };
@@ -64952,7 +67332,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [server, setServer] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [state2, setState] = useState("idle");
+    const [state3, setState] = useState("idle");
     const [importProgress, setImportProgress] = useState(null);
     const [reuse, setReuse] = useState(null);
     const reuseLoginId = reuse && reuse.server === server ? reuse.loginId : null;
@@ -64991,24 +67371,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }
     }
     async function connect() {
-      const base = normalizeXtreamBase(server);
+      const base2 = normalizeXtreamBase(server);
       const user = username.trim();
       const pass = password.trim();
-      if (!base || !user || !pass) {
+      if (!base2 || !user || !pass) {
         setState("netError");
         return;
       }
       setState("working");
       try {
-        const account = await fetchXtreamAccount({ base, username: user, password: pass });
+        const account = await fetchXtreamAccount({ base: base2, username: user, password: pass });
         if (!account.auth) {
           setState("authError");
           return;
         }
-        const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === user);
+        const existing = getXtreamLogins().find((entry) => entry.base === base2 && entry.username === user);
         const login = {
           id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
-          base,
+          base: base2,
           username: user,
           password: pass,
           format: account.allowedFormats.length === 0 || account.allowedFormats.includes("ts") ? "ts" : "m3u8",
@@ -65025,7 +67405,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         setState("netError");
       }
     }
-    return { server, setServer, username, setUsername, password, setPassword, state: state2, connect, importProgress };
+    return { server, setServer, username, setUsername, password, setPassword, state: state3, connect, importProgress };
   }
   function XtreamLoginSection({ onImported } = {}) {
     const { h, locale } = useHubText();
@@ -65057,7 +67437,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_react_shim();
   init_jsx_runtime_shim();
@@ -65105,7 +67485,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_group_order();
@@ -65113,10 +67493,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -65221,7 +67601,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_live_format();
@@ -65414,7 +67794,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/category-curation-panel.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
@@ -65591,13 +67971,118 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
   init_index_client();
   init_playlist_title();
   init_tv_strings();
   init_tv_settings_store();
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recording-settings.tsx
+  init_plugin_sdk();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_settings_store();
+  init_recording_plan();
+  init_recordings();
+  init_live_tv_shell();
+  init_jsx_runtime_shim();
+  var desktopSdk = plugin_sdk_exports;
+  var minutesLabel = (tt, min) => min === 0 ? tt("never") : tt("minutesShort", { min });
+  function recordingSummary(s, tt) {
+    if (!s.recordingEnabled) return tt("never");
+    return `${tt("settingRecordStartEarly")}: ${minutesLabel(tt, s.recordStartEarlyMin)} \xB7 ${tt("settingRecordEndLate")}: ${minutesLabel(tt, s.recordEndLateMin)}`;
+  }
+  function openRecordings() {
+    requestOpenBrowsePage({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: "recordings" } });
+  }
+  function RecordingSettingsDesktop({ tvSettings, tt }) {
+    const { list } = useRecordings(false);
+    const keepFreeGb = list ? Math.round(list.keepFreeBytes / 1e9) : 2;
+    const canPick = typeof desktopSdk.isPluginDesktopHost === "function" && desktopSdk.isPluginDesktopHost() && typeof desktopSdk.pickPluginFolder === "function";
+    const pickFolder = async () => {
+      const folder = await desktopSdk.pickPluginFolder?.();
+      if (folder) await saveRecordSettings({ folder, keepFreeGb });
+    };
+    return /* @__PURE__ */ jsxs(LtRows, { children: [
+      /* @__PURE__ */ jsx(LtToggleRow, { first: true, testId: "lt-record-enabled", label: tt("settingRecording"), desc: tt("settingRecordingHint"), checked: tvSettings.recordingEnabled, onChange: (recordingEnabled) => setTvSettings({ recordingEnabled }) }),
+      /* @__PURE__ */ jsx(
+        LtTextRow,
+        {
+          testId: "lt-record-folder",
+          label: tt("settingRecordFolder"),
+          value: list?.folder ?? "",
+          onChange: () => {
+          },
+          button: canPick ? tt("settingRecordFolderPick") : void 0,
+          onButton: canPick ? () => {
+            void pickFolder();
+          } : void 0
+        }
+      ),
+      typeof list?.freeBytes === "number" ? /* @__PURE__ */ jsx(LtNote, { children: tt("recFreeSpace", { free: formatBytes(list.freeBytes, "en") }) }) : null,
+      /* @__PURE__ */ jsx(
+        LtChoiceRow,
+        {
+          testId: "lt-record-keep-free",
+          label: tt("settingRecordKeepFree"),
+          options: RECORD_KEEP_FREE_OPTIONS.map((gb) => ({ key: String(gb), label: tt("gigabytes", { gb }) })),
+          value: String(keepFreeGb),
+          onChange: (key) => {
+            void saveRecordSettings({ folder: list?.folder ?? null, keepFreeGb: Number(key) });
+          }
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        LtChoiceRow,
+        {
+          testId: "lt-record-start-early",
+          label: tt("settingRecordStartEarly"),
+          options: RECORD_START_EARLY_OPTIONS.map((min) => ({ key: String(min), label: minutesLabel(tt, min) })),
+          value: String(tvSettings.recordStartEarlyMin),
+          onChange: (key) => setTvSettings({ recordStartEarlyMin: Number(key) })
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        LtChoiceRow,
+        {
+          testId: "lt-record-end-late",
+          label: tt("settingRecordEndLate"),
+          options: RECORD_END_LATE_OPTIONS.map((min) => ({ key: String(min), label: minutesLabel(tt, min) })),
+          value: String(tvSettings.recordEndLateMin),
+          onChange: (key) => setTvSettings({ recordEndLateMin: Number(key) })
+        }
+      ),
+      /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-record-notify", label: tt("settingRecordNotify"), checked: tvSettings.recordNotify, onChange: (recordNotify) => setTvSettings({ recordNotify }) }),
+      /* @__PURE__ */ jsx(LtChoiceRow, { testId: "lt-record-open", label: tt("settingRecordOpen"), options: [{ key: "open", label: tt("railRecordings") }], value: "", onChange: openRecordings })
+    ] });
+  }
+  function RecordingSettingsRows({ settings, tt, phone = false, onOpen }) {
+    const rows = /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordingEnabled", label: tt("settingRecording"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.recordingEnabled }), onOk: () => setTvSettings({ recordingEnabled: !settings.recordingEnabled }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordStartEarlyMin", label: tt("settingRecordStartEarly"), right: minutesLabel(tt, settings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(settings.recordStartEarlyMin) }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordEndLateMin", label: tt("settingRecordEndLate"), right: minutesLabel(tt, settings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(settings.recordEndLateMin) }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordNotify", label: tt("settingRecordNotify"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.recordNotify }), onOk: () => setTvSettings({ recordNotify: !settings.recordNotify }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordOpen", label: tt("settingRecordOpen"), right: "\u203A", onOk: onOpen })
+    ] });
+    if (phone) return rows;
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { hint: tt("settingRecordingHint"), children: tt("settingRecording") }),
+      rows
+    ] });
+  }
+  function RecordingSettingsTvRows({ tvSettings, tt }) {
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-enabled", label: tt("settingRecording"), hint: tt("settingRecordingHint"), toggle: tvSettings.recordingEnabled, onToggle: (recordingEnabled) => setTvSettings({ recordingEnabled }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-start-early", label: tt("settingRecordStartEarly"), value: minutesLabel(tt, tvSettings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(tvSettings.recordStartEarlyMin) }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-end-late", label: tt("settingRecordEndLate"), value: minutesLabel(tt, tvSettings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(tvSettings.recordEndLateMin) }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-notify", label: tt("settingRecordNotify"), toggle: tvSettings.recordNotify, onToggle: (recordNotify) => setTvSettings({ recordNotify }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-open", label: tt("settingRecordOpen"), caret: true, onOk: openRecordings })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv-settings-views.tsx
   init_start_view();
   init_index_client();
   init_group_order();
@@ -65674,6 +68159,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback", label: tt("settingStreamFallback"), hint: tt("settingStreamFallbackHint"), toggle: tvSettings.streamFallback, onToggle: (streamFallback) => setTvSettings({ streamFallback }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback-after", label: tt("settingStreamFallbackAfter"), hint: tt("settingStreamFallbackAfterHint"), value: tvSettings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: tvSettings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-group-order", label: tt("settingGroupOrder"), hint: tt("settingGroupOrderHint"), value: tt(groupOrderLabelKey(tvSettings.groupOrder)), onOk: () => setTvSettings({ groupOrder: nextGroupOrder(tvSettings.groupOrder) }) }),
+      /* @__PURE__ */ jsx(RecordingSettingsTvRows, { tvSettings, tt }),
       s.lists.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(TvEyebrow, { children: h("epgWatchesTitle") }),
         /* @__PURE__ */ jsx(TvNote, { children: h("epgWatchesHint") }),
@@ -66082,12 +68568,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_tv_settings_store();
   init_start_view();
   init_v2_settings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/v2-tokens.ts
   init_tv_ui();
   var V2 = {
     rail: "#222734",
@@ -66152,18 +68638,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `rgb(${m(ar, br)},${m(ag, bg)},${m(ab, bb)})`;
   }
   function v2Ambient(bg) {
-    const base = v2Bg(bg);
-    return `radial-gradient(1500px 900px at 70% 10%, ${mixHex(V2.categoryTints.other, base, 75)}, ${base} 75%)`;
+    const base2 = v2Bg(bg);
+    return `radial-gradient(1500px 900px at 70% 10%, ${mixHex(V2.categoryTints.other, base2, 75)}, ${base2} 75%)`;
   }
   var FOCUS_CARD = `0 0 0 3px ${TV2.acc}, 0 24px 60px rgba(0,0,0,.55), 0 0 40px ${TV2.accMix(35)}`;
   var FOCUS_INSET = `inset 0 0 0 2px ${TV2.acc}, 0 0 24px ${TV2.accMix(35)}`;
   var FOCUS_BTN = `0 0 0 3px ${TV2.acc}, 0 0 26px ${TV2.accMix(42)}`;
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_group_order();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-rows-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-rows-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -66266,7 +68752,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text2) {
@@ -66556,6 +69042,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           }
         )
       ] })),
+      section("recording", tt("settingRecording"), recordingSummary(tvSettings, tt), /* @__PURE__ */ jsx(RecordingSettingsDesktop, { tvSettings, tt })),
       vod.rows.length > 0 ? section("library", h("sectionLibrary"), sourcesText(vod.rows.length), /* @__PURE__ */ jsx(VodLibraryCardView, { controller: vod, bare: true })) : null,
       section("sport", tt("tabSport"), tt("sportSettingsTitle"), /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(SportKeySettingsDesktop, { bare: true }),
@@ -66619,11 +69106,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_playlist_title();
   init_plugin_sdk();
@@ -66632,15 +69119,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -66650,7 +69137,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return () => clearTimeout(timer5);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY7 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -66683,7 +69170,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_display_title();
   init_jsx_runtime_shim();
@@ -66717,7 +69204,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -66747,14 +69234,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
   init_live_tv_shell();
   init_tv_settings_store();
   init_group_order();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -66783,7 +69270,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -66792,15 +69279,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return layout;
   }
   var DEFAULT_STATE = { layout: 4, tiles: [null, null, null, null], audioIndex: 0 };
-  function normalize4(state2) {
-    const count = tileCount(state2.layout);
-    const tiles = Array.from({ length: count }, (_, i) => state2.tiles[i] ?? null);
-    let audioIndex = state2.audioIndex;
+  function normalize4(state3) {
+    const count = tileCount(state3.layout);
+    const tiles = Array.from({ length: count }, (_, i) => state3.tiles[i] ?? null);
+    let audioIndex = state3.audioIndex;
     if (audioIndex < 0 || audioIndex >= count || tiles[audioIndex] === null) {
       const first = tiles.findIndex((t) => t !== null);
       audioIndex = first === -1 ? 0 : first;
     }
-    return { layout: state2.layout, tiles, audioIndex };
+    return { layout: state3.layout, tiles, audioIndex };
   }
   function sanitize7(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
@@ -66819,33 +69306,33 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, () => setValue(getMultiviewState())), []);
     return value;
   }
-  function assignTile(state2, index, key) {
-    const tiles = [...state2.tiles];
+  function assignTile(state3, index, key) {
+    const tiles = [...state3.tiles];
     tiles[index] = key;
-    const hadAny = state2.tiles.some((t) => t !== null);
-    return normalize4({ ...state2, tiles, audioIndex: hadAny ? state2.audioIndex : index });
+    const hadAny = state3.tiles.some((t) => t !== null);
+    return normalize4({ ...state3, tiles, audioIndex: hadAny ? state3.audioIndex : index });
   }
-  function removeTile(state2, index) {
-    const tiles = [...state2.tiles];
+  function removeTile(state3, index) {
+    const tiles = [...state3.tiles];
     tiles[index] = null;
-    return normalize4({ ...state2, tiles });
+    return normalize4({ ...state3, tiles });
   }
-  function setLayout(state2, layout) {
-    const filled = state2.tiles.filter((t) => t !== null);
-    const audioKey = state2.tiles[state2.audioIndex];
+  function setLayout(state3, layout) {
+    const filled = state3.tiles.filter((t) => t !== null);
+    const audioKey = state3.tiles[state3.audioIndex];
     const tiles = filled.slice(0, tileCount(layout));
     const audioIndex = audioKey ? Math.max(0, tiles.indexOf(audioKey)) : 0;
     return normalize4({ layout, tiles, audioIndex });
   }
-  function enlargeTile(state2, index) {
-    const key = state2.tiles[index];
-    const rest = state2.tiles.filter((t, i) => t !== null && i !== index);
+  function enlargeTile(state3, index) {
+    const key = state3.tiles[index];
+    const rest = state3.tiles.filter((t, i) => t !== null && i !== index);
     const tiles = key ? [key, ...rest] : rest;
-    return normalize4({ layout: 3, tiles, audioIndex: key ? 0 : state2.audioIndex });
+    return normalize4({ layout: 3, tiles, audioIndex: key ? 0 : state3.audioIndex });
   }
-  function addToFirstFree(state2, key) {
-    const free = state2.tiles.findIndex((t) => t === null);
-    return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
+  function addToFirstFree(state3, key) {
+    const free = state3.tiles.findIndex((t) => t === null);
+    return assignTile(state3, free === -1 ? state3.tiles.length - 1 : free, key);
   }
   var immersive = false;
   var immersiveListeners = /* @__PURE__ */ new Set();
@@ -66867,14 +69354,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -66887,9 +69374,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const a = channel.archive;
     if (!a || !channelSupportsCatchUp(channel)) return null;
     const d = new Date(startMs);
-    const stamp = `${d.getFullYear()}-${pad3(d.getMonth() + 1)}-${pad3(d.getDate())}:${pad3(d.getHours())}-${pad3(d.getMinutes())}`;
+    const stamp2 = `${d.getFullYear()}-${pad3(d.getMonth() + 1)}-${pad3(d.getDate())}:${pad3(d.getHours())}-${pad3(d.getMinutes())}`;
     const minutes = Math.max(1, Math.round(durationMs / 6e4));
-    return `${a.base}/timeshift/${encodeURIComponent(a.username)}/${encodeURIComponent(a.password)}/${minutes}/${stamp}/${a.streamId}.ts`;
+    return `${a.base}/timeshift/${encodeURIComponent(a.username)}/${encodeURIComponent(a.password)}/${minutes}/${stamp2}/${a.streamId}.ts`;
   }
   function catchUpForChannel(channel, schedule3, nowMs, limit = 12) {
     if (!schedule3 || schedule3.length === 0 || !channelSupportsCatchUp(channel)) return [];
@@ -66914,7 +69401,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -66932,7 +69419,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       [wantedId]
     );
     const generation3 = useChannelGeneration();
-    const [state2, setState] = useState(() => ({ bySource: EMPTY_BY_SOURCE, loading: false, error: null }));
+    const [state3, setState] = useState(() => ({ bySource: EMPTY_BY_SOURCE, loading: false, error: null }));
     useEffect(() => {
       if (wanted.length === 0) {
         setState({ bySource: EMPTY_BY_SOURCE, loading: false, error: null });
@@ -66970,7 +69457,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         live2 = false;
       };
     }, [wantedId, generation3]);
-    return state2;
+    return state3;
   }
   function isAbort(err) {
     return err instanceof Error && err.name === "AbortError";
@@ -66997,7 +69484,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function useChannelsPage(lists, limit, offset = 0) {
     const generation3 = useChannelGeneration();
     const listsId = lists.map((list) => `${list.id}:${list.kind ?? ""}:${list.source ?? ""}`).join("|");
-    const [state2, setState] = useState(() => ({ byListId: {}, totalByListId: {}, loading: false }));
+    const [state3, setState] = useState(() => ({ byListId: {}, totalByListId: {}, loading: false }));
     useEffect(() => {
       const indexed = lists.filter((list) => list.kind !== "custom" && list.source);
       const embedded = {};
@@ -67051,7 +69538,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         controller2?.abort();
       };
     }, [listsId, limit, offset, generation3]);
-    return state2;
+    return state3;
   }
   var MAX_REPLAY_CHANNELS = 40;
   function pickReplayChannels(favourites, recent, limit = MAX_REPLAY_CHANNELS) {
@@ -67068,7 +69555,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-grid.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
@@ -68582,30 +71069,30 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
-    const [state2, setState] = useState(() => getActiveNowSnapshot());
+    const [state3, setState] = useState(() => getActiveNowSnapshot());
     useEffect(() => {
       setState(getActiveNowSnapshot());
       return subscribeNowSnapshot(() => setState(getActiveNowSnapshot()));
     }, []);
     if (!listId) return "idle";
-    if (state2.snapshot && state2.snapshot.count > 0) return "ready";
-    if (state2.failed) return "error";
+    if (state3.snapshot && state3.snapshot.count > 0) return "ready";
+    if (state3.failed) return "error";
     if (urls.length === 0) return "empty";
-    if (state2.snapshot && state2.snapshot.fetchedAt !== null) return "empty";
+    if (state3.snapshot && state3.snapshot.fetchedAt !== null) return "empty";
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/now-next-later-row.tsx
   init_intl_cache();
   init_display_title();
   init_jsx_runtime_shim();
@@ -68669,7 +71156,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
@@ -68888,13 +71375,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_shell();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -68977,38 +71464,38 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/toast-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/toast-center.tsx
   init_react_shim();
   init_plugin_sdk();
   init_goal_alerts();
   init_display_title();
   init_jsx_runtime_shim();
   var toasts = [];
-  var listeners17 = /* @__PURE__ */ new Set();
-  var emit5 = () => {
-    for (const l of [...listeners17]) l();
+  var listeners18 = /* @__PURE__ */ new Set();
+  var emit7 = () => {
+    for (const l of [...listeners18]) l();
   };
   var seq = 0;
   function pushToast(t) {
     const id = `t${++seq}`;
     const rest = t.key ? toasts.filter((x) => x.key !== t.key) : toasts;
     toasts = [{ ...t, id, expiresAt: Date.now() + t.timeoutMs }, ...rest];
-    emit5();
+    emit7();
     return id;
   }
   function dismissToast(id) {
     if (!toasts.some((t) => t.id === id)) return;
     toasts = toasts.filter((t) => t.id !== id);
-    emit5();
+    emit7();
   }
   function hasToasts() {
     return toasts.length > 0;
   }
   function useToasts() {
     return useSyncExternalStore((cb) => {
-      listeners17.add(cb);
+      listeners18.add(cb);
       return () => {
-        listeners17.delete(cb);
+        listeners18.delete(cb);
       };
     }, () => toasts, () => toasts);
   }
@@ -69057,7 +71544,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       if (to && to.isConnected) to.focus({ preventScroll: true });
       else document.activeElement?.blur?.();
     };
-    const close = (id, active5 = false) => {
+    const close2 = (id, active5 = false) => {
       const wasInside = !!rootRef.current?.contains(document.activeElement);
       const t = toasts.find((x) => x.id === id);
       dismissToast(id);
@@ -69072,7 +71559,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => window.clearTimeout(t);
     }, [newest, tv]);
     useEffect(() => {
-      const timers2 = list.map((t) => window.setTimeout(() => close(t.id), Math.max(0, (t.expiresAt ?? Date.now() + t.timeoutMs) - Date.now())));
+      const timers2 = list.map((t) => window.setTimeout(() => close2(t.id), Math.max(0, (t.expiresAt ?? Date.now() + t.timeoutMs) - Date.now())));
       return () => {
         for (const id of timers2) window.clearTimeout(id);
       };
@@ -69084,7 +71571,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         if (!at) return;
         event2.preventDefault();
         event2.stopImmediatePropagation();
-        close(at.getAttribute("data-toast"), true);
+        close2(at.getAttribute("data-toast"), true);
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
@@ -69142,7 +71629,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
                 "data-toast-btn": "dismiss",
                 "aria-label": t.dismissLabel,
                 title: t.dismissLabel,
-                onClick: () => close(t.id, true),
+                onClick: () => close2(t.id, true),
                 style: { height: s.h, minWidth: s.h, padding: `0 ${Math.round(s.h / 3)}px`, borderRadius: 12, border: "1px solid rgba(255,255,255,0.16)", cursor: "pointer", fontSize: s.btn, fontWeight: 600, background: "rgba(252,252,255,0.10)", color: "#f3f4f8", flexShrink: 0, ...goal ? { flex: 1 } : {} },
                 children: goal ? t.dismissLabel : "\u2715"
               }
@@ -69199,8 +71686,60 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_display_title();
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/recordings-notify.ts
+  init_recordings();
+  var RECORDING_WATCH_ACTIVE_MS = 3e4;
+  var RECORDING_WATCH_IDLE_MS = 5 * 6e4;
+  var FINISHED = ["done", "stopped"];
+  var FAILED2 = ["failed", "disk_full", "missed"];
+  function diffRecordings(prev, next) {
+    if (prev === null) return [];
+    const before = new Map(prev.map((r) => [r.id, r]));
+    const events = [];
+    for (const r of next) {
+      const p = before.get(r.id);
+      if (p?.status === r.status) continue;
+      if (r.status === "recording") {
+        events.push({ kind: "started", recording: r });
+      } else if (p && FINISHED.includes(r.status) && (p.status === "recording" || p.status === "scheduled")) {
+        if (p.status === "recording") events.push({ kind: "finished", recording: r });
+      } else if (p && FAILED2.includes(r.status)) {
+        events.push({ kind: "failed", recording: r });
+      }
+    }
+    return events;
+  }
+  function startRecordingWatch(onEvent) {
+    let prev = null;
+    let timer5 = null;
+    let stopped = false;
+    const tick2 = async () => {
+      if (stopped) return;
+      const list = await refreshRecordings();
+      if (stopped) return;
+      if (list) {
+        for (const e of diffRecordings(prev, list.recordings)) onEvent(e);
+        prev = list.recordings;
+      }
+      timer5 = setTimeout(() => {
+        void tick2();
+      }, hasPendingRecordings(list) ? RECORDING_WATCH_ACTIVE_MS : RECORDING_WATCH_IDLE_MS);
+    };
+    void tick2();
+    return () => {
+      stopped = true;
+      if (timer5) clearTimeout(timer5);
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  init_recordings();
+  init_tv_settings_store();
+  init_tv_strings();
+  init_live_tv_shell();
   init_jsx_runtime_shim();
   var channelPage = (reminder) => ({
     pageId: "live-tv-browse",
@@ -69257,26 +71796,51 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }),
       []
     );
+    useEffect(
+      () => startRecordingWatch((event2) => {
+        if (!getTvSettings().recordNotify) return;
+        const { h: hh, locale: loc } = textRef.current;
+        const lang = loc.slice(0, 2);
+        const { recording, kind } = event2;
+        const title = kind === "started" ? tvText(lang, "recStarted", { title: recording.title }) : kind === "finished" ? tvText(lang, "recFinished", { title: recording.title, size: formatBytes(recording.bytes, loc) }) : tvText(lang, "recFailed", { title: recording.title });
+        const page = { pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: "recordings" } };
+        if (typeof showSystemNotification === "function") {
+          void showSystemNotification({ id: `rec:${recording.id}:${kind}`, title, body: recording.channelName, openPage: page }).catch(() => {
+          });
+        }
+        pushToast({
+          key: `rec:${recording.id}`,
+          kicker: tvText(lang, "settingRecording"),
+          title,
+          body: recording.channelName,
+          watchLabel: tvText(lang, "railRecordings"),
+          onWatch: () => requestOpenBrowsePage(page),
+          dismissLabel: hh("back"),
+          timeoutMs: 15e3
+        });
+      }),
+      []
+    );
     return /* @__PURE__ */ jsx(ToastCenter, {});
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
   init_live_tv_shell();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/context.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/context.ts
   init_react_shim();
   var counts = /* @__PURE__ */ new Map();
-  var listeners18 = /* @__PURE__ */ new Set();
-  var emit6 = () => {
-    for (const cb of [...listeners18]) cb();
+  var listeners19 = /* @__PURE__ */ new Set();
+  var emit8 = () => {
+    for (const cb of [...listeners19]) cb();
   };
   function acquireCouchMark(kind) {
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    emit6();
+    emit8();
     let done = false;
     return () => {
       if (done) return;
@@ -69284,7 +71848,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const n = (counts.get(kind) ?? 1) - 1;
       if (n <= 0) counts.delete(kind);
       else counts.set(kind, n);
-      emit6();
+      emit8();
     };
   }
   function useCouchMark(kind, active5) {
@@ -69292,17 +71856,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var couchMarks = () => ({ sportPage: counts.has("sport-page"), multiview: counts.has("multiview") });
   function onCouchMarksChanged(cb) {
-    listeners18.add(cb);
+    listeners19.add(cb);
     return () => {
-      listeners18.delete(cb);
+      listeners19.delete(cb);
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/goals.ts
   init_goal_alerts();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/snapshot.ts
   init_sport_day_model();
   init_score_model();
   var NOW_MAX = 40;
@@ -69413,38 +71977,38 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/goals.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/goals.ts
   init_spoiler();
   var GOAL_TTL_MS = 12e4;
   var GOAL_TOAST_MS = 8e3;
   var GOALS_MAX = 5;
   var entries = [];
-  var listeners19 = /* @__PURE__ */ new Set();
-  var emit7 = () => {
-    for (const cb of [...listeners19]) cb();
+  var listeners20 = /* @__PURE__ */ new Set();
+  var emit9 = () => {
+    for (const cb of [...listeners20]) cb();
   };
   function addGoal(g, now2) {
     if (entries.some((e) => e.goal.goalId === g.goalId)) return;
     entries = [{ goal: g, addedAt: now2 }, ...entries].slice(0, GOALS_MAX);
-    emit7();
+    emit9();
   }
   function dismissGoal(goalId) {
     if (!entries.some((e) => e.goal.goalId === goalId)) return;
     entries = entries.filter((e) => e.goal.goalId !== goalId);
-    emit7();
+    emit9();
   }
   function openGoals(now2) {
     const fresh = entries.filter((e) => now2 - e.addedAt <= GOAL_TTL_MS);
     if (fresh.length !== entries.length) {
       entries = fresh;
-      emit7();
+      emit9();
     }
     return entries.map((e) => e.goal);
   }
   function onGoalsChanged(cb) {
-    listeners19.add(cb);
+    listeners20.add(cb);
     return () => {
-      listeners19.delete(cb);
+      listeners20.delete(cb);
     };
   }
   function goalFromEvent(e, match, overrides) {
@@ -69475,7 +72039,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return goalAlertWanted(match, ctx.settings, ctx.follows, now2);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_goal_events();
   init_goal_alerts();
   init_results_controller();
@@ -69538,7 +72102,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -69548,7 +72112,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/follow-search.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/follow-search.ts
   init_router();
   init_merge();
   var MIN_PROVIDER_QUERY = 3;
@@ -69558,13 +72122,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (!needle) return true;
     return foldTeamKey2(c.name).includes(needle) || foldTeamKey2(c.key).includes(needle);
   }
-  var cache10 = /* @__PURE__ */ new Map();
+  var cache11 = /* @__PURE__ */ new Map();
   function searchFollowTargets(sport, q) {
     const router = currentRouter();
     const query = q.trim();
     if (!router || query.length < MIN_PROVIDER_QUERY || router.coverage(sport) !== "full") return Promise.resolve([]);
     const id = `${router.candidates(sport).map((b) => b.provider.id).join(",")}|${sport}|${foldTeamKey2(query)}`;
-    const hit = cache10.get(id);
+    const hit = cache11.get(id);
     if (hit) return hit;
     const run3 = (async () => {
       const [teams, leagues] = await Promise.all([router.searchTeams(sport, query), router.searchLeagues(sport, query)]);
@@ -69582,10 +72146,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       add("league", leagues?.data, leagues?.provider);
       return out;
     })();
-    cache10.set(id, run3);
+    cache11.set(id, run3);
     run3.then((res) => {
-      if (res.length === 0) cache10.delete(id);
-    }, () => cache10.delete(id));
+      if (res.length === 0) cache11.delete(id);
+    }, () => cache11.delete(id));
     return run3;
   }
   async function searchProviderTeams(sport, q) {
@@ -69593,12 +72157,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return res.filter((x) => x.kind === "team").map(({ kind: _k, sport: _s, ...t }) => t);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_sport_day_model();
   init_sport_ctx();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/follows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/follows.ts
   init_merge();
   init_score_model();
   init_sport_day_model();
@@ -69689,7 +72253,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/commands.ts
   init_live_tv_shell();
   init_sport_day_model();
   init_sport_model();
@@ -69697,7 +72261,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_presence();
   init_spoiler();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/tip.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/tip.ts
   init_sport_day_model();
   init_sport_epg();
   init_spoiler();
@@ -69758,27 +72322,27 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { status, spoilerTv };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/commands.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/commands.ts
   var isSport = (s) => SPORT_KINDS.includes(s);
   function playSource(d, s) {
     d.open({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(s)) } });
   }
   function runMultiview(cmd, d) {
-    const state2 = d.multiview();
-    if (!state2) return { id: cmd.id, ok: false, error: "no-multiview" };
-    const inLayout = Number.isInteger(cmd.index) && cmd.index >= 0 && cmd.index < tileCount(state2.layout);
-    const filled = inLayout && state2.tiles[cmd.index] != null;
+    const state3 = d.multiview();
+    if (!state3) return { id: cmd.id, ok: false, error: "no-multiview" };
+    const inLayout = Number.isInteger(cmd.index) && cmd.index >= 0 && cmd.index < tileCount(state3.layout);
+    const filled = inLayout && state3.tiles[cmd.index] != null;
     switch (cmd.type) {
       case "mv-audio":
         if (!filled) return { id: cmd.id, ok: false, error: "empty-tile" };
-        d.setMultiview({ ...state2, audioIndex: cmd.index });
+        d.setMultiview({ ...state3, audioIndex: cmd.index });
         return;
       case "mv-enlarge": {
         if (!filled) return { id: cmd.id, ok: false, error: "empty-tile" };
-        if (state2.layout === 3 && cmd.index === 0) {
-          const n = state2.tiles.filter((t) => t != null).length;
-          d.setMultiview(setLayout(state2, n > 2 ? 4 : 2));
-        } else d.setMultiview(enlargeTile(state2, cmd.index));
+        if (state3.layout === 3 && cmd.index === 0) {
+          const n = state3.tiles.filter((t) => t != null).length;
+          d.setMultiview(setLayout(state3, n > 2 ? 4 : 2));
+        } else d.setMultiview(enlargeTile(state3, cmd.index));
         return;
       }
       case "mv-assign": {
@@ -69786,7 +72350,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         const m = d.matches().find((x) => x.id === cmd.matchId);
         const s = m ? rankedSources(m, d.overrides())[0] : null;
         if (!s) return { id: cmd.id, ok: false, error: "no-source" };
-        d.setMultiview(assignTile(state2, cmd.index, s.channelKey));
+        d.setMultiview(assignTile(state3, cmd.index, s.channelKey));
         return;
       }
     }
@@ -69933,7 +72497,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/couch/sport-couch-mount.tsx
   init_presence();
   init_spoiler();
   init_jsx_runtime_shim();
@@ -70127,10 +72691,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return enabled && (present || watching) ? /* @__PURE__ */ jsx(SportCouchFeeder, { onChange: notify3, merge: present }) : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-type-scale.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-type-scale.ts
   var TV_TYPE_SCALE_CSS = String.raw`
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-testid^=tab-] { font-size:24px!important }
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-f]:has(> span[style*="width: 28px"][style*="999px"]) { font-size:23px!important }
@@ -70241,13 +72805,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-testid=library-card][data-fcur="1"] > div:first-child::after { content:"";position:absolute;inset:-4px;border:3px solid rgb(var(--accent-500));border-radius:15px;box-shadow:0 0 28px rgb(var(--accent-500) / .45);pointer-events:none;z-index:6 }
 `;
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_model();
   init_live_tv_shell();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -70370,24 +72934,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_live_tv_ui();
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
     const [phone, setPhone] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read12 = () => {
+      const read13 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_PHONE_ATTR) === "1";
       };
-      const sync2 = () => setPhone(read12());
+      const sync2 = () => setPhone(read13());
       sync2();
       const observer = new MutationObserver(sync2);
       observer.observe(document.documentElement, {
@@ -70400,7 +72964,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -70452,12 +73016,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_settings_store();
@@ -70479,13 +73043,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var RAIL_ITEM_NARROW = 48;
   function railKeyForView(view) {
     if (view === "channel") return "guide";
-    if (view === "hub" || view === "search" || view === "guide" || view === "sport" || view === "library" || view === "multi" || view === "favs" || view === "settings") return view;
+    if (view === "hub" || view === "search" || view === "guide" || view === "sport" || view === "library" || view === "multi" || view === "favs" || view === "recordings" || view === "settings") return view;
     return null;
   }
   function shellRailActive(view, redirecting) {
     return redirecting ? "home" : railKeyForView(view);
   }
-  function TvRail({ active: active5, onSelect, isTv, narrow, labels: railLabels }) {
+  function TvRail({ active: active5, onSelect, isTv, narrow, labels: railLabels, showRecordings = false }) {
     const tint = useRailTint();
     const railBg = tint ? railTintBackground(tint) : V2.railSurface;
     const { tt } = useTvText();
@@ -70555,7 +73119,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       { key: "sport", label: tt("railSport"), icon: /* @__PURE__ */ jsx(SportIcons.Ball, {}) },
       { key: "library", label: tt("railLibrary"), icon: /* @__PURE__ */ jsx(Icons.FilmStrip, {}) },
       { key: "multi", label: tt("railMultiview"), icon: /* @__PURE__ */ jsx(Icons.SquaresFour, {}) },
-      { key: "favs", label: tt("railFavourites"), icon: /* @__PURE__ */ jsx(Icons.Heart, {}) }
+      { key: "favs", label: tt("railFavourites"), icon: /* @__PURE__ */ jsx(Icons.Heart, {}) },
+      ...showRecordings ? [{ key: "recordings", label: tt("railRecordings"), icon: /* @__PURE__ */ jsx(Icons.Record, {}) }] : []
     ];
     const railItem = (item, extraStyle) => {
       const activeItem = item.key === active5;
@@ -70593,7 +73158,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return overlay ? /* @__PURE__ */ jsx("div", { "data-tv-rail-slot": "", style: { width: 0, flexShrink: 0, position: "relative", zIndex: 45 }, children: nav }) : nav;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -70722,10 +73287,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -70769,20 +73334,21 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_use_remote_keys();
   init_tv_text_entry();
   init_channel_overrides();
   init_video_surface();
   init_surface_cutouts();
+  init_recordings();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -70830,7 +73396,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 40;
   var REPLAY_DAYS = 3;
   function useHubData(model, spotlightCount) {
@@ -70857,7 +73423,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-classic.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-classic.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -70865,10 +73431,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/programme-actions.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/programme-actions.ts
+  init_live_tv_data();
   init_live_tv_ui();
   init_reminders();
   init_display_title();
+  init_recordings();
+  init_recording_plan();
+  init_tv_settings_store();
   function programmeState(p, nowMs) {
     if (p.stop <= nowMs) return "past";
     if (p.start > nowMs) return "future";
@@ -70888,12 +73458,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         nav.play({ channel });
         return;
       }
-      const state2 = programmeState(programme, nowMs);
-      if (state2 === "future") {
+      const state3 = programmeState(programme, nowMs);
+      if (state3 === "future") {
         toggleReminder(channel, programme, nowMs);
         return;
       }
-      if (state2 === "past") {
+      if (state3 === "past") {
         const url = replayUrl(channel, programme, nowMs);
         nav.play(url ? { channel, url, label: displayTitle(programme.title) } : { channel });
         return;
@@ -70905,19 +73475,42 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const { channel, programme, nav, nowMs, element, tt, locale } = ctx;
     const extra = [];
     if (programme) {
-      const state2 = programmeState(programme, nowMs);
-      if (state2 === "future") {
+      const state3 = programmeState(programme, nowMs);
+      if (state3 === "future") {
         extra.push(isReminded(channel, programme) ? { key: "reminder", label: tt("removeReminder"), run: () => {
           toggleReminder(channel, programme, nowMs);
         } } : { key: "reminder", label: tt("remindMeAt", { time: formatClock2(programme.start, locale) }), run: () => {
           toggleReminder(channel, programme, nowMs);
         } });
-      } else if (state2 === "live") {
+      } else if (state3 === "live") {
         const url = restartUrl(channel, programme);
         if (url) extra.push({ key: "restart", label: tt("restartFromStart"), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) });
       } else {
         const url = replayUrl(channel, programme, nowMs);
         if (url) extra.push({ key: "replay", label: tt("playReplay"), run: () => nav.play({ channel, url, label: displayTitle(programme.title) }) });
+      }
+    }
+    if (programme) {
+      const settings = getTvSettings();
+      const state3 = programmeState(programme, nowMs);
+      if (settings.recordingEnabled && state3 !== "past") {
+        const existing = recordingFor(getCachedRecordings(), channelKey(channel), programme.start) ?? (state3 === "live" ? recordingFor(getCachedRecordings(), channelKey(channel), null) : void 0);
+        if (existing) {
+          extra.push({ key: "record", label: tt("cancelRecording"), run: () => {
+            void stopRecording(existing.id).catch(() => {
+            });
+          } });
+        } else if (state3 === "future") {
+          extra.push({ key: "record", label: tt("recordProgramme", { time: formatClock2(programme.start, locale) }), run: () => {
+            void scheduleRecording(planFromProgramme(channel, programme, recordMargins(settings))).catch(() => {
+            });
+          } });
+        } else {
+          extra.push({ key: "record", label: tt("record"), run: () => {
+            void scheduleRecording(planFromNow(channel, programme, nowMs, recordMargins(settings))).catch(() => {
+            });
+          } });
+        }
       }
     }
     if (programme) {
@@ -70937,18 +73530,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     nav.channelMenu(channel, element, extra);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/programme-art.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/programme-art.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
-  var STORE_KEY = "live_tv_programme_art_v1";
+  var STORE_KEY2 = "live_tv_programme_art_v1";
   var TTL_MS4 = 7 * 864e5;
   var MAX_ENTRIES9 = 500;
   var MAX_ACTIVE = 2;
   var MAX_PER_MINUTE = 30;
-  var FETCH_TIMEOUT_MS2 = 1e4;
+  var FETCH_TIMEOUT_MS3 = 1e4;
   var WRITE_DELAY_MS = 2e3;
-  var cache11 = null;
+  var cache12 = null;
   var jobs = /* @__PURE__ */ new Map();
   var queue2 = [];
   var active4 = 0;
@@ -70968,8 +73561,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return BROADCAST_TITLE.test(t);
   }
   function store2() {
-    if (!cache11) cache11 = { ...readPluginJson(LIVE_TV_PLUGIN_ID2, STORE_KEY, {}) };
-    return cache11;
+    if (!cache12) cache12 = { ...readPluginJson(LIVE_TV_PLUGIN_ID2, STORE_KEY2, {}) };
+    return cache12;
   }
   function cached(key) {
     const hit = store2()[key];
@@ -70986,7 +73579,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (writeTimer) return;
     writeTimer = setTimeout(() => {
       writeTimer = null;
-      writePluginJson(LIVE_TV_PLUGIN_ID2, STORE_KEY, store2());
+      writePluginJson(LIVE_TV_PLUGIN_ID2, STORE_KEY2, store2());
     }, WRITE_DELAY_MS);
   }
   function pump() {
@@ -71008,7 +73601,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   async function run(job) {
     const abort = new AbortController();
-    const timer5 = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS2);
+    const timer5 = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS3);
     let url = null;
     try {
       const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}`, { signal: abort.signal });
@@ -71081,7 +73674,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return { url: found.url };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tint.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tint.ts
   var NEUTRAL_TINT = "#2b3142";
   var hex = (n) => n.toString(16).padStart(2, "0");
   function useTint(imageUrl, enabled) {
@@ -71090,7 +73683,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return `#${hex(tone[0])}${hex(tone[1])}${hex(tone[2])}`;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/v2-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/v2-ui.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_logo_image();
@@ -71156,7 +73749,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
 ` });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-shared.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -71179,11 +73772,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     });
     useEffect(() => {
       if (!open2) return;
-      const close = () => {
+      const close2 = () => {
         setOpen(false);
         window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = navRef.current.pushLayer(close);
+      const off = navRef.current.pushLayer(close2);
       window.setTimeout(() => menuRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
     }, [open2]);
@@ -71251,7 +73844,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-classic.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-classic.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT = 3;
@@ -71430,7 +74023,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-experience.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -71439,7 +74032,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-nowsen-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-nowsen-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -71511,7 +74104,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }, [initialId, id(selection)]);
   }
   function withLeftEdge(props, onLeftEdge) {
-    const base = props.onKeyDown;
+    const base2 = props.onKeyDown;
     return {
       ...props,
       onKeyDown: (event2) => {
@@ -71520,7 +74113,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           event2.stopPropagation();
           return;
         }
-        base?.(event2);
+        base2?.(event2);
       }
     };
   }
@@ -71645,7 +74238,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-experience-data.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -71838,7 +74431,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }), [model.channels, favourites, recent, model.nowFor, replays, soon, model.groups, counts3, chip, model.nowMs, limit, sport, channelFor, hubRows, lists]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience-nav.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-experience-nav.ts
   function xpInitial(rows) {
     return { zone: "hero", heroBtn: 0, chipIdx: 0, row: 0, cols: Array.from({ length: rows }, () => 0) };
   }
@@ -71888,7 +74481,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { ...s, row, cols };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/cutout-layer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/cutout-layer.tsx
   init_react_shim();
   init_surface_cutouts();
   init_jsx_runtime_shim();
@@ -71931,7 +74524,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -71981,7 +74574,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/hub-experience.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/hub-experience.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var NO_CHANNEL2 = { name: "", logo: null, group: "", url: "", tvgId: null };
@@ -72492,7 +75085,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const channel = item.channel ?? NO_CHANNEL2;
     const p = item.programme ?? null;
     const wantsArt = rowId === "continue" || rowId === "onNow" || rowId === "sport";
-    const textRight = (base) => dp(Math.max(base, holdPad));
+    const textRight = (base2) => dp(Math.max(base2, holdPad));
     const { url } = useProgrammeArt(channel, item.channel && wantsArt ? p : null, { lookup: wantsArt && lookup2 });
     const [broken, setBroken] = useState(null);
     const art = url !== null && broken !== url ? url : null;
@@ -72576,7 +75169,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -72587,7 +75180,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -72605,7 +75198,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       }
     );
   }
-  function MobileHeader({ title, right, back, onBack, close, onClose, testId }) {
+  function MobileHeader({ title, right, back, onBack, close: close2, onClose, testId }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
       "div",
@@ -72630,7 +75223,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           gap: 10
         },
         children: [
-          close ? /* @__PURE__ */ jsx(MobileCloseButton, { onClose }) : null,
+          close2 ? /* @__PURE__ */ jsx(MobileCloseButton, { onClose }) : null,
           back ? /* @__PURE__ */ jsx(
             "div",
             {
@@ -72647,11 +75240,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -72700,7 +75293,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
@@ -72867,7 +75460,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   function TvHub(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvHubPhone, { ...props });
@@ -72875,7 +75468,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx(HubClassic, { ...props });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -72884,7 +75477,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS2 = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -72909,7 +75502,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS2 * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -72939,7 +75532,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -72948,7 +75541,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -72994,7 +75587,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -73003,14 +75596,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -73042,7 +75635,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -73115,7 +75708,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -73248,7 +75841,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var MAX_GROUPS = 12;
@@ -73399,7 +75992,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73409,7 +76002,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -73447,7 +76040,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73455,7 +76048,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   init_display_title();
   var HOUR_PX = 240;
@@ -73530,7 +76123,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_intl_cache();
@@ -73657,7 +76250,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
@@ -73911,11 +76504,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -73923,7 +76516,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_settings_store();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-timeline-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-timeline-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -73933,13 +76526,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_display_title();
   init_jsx_runtime_shim();
-  var MIN2 = 6e4;
-  var TL_SPAN_MS = 120 * MIN2;
-  var TICK_MS3 = 30 * MIN2;
-  var PCT_PER_MIN = 100 / (TL_SPAN_MS / MIN2);
+  var MIN3 = 6e4;
+  var TL_SPAN_MS = 120 * MIN3;
+  var TICK_MS3 = 30 * MIN3;
+  var PCT_PER_MIN = 100 / (TL_SPAN_MS / MIN3);
   var THRESHOLDS = pctShapeThresholds(PCT_PER_MIN);
   var BLOCK_GAP = 6;
-  var TICK_HIDE_MS = 12 * MIN2;
+  var TICK_HIDE_MS = 12 * MIN3;
   function timelineFetchRange(nowMs) {
     return { from: startOfLocalDay(nowMs), to: startOfLocalDay(nowMs, 2) };
   }
@@ -74005,7 +76598,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       if (!target2) return dir === -1 ? Boolean(onLeftEdge?.()) : true;
       let ws = windowStart2;
       if (dir === 1) while (target2.start >= ws + TL_SPAN_MS) ws += TICK_MS3;
-      else if (target2.start < ws) ws = Math.floor(Math.max(target2.start, target2.stop - 60 * MIN2) / TICK_MS3) * TICK_MS3;
+      else if (target2.start < ws) ws = Math.floor(Math.max(target2.start, target2.stop - 60 * MIN3) / TICK_MS3) * TICK_MS3;
       ws = clampWindow2(ws, nowMs);
       const next = { key, start: target2.start };
       if (ws === windowStart2) return focusBlock(next) || true;
@@ -74080,7 +76673,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
   function withArrows(props, onArrow) {
-    const base = props.onKeyDown;
+    const base2 = props.onKeyDown;
     return {
       ...props,
       onKeyDown: (event2) => {
@@ -74089,7 +76682,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           event2.stopPropagation();
           return;
         }
-        base?.(event2);
+        base2?.(event2);
       }
     };
   }
@@ -74182,7 +76775,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-list-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-list-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -74193,7 +76786,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_jsx_runtime_shim();
   var CARDS_W = 560;
   var onKeys = (props, handle) => {
-    const base = props.onKeyDown;
+    const base2 = props.onKeyDown;
     return {
       ...props,
       onKeyDown: (event2) => {
@@ -74202,7 +76795,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           event2.stopPropagation();
           return;
         }
-        base?.(event2);
+        base2?.(event2);
       }
     };
   };
@@ -74391,7 +76984,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-hero.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -74445,12 +77038,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const logo = channel ? getLiveTvLogoSrc(channel.logo) ?? getLiveTvLogoSrc(channel.logoFallback) : null;
     const tone = useTint(art ?? logo, tint && channel !== null);
     const bg = v2Bg(background);
-    const base = tint && channel ? mixHex(tone, bg, art ? 55 : 30) : bg;
+    const base2 = tint && channel ? mixHex(tone, bg, art ? 55 : 30) : bg;
     const previewEnabled = useTvSettings().previewEnabled;
-    const state2 = heroState(programme, nowMs);
+    const state3 = heroState(programme, nowMs);
     const minutesLeft = programme ? Math.max(0, Math.ceil((programme.stop - nowMs) / 6e4)) : 0;
     const startsIn = programme ? Math.max(0, Math.ceil((programme.start - nowMs) / 6e4)) : 0;
-    const leftText = state2 === "live" ? tt("minutesLeft", { min: minutesLeft }) : state2 === "future" ? `${tt("guideStartsIn", { min: startsIn })}${isTv ? ` \xB7 ${tt("okRemindShort")}` : ""}` : state2 === "past" ? tt("guideAiredToday") : "";
+    const leftText = state3 === "live" ? tt("minutesLeft", { min: minutesLeft }) : state3 === "future" ? `${tt("guideStartsIn", { min: startsIn })}${isTv ? ` \xB7 ${tt("okRemindShort")}` : ""}` : state3 === "past" ? tt("guideAiredToday") : "";
     const number = channel ? model.channelNumber(channel) : null;
     const quality = channel ? qualityFromName(channel.name) : null;
     const channelLive = channel ? model.nowFor(channel).now !== null : false;
@@ -74468,10 +77061,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       );
     };
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-hero", style: { position: "relative", height: dp(GUIDE_HERO_H), flexShrink: 0 }, children: [
-      /* @__PURE__ */ jsx(CutoutLayer, { testId: "guide-hero-base", data: { "data-base": base }, background: tint && channel ? `linear-gradient(180deg, ${base} 0px, ${base} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)` : "transparent", style: { inset: "auto", left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), transition: "background .4s", zIndex: 0 } }),
+      /* @__PURE__ */ jsx(CutoutLayer, { testId: "guide-hero-base", data: { "data-base": base2 }, background: tint && channel ? `linear-gradient(180deg, ${base2} 0px, ${base2} ${dp(GUIDE_HERO_H)}px, ${bg} ${dp(HERO_FADE_END)}px)` : "transparent", style: { inset: "auto", left: 0, right: 0, top: 0, height: dp(HERO_FADE_END), transition: "background .4s", zIndex: 0 } }),
       /* @__PURE__ */ jsx(CutoutLayer, { background: "transparent", style: { overflow: "hidden", zIndex: 0 }, children: art ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx("img", { "data-testid": "guide-hero-art", src: art, alt: "", style: { position: "absolute", top: 0, right: 0, width: "66%", height: "100%", objectFit: "cover" } }),
-        /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: `linear-gradient(90deg, ${base} 0%, ${base} 30%, ${clear(base)} 66%), linear-gradient(0deg, ${base} 0%, ${clear(base)} 40%)` } })
+        /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: `linear-gradient(90deg, ${base2} 0%, ${base2} 30%, ${clear(base2)} 66%), linear-gradient(0deg, ${base2} 0%, ${clear(base2)} 40%)` } })
       ] }) : null }),
       channel ? /* @__PURE__ */ jsx(
         "div",
@@ -74513,14 +77106,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12), fontSize: dp(18), color: V2.text2, flexShrink: 0 }, children: [
               number !== null ? /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, color: V2.accText, fontVariantNumeric: "tabular-nums" }, children: number }) : null,
               programme ? /* @__PURE__ */ jsx("span", { children: channel.name }) : null,
-              state2 === "live" ? /* @__PURE__ */ jsx(LivePill, { label: tt("live") }) : null,
-              state2 === "future" || state2 === "past" ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-hero-tag", style: { height: dp(24), display: "inline-flex", alignItems: "center", padding: `0 ${dp(12)}px`, borderRadius: dp(8), background: "rgba(252,252,255,0.14)", fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" }, children: state2 === "future" ? tt("later") : tt("replay") }) : null,
+              state3 === "live" ? /* @__PURE__ */ jsx(LivePill, { label: tt("live") }) : null,
+              state3 === "future" || state3 === "past" ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-hero-tag", style: { height: dp(24), display: "inline-flex", alignItems: "center", padding: `0 ${dp(12)}px`, borderRadius: dp(8), background: "rgba(252,252,255,0.14)", fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" }, children: state3 === "future" ? tt("later") : tt("replay") }) : null,
               quality ? /* @__PURE__ */ jsx("span", { style: { padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(252,252,255,0.12)", fontSize: dp(15) }, children: quality }) : null
             ] })
           ] }),
           programme ? /* @__PURE__ */ jsxs("div", { "data-testid": "guide-hero-time", style: { display: "flex", alignItems: "center", gap: dp(16), fontSize: dp(19), color: V2.text2 }, children: [
             /* @__PURE__ */ jsx("span", { style: ellipsis9, children: `${formatClock2(programme.start, locale)}\u2013${formatClock2(programme.stop, locale)}${leftText ? ` \xB7 ${leftText}` : ""}` }),
-            state2 === "live" ? /* @__PURE__ */ jsx("div", { style: { width: dp(260), height: dp(5), borderRadius: dp(5), background: "rgba(252,252,255,0.16)", overflow: "hidden", flexShrink: 0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: "rgb(var(--accent-500))" } }) }) : null
+            state3 === "live" ? /* @__PURE__ */ jsx("div", { style: { width: dp(260), height: dp(5), borderRadius: dp(5), background: "rgba(252,252,255,0.16)", overflow: "hidden", flexShrink: 0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(progressOf(programme.start, programme.stop, nowMs) * 100)}%`, background: "rgb(var(--accent-500))" } }) }) : null
           ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), color: V2.text2 }, children: tt("noProgramme") }),
           programme?.description ? /* @__PURE__ */ jsx("p", { "data-testid": "guide-hero-desc", style: { margin: 0, fontSize: dp(18), color: V2.text2, maxWidth: "62ch", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: programme.description }) : null
         ] }) : null
@@ -74528,7 +77121,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-categories.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -74574,14 +77167,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-keys.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-keys.ts
   function guideKeyAction(key) {
     if (key === "n" || key === "N") return "now";
     if (key === "t" || key === "T") return "toggle-tl";
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt } = useTvText();
@@ -74772,7 +77365,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
@@ -75023,7 +77616,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -75031,7 +77624,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -75041,7 +77634,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -75102,7 +77695,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
@@ -75199,7 +77792,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function escapeKey(key) {
@@ -75280,7 +77873,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -75289,7 +77882,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -75469,7 +78062,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function TvChannel(props) {
@@ -75600,7 +78193,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -75608,7 +78201,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/voice.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/voice.ts
   init_react_shim();
   var host2 = () => typeof window !== "undefined" ? window.__lumioPluginRuntime?.sdk : void 0;
   function voiceAvailable2() {
@@ -75633,11 +78226,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return ok;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-search.tsx
   init_tv_strings();
   init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -75671,7 +78264,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -75681,7 +78274,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   function useProgrammeSearch(query, dayStart, dayEnd, opts) {
     const listId = opts?.listId === void 0 ? LIVE_TV_GLOBAL_EPG_ID : opts.listId;
     const limit = opts?.limit ?? 30;
-    const [state2, setState] = useState(() => ({ hits: EMPTY10, loading: false }));
+    const [state3, setState] = useState(() => ({ hits: EMPTY10, loading: false }));
     const generation3 = useRef(0);
     useEffect(() => {
       const q = query.trim();
@@ -75710,10 +78303,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         window.clearTimeout(timer5);
       };
     }, [query, dayStart, dayEnd, listId, limit]);
-    return state2;
+    return state3;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -75860,7 +78453,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-search.tsx
   init_display_title();
   init_jsx_runtime_shim();
   function TvSearch(props) {
@@ -76042,7 +78635,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -76050,19 +78643,19 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/multiview-slots.ts
-  function narrowVisibleIndices(state2) {
-    const count = state2.tiles.length;
-    const audioIdx = state2.audioIndex;
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/multiview-slots.ts
+  function narrowVisibleIndices(state3) {
+    const count = state3.tiles.length;
+    const audioIdx = state3.audioIndex;
     const others = Array.from({ length: count }, (_, i) => i).filter((i) => i !== audioIdx);
-    const second = others.find((i) => state2.tiles[i] !== null) ?? others.find((i) => state2.tiles[i] === null) ?? others[0] ?? audioIdx;
+    const second = others.find((i) => state3.tiles[i] !== null) ?? others.find((i) => state3.tiles[i] === null) ?? others[0] ?? audioIdx;
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -76103,7 +78696,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_plugin_sdk();
@@ -76143,11 +78736,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     });
     useEffect(() => {
       openerRef.current = document.activeElement;
-      const close = () => {
+      const close2 = () => {
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = navRef.current.pushLayer(close);
+      const off = navRef.current.pushLayer(close2);
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
     }, []);
@@ -76176,7 +78769,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -76191,7 +78784,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var MAX_PICKER_ROWS = 200;
   function TvMultiviewPhone({ model, nav }) {
     const { tt, locale } = useTvText();
-    const state2 = useMultiviewState();
+    const state3 = useMultiviewState();
     const [pickerTile, setPickerTile] = useState(null);
     const [group, setGroup] = useState(null);
     const groups = useGuideGroups(model, tt, group);
@@ -76199,20 +78792,20 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const caps = videoSurfaceCapabilities();
     const update = (next) => setMultiviewState(next);
     const channelFor = (key) => key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null;
-    const [a, b] = narrowVisibleIndices(state2);
+    const [a, b] = narrowVisibleIndices(state3);
     const visible = [a, b];
-    const audioChannel3 = channelFor(state2.tiles[state2.audioIndex]);
+    const audioChannel3 = channelFor(state3.tiles[state3.audioIndex]);
     const openPicker = (index) => {
       setGroup(null);
       setPickerTile(index);
     };
     const swap = () => {
-      const tiles = [...state2.tiles];
+      const tiles = [...state3.tiles];
       [tiles[a], tiles[b]] = [tiles[b], tiles[a]];
-      let audioIndex = state2.audioIndex;
+      let audioIndex = state3.audioIndex;
       if (audioIndex === a) audioIndex = b;
       else if (audioIndex === b) audioIndex = a;
-      update({ ...state2, tiles, audioIndex });
+      update({ ...state3, tiles, audioIndex });
     };
     const liveBudget = Math.max(0, caps.maxLive - 1);
     let liveLeft = liveBudget;
@@ -76231,9 +78824,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         audioChannel3 ? /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, ...ellipsis2 }, children: audioChannel3.name }) : null
       ] }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: visible.map((realIndex) => {
-        const key = state2.tiles[realIndex];
+        const key = state3.tiles[realIndex];
         const channel = channelFor(key);
-        const hasAudio = realIndex === state2.audioIndex && channel !== null;
+        const hasAudio = realIndex === state3.audioIndex && channel !== null;
         const live2 = hasAudio || channel !== null && liveLeft-- > 0;
         return /* @__PURE__ */ jsx(
           PhoneTile,
@@ -76248,7 +78841,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
                 openPicker(realIndex);
                 return;
               }
-              update({ ...state2, audioIndex: realIndex });
+              update({ ...state3, audioIndex: realIndex });
             },
             onHold: (el) => {
               if (!channel) {
@@ -76259,10 +78852,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
                 title: channel.name,
                 element: el,
                 actions: [
-                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state2, audioIndex: realIndex }) },
+                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state3, audioIndex: realIndex }) },
                   { key: "switch", label: tt("menuSwitchChannel"), run: () => openPicker(realIndex) },
                   { key: "full", label: tt("menuFullscreen"), run: () => nav.play({ channel }) },
-                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state2, realIndex)) }
+                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state3, realIndex)) }
                 ]
               });
             }
@@ -76271,7 +78864,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         );
       }) }),
       /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
-        /* @__PURE__ */ jsx("div", { "data-testid": "mv-change-channel", ...station(() => openPicker(state2.audioIndex)), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("changeChannel") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "mv-change-channel", ...station(() => openPicker(state3.audioIndex)), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("changeChannel") }),
         /* @__PURE__ */ jsx("div", { "data-testid": "mv-fullscreen", ...station(() => {
           if (audioChannel3) nav.play({ channel: audioChannel3 });
         }), style: { minHeight: 46, borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, cursor: "pointer" }, children: tt("menuFullscreen") })
@@ -76298,7 +78891,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
                   noProgrammeLabel,
                   onPress: () => {
                     if (pickerTile === null) return;
-                    update(assignTile(state2, pickerTile, key));
+                    update(assignTile(state3, pickerTile, key));
                     setPickerTile(null);
                   }
                 },
@@ -76347,7 +78940,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_display_title();
   init_jsx_runtime_shim();
   var GRID = {
@@ -76363,7 +78956,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   function TvMultiviewDesktop(props) {
     const { model, nav } = props;
     const { tt } = useTvText();
-    const state2 = useMultiviewState();
+    const state3 = useMultiviewState();
     const rootRef = useRef(null);
     const narrow = useNarrowSurface(rootRef);
     const full = useMultiviewImmersive();
@@ -76390,11 +78983,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       };
     }, [full]);
     useEffect(() => () => setImmersive(false), []);
-    const slots = narrow ? narrowVisibleIndices(state2).map((realIndex) => ({ realIndex, key: state2.tiles[realIndex] ?? null })) : state2.tiles.map((key, realIndex) => ({ realIndex, key }));
+    const slots = narrow ? narrowVisibleIndices(state3).map((realIndex) => ({ realIndex, key: state3.tiles[realIndex] ?? null })) : state3.tiles.map((key, realIndex) => ({ realIndex, key }));
     const [pickerTile, setPickerTile] = useState(null);
     const caps = videoSurfaceCapabilities();
     const update = (next) => setMultiviewState(next);
-    const audioChannel3 = state2.tiles[state2.audioIndex] ? model.byKey.get(state2.tiles[state2.audioIndex]) ?? model.allChannels.find((c) => channelKey(c) === state2.tiles[state2.audioIndex]) ?? null : null;
+    const audioChannel3 = state3.tiles[state3.audioIndex] ? model.byKey.get(state3.tiles[state3.audioIndex]) ?? model.allChannels.find((c) => channelKey(c) === state3.tiles[state3.audioIndex]) ?? null : null;
     const nativeBehindDom = caps.nativeBehindDom;
     useEffect(() => {
       if (!nativeBehindDom) return;
@@ -76419,8 +79012,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           Segment,
           {
             options: [{ key: "2", label: tt("layout2") }, { key: "3", label: tt("layout3") }, { key: "4", label: tt("layout4") }],
-            value: String(state2.layout),
-            onChange: (key) => update(setLayout(state2, Number(key)))
+            value: String(state3.layout),
+            onChange: (key) => update(setLayout(state3, Number(key)))
           }
         ),
         /* @__PURE__ */ jsx("div", { "data-testid": "mv-fullscreen", ...station(() => setImmersive(true)), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: dp(18), fontWeight: 600, cursor: "pointer" }, children: tt("mvFullscreen") }),
@@ -76432,9 +79025,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           /* @__PURE__ */ jsx("strong", { style: { color: TV2.text }, children: audioChannel3.name })
         ] }) : null })
       ] }),
-      /* @__PURE__ */ jsx("div", { style: { flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state2.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state2.layout]).rows, gap: full ? dp(4) : dp(16) }, children: slots.map(({ realIndex, key }) => {
+      /* @__PURE__ */ jsx("div", { style: { flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: (narrow ? NARROW_GRID : GRID[state3.layout]).columns, gridTemplateRows: (narrow ? NARROW_GRID : GRID[state3.layout]).rows, gap: full ? dp(4) : dp(16) }, children: slots.map(({ realIndex, key }) => {
         const channel = key ? model.byKey.get(key) ?? model.allChannels.find((c) => channelKey(c) === key) ?? null : null;
-        const hasAudio = realIndex === state2.audioIndex && channel !== null;
+        const hasAudio = realIndex === state3.audioIndex && channel !== null;
         const live2 = hasAudio || channel !== null && liveLeft-- > 0;
         return /* @__PURE__ */ jsx(
           Tile,
@@ -76443,8 +79036,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
             channel,
             hasAudio,
             live: live2,
-            isInit: realIndex === state2.audioIndex,
-            span: !narrow && state2.layout === 3 && realIndex === 0,
+            isInit: realIndex === state3.audioIndex,
+            span: !narrow && state3.layout === 3 && realIndex === 0,
             nowTitle: channel ? displayTitle(model.nowFor(channel).now?.title) ?? null : null,
             number: channel ? model.channelNumber(channel) : null,
             onOk: () => {
@@ -76452,7 +79045,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
                 setPickerTile(realIndex);
                 return;
               }
-              update({ ...state2, audioIndex: realIndex });
+              update({ ...state3, audioIndex: realIndex });
             },
             onHold: (el) => {
               if (!channel) {
@@ -76463,14 +79056,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
                 title: channel.name,
                 element: el,
                 actions: [
-                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state2, audioIndex: realIndex }) },
+                  { key: "audio", label: tt("menuAudioHere"), run: () => update({ ...state3, audioIndex: realIndex }) },
                   { key: "switch", label: tt("menuSwitchChannel"), run: () => setPickerTile(realIndex) },
                   // "Förstora" byter layout till 1+2 (`enlargeTile`) — en
                   // riktig skrivning av det sparade valet, så den döljs på
                   // en smal yta (samma regel som kapacitetsväxeln ovan).
-                  ...narrow ? [] : [{ key: "enlarge", label: tt("menuEnlarge"), run: () => update(enlargeTile(state2, realIndex)) }],
+                  ...narrow ? [] : [{ key: "enlarge", label: tt("menuEnlarge"), run: () => update(enlargeTile(state3, realIndex)) }],
                   { key: "full", label: tt("menuFullscreen"), run: () => nav.play({ channel }) },
-                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state2, realIndex)) }
+                  { key: "remove", label: tt("menuRemoveTile"), run: () => update(removeTile(state3, realIndex)) }
                 ]
               });
             }
@@ -76478,7 +79071,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           `${realIndex}:${key ?? "empty"}`
         );
       }) }),
-      pickerTile !== null ? /* @__PURE__ */ jsx(TvChannelPicker, { model, nav, title: tt("pickChannelFor", { n: pickerTile + 1 }), onPick: (channel) => update(assignTile(state2, pickerTile, channelKey(channel))), onClose: () => setPickerTile(null) }) : null
+      pickerTile !== null ? /* @__PURE__ */ jsx(TvChannelPicker, { model, nav, title: tt("pickChannelFor", { n: pickerTile + 1 }), onPick: (channel) => update(assignTile(state3, pickerTile, channelKey(channel))), onClose: () => setPickerTile(null) }) : null
     ] });
   }
   function Tile({ index, channel, hasAudio, live: live2, isInit, span, nowTitle, number, onOk, onHold }) {
@@ -76513,7 +79106,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -77076,15 +79669,15 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
-  function asNumber(value) {
+  function asNumber2(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
     return Number.isFinite(n) ? n : null;
   }
@@ -77098,7 +79691,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       if (!res.ok) return null;
       const data = await res.json();
       return {
-        tmdbId: asNumber(data.tmdbId),
+        tmdbId: asNumber2(data.tmdbId),
         imdbId: typeof data.imdbId === "string" ? data.imdbId : null,
         title: typeof data.title === "string" ? data.title : "",
         originalTitle: typeof data.originalTitle === "string" ? data.originalTitle : null,
@@ -77106,12 +79699,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         overview: typeof data.overview === "string" ? data.overview : "",
         backdropUrl: typeof data.backdropUrl === "string" ? data.backdropUrl : null,
         posterUrl: typeof data.posterUrl === "string" ? data.posterUrl : null,
-        year: asNumber(data.year),
-        runtime: asNumber(data.runtime),
-        numberOfSeasons: asNumber(data.numberOfSeasons),
+        year: asNumber2(data.year),
+        runtime: asNumber2(data.runtime),
+        numberOfSeasons: asNumber2(data.numberOfSeasons),
         genres: asStringList(data.genres),
         directors: asStringList(data.directors),
-        voteAverage: asNumber(data.voteAverage),
+        voteAverage: asNumber2(data.voteAverage),
         cast: Array.isArray(data.cast) ? data.cast.filter((entry) => Boolean(entry) && typeof entry === "object").map((entry) => ({
           id: Number(entry.id ?? 0),
           name: String(entry.name ?? ""),
@@ -77140,7 +79733,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -77210,13 +79803,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const [watched, setWatched2] = useState(false);
     useEffect(() => {
       if (!watchKey) return;
-      const read12 = () => {
+      const read13 = () => {
         setInList(isWatching(watchKey));
         setWatched2(isMovieWatched({ tmdbId: watchKey }));
       };
-      read12();
-      const offList = onWatchlistChanged(read12);
-      const offWatched = onWatchedMoviesChanged(read12);
+      read13();
+      const offList = onWatchlistChanged(read13);
+      const offWatched = onWatchedMoviesChanged(read13);
       return () => {
         offList();
         offWatched();
@@ -77597,7 +80190,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -77632,12 +80225,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/row-nav.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/row-nav.ts
   init_react_shim();
   var AUTO = "row";
   var seq2 = 0;
@@ -77718,11 +80311,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }, [ref, enabled]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/remote-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/remote-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -77874,16 +80467,16 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         chips: null,
         opener: document.querySelector('[data-testid="remote-add"]'),
         onClose,
-        rows: (close) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(20), padding: `${dp(8)}px 0` }, children: [
+        rows: (close2) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(20), padding: `${dp(8)}px 0` }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(22), lineHeight: 1.4 }, children: tt("remoteAddHint") }),
           reserved ? /* @__PURE__ */ jsx("div", { "data-testid": "remote-learn-reserved", style: { fontSize: dp(19), color: TV2.muted }, children: tt("remoteAddReserved") }) : null,
-          /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsx(Action, { testId: "remote-learn-cancel", label: tt("cancel"), onOk: close }) })
+          /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsx(Action, { testId: "remote-learn-cancel", label: tt("cancel"), onOk: close2 }) })
         ] })
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/channel-overrides-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/channel-overrides-settings.tsx
   init_channel_overrides();
   init_tv_ui();
   init_mobile_tokens();
@@ -77914,10 +80507,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_group_order();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -77969,6 +80562,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         /* @__PURE__ */ jsx(Row, { phone: true, testId: "setting-streamFallbackAfterS", label: tt("settingStreamFallbackAfter"), right: settings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: settings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) }) }),
         /* @__PURE__ */ jsx(Row, { phone: true, testId: "setting-groupOrder", label: tt("settingGroupOrder"), right: tt(groupOrderLabelKey(settings.groupOrder)), onOk: () => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) }) })
       ] }) }),
+      /* @__PURE__ */ jsx(Section2, { label: tt("settingRecording"), children: /* @__PURE__ */ jsx(Card3, { children: /* @__PURE__ */ jsx(RecordingSettingsRows, { settings, tt, phone: true, onOpen: () => nav.go("recordings") }) }) }),
       /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-content-nav", label: tt("tabContent"), onOk: () => nav.go("settings", { tab: "content" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-epg", label: tt("tabEpg"), onOk: () => nav.go("settings", { tab: "epg" }) }),
@@ -78028,7 +80622,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_start_view();
   init_v2_settings();
@@ -78091,7 +80685,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         TABS.map((t) => /* @__PURE__ */ jsx("div", { "data-testid": `tab-${t}`, ...station(() => setTab(t), void 0, { ...t === tab ? { "data-init": "", "data-tab-active": "" } : {}, "data-f-right": "[data-live-tv-settings-content] [data-f]" }), style: { height: dp(60), minHeight: dp(60), borderRadius: dp(12), padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", fontSize: dp(20), background: t === tab ? TV2.s12 : "transparent", color: t === tab ? TV2.text : TV2.muted, cursor: "pointer" }, children: labels[t] }, t))
       ] }),
       /* @__PURE__ */ jsxs("div", { ref: contentRef, "data-live-tv-settings-content": "", "data-scroll": "", style: { flex: 1, minWidth: 0, overflowY: "auto", padding: `${dp(40)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(36) }, children: [
-        tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt }) : null,
+        tab === "appearance" ? /* @__PURE__ */ jsx(AppearanceTab, { settings, tt, nav }) : null,
         tab === "content" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx(ContentTab, { model, nav, tt }),
           /* @__PURE__ */ jsx(ChannelOverridesSection, { tt })
@@ -78110,7 +80704,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       ] })
     ] });
   }
-  function AppearanceTab({ settings, tt }) {
+  function AppearanceTab({ settings, tt, nav }) {
     const guideMode = useGuideMode();
     const tvMode = useTvMode();
     const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
@@ -78161,7 +80755,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         /* @__PURE__ */ jsx(Row, { testId: "setting-streamFallback", label: tt("settingStreamFallback"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.streamFallback }), onOk: () => setTvSettings({ streamFallback: !settings.streamFallback }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-streamFallbackAfterS", label: tt("settingStreamFallbackAfter"), right: settings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: settings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-groupOrder", label: tt("settingGroupOrder"), right: tt(groupOrderLabelKey(settings.groupOrder)), onOk: () => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) }) })
-      ] })
+      ] }),
+      /* @__PURE__ */ jsx(RecordingSettingsRows, { settings, tt, onOpen: () => nav.go("recordings") })
     ] });
   }
   function ColourRow({ settingKey, label, value, fallback, swatches, tt }) {
@@ -78194,7 +80789,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_evening_plan();
   init_react_shim();
   init_plugin_sdk();
@@ -78204,10 +80799,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info-model.ts
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/event-timeline.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/event-timeline.ts
   function markerKind(e) {
     if (e.type === "goal") return "goal";
     if (e.type === "penalty") return "penalty";
@@ -78215,7 +80810,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info-model.ts
   function dayHeaderCounts(matches, now2) {
     return {
       total: matches.length,
@@ -78285,7 +80880,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -78306,13 +80901,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -78322,7 +80917,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_league_jump();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -78389,9 +80984,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           searchField,
           prompt.node
         ] }),
-        rows: (close) => {
+        rows: (close2) => {
           const pick3 = (key) => {
-            close();
+            close2();
             onPick(key);
           };
           if (empty) return /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: searching ? tt("sportLeagueNoHits") : tt("sportResultsEmpty") });
@@ -78456,12 +81051,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_results_model();
   init_surface();
   init_sport_icons2();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -78649,7 +81244,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/page-parts.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
@@ -78741,7 +81336,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(NOOP2), style: { fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }, children: text2 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-model.ts
   init_lang();
   init_merge();
   init_sport_store();
@@ -78954,7 +81549,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return [...g].map((c) => String.fromCodePoint(127462 + c.charCodeAt(0) - 65)).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_sport_store();
   init_merge();
   init_results_model();
@@ -79153,11 +81748,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -79170,7 +81765,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_icons2();
   init_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-replays.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -79215,10 +81810,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/page-tabs.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -79273,7 +81868,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return /* @__PURE__ */ jsx("div", { ref, "data-tab-body": "", style: { display: "flex", flexDirection: "column", gap }, children });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom, replays = [] }) {
     const tv = useTvMode();
@@ -79392,8 +81987,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var LABEL_W = 236;
   var ENDED_MAX = 5;
   var HEAD_BG = `linear-gradient(var(--sport-drawer-bg, ${SPORT_PANEL_BG}), var(--sport-drawer-bg, ${SPORT_PANEL_BG})), #14151a`;
-  var MIN3 = 6e4;
-  var HOUR3 = 60 * MIN3;
+  var MIN4 = 6e4;
+  var HOUR3 = 60 * MIN4;
   function MatchdayTimeline({ ctx, matches, dayFrom }) {
     const axis = timelineAxis(matches, dayFrom);
     const rows = timelineRows(matches);
@@ -79404,7 +81999,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const pct3 = (t) => (t - winStart) / span * 100;
     const nowInside = ctx.now >= winStart && ctx.now <= winStart + span;
     const reveal = (m) => {
-      if (m.stop > winStart + 30 * MIN3 && m.start < winStart + span - HOUR3) return;
+      if (m.stop > winStart + 30 * MIN4 && m.start < winStart + span - HOUR3) return;
       setOffset(windowFor(axis, winStart, m.start));
     };
     const clip2 = (m) => {
@@ -79464,8 +82059,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
             ] }) : ctx.tt("sportMatchdayEnded") }),
             /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
               endedShown.map((m) => {
-                const base = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
-                const label = [base, scoreText(m)].filter(Boolean).join(" ");
+                const base2 = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
+                const label = [base2, scoreText(m)].filter(Boolean).join(" ");
                 return /* @__PURE__ */ jsx(
                   "div",
                   {
@@ -79500,9 +82095,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel, timeOnly = false, onFocus }) {
     const blink = useGoalBlink(m);
     const st = statusAt(m, ctx.now);
-    const base = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
+    const base2 = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
     const tail = scoreText(m) ?? (st === "finished" ? matchStatusLabel(m, ctx.tt) : null);
-    const label = st === "upcoming" ? `${formatClock2(m.start, ctx.locale)} ${base}` : [base, tail].filter(Boolean).join(" ");
+    const label = st === "upcoming" ? `${formatClock2(m.start, ctx.locale)} ${base2}` : [base2, tail].filter(Boolean).join(" ");
     return /* @__PURE__ */ jsx(
       "div",
       {
@@ -79550,7 +82145,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -79559,7 +82154,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_day_model();
   init_sport_ctx();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/follow-crest.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/follow-crest.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -79584,7 +82179,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }, [matches]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_score_model();
   init_sport_parts();
   init_sport_score();
@@ -79712,7 +82307,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -79903,7 +82498,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_plugin_sdk();
   init_react_shim();
   init_live_tv_data();
@@ -79915,7 +82510,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_surface();
   init_phone_sport_sheet();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
   init_sport_store();
   var FOUR_HOURS = 4 * 36e5;
   function eventLabel(e, tt) {
@@ -79952,7 +82547,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     setSportSettings({ goalAlertMatches: current5 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
   init_react_shim();
   init_results_controller();
   init_live_poller();
@@ -79988,7 +82583,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { detail, state: detail || done ? "ready" : "loading" };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
@@ -80124,7 +82719,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_jsx_runtime_shim();
   var parentOf = (p) => p.kind === "player" ? { kind: "lineups" } : null;
   var SLIDE_CSS = "@keyframes lumio-sport-mi-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }";
@@ -80142,14 +82737,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const [picking, setPicking] = useState(false);
     const [selected, setSelected] = useState(0);
     const [page, setPage] = useState(null);
-    const { detail, state: state2 } = useFixtureDetail(match);
+    const { detail, state: state3 } = useFixtureDetail(match);
     useEffect(() => {
       openerRef.current = document.activeElement;
-      const close = () => {
+      const close2 = () => {
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      return navRef.current.pushLayer(close);
+      return navRef.current.pushLayer(close2);
     }, []);
     const pageKey = page ? page.kind : null;
     useEffect(() => {
@@ -80219,9 +82814,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         /* @__PURE__ */ jsx(SportIcons.Play, { size: u(20) }),
         chosen.quality ? ctx.tt("sportWatchQuality", { quality: chosen.quality }) : ctx.tt("sportWatch")
       ] }) : null,
-      state2 !== "none" || venueName ? /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportTheMatch") }) : null,
+      state3 !== "none" || venueName ? /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportTheMatch") }) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
-        state2 !== "none" ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-events", icon: /* @__PURE__ */ jsx(SportIcons.Stats, { size: u(22) }), label: ctx.tt("sportEventsStats"), value: state2 === "hidden" ? ctx.tt("sportResultHidden") : summary ? ctx.tt("sportEventsSummary", summary) : "\u2026", onOpen: () => setPage({ kind: "events" }) }) : null,
+        state3 !== "none" ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-events", icon: /* @__PURE__ */ jsx(SportIcons.Stats, { size: u(22) }), label: ctx.tt("sportEventsStats"), value: state3 === "hidden" ? ctx.tt("sportResultHidden") : summary ? ctx.tt("sportEventsSummary", summary) : "\u2026", onOpen: () => setPage({ kind: "events" }) }) : null,
         detail && detail.lineups.length > 0 ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-lineups", icon: /* @__PURE__ */ jsx(SportIcons.People, { size: u(22) }), label: ctx.tt("sportLineups"), value: ctx.tt("sportStartingXI"), onOpen: () => setPage({ kind: "lineups" }) }) : null,
         venueName ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-venue", icon: /* @__PURE__ */ jsx(SportIcons.Pin, { size: u(22) }), label: venueName, onOpen: () => setPage({ kind: "venue" }) }) : null
       ] })
@@ -80232,7 +82827,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       return /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(BackBar, { u, title, onBack: back, label: ctx.tt("sportBack") }),
         p.kind === "events" || p.kind === "lineups" ? /* @__PURE__ */ jsx(TeamsHeader, { u, match, ctx, compact: true }) : null,
-        p.kind === "events" ? /* @__PURE__ */ jsx(EventsPage, { u, match, ctx, detail, hidden: state2 === "hidden" }) : null,
+        p.kind === "events" ? /* @__PURE__ */ jsx(EventsPage, { u, match, ctx, detail, hidden: state3 === "hidden" }) : null,
         p.kind === "lineups" ? /* @__PURE__ */ jsx(LineupsPage, { u, ctx, detail, onPick: (picked) => setPage({ kind: "player", picked }) }) : null,
         p.kind === "player" ? /* @__PURE__ */ jsx(PlayerPage, { u, match, ctx, detail, picked: p.picked }) : null,
         p.kind === "venue" ? /* @__PURE__ */ jsx(VenuePage, { u, ctx, name: venueName ?? "", city: detail?.fixture.venueCity ?? null, image: match.venueImage ?? detail?.fixture.venueImage ?? null }) : null
@@ -80293,13 +82888,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_jsx_runtime_shim();
   function SportMatchCenter({ ctx, match, onClose }) {
     return /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match, onClose });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_evening_plan();
   init_react_shim();
   init_tv_ui();
@@ -80310,16 +82905,16 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_day_model();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_plugin_sdk();
   init_tv_ui();
   init_sport_store();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/sport-page-drawer.tsx
   init_react_shim();
   init_tv_ui();
   init_surface();
@@ -80374,11 +82969,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     });
     useEffect(() => {
       openerRef.current = document.activeElement;
-      const close = () => {
+      const close2 = () => {
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = navRef.current.pushLayer(close);
+      const off = navRef.current.pushLayer(close2);
       const t = window.setTimeout(() => {
         const root = rootRef.current;
         (root?.querySelector("[data-init]") ?? root?.querySelector('[data-f]:not([aria-hidden="true"])'))?.focus({ preventScroll: true });
@@ -80441,18 +83036,18 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   init_react_shim();
   init_results_controller();
   init_sport_epg();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-data.ts
   init_day_plan();
   init_merge();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-providers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-providers.ts
   init_api_sports();
   init_sportapi();
   init_thesportsdb();
@@ -80645,7 +83240,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return id === "sportapi" ? sportApiCalls : id === "thesportsdb" ? tsdbCalls : id === "espn" ? espnCalls : apiSportsCalls;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-data.ts
   var NEAR_MS = 120 * 864e5;
   var MEMO_MS = 5 * 6e4;
   var memo4 = /* @__PURE__ */ new Map();
@@ -80768,9 +83363,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       const known = target2.league?.provider === b.provider.id ? target2.league.season : null;
       const seasons = calls.needsSeason ? known ? [known] : seasonGuesses(sport, opts.now) : [""];
       for (const season2 of seasons) {
-        const base = calls.fixtures(sport, id, { season: season2, tz: opts.tz, ttlS: 86400 });
-        const aged = await b.peekAged(sport, base);
-        const res = await run2(b, sport, withTtl(base, aged ? fixturesTtlS(aged.data.fixtures, aged.fetchedAt, opts.now) : 86400), opts.now);
+        const base2 = calls.fixtures(sport, id, { season: season2, tz: opts.tz, ttlS: 86400 });
+        const aged = await b.peekAged(sport, base2);
+        const res = await run2(b, sport, withTtl(base2, aged ? fixturesTtlS(aged.data.fixtures, aged.fetchedAt, opts.now) : 86400), opts.now);
         const near = res.data?.fixtures.some((f) => Math.abs(f.kickoff - opts.now) < NEAR_MS);
         if (res.data && res.data.fixtures.length > 0 && (known || !calls.needsSeason || near)) {
           got = { b, id, season: season2, feed: res.data };
@@ -80883,7 +83478,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/use-team-page.ts
   var tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
   function useTeamPageData(target2) {
     const controller2 = useResultsController();
@@ -80963,7 +83558,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return useMemo(() => [...known, ...loaded2.filter((m) => !known.some((k) => k.id === m.id))], [known, loaded2]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/league-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/league-page.tsx
   init_jsx_runtime_shim();
   function LeaguePage({ ctx, target: target2, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -81021,7 +83616,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] }) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_plugin_sdk();
   init_react_shim();
   init_tv_ui();
@@ -81038,7 +83633,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_icons();
   init_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/player-drawer.tsx
   init_tv_ui();
   init_sport_icons();
   init_jsx_runtime_shim();
@@ -81080,7 +83675,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] }, label)) }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/team-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/team-page.tsx
   init_jsx_runtime_shim();
   function TeamPage({ ctx, target: target2, matches, depth, phone, onClose }) {
     const u = scaleFor(phone, useTvMode());
@@ -81363,7 +83958,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/team-page/sport-pages.tsx
   init_jsx_runtime_shim();
   var MAX_DEPTH = 6;
   function useSportPages() {
@@ -81381,14 +83976,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_results_controller();
   init_live_poller();
   init_sport_ctx();
   init_sport_icons();
   init_sport_results_phone();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -81438,7 +84033,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
   init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
@@ -81765,7 +84360,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -81873,7 +84468,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_phone_sport_model();
   init_phone_sport_sheet();
   init_phone_sport_parts();
@@ -82037,7 +84632,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_surface();
   init_intl_cache();
   init_jsx_runtime_shim();
@@ -82206,7 +84801,197 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-recordings.tsx
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_recordings();
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  var SECTION_ORDER = ["active", "scheduled", "done", "failed"];
+  var SECTION_LABEL = { active: "recSectionActive", scheduled: "recSectionScheduled", done: "recSectionDone", failed: "recSectionFailed" };
+  function sectionOf(status) {
+    if (status === "recording") return "active";
+    if (status === "scheduled") return "scheduled";
+    if (status === "done" || status === "stopped") return "done";
+    return "failed";
+  }
+  function groupRecordings(recordings) {
+    const by = /* @__PURE__ */ new Map();
+    for (const r of recordings) {
+      const s = sectionOf(r.status);
+      by.set(s, [...by.get(s) ?? [], r]);
+    }
+    const sortKey = (r) => r.status === "scheduled" ? r.startAt : -(r.endedAt ?? r.startedAt ?? r.startAt);
+    return SECTION_ORDER.filter((s) => by.has(s)).map((section) => ({ section, items: [...by.get(section)].sort((a, b) => sortKey(a) - sortKey(b)) }));
+  }
+  function statusKey(r) {
+    switch (r.status) {
+      case "missed":
+        return "recStatusMissed";
+      case "disk_full":
+        return "recStatusDiskFull";
+      case "failed":
+        return "recStatusFailed";
+      case "stopped":
+        return "recStatusStopped";
+      case "recording":
+        return "recording";
+      default:
+        return null;
+    }
+  }
+  function playable(r) {
+    return (r.status === "done" || r.status === "stopped" || r.status === "recording" || r.status === "disk_full" || r.status === "failed") && (r.bytes > 0 || r.status === "recording");
+  }
+  function TvRecordings(props) {
+    return props.phone ? /* @__PURE__ */ jsx(TvRecordingsPhone, { ...props }) : /* @__PURE__ */ jsx(TvRecordingsDesktop, { ...props });
+  }
+  function useActions(nav, tt) {
+    const play = (r) => nav.playStream({ url: recordingStreamUrl(r.id), title: r.title });
+    const confirmDelete = (r, element) => nav.openMenu({
+      title: tt("recDeleteConfirm"),
+      element,
+      actions: [{ key: "delete", label: tt("recDelete"), run: () => {
+        void deleteRecording(r.id).catch(() => {
+        });
+      } }]
+    });
+    const menu = (r, element) => {
+      const actions = [];
+      if (playable(r)) actions.push({ key: "play", label: tt("recPlay"), run: () => play(r) });
+      if (r.status === "recording") actions.push({ key: "stop", label: tt("stopRecording"), run: () => {
+        void stopRecording(r.id).catch(() => {
+        });
+      } });
+      if (r.status === "scheduled") actions.push({ key: "cancel", label: tt("cancelRecording"), run: () => {
+        void stopRecording(r.id).catch(() => {
+        });
+      } });
+      actions.push({ key: "delete", label: tt("recDelete"), run: () => confirmDelete(r, element) });
+      nav.openMenu({ title: r.title, element, actions });
+    };
+    const ok = (r, element) => {
+      if (r.status === "scheduled" || !playable(r)) menu(r, element);
+      else play(r);
+    };
+    return { ok, menu };
+  }
+  function timeLine2(r, locale, tt) {
+    const start3 = r.programmeStart ?? r.startAt;
+    const stop2 = r.programmeStop ?? r.stopAt;
+    const day = new Date(start3).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+    const parts2 = [`${day} ${formatClock2(start3, locale)}\u2013${formatClock2(stop2, locale)}`];
+    const key = statusKey(r);
+    if (key) parts2.push(tt(key));
+    if (r.bytes > 0) parts2.push(formatBytes(r.bytes, locale));
+    return parts2.join(" \xB7 ");
+  }
+  function TvRecordingsDesktop({ nav }) {
+    const { tt, locale } = useTvText();
+    const { list } = useRecordings(true);
+    const groups = groupRecordings(list?.recordings ?? []);
+    const { ok, menu } = useActions(nav, tt);
+    let first = true;
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "tv-recordings", style: { flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(40)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(16) }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(34), fontWeight: 600 }, children: tt("railRecordings") }),
+        typeof list?.freeBytes === "number" ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), color: "rgba(243,244,248,0.5)" }, children: tt("recFreeSpace", { free: formatBytes(list.freeBytes, locale) }) }) : null
+      ] }),
+      list && groups.length === 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(10), maxWidth: dp(720) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(22), fontWeight: 600 }, children: tt("recordingsEmpty") }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("recordingsEmptyHint") }),
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("guide", { group: "all" }), void 0, { "data-init": "" }), style: { alignSelf: "flex-start", height: dp(48), minHeight: dp(48), padding: `0 ${dp(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer" }, children: tt("railGuide") })
+      ] }) : null,
+      groups.map(({ section, items: items2 }) => /* @__PURE__ */ jsxs("section", { "data-testid": "rec-section", "data-section": section, style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, color: "rgba(243,244,248,0.75)" }, children: tt(SECTION_LABEL[section]) }),
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: dp(14) }, children: items2.map((r) => {
+          const init = first ? { "data-init": "" } : void 0;
+          first = false;
+          return /* @__PURE__ */ jsx(RecordingCard, { r, locale, tt, onOk: (el) => ok(r, el), onHold: (el) => menu(r, el), init }, r.id);
+        }) })
+      ] }, section))
+    ] });
+  }
+  function RecordingCard({ r, locale, tt, onOk, onHold, init }) {
+    const live2 = r.status === "recording";
+    let el = null;
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: (node) => {
+          el = node;
+        },
+        "data-testid": `rec-card-${r.id}`,
+        ...station(() => {
+          if (el) onOk(el);
+        }, (element) => onHold(element), init),
+        style: { ...cardStyle, borderRadius: dp(16), cursor: "pointer", display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(14)}px ${dp(18)}px`, boxSizing: "border-box" },
+        children: [
+          /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, width: dp(44), height: dp(44), borderRadius: dp(10), background: TV2.s12, display: "inline-flex", alignItems: "center", justifyContent: "center", color: live2 ? "#ef4444" : "rgba(243,244,248,0.7)" }, children: /* @__PURE__ */ jsx(Icons.Record, { size: dp(22), filled: live2 }) }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(4) }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: r.title }),
+              live2 ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("recording") }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+              r.channelName,
+              " \xB7 ",
+              timeLine2(r, locale, tt)
+            ] })
+          ] })
+        ]
+      }
+    );
+  }
+  function TvRecordingsPhone({ nav }) {
+    const { tt, locale } = useTvText();
+    const { list } = useRecordings(true);
+    const groups = groupRecordings(list?.recordings ?? []);
+    const { ok, menu } = useActions(nav, tt);
+    const row = (r) => {
+      let el = null;
+      const live2 = r.status === "recording";
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          ref: (node) => {
+            el = node;
+          },
+          "data-testid": `rec-card-${r.id}`,
+          ...station(() => {
+            if (el) ok(r, el);
+          }, (element) => menu(r, element)),
+          style: { minHeight: 64, borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, padding: "10px 12px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: live2 ? "#ef4444" : MT.dim, display: "inline-flex" }, children: /* @__PURE__ */ jsx(Icons.Record, { size: 22, filled: live2 }) }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: r.title }),
+              /* @__PURE__ */ jsxs("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis2 }, children: [
+                r.channelName,
+                " \xB7 ",
+                timeLine2(r, locale, tt)
+              ] })
+            ] })
+          ]
+        },
+        r.id
+      );
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "tv-recordings", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 4 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("railRecordings") }) }),
+      list && groups.length === 0 ? /* @__PURE__ */ jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, gap: 8 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600 }, children: tt("recordingsEmpty") }),
+        /* @__PURE__ */ jsx("div", { style: { color: MT.dim, fontSize: 14 }, children: tt("recordingsEmptyHint") })
+      ] }) : null,
+      groups.map(({ section, items: items2 }) => /* @__PURE__ */ jsxs("section", { "data-testid": "rec-section", "data-section": section, style: { display: "flex", flexDirection: "column", marginTop: 10 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: MT.dim, marginBottom: 8 }, children: tt(SECTION_LABEL[section]) }),
+        items2.map(row)
+      ] }, section))
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -82218,13 +85003,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     title: TvLibraryTitle,
     cast: TvLibraryCast,
     settings: TvSettingsView,
-    sport: TvSport
+    sport: TvSport,
+    recordings: TvRecordings
   };
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_start_view();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -82245,7 +85031,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   function tabForView(view) {
     if (view === "channel") return "guide";
     if (view === "title" || view === "cast") return "library";
-    if (view === "multi" || view === "settings" || view === "favs") return "more";
+    if (view === "multi" || view === "settings" || view === "favs" || view === "recordings") return "more";
     return view;
   }
   function MobileTabBar({ view, activeOverride, onGo, onMore, showLibrary = false }) {
@@ -82304,7 +85090,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
@@ -82378,15 +85164,15 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_vod_category_filter();
   init_mobile_sheet();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/shell-toast.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/shell-toast.ts
   init_tv_ui();
   init_mobile_tokens();
   function shellToastStyle(opts) {
-    const base = {
+    const base2 = {
       position: "fixed",
       left: "50%",
       transform: "translateX(-50%)",
@@ -82401,7 +85187,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     if (opts.phone) {
       const bottomInset = `max(${MT.SAFE_BOTTOM}, var(--android-inset-bottom, 0px))`;
       return {
-        ...base,
+        ...base2,
         bottom: opts.tabBar ? `calc(${MT.TAB_BAR}px + ${bottomInset} + 12px)` : `calc(${bottomInset} + 16px)`,
         maxWidth: "calc(100vw - 32px)",
         padding: "10px 16px",
@@ -82415,7 +85201,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       };
     }
     return {
-      ...base,
+      ...base2,
       bottom: dp(40),
       maxWidth: `calc(100% - ${dp(96)}px)`,
       padding: `${dp(12)}px ${dp(24)}px`,
@@ -82427,7 +85213,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2, background }) {
     const ref = useRef(null);
@@ -82461,7 +85247,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       }
     );
   }
-  var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings", "sport"];
+  var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings", "sport", "recordings"];
   var VOD_HOME_TEXT = {
     hidden: "vodHomeHidden",
     "no-vod": "vodHomeNoVod",
@@ -82471,7 +85257,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     failed: "vodHomeRetrying",
     waiting: "vodHomeIndexing"
   };
-  var V2_BG_VIEWS = /* @__PURE__ */ new Set(["hub", "guide", "library", "multi", "favs", "settings", "search"]);
+  var V2_BG_VIEWS = /* @__PURE__ */ new Set(["hub", "guide", "library", "multi", "favs", "settings", "search", "recordings"]);
   var BACK_KEYS4 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   var HOST_OPEN_MENU_EVENT = "lumio-tv-open-menu";
   var ZAP_TIMEOUT_MS = 1500;
@@ -82491,6 +85277,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const { tt, locale } = useTvText();
     const model = useLiveTvModel();
     const settings = useTvSettings();
+    useRecordings(false);
     const cutouts2 = useSurfaceCutouts();
     const hasCutouts = cutouts2.length > 0;
     const vodHidden = vodHiddenForActivePlaylist();
@@ -82561,7 +85348,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         cancelled = true;
       };
     }, [stream, StreamPlayer]);
-    const playStream = useCallback((request) => setStream(request), []);
+    const playStream = useCallback((request2) => setStream(request2), []);
     const vodCats = useVodCategories(phone ? model.activeSource : null);
     const showLibraryTab = phone && vodCats.total > 0 && getVodMode(model.activePlaylistId) !== "off";
     const go = useCallback((next, extra = {}) => {
@@ -82605,13 +85392,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           onNavigate(vodHomeTarget());
           return;
         }
-        const state2 = await vodHomeState();
-        if (state2 === "ready") {
+        const state3 = await vodHomeState();
+        if (state3 === "ready") {
           onNavigate(vodHomeTarget());
           return;
         }
-        toast(tt(VOD_HOME_TEXT[state2]), 4e3);
-        if (state2 === "failed" || state2 === "waiting") void maybeAutoScanVod({ force: true });
+        toast(tt(VOD_HOME_TEXT[state3]), 4e3);
+        if (state3 === "failed" || state3 === "waiting") void maybeAutoScanVod({ force: true });
       });
     }, [onNavigate, toast, tt]);
     useEffect(() => {
@@ -82637,14 +85424,14 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       pendingMultiRef.current = [];
     }, []);
     useEffect(() => cancelPendingMulti, [cancelPendingMulti]);
-    const play = useCallback((request) => {
+    const play = useCallback((request2) => {
       cancelPendingMulti();
-      const locked = modelRef.current.locked.has(channelKey(request.channel));
+      const locked = modelRef.current.locked.has(channelKey(request2.channel));
       if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin2()) {
-        setPending({ kind: "play", request });
+        setPending({ kind: "play", request: request2 });
         return;
       }
-      void releaseAllSurfaces().finally(() => setActive3(request));
+      void releaseAllSurfaces().finally(() => setActive3(request2));
     }, [cancelPendingMulti]);
     const autoplayedRef = useRef(null);
     useEffect(() => {
@@ -82695,12 +85482,12 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         ]
       });
     }, [tt, play, openChannel, addToMultiview, requestLockToggle, toast]);
-    const pushLayer = useCallback((close, opts) => {
-      layersRef.current.push(close);
-      if (opts?.allowZap) zapThroughRef.current.add(close);
+    const pushLayer = useCallback((close2, opts) => {
+      layersRef.current.push(close2);
+      if (opts?.allowZap) zapThroughRef.current.add(close2);
       return () => {
-        layersRef.current = layersRef.current.filter((c) => c !== close);
-        zapThroughRef.current.delete(close);
+        layersRef.current = layersRef.current.filter((c) => c !== close2);
+        zapThroughRef.current.delete(close2);
       };
     }, []);
     const keyboard = useTextPrompt({ pushLayer });
@@ -82814,7 +85601,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     useEffect(() => {
       if (!settings.numericZap || phone) return;
       const onKey = (event2) => {
-        if (menu || layersRef.current.some((close) => !zapThroughRef.current.has(close))) return;
+        if (menu || layersRef.current.some((close2) => !zapThroughRef.current.has(close2))) return;
         const target2 = event2.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.('[contenteditable]:not([contenteditable="false"])')) return;
@@ -82880,7 +85667,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       bindings: settings.remoteKeys,
       playerOpen: active5 !== null,
       blocked: (target2) => {
-        if (menu || pending5 || layersRef.current.some((close) => !zapThroughRef.current.has(close))) return true;
+        if (menu || pending5 || layersRef.current.some((close2) => !zapThroughRef.current.has(close2))) return true;
         const el = target2 instanceof HTMLElement ? target2 : null;
         if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return true;
         return !!el?.closest?.("[data-live-tv-keyboard], [data-live-tv-host-ui]");
@@ -82979,6 +85766,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
               isTv,
               narrow,
               labels: railLabels,
+              showRecordings: settings.recordingEnabled,
               onSelect: (key) => {
                 if (key === "back") requestBrowseBack();
                 else if (key === "home") goVodHome();
@@ -82994,6 +85782,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
               title: tt("moreActions"),
               items: [
                 { key: "favs", label: tt("sheetFavourites"), run: () => go("favs") },
+                ...settings.recordingEnabled ? [{ key: "recordings", label: tt("sheetRecordings"), run: () => go("recordings") }] : [],
                 { key: "multi", label: tt("sheetMultiview"), run: () => go("multi") },
                 { key: "settings", label: tt("sheetSettings"), run: () => go("settings") }
               ],
@@ -83053,7 +85842,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/sport-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/sport-page.tsx
   init_react_shim();
   init_live_tv_shell();
   var SPORT_PAGE_ID = LIVE_TV_SPORT_PAGE_ID;
@@ -83061,7 +85850,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return createElement(LiveTvTvShell, { ...props, sportOnly: true });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/register.ts
   init_react_shim();
   init_tv_strings();
   init_sport_ctx();
@@ -83070,7 +85859,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_rows_feed();
   init_rows_model();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_react_shim();
   init_tv_strings();
   init_crest();
@@ -83081,7 +85870,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_sport_store();
   init_rows_feed();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
   init_live_tv_ui();
   init_sport_ctx();
   init_sport_epg();
@@ -83132,7 +85921,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return { kicker, title, metaLine: metaLine2, overview, backdropUrl: sportHeroBackdrop(m, d) };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_rows_model();
   init_jsx_runtime_shim();
   var TEXT2 = "#f8fafc";
@@ -83284,7 +86073,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/sport/home-rows/register.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/sport/home-rows/register.ts
   var LANGS = ["en", "sv", "de", "fr", "es"];
   var both = (key, vars) => Object.fromEntries(LANGS.map((l) => [l, tvText(l, key, vars)]));
   var sportOption = {
@@ -83330,7 +86119,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -83387,7 +86176,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -83429,7 +86218,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
@@ -83467,13 +86256,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         return;
       }
       let frame = 0;
-      const read12 = () => {
+      const read13 = () => {
         frame = 0;
         setUrl(readHomeHeroImage(document));
       };
-      read12();
+      read13();
       const observer = new MutationObserver(() => {
-        if (!frame) frame = requestAnimationFrame(read12);
+        if (!frame) frame = requestAnimationFrame(read13);
       });
       observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-active"] });
       return () => {
@@ -83635,13 +86424,13 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           ) }) : null,
           glass ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", "data-live-tv-frame-tint-layer": tintImage, style: { ...layer, backgroundImage: tintImage, transition: "opacity 600ms ease" } }) : null,
           /* @__PURE__ */ jsx("style", { children: `.bg-mesh { background-image: none !important; background-color: ${frameBg} !important; } [data-details-home] { display: none !important; } [data-library-nav] { border-radius: 9999px !important; background-color: rgb(252 252 255 / 0.08) !important; background-image: none !important; border-color: transparent !important; color: #fff !important; font-weight: 600 !important; } [data-library-nav]:not(:focus):not([data-fcur="1"]) { box-shadow: 0 3px 14px rgb(0 0 0 / 0.45) !important; } [data-library-nav][data-current] { background-color: rgb(252 252 255 / 0.22) !important; } :root:not([data-focus-source="pointer"]) [data-live-tv-frame-bg] [data-f]:focus, :root:not([data-focus-source="pointer"]) [data-live-tv-frame-bg] [data-f][data-fcur="1"], :root:not([data-focus-source="pointer"]) [data-library-nav]:focus, :root:not([data-focus-source="pointer"]) [data-library-nav][data-fcur="1"] { box-shadow: inset 0 0 0 2px rgb(var(--accent-500)), 0 0 24px color-mix(in srgb, rgb(var(--accent-500)) 35%, transparent) !important; }` }),
-          /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select })
+          /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, showRecordings: settings.recordingEnabled, onSelect: select })
         ]
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/index.ts
   init_hls_playlist_proxy();
   init_vod_category_filter();
   init_vod_client();
@@ -83650,7 +86439,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.19.2"
+      version: "0.20.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -83664,7 +86453,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV", de: "Live-TV", fr: "TV en direct", es: "TV en directo" },
-    version: "0.19.2",
+    version: "0.20.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio.",
