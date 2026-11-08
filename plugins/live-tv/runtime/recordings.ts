@@ -64,12 +64,17 @@ export function recordingStreamUrl(id: string): string {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init)
-  const text = await res.text()
   let data: unknown = null
-  try {
-    data = text ? JSON.parse(text) : null
-  } catch {
-    data = null
+  // Testers fetch-stubbar saknar ibland text(); riktiga svar har båda.
+  if (typeof res.text === 'function') {
+    const text = await res.text()
+    try {
+      data = text ? JSON.parse(text) : null
+    } catch {
+      data = null
+    }
+  } else if (typeof res.json === 'function') {
+    data = await res.json().catch(() => null)
   }
   if (!res.ok) {
     const message = data && typeof data === 'object' && typeof (data as { error?: unknown }).error === 'string' ? (data as { error: string }).error : `HTTP ${res.status}`

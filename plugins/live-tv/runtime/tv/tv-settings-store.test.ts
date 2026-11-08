@@ -3,7 +3,7 @@ import { BUILTIN_HUB_ROWS } from './hub-rows'
 import { DEFAULT_REMOTE_BINDINGS } from './remote-keys'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
-import { FALLBACK_AFTER_OPTIONS, nextFallbackAfter, TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
+import { FALLBACK_AFTER_OPTIONS, nextFallbackAfter, TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId, nextRecordEndLate, nextRecordStartEarly, recordMargins } from './tv-settings-store'
 
 beforeEach(() => __resetForTests())
 
@@ -34,6 +34,10 @@ describe('tv-settings-store', () => {
       remoteKeys: DEFAULT_REMOTE_BINDINGS,
       railHidden: false,
       heroFull: false,
+      recordingEnabled: true,
+      recordStartEarlyMin: 1,
+      recordEndLateMin: 5,
+      recordNotify: true,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
@@ -131,5 +135,25 @@ describe('tv-settings-store', () => {
     setTvSettings({ liveBgColor: '#203040', liveBackground: 'night' })
     setTvSettings({ liveBgColor: null })
     expect(getTvSettings()).toMatchObject({ liveBgColor: null, liveBackground: 'night' })
+  })
+
+  it('sanitize fills recording defaults', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, {})
+    const s = getTvSettings()
+    expect(s.recordingEnabled).toBe(true)
+    expect(s.recordStartEarlyMin).toBe(1)
+    expect(s.recordEndLateMin).toBe(5)
+    expect(s.recordNotify).toBe(true)
+  })
+
+  it('sanitize rejects unknown margins and keeps valid ones', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { recordStartEarlyMin: 7, recordEndLateMin: 15, recordingEnabled: false })
+    const s = getTvSettings()
+    expect(s.recordStartEarlyMin).toBe(1)
+    expect(s.recordEndLateMin).toBe(15)
+    expect(s.recordingEnabled).toBe(false)
+    expect(recordMargins(s)).toEqual({ startEarlyMin: 1, endLateMin: 15 })
+    expect(nextRecordStartEarly(5)).toBe(0)
+    expect(nextRecordEndLate(15)).toBe(0)
   })
 })

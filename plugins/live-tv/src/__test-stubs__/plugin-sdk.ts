@@ -976,3 +976,11 @@ export function openCouchTip(m: TipMatchInfo, starterPhoneId: string | null): bo
 export async function showSystemNotification(_n: { id: string; title: string; body?: string; channelName?: string; openPage?: { pageId: string; params?: Record<string, string> } }): Promise<boolean> {
   return false
 }
+
+// Skrivbordsvärdens hjälpare (recording-settings.tsx läser dem valfritt): ingen dator i testerna.
+export function isPluginDesktopHost(): boolean {
+  return false
+}
+export async function pickPluginFolder(): Promise<string | null> {
+  return null
+}
