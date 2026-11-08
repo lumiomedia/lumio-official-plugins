@@ -19474,7 +19474,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -55776,6 +55775,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const rec = await request(`${RECORD_API}/stop`, jsonInit("POST", { id }));
     mergeIntoCache(rec);
     void refreshRecordings({ afterWrite: true });
+    if (rec?.status === "recording") setTimeout(() => {
+      void refreshRecordings({ afterWrite: true });
+    }, 2e3);
     return rec;
   }
   async function deleteRecording(id) {
