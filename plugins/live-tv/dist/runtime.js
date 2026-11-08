@@ -55768,27 +55768,44 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   async function scheduleRecording(body) {
     const rec = await request(`${RECORD_API}/schedule`, jsonInit("POST", body));
-    void refreshRecordings();
+    mergeIntoCache(rec);
+    void refreshRecordings({ afterWrite: true });
     return rec;
   }
   async function stopRecording(id) {
     const rec = await request(`${RECORD_API}/stop`, jsonInit("POST", { id }));
-    void refreshRecordings();
+    mergeIntoCache(rec);
+    void refreshRecordings({ afterWrite: true });
     return rec;
   }
   async function deleteRecording(id) {
     await request(`${RECORD_API}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-    void refreshRecordings();
+    if (cache9) {
+      cache9 = { ...cache9, recordings: cache9.recordings.filter((r) => r.id !== id) };
+      emit5();
+    }
+    void refreshRecordings({ afterWrite: true });
   }
   async function saveRecordSettings(s) {
     await request(`${RECORD_API}/settings`, jsonInit("POST", { folder: s.folder ?? null, keepFreeGb: s.keepFreeGb }));
-    void refreshRecordings();
+    void refreshRecordings({ afterWrite: true });
   }
   function getCachedRecordings() {
     return cache9;
   }
-  function refreshRecordings() {
-    if (inflight11) return inflight11;
+  function mergeIntoCache(rec) {
+    if (!rec || typeof rec !== "object" || typeof rec.id !== "string") return;
+    const base2 = cache9 ?? { recordings: [], folder: null, freeBytes: null, keepFreeBytes: 0 };
+    const rest = base2.recordings.filter((r) => r.id !== rec.id);
+    cache9 = { ...base2, recordings: [...rest, rec] };
+    emit5();
+  }
+  function refreshRecordings(opts) {
+    if (inflight11) {
+      if (!opts?.afterWrite) return inflight11;
+      const again2 = inflight11.then(() => refreshRecordings());
+      return again2;
+    }
     inflight11 = listRecordings().then((list) => {
       cache9 = list;
       return list;
@@ -57800,11 +57817,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const settings = useTvSettings();
     const { list } = useRecordings(false);
     const active5 = recordingFor(list, channelKey(channel), null);
+    const busy = useRef(false);
     const toggle = useCallback(async () => {
+      if (busy.current) return;
+      busy.current = true;
       try {
         if (active5) await stopRecording(active5.id);
         else await scheduleRecording(planFromNow(channel, now2, nowMs, recordMargins(settings)));
       } catch {
+      } finally {
+        busy.current = false;
       }
     }, [active5, channel, now2, nowMs, settings]);
     return { enabled: settings.recordingEnabled, active: active5, toggle };
