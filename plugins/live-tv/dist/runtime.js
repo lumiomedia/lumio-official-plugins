@@ -19474,6 +19474,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -73580,6 +73581,64 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function normaliseTitle(title) {
     return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
+  var COUNTRY_LANG = {
+    se: "sv-SE",
+    no: "nb-NO",
+    dk: "da-DK",
+    fi: "fi-FI",
+    is: "is-IS",
+    de: "de-DE",
+    at: "de-AT",
+    ch: "de-CH",
+    fr: "fr-FR",
+    be: "fr-BE",
+    es: "es-ES",
+    mx: "es-MX",
+    ar: "es-AR",
+    it: "it-IT",
+    nl: "nl-NL",
+    pl: "pl-PL",
+    pt: "pt-PT",
+    br: "pt-BR",
+    cz: "cs-CZ",
+    hu: "hu-HU",
+    ro: "ro-RO",
+    gr: "el-GR",
+    tr: "tr-TR",
+    ru: "ru-RU",
+    ua: "uk-UA",
+    uk: "en-GB",
+    gb: "en-GB",
+    ie: "en-IE",
+    us: "en-US",
+    ca: "en-CA",
+    au: "en-AU",
+    nz: "en-NZ"
+  };
+  var GROUP_LANG = [
+    [/sweden|sverige|swedish|se/i, "sv-SE"],
+    [/norway|norge|norsk|no/i, "nb-NO"],
+    [/denmark|danmark|dansk|dk/i, "da-DK"],
+    [/finland|suomi|fi/i, "fi-FI"],
+    [/germany|deutschland|german|de/i, "de-DE"],
+    [/france|french|fr/i, "fr-FR"],
+    [/spain|españa|spanish|es/i, "es-ES"],
+    [/italy|italia|italian|it/i, "it-IT"],
+    [/netherlands|nederland|dutch|nl/i, "nl-NL"],
+    [/poland|polska|polish|pl/i, "pl-PL"],
+    [/portugal|pt/i, "pt-PT"],
+    [/brazil|brasil/i, "pt-BR"],
+    [/united kingdom|uk|britain|england/i, "en-GB"],
+    [/usa|united states|us|canada|australia/i, "en-US"]
+  ];
+  function epgLanguageFor(channel) {
+    const tvg = (channel.tvgId ?? "").trim().toLowerCase();
+    const suffix = tvg.includes(".") ? tvg.slice(tvg.lastIndexOf(".") + 1) : "";
+    if (suffix && COUNTRY_LANG[suffix]) return COUNTRY_LANG[suffix];
+    const group = channel.group ?? "";
+    for (const [re, lang] of GROUP_LANG) if (re.test(group)) return lang;
+    return void 0;
+  }
   var BROADCAST_TITLE = /\b(live|news|nyheter|nachrichten|noticias|journal|highlights?|vs|v|day \d+|dag \d+|matchday|round \d+)\b/;
   var BROADCAST_GROUP = /sport|news|nyheter|nachrichten|noticias|info/i;
   function looksLikeBroadcast(title, channel) {
@@ -73633,13 +73692,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const timer5 = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS3);
     let url = null;
     try {
-      const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}`, { signal: abort.signal });
+      const lang = job.language ? `&language=${encodeURIComponent(job.language)}` : "";
+      const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}${lang}`, { signal: abort.signal });
       if (res.ok) {
         const data = await res.json();
         const items2 = Array.isArray(data.items) ? data.items : [];
         const match = items2.find((item) => {
           const titles = [item.title, ...Array.isArray(item.searchTitles) ? item.searchTitles : []];
-          return titles.some((t) => typeof t === "string" && normaliseTitle(t) === job.key);
+          return titles.some((t) => typeof t === "string" && normaliseTitle(t) === normaliseTitle(job.title));
         });
         url = match && typeof match.backdropUrl === "string" && match.backdropUrl ? match.backdropUrl : null;
         remember3(job.key, url);
@@ -73653,8 +73713,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       pump();
     }
   }
+  function artCacheKey(title, language) {
+    const base2 = normaliseTitle(title);
+    return language ? `${base2}@${language.toLowerCase()}` : base2;
+  }
   function lookUpArt(title, opts = {}) {
-    const key = normaliseTitle(title);
+    const key = artCacheKey(title, opts.language);
     const hit = cached(key);
     if (hit) return Promise.resolve(hit.url);
     let job = jobs.get(key);
@@ -73663,7 +73727,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const promise = new Promise((r) => {
         resolve = r;
       });
-      job = { key, title, waiters: 0, started: false, promise, resolve };
+      job = { key, title, language: opts.language, waiters: 0, started: false, promise, resolve };
       jobs.set(key, job);
       queue2.push(job);
     }
@@ -73684,16 +73748,17 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const icon = programme?.icon ?? null;
     const title = programme?.title ?? null;
     const wanted = !icon && opts.lookup && title !== null && !looksLikeBroadcast(title, channel);
+    const language = epgLanguageFor(channel);
     const [found, setFound] = useState(() => {
       if (!wanted || title === null) return null;
-      const hit = cached(normaliseTitle(title));
+      const hit = cached(artCacheKey(title, language));
       return hit ? { title, url: hit.url } : null;
     });
     useEffect(() => {
       if (!wanted || title === null) return;
       if (found?.title === title) return;
       const gone = new AbortController();
-      void lookUpArt(title, { signal: gone.signal }).then((url) => {
+      void lookUpArt(title, { signal: gone.signal, language }).then((url) => {
         if (!gone.signal.aborted) setFound({ title, url });
       });
       return () => gone.abort();
