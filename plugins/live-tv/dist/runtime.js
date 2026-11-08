@@ -19474,6 +19474,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -55738,6 +55739,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function recordingStreamUrl(id) {
     return `${RECORD_API}/stream/${encodeURIComponent(id)}.ts`;
   }
+  function recordingPlayUrl(id) {
+    const origin = typeof window !== "undefined" && window.location?.origin && window.location.origin !== "null" ? window.location.origin : "http://127.0.0.1:3011";
+    return `${origin}${recordingStreamUrl(id)}`;
+  }
   async function request(path, init) {
     const res = await fetch(path, init);
     let data = null;
@@ -84848,7 +84853,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     return props.phone ? /* @__PURE__ */ jsx(TvRecordingsPhone, { ...props }) : /* @__PURE__ */ jsx(TvRecordingsDesktop, { ...props });
   }
   function useActions(nav, tt) {
-    const play = (r) => nav.playStream({ url: recordingStreamUrl(r.id), title: r.title });
+    const play = (r) => nav.playStream({ url: recordingPlayUrl(r.id), title: r.title });
     const confirmDelete = (r, element) => nav.openMenu({
       title: tt("recDeleteConfirm"),
       element,
@@ -84868,7 +84873,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         void stopRecording(r.id).catch(() => {
         });
       } });
-      actions.push({ key: "delete", label: tt("recDelete"), run: () => confirmDelete(r, element) });
+      actions.push({ key: "delete", label: tt("recDelete"), run: () => {
+        window.setTimeout(() => confirmDelete(r, element), 60);
+      } });
       nav.openMenu({ title: r.title, element, actions });
     };
     const ok = (r, element) => {

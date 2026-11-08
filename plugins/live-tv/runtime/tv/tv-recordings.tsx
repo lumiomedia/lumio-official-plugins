@@ -5,7 +5,7 @@ import { formatClock } from '../live-tv-ui'
 import type { TvViewProps } from './tv-shell'
 import { Icons, TV, Tag, cardStyle, dp, station } from './tv-ui'
 import { useTvText, type TvStringKey } from './tv-strings'
-import { deleteRecording, formatBytes, recordingStreamUrl, stopRecording, useRecordings, type RecStatus, type Recording } from '../recordings'
+import { deleteRecording, formatBytes, recordingPlayUrl, stopRecording, useRecordings, type RecStatus, type Recording } from '../recordings'
 import { MT, ellipsis } from './mobile/mobile-tokens'
 import { MobileHeader } from './mobile/mobile-header'
 
@@ -61,7 +61,7 @@ export function TvRecordings(props: TvViewProps) {
 }
 
 function useActions(nav: TvViewProps['nav'], tt: ReturnType<typeof useTvText>['tt']) {
-  const play = (r: Recording) => nav.playStream({ url: recordingStreamUrl(r.id), title: r.title })
+  const play = (r: Recording) => nav.playStream({ url: recordingPlayUrl(r.id), title: r.title })
   const confirmDelete = (r: Recording, element: HTMLElement) => nav.openMenu({
     title: tt('recDeleteConfirm'),
     element,
@@ -72,7 +72,9 @@ function useActions(nav: TvViewProps['nav'], tt: ReturnType<typeof useTvText>['t
     if (playable(r)) actions.push({ key: 'play', label: tt('recPlay'), run: () => play(r) })
     if (r.status === 'recording') actions.push({ key: 'stop', label: tt('stopRecording'), run: () => { void stopRecording(r.id).catch(() => {}) } })
     if (r.status === 'scheduled') actions.push({ key: 'cancel', label: tt('cancelRecording'), run: () => { void stopRecording(r.id).catch(() => {}) } })
-    actions.push({ key: 'delete', label: tt('recDelete'), run: () => confirmDelete(r, element) })
+    // Värdens glasmeny kör `run()` och stänger sig direkt efteråt — en meny som
+    // öppnas inuti `run` stängs i samma svep. Därför ett steg senare.
+    actions.push({ key: 'delete', label: tt('recDelete'), run: () => { window.setTimeout(() => confirmDelete(r, element), 60) } })
     nav.openMenu({ title: r.title, element, actions })
   }
   const ok = (r: Recording, element: HTMLElement) => {

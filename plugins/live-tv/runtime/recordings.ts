@@ -62,6 +62,12 @@ export function recordingStreamUrl(id: string): string {
   return `${RECORD_API}/stream/${encodeURIComponent(id)}.ts`
 }
 
+/** Absolut adress för spelaren: mpv och media3 öppnar ingen relativ sökväg. */
+export function recordingPlayUrl(id: string): string {
+  const origin = typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null' ? window.location.origin : 'http://127.0.0.1:3011'
+  return `${origin}${recordingStreamUrl(id)}`
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init)
   let data: unknown = null

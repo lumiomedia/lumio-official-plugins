@@ -61,7 +61,7 @@ describe('TvRecordings', () => {
     fireEvent.click(screen.getByTestId('rec-card-done1'))
     expect(n.playStream).toHaveBeenCalledTimes(1)
     const req = n.playStream.mock.calls[0]![0] as { url: string; title: string }
-    expect(req.url).toBe('/api/live-tv/record/stream/done1.ts')
+    expect(req.url).toMatch(/^https?:\/\/.+\/api\/live-tv\/record\/stream\/done1\.ts$/)
     expect(req.title).toBe('Klar')
   })
 
@@ -75,7 +75,12 @@ describe('TvRecordings', () => {
     fireEvent.contextMenu(screen.getByTestId('rec-card-done1'))
     menu = n.openMenu.mock.calls.at(-1)![0] as { actions: { label: string; run: () => void }[] }
     expect(menu.actions.map((a) => a.label)).toEqual(['Play', 'Delete'])
+    vi.useFakeTimers()
     menu.actions[1]!.run()
+    // Bekräftelsen kommer ett steg efter att värdens meny stängt sig.
+    expect(n.openMenu.mock.calls).toHaveLength(2)
+    vi.advanceTimersByTime(100)
+    vi.useRealTimers()
     const confirm = n.openMenu.mock.calls.at(-1)![0] as { title: string; actions: { label: string }[] }
     expect(confirm.title).toBe('Delete the recording and its file?')
   })
