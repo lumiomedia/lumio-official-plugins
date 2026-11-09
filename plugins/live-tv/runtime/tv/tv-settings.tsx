@@ -10,6 +10,7 @@ import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, us
 import { ContentTab, EpgTab, GuideAlertsTab, Heading, HelpTab, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { hubText } from '../hub-strings'
 import { HubRowsSection } from './hub-rows-settings'
+import { RecordingSettingsRows } from '../recording-settings'
 import { RemoteTab } from './remote-settings'
 import { ChannelOverridesSection } from './channel-overrides-settings'
 import { groupOrderLabelKey, nextGroupOrder } from '../group-order'
@@ -95,7 +96,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
         ))}
       </div>
       <div ref={contentRef} data-live-tv-settings-content="" data-scroll="" style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: `${dp(40)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(36) }}>
-        {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} /> : null}
+        {tab === 'appearance' ? <AppearanceTab settings={settings} tt={tt} nav={nav} /> : null}
         {tab === 'content' ? <><ContentTab model={model} nav={nav} tt={tt} /><ChannelOverridesSection tt={tt} /></> : null}
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
@@ -111,7 +112,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
 
 type TT = ReturnType<typeof useTvText>['tt']
 
-function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
+function AppearanceTab({ settings, tt, nav }: { settings: TvSettings; tt: TT; nav: TvViewProps['nav'] }) {
   const guideMode = useGuideMode()
   const tvMode = sdk.useTvMode()
   const [accent, setAccentState] = useState(() => (hasAccent ? accentApi.getAccent!() : ''))
@@ -180,6 +181,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Row testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
         <Row testId="setting-groupOrder" label={tt('settingGroupOrder')} right={tt(groupOrderLabelKey(settings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) })} />
       </section>
+      <RecordingSettingsRows settings={settings} tt={tt} onOpen={() => nav.go('recordings')} />
     </>
   )
 }

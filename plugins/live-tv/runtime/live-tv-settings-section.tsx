@@ -53,6 +53,7 @@ import { CategoriesDialog } from './category-curation-panel'
 import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
 import { FALLBACK_AFTER_OPTIONS, setTvSettings, useTvSettings, type FallbackAfterS } from './tv/tv-settings-store'
+import { RecordingSettingsDesktop, recordingSummary } from './recording-settings'
 import { START_VIEWS, startViewLabelKey } from './tv/start-view'
 import { GUIDE_CATEGORY_LAYOUTS, HUB_LAYOUTS, LIVE_BACKGROUNDS, guideCategoryLayoutLabelKey, hubLayoutLabelKey, liveBackgroundLabelKey, sanitizeHexColor } from './tv/v2-settings'
 import { LIVE_SURFACE_DEFAULT, v2Bg } from './tv/v2-tokens'
@@ -419,6 +420,8 @@ function DesktopPage() {
           />
         </LtRows>
       ))}
+
+      {section('recording', tt('settingRecording'), recordingSummary(tvSettings, tt), <RecordingSettingsDesktop tvSettings={tvSettings} tt={tt} />)}
 
       {vod.rows.length > 0 ? section('library', h('sectionLibrary'), sourcesText(vod.rows.length), <VodLibraryCardView controller={vod} bare />) : null}
 

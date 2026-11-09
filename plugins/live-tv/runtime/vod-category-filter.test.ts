@@ -7,9 +7,12 @@ describe('vodImportFilter', () => {
   it('skickar ingenting före migreringen (okänt om källan är ny)', () => {
     expect(vodImportFilter('xtream://a/1')).toEqual({})
   })
-  it('en ny källa efter migreringen väntar på valet', async () => {
+  it('en ny källa efter migreringen hämtas i sin helhet — kategorierna väljs bort i efterhand', async () => {
+    // Förut sköts hämtningen upp tills ett val gjorts, men valet går bara att
+    // göra när källan finns i VOD-indexet: ett nytt konto fick aldrig film och
+    // serier (Jerry 2026-11-09). Hela katalogen först, gallring sedan.
     await ensureVodChoiceMigrated(async () => [])
-    expect(vodImportFilter('xtream://a/1')).toEqual({ vodDefer: true })
+    expect(vodImportFilter('xtream://a/1')).toEqual({})
   })
   it('ett val med bortvalda kategorier skickar nycklarna', async () => {
     await ensureVodChoiceMigrated(async () => [])

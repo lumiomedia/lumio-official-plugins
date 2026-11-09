@@ -16,6 +16,7 @@ import { currentMatchSources, matchesForPlayer } from '../../sport/tv/player-spo
 import { PhoneMatchList } from '../../sport/mobile/player-matches-phone'
 import { pickMultiviewKeys } from '../../sport/sport-day-model'
 import { displayTitle } from '../../display-title'
+import { useChannelRecording } from '../../use-channel-recording'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -93,6 +94,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
   const [sheet, setSheet] = useState<Sheet>(null)
   const timerRef = useRef<number | null>(null)
   const info = tv.nowFor(channel)
+  const rec = useChannelRecording(channel, info.now, tv.nowMs)
   const hideMs = tv.bannerHideMs
 
   const clearTimer = useCallback(() => {
@@ -176,6 +178,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
     { key: 'pause', label: paused ? tt('menuResume') : tt('menuPause'), run: onTogglePause },
     { key: 'fav', label: favLabel, run: tv.onToggleFavourite },
     { key: 'info', label: tt('menuChannelDetails'), run: tv.onOpenChannelDetails },
+    ...(rec.enabled ? [{ key: 'record', label: rec.active ? tt('stopRecording') : tt('record'), run: () => { void rec.toggle() } }] : []),
   ]
   // Matchen som spelar och dess källor — ur dagens redan hämtade matcher, inga anrop.
   const currentKey = channelKey(channel)

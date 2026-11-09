@@ -18,6 +18,7 @@ import {
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
+import { ensureVodChoiceMigrated, isVodChoiceMade } from './vod-category-filter'
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: () => Promise.resolve(body) } as Response
@@ -179,6 +180,28 @@ describe('importMissingSources', () => {
     expect(list?.lastImportError).toBeUndefined()
   })
 
+  it('en lyckad import av ett nytt Xtream-konto räknar katalogvalet som gjort (allt med), så biblioteket byggs av sig självt', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/status')) return jsonResponse({ sources: [] })
+      if (s.includes('/api/live-tv/import/status')) return jsonResponse({ state: 'done', received: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
+      if (s.includes('/api/live-tv/import')) return jsonResponse({ job: 'job-1' })
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    await ensureVodChoiceMigrated(async () => [])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [
+      { id: 'login9', base: 'http://panel.test', username: 'u', password: 'p', format: 'ts', categoryIds: [] },
+    ])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'x9', name: 'Panel', kind: 'xtream', source: 'xtream://panel.test/login9', xtreamLoginId: 'login9' }),
+    ])
+    expect(isVodChoiceMade('xtream://panel.test/login9')).toBe(false)
+
+    await importMissingSources()
+
+    expect(isVodChoiceMade('xtream://panel.test/login9')).toBe(true)
+  })
+
   it('importerar bara källor som SAKNAS i indexet (appens objektform)', async () => {
     // `/api/live-tv/status` svarar med objekt, inte strängar. Så länge
     // klienten jämförde mot objekten var ingen källa någonsin "känd" och
@@ -253,6 +276,42 @@ describe('deleteLiveTvList', () => {
     await vi.waitFor(() => expect(changed).toHaveBeenCalled())
     window.removeEventListener('lumio-live-tv-index-changed', changed)
     expect(getLiveTvLists()).toHaveLength(0)
+  })
+
+  it('nollar också föräldralösa indexkällor från samma panel (äldre inloggnings-id)', async () => {
+    // Indexet bar kanaler och VOD under ett tidigare inloggnings-id för samma
+    // panel. Listan pekade på det nya id:t, så raderingen nollade fel källa och
+    // kanaler, guide och bibliotek levde kvar utan lista (Jerry 2026-11-09).
+    const resets: string[] = []
+    const forgets: string[] = []
+    const libraryResets: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const s = String(url)
+      const body = () => JSON.parse(String(init?.body ?? '{}')) as { source?: string; sourceId?: string }
+      if (s.includes('/api/library/reset')) { libraryResets.push(body().sourceId ?? ''); return jsonResponse({ ok: true, removed: 1 }) }
+      if (s.includes('/api/live-tv/status')) {
+        return jsonResponse({ sources: [
+          { id: 'xtream://panel.test/old-login', channels: 5, updatedAt: 1 },
+          { id: 'http://other.tld/list.m3u', channels: 3, updatedAt: 1 },
+        ] })
+      }
+      if (s.includes('/api/live-tv/vod/status')) return jsonResponse({ sources: [{ id: 'xtream://panel.test/old-login', movies: 1, series: 0, total: 1, updatedAt: 1, importing: false }] })
+      if (s.includes('/api/live-tv/vod/forget')) { forgets.push(body().source ?? ''); return jsonResponse({ ok: true }) }
+      if (s.includes('/api/live-tv/reset')) { resets.push(body().source ?? ''); return jsonResponse({ ok: true, removed: 1 }) }
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'x1', name: 'panel.test', kind: 'xtream', source: 'xtream://panel.test/login1', xtreamLoginId: 'login1' }),
+    ])
+
+    deleteLiveTvList('x1')
+
+    await vi.waitFor(() => expect(resets).toEqual(expect.arrayContaining(['xtream://panel.test/login1', 'xtream://panel.test/old-login'])))
+    expect(resets).not.toContain('http://other.tld/list.m3u')
+    expect(forgets).toContain('xtream://panel.test/old-login')
+    // Biblioteksindexet (Använd som bibliotek) släpper också båda kontona —
+    // annars ägde det gamla kontots titlar startsidan efter borttagningen.
+    await vi.waitFor(() => expect(libraryResets).toEqual(expect.arrayContaining(['xtream-vod:xtream://panel.test/login1', 'xtream-vod:xtream://panel.test/old-login'])))
   })
 
   it('rör inte indexet för en custom-lista (kanalerna bor i listan)', async () => {

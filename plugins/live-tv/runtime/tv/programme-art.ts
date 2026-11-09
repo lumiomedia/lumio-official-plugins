@@ -38,6 +38,8 @@ type Entry = { url: string | null; at: number }
 interface Job {
   key: string
   title: string
+  /** TMDb-språket för uppslaget (`sv-SE`); saknas = appens språk. */
+  language?: string
   waiters: number
   started: boolean
   promise: Promise<string | null>
@@ -66,6 +68,31 @@ export function __resetProgrammeArtForTests(): void {
 
 export function normaliseTitle(title: string): string {
   return title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+/**
+ * Tablåns språk ur kanalen, för TMDb-uppslaget: en svensk tablå skriver
+ * "Svampbob Fyrkant", och bara ett svenskt svar från TMDb heter så. Landet i
+ * tvg-id:t (`Nickelodeon.se`) vinner, sedan gruppens namn; okänt → appens språk.
+ */
+const COUNTRY_LANG: Record<string, string> = {
+  se: 'sv-SE', no: 'nb-NO', dk: 'da-DK', fi: 'fi-FI', is: 'is-IS', de: 'de-DE', at: 'de-AT', ch: 'de-CH', fr: 'fr-FR', be: 'fr-BE',
+  es: 'es-ES', mx: 'es-MX', ar: 'es-AR', it: 'it-IT', nl: 'nl-NL', pl: 'pl-PL', pt: 'pt-PT', br: 'pt-BR', cz: 'cs-CZ', hu: 'hu-HU',
+  ro: 'ro-RO', gr: 'el-GR', tr: 'tr-TR', ru: 'ru-RU', ua: 'uk-UA', uk: 'en-GB', gb: 'en-GB', ie: 'en-IE', us: 'en-US', ca: 'en-CA', au: 'en-AU', nz: 'en-NZ',
+}
+const GROUP_LANG: [RegExp, string][] = [
+  [/sweden|sverige|swedish|se/i, 'sv-SE'], [/norway|norge|norsk|no/i, 'nb-NO'], [/denmark|danmark|dansk|dk/i, 'da-DK'], [/finland|suomi|fi/i, 'fi-FI'],
+  [/germany|deutschland|german|de/i, 'de-DE'], [/france|french|fr/i, 'fr-FR'], [/spain|españa|spanish|es/i, 'es-ES'], [/italy|italia|italian|it/i, 'it-IT'],
+  [/netherlands|nederland|dutch|nl/i, 'nl-NL'], [/poland|polska|polish|pl/i, 'pl-PL'], [/portugal|pt/i, 'pt-PT'], [/brazil|brasil/i, 'pt-BR'],
+  [/united kingdom|uk|britain|england/i, 'en-GB'], [/usa|united states|us|canada|australia/i, 'en-US'],
+]
+export function epgLanguageFor(channel: Pick<M3uChannel, 'name' | 'group' | 'tvgId'>): string | undefined {
+  const tvg = (channel.tvgId ?? '').trim().toLowerCase()
+  const suffix = tvg.includes('.') ? tvg.slice(tvg.lastIndexOf('.') + 1) : ''
+  if (suffix && COUNTRY_LANG[suffix]) return COUNTRY_LANG[suffix]
+  const group = channel.group ?? ''
+  for (const [re, lang] of GROUP_LANG) if (re.test(group)) return lang
+  return undefined
 }
 
 const BROADCAST_TITLE = /\b(live|news|nyheter|nachrichten|noticias|journal|highlights?|vs|v|day \d+|dag \d+|matchday|round \d+)\b/
@@ -134,13 +161,14 @@ async function run(job: Job): Promise<void> {
   const timer = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS)
   let url: string | null = null
   try {
-    const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}`, { signal: abort.signal })
+    const lang = job.language ? `&language=${encodeURIComponent(job.language)}` : ''
+    const res = await fetch(`/api/media?titleQuery=${encodeURIComponent(job.title)}${lang}`, { signal: abort.signal })
     if (res.ok) {
       const data = (await res.json()) as { items?: MediaItem[] }
       const items = Array.isArray(data.items) ? data.items : []
       const match = items.find((item) => {
         const titles = [item.title, ...(Array.isArray(item.searchTitles) ? item.searchTitles : [])]
-        return titles.some((t) => typeof t === 'string' && normaliseTitle(t) === job.key)
+        return titles.some((t) => typeof t === 'string' && normaliseTitle(t) === normaliseTitle(job.title))
       })
       url = match && typeof match.backdropUrl === 'string' && match.backdropUrl ? match.backdropUrl : null
       remember(job.key, url)
@@ -161,15 +189,20 @@ async function run(job: Job): Promise<void> {
  * `signal`: den som väntar har gått vidare. Väntar ingen annan och har
  * uppslaget inte startat stryks det ur kön — det kostar ingen plats i taket.
  */
-export function lookUpArt(title: string, opts: { signal?: AbortSignal } = {}): Promise<string | null> {
-  const key = normaliseTitle(title)
+export function artCacheKey(title: string, language?: string): string {
+  const base = normaliseTitle(title)
+  return language ? `${base}@${language.toLowerCase()}` : base
+}
+
+export function lookUpArt(title: string, opts: { signal?: AbortSignal; language?: string } = {}): Promise<string | null> {
+  const key = artCacheKey(title, opts.language)
   const hit = cached(key)
   if (hit) return Promise.resolve(hit.url)
   let job = jobs.get(key)
   if (!job) {
     let resolve!: (url: string | null) => void
     const promise = new Promise<string | null>((r) => { resolve = r })
-    job = { key, title, waiters: 0, started: false, promise, resolve }
+    job = { key, title, language: opts.language, waiters: 0, started: false, promise, resolve }
     jobs.set(key, job)
     queue.push(job)
   }
@@ -195,16 +228,17 @@ export function useProgrammeArt(channel: M3uChannel, programme: EpgProgramme | n
   const icon = programme?.icon ?? null
   const title = programme?.title ?? null
   const wanted = !icon && opts.lookup && title !== null && !looksLikeBroadcast(title, channel)
+  const language = epgLanguageFor(channel)
   const [found, setFound] = useState<{ title: string; url: string | null } | null>(() => {
     if (!wanted || title === null) return null
-    const hit = cached(normaliseTitle(title))
+    const hit = cached(artCacheKey(title, language))
     return hit ? { title, url: hit.url } : null
   })
   useEffect(() => {
     if (!wanted || title === null) return
     if (found?.title === title) return
     const gone = new AbortController()
-    void lookUpArt(title, { signal: gone.signal }).then((url) => { if (!gone.signal.aborted) setFound({ title, url }) })
+    void lookUpArt(title, { signal: gone.signal, language }).then((url) => { if (!gone.signal.aborted) setFound({ title, url }) })
     return () => gone.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, title])

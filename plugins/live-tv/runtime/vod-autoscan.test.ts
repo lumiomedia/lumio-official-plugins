@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
 vi.mock('@/lib/plugin-sdk', async (orig) => ({ ...(await orig<object>()), fetchLibraryStatus: vi.fn(), isLibraryScanRunning: vi.fn(() => false), runLibraryScan: vi.fn(async () => {}) }))
 vi.mock('./vod-client', async (orig) => ({ ...(await orig<object>()), vodStatus: vi.fn() }))
 import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/plugin-sdk'
 import { vodStatus, type VodSourceStatus } from './vod-client'
-import { maybeAutoScanVod, resetVodAutoScanForTests, retryDelayMs, vodHomeState } from './vod-autoscan'
+import { VOD_READY_EVENT, maybeAutoScanVod, resetVodAutoScanForTests, retryDelayMs, vodHomeState, vodHomeStatus } from './vod-autoscan'
 import { setVodMode } from './vod-data'
 import { ensureVodChoiceMigrated, resetVodCategoryChoiceForTests, setVodCategoryChoice } from './vod-category-filter'
 
@@ -99,6 +101,33 @@ describe('maybeAutoScanVod', () => {
     expect(await maybeAutoScanVod()).toBe('started')
     expect(runLibraryScan).toHaveBeenCalledTimes(1)
   })
+  it('säger till när genomgången blev färdig, så skalet kan visa att Hem är redo', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([source('a')])
+    vi.mocked(fetchLibraryStatus).mockResolvedValueOnce(status([]))
+    vi.mocked(runLibraryScan).mockImplementationOnce(async () => {
+      vi.mocked(fetchLibraryStatus).mockResolvedValue(status([{ id: 'xtream-vod:a', lastFullSync: 7 }]))
+    })
+    const ready = vi.fn()
+    window.addEventListener(VOD_READY_EVENT, ready)
+    try {
+      expect(await maybeAutoScanVod()).toBe('started')
+      expect(ready).toHaveBeenCalledTimes(1)
+    } finally {
+      window.removeEventListener(VOD_READY_EVENT, ready)
+    }
+  })
+  it('ingen signal när genomgången inte blev färdig', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([source('a')])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    const ready = vi.fn()
+    window.addEventListener(VOD_READY_EVENT, ready)
+    try {
+      expect(await maybeAutoScanVod()).toBe('started')
+      expect(ready).not.toHaveBeenCalled()
+    } finally {
+      window.removeEventListener(VOD_READY_EVENT, ready)
+    }
+  })
   it('källor som fanns före funktionen räknas som valda', async () => {
     vi.mocked(vodStatus).mockResolvedValue([source('gammal')])
     vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
@@ -113,6 +142,9 @@ describe('vodHomeState: vad Hem väntar på', () => {
     expect(await vodHomeState()).toBe('ready')
     vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
     vi.mocked(vodStatus).mockResolvedValue([])
+    // Utan någon spellista alls är beskedet ett annat: det finns inget att vänta på.
+    expect(await vodHomeState()).toBe('no-playlist')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'm1', name: 'a.tld', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u', createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, channelCount: 0, groups: [] }])
     expect(await vodHomeState()).toBe('no-vod')
     vi.mocked(vodStatus).mockResolvedValue([{ ...source('a'), total: 0, importing: true }])
     expect(await vodHomeState()).toBe('importing')
@@ -123,6 +155,15 @@ describe('vodHomeState: vad Hem väntar på', () => {
     vi.mocked(isLibraryScanRunning).mockReturnValue(false)
     await maybeAutoScanVod()
     expect(await vodHomeState()).toBe('failed')
+  })
+  it('under genomgången: hur många titlar som är klara av hur många', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([{ ...source('a'), total: 8148 }])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([{ id: 'xtream-vod:a', titles: 400, lastFullSync: null }]))
+    vi.mocked(isLibraryScanRunning).mockReturnValue(true)
+    expect(await vodHomeStatus()).toEqual({ state: 'indexing', indexed: 400, total: 8148 })
+    // Innan något byggts finns inget att räkna.
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    expect(await vodHomeStatus()).toEqual({ state: 'indexing', indexed: null, total: 8148 })
   })
   it('en ny källa utan kategorival', async () => {
     await ensureVodChoiceMigrated(async () => [])

@@ -281,6 +281,9 @@ function createHtmlSession(url: string, muted: boolean, onReady: () => void, onF
  * stället rutans skärmkoordinater, uppdaterade av ResizeObserver + resize +
  * scroll. De lyssnarna registreras bara för de motorerna.
  */
+/** Så länge en värdyta får vänta på första bildrutan innan den tas om. */
+export const NO_FRAME_RETRY_MS = 10_000
+
 export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: SurfaceSource | null, options: VideoSurfaceOptions): VideoSurfaceHandle {
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -291,6 +294,8 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
   // sekunden efter.
   const [attempt, setAttempt] = useState(0)
   const idRef = useRef<symbol>(Symbol('surface'))
+  // Omtag utan bildruta (värdytor): en gång per kanal-URL.
+  const noFrameRetryRef = useRef<{ url: string | null; count: number }>({ url: null, count: 0 })
   const enabled = options.enabled !== false && source !== null
   const url = source?.url ?? null
   const muted = options.muted
@@ -324,7 +329,10 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     let setBounds: ((rect: Rect) => void) | null = null
     let closeSession: (() => Promise<void>) | null = null
     let readyTimer = 0
+    let noFrameTimer = 0
+    let gotFrame = false
     let spent = false
+    if (noFrameRetryRef.current.url !== url) noFrameRetryRef.current = { url, count: 0 }
     // Liveformatet (live-format.ts): nativemotorerna öppnar HLS när listan
     // vill det. HTML-motorn (webbläsaren) behåller kanalens egen URL — den
     // går genom värdens proxy och omkodning ändå.
@@ -333,7 +341,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     // finns (hls-playlist-proxy.ts). `playUrl` förblir panelens adress för
     // TS-reserven och loggen.
     const openUrl = caps.engine === 'html' ? url : nativeLiveOpenUrl(playUrl)
-    const markReady = () => { if (!cancelled) setReady(true) }
+    const markReady = () => { gotFrame = true; if (!cancelled) setReady(true) }
     const markFailed = () => {
       // HLS föll: ta om rutan som TS (en gång per kanal och session).
       if (!cancelled && shouldFallBackToTs(url, playUrl, 0)) {
@@ -385,6 +393,16 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
         sync()
         await surface.open({ url: openUrl, muted }).catch(markFailed)
         sync()
+        // Ingen bildruta på NO_FRAME_RETRY_MS: ta om ytan EN gång. På ett
+        // konto med en anslutning kan panelen ha räknat förra strömmen ett
+        // tag till, och då får den första öppningen aldrig någon data.
+        if (!cancelled && noFrameRetryRef.current.count < 1) {
+          noFrameTimer = window.setTimeout(() => {
+            if (cancelled || gotFrame || spent) return
+            noFrameRetryRef.current.count += 1
+            void closeOnce().then(() => { if (!cancelled) setAttempt((n) => n + 1) })
+          }, NO_FRAME_RETRY_MS)
+        }
         return
       }
       // mpv utan mute-brygga: exakt samma regel som droid nedan. `openMpvPlayer`
@@ -483,6 +501,7 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       cancelled = true
       dropCutout()
       window.clearTimeout(readyTimer)
+      window.clearTimeout(noFrameTimer)
       window.cancelAnimationFrame(settleFrame)
       settleTimers.forEach((timer) => window.clearTimeout(timer))
       observer?.disconnect()

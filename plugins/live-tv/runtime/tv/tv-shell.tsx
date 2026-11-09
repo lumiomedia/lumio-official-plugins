@@ -27,6 +27,7 @@ import { setChannelHidden, setChannelName, sourceName } from '../channel-overrid
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import { buildTvPlayerProps } from './tv-player-props'
+import { useRecordings } from '../recordings'
 import { multiviewFor, usePlayerSport } from '../sport/tv/player-sport'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
@@ -34,7 +35,7 @@ import { resolveStartView, startRootView } from './start-view'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
-import { maybeAutoScanVod, vodHomeState, type VodHomeState } from '../vod-autoscan'
+import { VOD_READY_EVENT, maybeAutoScanVod, vodHomeStatus, type VodHomeState } from '../vod-autoscan'
 import { onVodCategoryChoiceChanged } from '../vod-category-filter'
 import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHiddenForActivePlaylist, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
@@ -89,8 +90,8 @@ function SurfaceBackdrop({ cutouts, background }: { cutouts: SurfaceCutout[]; ba
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings' | 'sport'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings', 'sport']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings' | 'sport' | 'recordings' | 'preparing'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings', 'sport', 'recordings', 'preparing']
 
 /**
  * En VOD-uppspelning i APPENS spelare, inte Live TV:s.
@@ -161,14 +162,18 @@ type PlayerComponent = ComponentType<{
   tv?: LiveTvPlayerTvProps
 }>
 
-/** Hem-knappens besked när biblioteket inte finns, per orsak (vod-autoscan.ts `vodHomeState`). */
-const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
-  hidden: 'vodHomeHidden', 'no-vod': 'vodHomeNoVod', choose: 'vodHomeChoose', importing: 'vodHomeImporting',
-  indexing: 'vodHomeIndexing', failed: 'vodHomeRetrying', waiting: 'vodHomeIndexing',
+/**
+ * Hem när biblioteket inte finns (vod-autoscan.ts `vodHomeState`): pågår
+ * något öppnas förberedelsesidan (tv-vod-preparing.tsx) med förloppet; annars
+ * ett besked som säger vad användaren kan göra.
+ */
+const VOD_HOME_PREPARING = new Set<VodHomeState>(['importing', 'indexing', 'failed', 'waiting'])
+const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready' | 'importing' | 'indexing' | 'failed' | 'waiting'>, TvStringKey> = {
+  hidden: 'vodHomeHidden', 'no-playlist': 'vodHomeNoPlaylist', 'no-vod': 'vodHomeNoVod', choose: 'vodHomeChoose',
 }
 
 /** Vyerna som målas i v2-tonen (Kanaler, guiden och deras grannar i rälsen). */
-const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search'])
+const V2_BG_VIEWS = new Set<TvView>(['hub', 'guide', 'library', 'multi', 'favs', 'settings', 'search', 'recordings', 'preparing'])
 
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 /** Värdens Android-bakåtbrygga ber om menyn med den här händelsen när den inte ser någon öppen yta. */
@@ -218,6 +223,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   const { tt, locale } = useTvText()
   const model = useLiveTvModel()
   const settings = useTvSettings()
+  // Inspelningslistan hålls varm medan Live TV är öppet: hold-OK-menyn läser den synkront.
+  useRecordings(false)
   // Hål i skalets bakgrund åt nativa videoytor (multivy, förhandsvisningar).
   // Tom lista = ingen nativ yta lever, och skalet målas precis som förut.
   const cutouts = useSurfaceCutouts()
@@ -415,13 +422,14 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     if (vodHiddenForActivePlaylist()) { toast(tt('vodHomeHidden')); return }
     void hasVodIndex().then(async (ok) => {
       if (ok) { onNavigate(vodHomeTarget()); return }
-      const state = await vodHomeState()
+      const { state } = await vodHomeStatus()
       if (state === 'ready') { onNavigate(vodHomeTarget()); return }
+      // Pågår något visas sidan med förloppet (den startar också om ett misslyckat försök).
+      if (VOD_HOME_PREPARING.has(state)) { go('preparing'); return }
       // Beskeden säger vad användaren kan göra: de får stå kvar längre än ett kvitto.
-      toast(tt(VOD_HOME_TEXT[state]), 4000)
-      if (state === 'failed' || state === 'waiting') void maybeAutoScanVod({ force: true })
+      toast(tt(VOD_HOME_TEXT[state as keyof typeof VOD_HOME_TEXT]), 4000)
     })
-  }, [onNavigate, toast, tt])
+  }, [onNavigate, toast, tt, go])
 
   // Ett kategorival startar indexeringen direkt, och medan skalet är öppet prövas
   // biblioteket igen var femte minut (katalogen kan ha hämtats klart, eller ett
@@ -430,8 +438,12 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     if (sportOnly) return
     const off = onVodCategoryChoiceChanged(() => { void maybeAutoScanVod({ force: true }) })
     const timer = window.setInterval(() => { void maybeAutoScanVod() }, 5 * 60_000)
-    return () => { off(); window.clearInterval(timer) }
-  }, [sportOnly])
+    // Genomgången blev färdig: på förberedelsesidan går vi vidare till film och
+    // serier, annars ett besked om att Hem nu går att öppna (annars märks det aldrig).
+    const onReady = () => { if (view === 'preparing') onNavigate(vodHomeTarget()); else toast(tt('vodHomeReady'), 6000) }
+    window.addEventListener(VOD_READY_EVENT, onReady)
+    return () => { off(); window.clearInterval(timer); window.removeEventListener(VOD_READY_EVENT, onReady) }
+  }, [sportOnly, toast, tt, view, onNavigate])
 
   /**
    * Färskaste modellen i en ref.
@@ -887,6 +899,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
           isTv={isTv}
           narrow={narrow}
           labels={railLabels}
+          showRecordings={settings.recordingEnabled}
           onSelect={(key) => {
             if (key === 'back') requestBrowseBack()
             else if (key === 'home') goVodHome()
@@ -905,6 +918,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
           title={tt('moreActions')}
           items={[
             { key: 'favs', label: tt('sheetFavourites'), run: () => go('favs') },
+            ...(settings.recordingEnabled ? [{ key: 'recordings', label: tt('sheetRecordings'), run: () => go('recordings') }] : []),
             { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
             { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
           ]}

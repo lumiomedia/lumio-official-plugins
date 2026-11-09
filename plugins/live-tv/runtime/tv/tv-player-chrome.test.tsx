@@ -195,7 +195,8 @@ describe('TvPlayerChrome', () => {
     expect(menu).toHaveTextContent('Add to favourites')
     expect(menu).toHaveTextContent('Channel details')
     expect(menu).toHaveTextContent('Pause')
-    expect(menu).not.toHaveTextContent(/Record|Spela in/)
+    // Inspelning (live-tv 0.20.0): menyn har Spela in när funktionen är på.
+    expect(menu).toHaveTextContent('Record')
     fireEvent.click(screen.getByText('Guide (now / next)'))
     expect(screen.getByTestId('schedule-overlay')).toBeInTheDocument()
   })

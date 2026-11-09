@@ -81,4 +81,15 @@ export interface LiveTvPlayerControls {
   onCycleAspect(): void
   /** Bild-i-bild (telefon). Saknas när plattformen inte kan. */
   onEnterPip?(): void
+  /**
+   * Timeshift (mpv-motorn med bufferten på): det sökbara intervallet i
+   * sekunder, var vi är, och hur man flyttar sig. Saknas = som i dag.
+   */
+  timeshift?: {
+    range: { start: number; end: number }
+    timePos: number
+    onSeek(sec: number): void
+    onJump(deltaSec: number): void
+    onGoLive(): void
+  }
 }

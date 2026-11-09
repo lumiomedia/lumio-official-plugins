@@ -25,6 +25,20 @@ describe('shellToastStyle', () => {
   it('telefon utan flik-rad: bara systemradens marginal', () => {
     expect(String(shellToastStyle({ phone: true, tabBar: false }).bottom)).not.toContain('52px')
   })
+  it('centreras utan transform: lagrets intoning animerar transform och lät rutan hoppa in från höger', () => {
+    // `[data-live-tv-layer]` tonas in med en keyframe på `transform`. Med
+    // `translateX(-50%)` som centrering stod rutan med vänsterkanten i mitten
+    // under de 160 ms och hoppade sedan (Jerry 2026-11-09).
+    for (const opts of [{ phone: false, tabBar: false }, { phone: true, tabBar: true }]) {
+      const s = shellToastStyle(opts)
+      expect(s.transform).toBeUndefined()
+      expect(s.left).toBe(0)
+      expect(s.right).toBe(0)
+      expect(s.marginLeft).toBe('auto')
+      expect(s.marginRight).toBe('auto')
+      expect(s.width).toBe('max-content')
+    }
+  })
   it('TV/skrivbord: scenskala, men begränsad bredd och fast radie', () => {
     const s = shellToastStyle({ phone: false, tabBar: false })
     expect(s.fontSize).toBe(19)
@@ -36,12 +50,13 @@ describe('shellToastStyle', () => {
 
 describe('besked på telefonen', () => {
   afterEach(() => { LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [] } })
-  it('Hem utan VOD-index ger telefonstilen', async () => {
-    LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 0, lastFullSync: null }] } as typeof LIBRARY_STUB.status
+  it('Hem utan spellista ger telefonstilen', async () => {
+    // (Ett bibliotek som byggs öppnar förberedelsesidan i stället för ett besked.)
+    LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [] } as typeof LIBRARY_STUB.status
     mountPhone()
     fireEvent.click(screen.getByTestId('tab-home'))
     const toast = await screen.findByTestId('shell-toast')
-    expect(toast).toHaveTextContent('Film & series are being prepared')
+    expect(toast).toHaveTextContent('No playlist added yet')
     expect(toast.style.borderRadius).toBe('14px')
     expect(toast.style.fontSize).toBe('14px')
     expect(toast.style.maxWidth).toBe('calc(100vw - 32px)')

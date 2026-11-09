@@ -13,6 +13,7 @@ import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-type
 import { Icons, Progress, TV, Tag, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { displayTitle } from '../display-title'
+import { formatBehind, timeshiftModel } from '../timeshift'
 
 /*
  * Spelarkromets delar (skrivbord + TV) — den gamla layouten (före
@@ -99,7 +100,11 @@ function useReminded(channel: M3uChannel, programme: EpgProgramme | null): boole
 
 /* ---------------------------------------------------------------- Toppfält */
 
-export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }: {
+export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease, recording = false, behindMs = 0 }: {
+  /** Kanalen spelas in just nu: röd punkt + "Spelar in" i toppfältet. */
+  recording?: boolean
+  /** Timeshift: så här långt efter sändningen ligger vi (0 = live). */
+  behindMs?: number
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
@@ -120,7 +125,16 @@ export function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, 
       <div style={{ minWidth: 0, flex: '1 1 0', display: 'flex', alignItems: 'center', gap: ps(12) }}>
         <SmallLogo channel={channel} size={ps(32)} radius={ps(6)} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: ps(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: ps(8), minWidth: 0 }}>
+            <div style={{ fontSize: ps(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.channelNumber ? `${tv.channelNumber} · ` : ''}{channel.name}</div>
+            {recording ? (
+              <span data-testid="rec-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: ps(5), flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fecaca' }}>
+                <span style={{ width: ps(8), height: ps(8), borderRadius: 999, background: '#ef4444', boxShadow: '0 0 6px rgba(239,68,68,0.9)' }} />
+                {tt('recording')}
+              </span>
+            ) : null}
+            {behindMs > 0 ? <span data-testid="behind-badge" style={{ flexShrink: 0, fontSize: ps(11), fontWeight: 700, letterSpacing: '0.06em', color: '#fde68a', fontVariantNumeric: 'tabular-nums' }}>{formatBehind(behindMs)}</span> : null}
+          </div>
           {info.now ? (
             <div style={{ display: 'flex', alignItems: 'baseline', gap: ps(8), fontSize: ps(12), color: 'rgba(203,213,225,0.9)', minWidth: 0 }} title={displayTitle(info.now.title)}>
               <span style={{ fontSize: ps(9), fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(110,231,183,0.85)', flexShrink: 0 }}>{tt('gridNow')}</span>
@@ -179,7 +193,9 @@ export function PlayerNextUpCard({ channel, next, nowMs, locale, ps }: {
 
 /* ---------------------------------------------------------------- Kontrollrad */
 
-export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches }: {
+export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches, recording }: {
+  /** Inspelningsknappen (use-channel-recording.ts). Saknas eller `enabled: false` = ingen knapp. */
+  recording?: { enabled: boolean; active: boolean; onToggle: () => void }
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
@@ -227,6 +243,7 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
           <Progress value={progressOf(info.now.start, info.now.stop, tv.nowMs)} height={ps(4)} track="rgba(255,255,255,0.2)" />
         </div>
       ) : null}
+      {controls?.timeshift ? <TimeshiftBar ts={controls.timeshift} ps={ps} tt={tt} /> : null}
       {/* Raden scrollar i sidled hellre än radbryter: ett smalt fönster drar i raden som i en spelarkontroll. */}
       <div data-testid="control-row" data-row="" style={{ display: 'flex', alignItems: 'center', gap: ps(12), overflowX: 'auto', scrollbarWidth: 'none', borderRadius: ps(16), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.55)', padding: `${ps(10)}px ${ps(14)}px`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <div ref={dotsRef} {...station(onTogglePause, (el) => onOpenMenu(el), { 'data-init': '', 'aria-label': paused ? tt('menuResume') : tt('menuPause'), 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: 0 }}>
@@ -240,6 +257,11 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
         <div {...station(onToggleGuide, undefined, { 'aria-label': tt('playerGuide'), 'aria-pressed': guideOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, guideOpen), padding: 0 }}>
           <GuideIcon size={icon} />
         </div>
+        {recording?.enabled ? (
+          <div data-testid="player-record" {...station(recording.onToggle, undefined, { 'aria-label': recording.active ? tt('stopRecording') : tt('record'), 'aria-pressed': recording.active ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, recording.active), padding: 0, color: recording.active ? '#ef4444' : undefined }}>
+            <Icons.Record size={icon} filled={recording.active} />
+          </div>
+        ) : null}
         {sportAvailable && onToggleMatches ? (
           <div data-testid="player-matches" {...station(onToggleMatches, undefined, { 'aria-label': tt('sportMatches'), 'aria-pressed': matchesOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, matchesOpen), padding: `0 ${ps(14)}px`, fontSize: ps(14) }}>
             {tt('sportMatches')}
@@ -294,6 +316,55 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
         </div>
       </div>
     </>
+  )
+}
+
+/**
+ * Timeshift: buffertens tidslinje med knopp, −30/+30 och Gå live. Pilarna på
+ * den fokuserade linjen hoppar 30 s; ett klick söker till den punkten.
+ */
+function TimeshiftBar({ ts, ps, tt }: { ts: NonNullable<LiveTvPlayerControls['timeshift']>; ps: PlayerScale; tt: ReturnType<typeof useTvText>['tt'] }) {
+  const m = timeshiftModel({ range: ts.range, timePos: ts.timePos })
+  if (!m.available) return null
+  const onBarClick = (event: { clientX: number; currentTarget: HTMLElement }) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    if (rect.width <= 0) return
+    const f = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
+    ts.onSeek(ts.range.start + f * (ts.range.end - ts.range.start))
+  }
+  const onBarKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const delta = event.key === 'ArrowRight' ? 30 : event.key === 'ArrowLeft' ? -30 : 0
+    if (delta === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    ts.onJump(delta)
+  }
+  const btn = (label: string, onOk: () => void, testId: string, text: ReactNode) => (
+    <div data-testid={testId} {...station(onOk, undefined, { 'aria-label': label, 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: `0 ${ps(12)}px`, fontSize: ps(12), fontWeight: 600, whiteSpace: 'nowrap' }}>{text}</div>
+  )
+  return (
+    <div data-testid="timeshift-bar-row" data-row="" style={{ display: 'flex', alignItems: 'center', gap: ps(10), padding: `0 ${ps(4)}px`, marginBottom: ps(8) }}>
+      <span data-testid="timeshift-label" style={{ flexShrink: 0, minWidth: ps(56), fontSize: ps(12), fontWeight: 700, letterSpacing: '0.06em', color: m.atLive ? '#fca5a5' : '#fde68a', fontVariantNumeric: 'tabular-nums' }}>{m.atLive ? tt('live').toUpperCase() : formatBehind(m.behindMs)}</span>
+      <div
+        data-testid="timeshift-bar"
+        {...station(() => {}, undefined, { 'aria-label': tt('settingTimeshift'), 'data-guide-row': '' })}
+        role="slider"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(m.fraction * 100)}
+        onKeyDown={onBarKey}
+        onClick={onBarClick}
+        style={{ flex: 1, height: ps(28), minHeight: ps(28), display: 'flex', alignItems: 'center', cursor: 'pointer', borderRadius: 999 }}
+      >
+        <span style={{ position: 'relative', width: '100%', height: ps(4), borderRadius: 999, background: 'rgba(252,252,255,0.22)' }}>
+          <span style={{ position: 'absolute', inset: 0, right: `${100 - m.fraction * 100}%`, borderRadius: 999, background: m.atLive ? '#ef4444' : '#fde68a' }} />
+          <span style={{ position: 'absolute', top: '50%', left: `${m.fraction * 100}%`, width: ps(12), height: ps(12), marginTop: ps(-6), marginLeft: ps(-6), borderRadius: 999, background: '#fff' }} />
+        </span>
+      </div>
+      {btn(tt('jumpBack30'), () => ts.onJump(-30), 'timeshift-back', '−30 s')}
+      {btn(tt('jumpForward30'), () => ts.onJump(30), 'timeshift-forward', '+30 s')}
+      {!m.atLive ? btn(tt('goLive'), ts.onGoLive, 'timeshift-live', tt('goLive')) : null}
+    </div>
   )
 }
 

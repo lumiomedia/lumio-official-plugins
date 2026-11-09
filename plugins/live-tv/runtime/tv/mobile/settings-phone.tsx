@@ -17,6 +17,7 @@ import { MT, ellipsis, sectionLabel } from './mobile-tokens'
 import { LIVE_BG_SWATCHES, LIVE_SURFACE_SWATCHES } from '../v2-settings'
 import { LIVE_SURFACE_DEFAULT, v2Bg } from '../v2-tokens'
 import { MobileHeader } from './mobile-header'
+import { RecordingSettingsRows } from '../../recording-settings'
 import { MobileSegment } from './mobile-segment'
 import { MobileToggle } from './mobile-toggle'
 import { phoneGuideMode, type PhoneGuideMode } from './guide-phone'
@@ -114,6 +115,12 @@ export function TvSettingsPhone(props: TvViewProps) {
           <ToggleRow testId="setting-streamFallback" label={tt('settingStreamFallback')} on={settings.streamFallback} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
           <Row phone testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
           <Row phone testId="setting-groupOrder" label={tt('settingGroupOrder')} right={tt(groupOrderLabelKey(settings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) })} />
+        </Card>
+      </Section>
+
+      <Section label={tt('settingRecording')}>
+        <Card>
+          <RecordingSettingsRows settings={settings} tt={tt} phone onOpen={() => nav.go('recordings')} />
         </Card>
       </Section>
 

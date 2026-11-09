@@ -36,6 +36,7 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
   return (
     <>
     <PickerPanel
+      doneButton
       nav={nav}
       title={title}
       onClose={onClose}
@@ -92,7 +93,8 @@ export function TvCategoryPicker({ nav, title, categories, selected, onToggle, o
       nav={nav}
       title={title}
       onClose={onClose}
-      chips={null}
+      doneButton
+      chips={<div style={{ fontSize: dp(16), lineHeight: 1.4, color: TV.dim, paddingTop: dp(6) }}>{tt('xtreamCategoriesHint')}</div>}
       rows={(
         <>
           <div

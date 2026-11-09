@@ -4,6 +4,8 @@ import type { M3uChannel } from '../live-tv-data'
 import { isReminded } from '../reminders'
 import { tvText } from './tv-strings'
 import { holdMenu, okAction, programmeState } from './programme-actions'
+import { __resetRecordingsForTests, __seedRecordingsForTests, type Recording } from '../recordings'
+import { setTvSettings } from './tv-settings-store'
 import type { TvNav } from './tv-shell'
 
 const NOW = Math.floor(Date.now() / 60_000) * 60_000 + 7 * 86_400_000
@@ -20,7 +22,7 @@ function mockNav() {
 }
 const extraLabels = (nav: ReturnType<typeof mockNav>) => (nav.channelMenu.mock.calls[0]![2] as { label: string }[]).map((a) => a.label)
 
-beforeEach(() => __resetForTests())
+beforeEach(() => { __resetForTests(); __resetRecordingsForTests(); vi.unstubAllGlobals() })
 
 describe('programme-actions', () => {
   it('status vid gränserna: start = nu är live, slut = nu är passerat', () => {
@@ -59,19 +61,19 @@ describe('programme-actions', () => {
     nav.channelMenu.mock.calls[0]![2][0].run()
     nav = mockNav()
     holdMenu({ channel: plain, programme: future, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
-    expect(extraLabels(nav)).toEqual(['Ta bort påminnelse', 'Bevaka ”Sen”'])
+    expect(extraLabels(nav)).toEqual(['Ta bort påminnelse', expect.stringMatching(/^Spela in kl\. /), 'Bevaka ”Sen”'])
   })
   it('Håll OK: live får Starta om från början och passerat Spela repris — bara med arkiv', () => {
     const el = document.createElement('div')
     let nav = mockNav()
     holdMenu({ channel: archived, programme: live, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
-    expect(extraLabels(nav)).toEqual(['Starta om från början', 'Bevaka ”Nu”'])
+    expect(extraLabels(nav)).toEqual(['Starta om från början', 'Spela in', 'Bevaka ”Nu”'])
     nav = mockNav()
     holdMenu({ channel: archived, programme: past, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
     expect(extraLabels(nav)).toEqual(['Spela repris', 'Bevaka ”Förr”'])
     nav = mockNav()
     holdMenu({ channel: plain, programme: live, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
-    expect(extraLabels(nav)).toEqual(['Bevaka ”Nu”'])
+    expect(extraLabels(nav)).toEqual(['Spela in', 'Bevaka ”Nu”'])
     nav = mockNav()
     holdMenu({ channel: plain, programme: past, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
     expect(extraLabels(nav)).toEqual(['Bevaka ”Förr”'])
@@ -85,5 +87,61 @@ describe('programme-actions', () => {
     nav = mockNav()
     holdMenu({ channel: plain, programme: future, nav, nowMs: NOW, element: el, tt, locale: 'sv-SE' })
     expect(extraLabels(nav)).toContain('Sluta bevaka ”Sen”')
+  })
+
+  describe('Håll OK: inspelning', () => {
+    const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    const stubFetch = () => {
+      const calls: string[] = []
+      vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        calls.push(`${init?.method ?? 'GET'} ${String(input)}`)
+        return json(String(input).endsWith('/list') ? { recordings: [], folder: null, freeBytes: 0, keepFreeBytes: 0 } : {})
+      }))
+      return calls
+    }
+    const scheduled: Recording = { id: 'r1', title: 'Sen', channelName: plain.name, channelKey: `${plain.name}::${plain.url}`, playUrl: plain.url, startAt: future.start, stopAt: future.stop, programmeStart: future.start, programmeStop: future.stop, status: 'scheduled', bytes: 0, createdAt: 0 }
+
+    it('framtida får Spela in kl. {tid}, och valet planerar inspelningen', () => {
+      const calls = stubFetch()
+      const nav = mockNav()
+      holdMenu({ channel: plain, programme: future, nav, nowMs: NOW, element: document.createElement('div'), tt, locale: 'sv-SE' })
+      const labels = extraLabels(nav)
+      const record = labels.find((l) => l.startsWith('Spela in'))!
+      expect(record).toMatch(/^Spela in kl\. \d\d[:.]\d\d$/)
+      const action = (nav.channelMenu.mock.calls[0]![2] as { label: string; run: () => void }[]).find((a) => a.label === record)!
+      action.run()
+      expect(calls).toContain('POST /api/live-tv/record/schedule')
+    })
+
+    it('ett planerat jobb ger Avbryt inspelningen, som stoppar det', () => {
+      const calls = stubFetch()
+      __seedRecordingsForTests({ recordings: [scheduled], folder: null, freeBytes: 0, keepFreeBytes: 0 })
+      const nav = mockNav()
+      holdMenu({ channel: plain, programme: future, nav, nowMs: NOW, element: document.createElement('div'), tt, locale: 'sv-SE' })
+      const labels = extraLabels(nav)
+      expect(labels).toContain('Avbryt inspelningen')
+      expect(labels.some((l) => l.startsWith('Spela in'))).toBe(false)
+      const action = (nav.channelMenu.mock.calls[0]![2] as { label: string; run: () => void }[]).find((a) => a.label === 'Avbryt inspelningen')!
+      action.run()
+      expect(calls).toContain('POST /api/live-tv/record/stop')
+    })
+
+    it('live får Spela in, passerat får inget', () => {
+      stubFetch()
+      let nav = mockNav()
+      holdMenu({ channel: plain, programme: live, nav, nowMs: NOW, element: document.createElement('div'), tt, locale: 'sv-SE' })
+      expect(extraLabels(nav)).toContain('Spela in')
+      nav = mockNav()
+      holdMenu({ channel: plain, programme: past, nav, nowMs: NOW, element: document.createElement('div'), tt, locale: 'sv-SE' })
+      expect(extraLabels(nav).some((l) => /Spela in|Avbryt inspelningen/.test(l))).toBe(false)
+    })
+
+    it('inget Spela in när inspelning är av i inställningarna', () => {
+      stubFetch()
+      setTvSettings({ recordingEnabled: false })
+      const nav = mockNav()
+      holdMenu({ channel: plain, programme: future, nav, nowMs: NOW, element: document.createElement('div'), tt, locale: 'sv-SE' })
+      expect(extraLabels(nav).some((l) => /Spela in|Avbryt inspelningen/.test(l))).toBe(false)
+    })
   })
 })

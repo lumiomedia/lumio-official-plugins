@@ -351,7 +351,7 @@ export async function epgNow(opts: {
   source?: string
   listId: string
   at?: number
-}): Promise<{ at: number; fetchedAt: number | null; items: Record<string, NowNextLater> }> {
+}): Promise<{ at: number; fetchedAt: number | null; items: Record<string, NowNextLater>; sources?: string[] }> {
   // Förskjuten tablå (epg-shift.ts): värden frågas om tidpunkten i SIN tid, svaret flyttas tillbaka.
   const shift = epgShiftMs()
   const at = shift ? (opts.at ?? Date.now()) - shift : opts.at
@@ -360,8 +360,10 @@ export async function epgNow(opts: {
     at: number
     fetchedAt?: number | null
     items?: Record<string, Partial<NowNextLater>>
+    /** Källorna butiken scopas till (tomt = oscopad eller ingen butik). */
+    sources?: string[]
   }>(`/api/live-tv/epg/now${qs}`)
-  return { at: data.at + shift, fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, shift) }
+  return { at: data.at + shift, fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, shift), sources: data.sources ?? [] }
 }
 
 /**

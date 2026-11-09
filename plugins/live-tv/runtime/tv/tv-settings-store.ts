@@ -1,6 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { RECORD_END_LATE_OPTIONS, RECORD_START_EARLY_OPTIONS, type RecordEndLateMin, type RecordMargins, type RecordStartEarlyMin } from '../recording-plan'
+
+/** Timeshift-bufferten i minuter (speglas till appen, se ../timeshift.ts). */
+export const TIMESHIFT_MINUTE_OPTIONS = [15, 30, 60] as const
+export type TimeshiftMinutesSetting = (typeof TIMESHIFT_MINUTE_OPTIONS)[number]
+export function nextTimeshiftMinutes(current: TimeshiftMinutesSetting): TimeshiftMinutesSetting {
+  return TIMESHIFT_MINUTE_OPTIONS[(TIMESHIFT_MINUTE_OPTIONS.indexOf(current) + 1) % TIMESHIFT_MINUTE_OPTIONS.length]
+}
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
@@ -82,6 +90,18 @@ export interface TvSettings {
   railHidden: boolean
   /** Dölj första raden på Live TV:s Hem (TV) — eget val, skilt från appens (tv-home-stage läser data-lt-hero-full). */
   heroFull: boolean
+  /** Inspelning (live-tv 0.20.0): knappen i spelaren, menyvalet i guiden och rälsposten. */
+  recordingEnabled: boolean
+  /** Minuter före programstart som inspelningen börjar. */
+  recordStartEarlyMin: RecordStartEarlyMin
+  /** Minuter efter programslut som inspelningen fortsätter. */
+  recordEndLateMin: RecordEndLateMin
+  /** Notis när en inspelning startar och blir klar. */
+  recordNotify: boolean
+  /** Timeshift: pausa och spola i direktsändning (mpv-motorn). */
+  timeshiftEnabled: boolean
+  /** Bakre buffert i minuter. */
+  timeshiftMinutes: TimeshiftMinutesSetting
 }
 
 const DEFAULTS: TvSettings = {
@@ -110,6 +130,12 @@ const DEFAULTS: TvSettings = {
   remoteKeys: sanitizeRemoteBindings(undefined),
   railHidden: false,
   heroFull: false,
+  recordingEnabled: true,
+  recordStartEarlyMin: 1,
+  recordEndLateMin: 5,
+  recordNotify: true,
+  timeshiftEnabled: true,
+  timeshiftMinutes: 30,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -141,7 +167,24 @@ function sanitize(raw: unknown): TvSettings {
     remoteKeys: sanitizeRemoteBindings(r.remoteKeys),
     railHidden: typeof r.railHidden === 'boolean' ? r.railHidden : DEFAULTS.railHidden,
     heroFull: typeof r.heroFull === 'boolean' ? r.heroFull : DEFAULTS.heroFull,
+    recordingEnabled: typeof r.recordingEnabled === 'boolean' ? r.recordingEnabled : DEFAULTS.recordingEnabled,
+    recordStartEarlyMin: (RECORD_START_EARLY_OPTIONS as readonly number[]).includes(r.recordStartEarlyMin as number) ? (r.recordStartEarlyMin as RecordStartEarlyMin) : DEFAULTS.recordStartEarlyMin,
+    recordEndLateMin: (RECORD_END_LATE_OPTIONS as readonly number[]).includes(r.recordEndLateMin as number) ? (r.recordEndLateMin as RecordEndLateMin) : DEFAULTS.recordEndLateMin,
+    recordNotify: typeof r.recordNotify === 'boolean' ? r.recordNotify : DEFAULTS.recordNotify,
+    timeshiftEnabled: typeof r.timeshiftEnabled === 'boolean' ? r.timeshiftEnabled : DEFAULTS.timeshiftEnabled,
+    timeshiftMinutes: (TIMESHIFT_MINUTE_OPTIONS as readonly number[]).includes(r.timeshiftMinutes as number) ? (r.timeshiftMinutes as TimeshiftMinutesSetting) : DEFAULTS.timeshiftMinutes,
   }
+}
+
+/** Marginalerna som `recording-plan.ts` räknar med. */
+export function recordMargins(s: Pick<TvSettings, 'recordStartEarlyMin' | 'recordEndLateMin'>): RecordMargins {
+  return { startEarlyMin: s.recordStartEarlyMin, endLateMin: s.recordEndLateMin }
+}
+export function nextRecordStartEarly(current: RecordStartEarlyMin): RecordStartEarlyMin {
+  return RECORD_START_EARLY_OPTIONS[(RECORD_START_EARLY_OPTIONS.indexOf(current) + 1) % RECORD_START_EARLY_OPTIONS.length]
+}
+export function nextRecordEndLate(current: RecordEndLateMin): RecordEndLateMin {
+  return RECORD_END_LATE_OPTIONS[(RECORD_END_LATE_OPTIONS.indexOf(current) + 1) % RECORD_END_LATE_OPTIONS.length]
 }
 
 export function getTvSettings(): TvSettings {
@@ -151,6 +194,9 @@ export function setTvSettings(patch: Partial<TvSettings>): TvSettings {
   const next = sanitize({ ...getTvSettings(), ...patch })
   writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, next)
   return next
+}
+export function onTvSettingsChanged(listener: () => void): () => void {
+  return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, listener)
 }
 export function useTvSettings(): TvSettings {
   const [value, setValue] = useState(getTvSettings)

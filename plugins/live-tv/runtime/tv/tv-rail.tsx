@@ -50,7 +50,7 @@ const RAIL_ITEM_NARROW = 48
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
 
-export type RailKey = 'back' | 'search' | 'home' | 'hub' | 'guide' | 'sport' | 'library' | 'multi' | 'favs' | 'settings'
+export type RailKey = 'back' | 'search' | 'home' | 'hub' | 'guide' | 'sport' | 'library' | 'multi' | 'favs' | 'recordings' | 'settings'
 
 export interface TvRailProps {
   active: RailKey | null
@@ -59,12 +59,16 @@ export interface TvRailProps {
   narrow: boolean
   /** `settings.railLabels && !narrow` */
   labels: boolean
+  /** Inspelningar i rälsen (TvSettings.recordingEnabled). */
+  showRecordings?: boolean
 }
 
 /** Vilken radpost som lyser för en vy. Kanalvyn hör till Guide; vyer utan egen post lyser ingen. */
 export function railKeyForView(view: TvView): RailKey | null {
   if (view === 'channel') return 'guide'
-  if (view === 'hub' || view === 'search' || view === 'guide' || view === 'sport' || view === 'library' || view === 'multi' || view === 'favs' || view === 'settings') return view
+  // Förberedelsesidan är Hem som väntar på biblioteket.
+  if (view === 'preparing') return 'home'
+  if (view === 'hub' || view === 'search' || view === 'guide' || view === 'sport' || view === 'library' || view === 'multi' || view === 'favs' || view === 'recordings' || view === 'settings') return view
   return null
 }
 
@@ -78,7 +82,7 @@ export function shellRailActive(view: TvView, redirecting: boolean): RailKey | n
   return redirecting ? 'home' : railKeyForView(view)
 }
 
-export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: TvRailProps) {
+export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels, showRecordings = false }: TvRailProps) {
   // En vy med bakgrundsbild (sporten) tonar rälsen efter bilden; annars rälsens vanliga yta.
   const tint = useRailTint()
   const railBg = tint ? railTintBackground(tint) : V2.railSurface
@@ -181,6 +185,7 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
     { key: 'library', label: tt('railLibrary'), icon: <Icons.FilmStrip /> },
     { key: 'multi', label: tt('railMultiview'), icon: <Icons.SquaresFour /> },
     { key: 'favs', label: tt('railFavourites'), icon: <Icons.Heart /> },
+    ...(showRecordings ? [{ key: 'recordings' as const, label: tt('railRecordings'), icon: <Icons.Record /> }] : []),
   ]
   const railItem = (item: RailItem, extraStyle?: CSSProperties) => {
     const activeItem = item.key === active

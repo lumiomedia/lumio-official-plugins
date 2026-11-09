@@ -1,5 +1,5 @@
 import { fetchLibraryStatus, isLibraryScanRunning, readPluginJson, runLibraryScan, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, getLiveTvLists } from './live-tv-data'
 import { vodStatus } from './vod-client'
 import { vodLibraryProvider } from './vod-library-provider'
 import { vodLibraryRows, type VodLibraryRow } from './vod-library-rows'
@@ -34,6 +34,9 @@ const writeAttempts = (a: Attempts): void => { writePluginJson(LIVE_TV_PLUGIN_ID
 
 /** Skydd mot två samtidiga anrop inom samma session. */
 let inFlight = false
+
+/** Skickas på `window` när en genomgång härifrån gjorde ett bibliotek färdigt — Hem går att öppna. */
+export const VOD_READY_EVENT = 'lumio-live-tv-vod-ready'
 
 type LibraryStatusLike = Awaited<ReturnType<typeof fetchLibraryStatus>> | null
 const fullySynced = (library: LibraryStatusLike, row: VodLibraryRow): boolean =>
@@ -81,6 +84,9 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
         console.warn('[live-tv] VOD-autoindex', err)
       }
     }
+    // Blev något bibliotek färdigt säger vi till, så skalet kan berätta att Hem är redo.
+    const after = await fetchLibraryStatus().catch(() => null)
+    if (rows.some((row) => fullySynced(after, row))) window.dispatchEvent(new Event(VOD_READY_EVENT))
     return 'started'
   } catch (err) {
     console.warn('[live-tv] VOD-autoindex', err)
@@ -94,6 +100,7 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
  * Varför Hem inte går att öppna, i den ordning användaren kan göra något åt det.
  * - `ready`: biblioteket finns.
  * - `hidden`: VOD är dolt för spellistan.
+ * - `no-playlist`: ingen M3U- eller Xtream-lista alls — inget att vänta på.
  * - `no-vod`: spellistan har inga filmer eller serier (vanlig M3U, ren kanalpanel).
  * - `choose`: en källa väntar på kategorivalet.
  * - `importing`: katalogen hämtas fortfarande från panelen.
@@ -101,28 +108,50 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
  * - `failed`: senaste försöket blev inte färdigt; ett nytt görs efter en stund.
  * - `waiting`: inget har prövats än (startar strax).
  */
-export type VodHomeState = 'ready' | 'hidden' | 'no-vod' | 'choose' | 'importing' | 'indexing' | 'failed' | 'waiting'
+export type VodHomeState = 'ready' | 'hidden' | 'no-playlist' | 'no-vod' | 'choose' | 'importing' | 'indexing' | 'failed' | 'waiting'
+
+export interface VodHomeStatus {
+  state: VodHomeState
+  /** Titlar som hittills hamnat i biblioteket, eller null innan något byggts. */
+  indexed: number | null
+  /** Titlar panelen har totalt, eller null när ingen källa med VOD finns. */
+  total: number | null
+}
 
 export async function vodHomeState(): Promise<VodHomeState> {
-  if (vodHiddenForActivePlaylist()) return 'hidden'
+  return (await vodHomeStatus()).state
+}
+
+/** Som `vodHomeState`, med hur långt genomgången kommit — så beskedet kan säga "400 av 8 148". */
+export async function vodHomeStatus(): Promise<VodHomeStatus> {
+  const only = (state: VodHomeState): VodHomeStatus => ({ state, indexed: null, total: null })
+  if (vodHiddenForActivePlaylist()) return only('hidden')
   try {
     const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()])
-    if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return 'ready'
+    if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return only('ready')
     const rows = vodLibraryRows(sources, library)
     if (rows.length === 0) {
-      if (sources.some((s) => s.importing)) return 'importing'
+      if (sources.some((s) => s.importing)) return only('importing')
       // Biblioteket känner en VOD-källa fast VOD-statusen är tom (värden svarade inte): säg inte "inga filmer".
       const known = library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`)) ?? false
-      return known ? 'waiting' : 'no-vod'
+      if (known) return only('waiting')
+      // Utan någon M3U- eller Xtream-lista alls finns inget som kan bli film och serier.
+      const hasPlaylist = getLiveTvLists().some((list) => list.kind === 'm3u' || list.kind === 'xtream')
+      return only(hasPlaylist ? 'no-vod' : 'no-playlist')
+    }
+    const counted = rows.filter((row) => row.indexedTitles !== null)
+    const progress = {
+      indexed: counted.length > 0 ? counted.reduce((sum, row) => sum + (row.indexedTitles ?? 0), 0) : null,
+      total: rows.reduce((sum, row) => sum + row.vodTitles, 0),
     }
     await ensureVodChoiceMigrated(async () => sources)
-    if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return 'choose'
-    if (rows.some((row) => row.importing)) return 'importing'
-    if (isLibraryScanRunning()) return 'indexing'
+    if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return { state: 'choose', ...progress }
+    if (rows.some((row) => row.importing)) return { state: 'importing', ...progress }
+    if (isLibraryScanRunning()) return { state: 'indexing', ...progress }
     const attempts = readAttempts()
-    return rows.some((row) => attempts[row.libraryId]) ? 'failed' : 'waiting'
+    return { state: rows.some((row) => attempts[row.libraryId]) ? 'failed' : 'waiting', ...progress }
   } catch {
-    return 'waiting'
+    return only('waiting')
   }
 }
 

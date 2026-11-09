@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { TvNav } from './tv-shell'
-import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
+import { TvCategoryPicker, TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { gp } from './guide-view-shared'
 
 /**
@@ -108,5 +108,22 @@ describe('panel family surface', () => {
     await settle()
     expect(TV.panel).toBe('#141519')
     expect(screen.getByTestId('choice-panel').style.background).toBe('#141519')
+  })
+})
+
+describe('TvCategoryPicker', () => {
+  const cats = [{ id: '1', name: 'Live: Sweden' }, { id: '2', name: 'Live: UK' }]
+  it('har en synlig Klar-knapp som stänger — Escape/Bakåt var enda vägen ut och syntes inte', async () => {
+    const onClose = vi.fn()
+    render(<TvCategoryPicker nav={makeNav(vi.fn(() => () => {}))} title="Xtream categories" categories={cats} selected={new Set(['1'])} onToggle={() => {}} onSelectAll={() => {}} onClose={onClose} />)
+    await settle()
+    fireEvent.click(screen.getByTestId('list-picker-done'))
+    expect(screen.getByTestId('list-picker-done')).toHaveTextContent('Done')
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+  it('förklarar vad valet styr: vilka kategorier som hämtas från panelen', async () => {
+    render(<TvCategoryPicker nav={makeNav(vi.fn(() => () => {}))} title="Xtream categories" categories={cats} selected={new Set()} onToggle={() => {}} onSelectAll={() => {}} onClose={() => {}} />)
+    await settle()
+    expect(screen.getByTestId('list-picker')).toHaveTextContent('downloaded from the panel')
   })
 })

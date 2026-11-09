@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.0
+
+- Record channels. A Record button in the channel player records what is on until the programme ends (three hours without a guide, or until you stop it). Hold OK on a programme in the guide, search or a channel page and choose Record: the recording starts by itself when the programme begins, with the margins you choose, even if the app was restarted in between.
+- Recordings in the side menu (and in the phone's More sheet): ongoing, scheduled, finished and failed recordings; OK plays a recording (also while it is still being recorded), hold OK stops, cancels or deletes it.
+- Settings → Recording: on/off, folder (Mac and Windows), keep free, start early, end late, and notices when a recording starts, finishes or fails.
+- Pause live TV: a paused channel continues where you paused it, and a timeline in the player lets you move back and forward within the buffer (15, 30 or 60 minutes, Settings → Recording), with 30 s jumps and Go live. Mac, Windows and TV boxes with the mpv engine; phones with the built-in engine keep today's behaviour.
+- A recording counts as one connection at your provider, like a channel you watch, and the app has to be running while it records. Needs Lumio 0.1.641.
+
 ## 0.19.2
 
 - Guide alerts: save a word ("Allsvenskan", "Bond") and Lumio reminds you before every matching programme on any channel, and tells you when a new one turns up in the guide. Add words under Live TV settings → Guide alerts, or hold OK on a programme and choose Alert me. Words are matched in programme titles and, as whole words, in descriptions.

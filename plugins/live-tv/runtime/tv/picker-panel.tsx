@@ -1,5 +1,6 @@
 'use client'
 
+import { useTvText } from './tv-strings'
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import type { TvNav } from './tv-shell'
 import { TV, belowTitleBar, dp, station } from './tv-ui'
@@ -23,6 +24,7 @@ export function PickerPanel({
   opener,
   surface,
   backButton,
+  doneButton = false,
 }: {
   /** Bara lagret behövs — sportens inställningar har ingen hel `TvNav`. */
   nav: Pick<TvNav, 'pushLayer'>
@@ -53,7 +55,10 @@ export function PickerPanel({
    * annars ingen synlig väg tillbaka (Jerry 2026-10-23).
    */
   backButton?: string
+  /** Synlig Klar-knapp nederst — för flervalspaneler som inte stänger på OK. */
+  doneButton?: boolean
 }) {
+  const { tt } = useTvText()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
   const closeRef = useRef<(() => void) | null>(null)
@@ -105,6 +110,19 @@ export function PickerPanel({
       {/* Luft innanför rullningen: overflow klipper fokusramen, och utan den
           syntes bara radernas underkant (Jerry 2026-10-31). */}
       <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `${dp(8)}px ${dp(10)}px`, margin: `0 ${-dp(10)}px` }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
+      {/* En synlig väg ut för flervalspanelerna. Bakåt/Escape stänger också,
+          men med mus eller för den som inte vet det stod panelen "fast" (Jerry
+          2026-11-09). Paneler med egen primärknapp (tangentbord, Avbryt) eller
+          som stänger på ett val skickar inte flaggan. */}
+      {doneButton ? <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: dp(16), flexShrink: 0 }}>
+        <div
+          {...station(() => closeRef.current?.())}
+          data-testid={`${testId}-done`}
+          style={{ padding: `${dp(10)}px ${dp(26)}px`, borderRadius: 999, background: TV.s08, fontSize: dp(18), fontWeight: 600, cursor: 'pointer' }}
+        >
+          {tt('done')}
+        </div>
+      </div> : null}
     </div>
   )
 }

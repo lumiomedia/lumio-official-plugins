@@ -321,6 +321,13 @@ describe('useLiveTvModel: EPG ur appen', () => {
     await waitFor(() => expect(result.current.nowFor(A).now?.title).toBe('Nyheterna'))
   })
 
+  it('hämtar om när appens EPG är färskt men inte känner listans källor (ny spellista mot samma panel)', async () => {
+    // Jerry 2026-11-09: kontot togs bort och lades till igen → nytt käll-id, men
+    // butiken (6 h färsk) var scopad till det gamla. Guiden stod tom i timmar.
+    vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: Date.now() - 60_000, items: {}, sources: ['gammal-kalla'] })
+    renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(refreshEpg).toHaveBeenCalledWith('global', ['http://epg/1.xml'], ['s1', 's2']))
+  })
   it('hämtar inte om när appens EPG är färskt', async () => {
     vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: Date.now() - 60_000, items: {} })
     const { result } = renderHook(() => useLiveTvModel())

@@ -1,6 +1,6 @@
 'use client'
 
-import { vodImportFilter } from './vod-category-filter'
+import { isVodChoiceMade, setVodCategoryChoice, vodImportFilter } from './vod-category-filter'
 import {
   clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
@@ -11,6 +11,7 @@ import {
   readPluginJson,
   removePluginStorageByPrefix,
   writePluginJson,
+  resetLibrarySource,
 } from '@/lib/plugin-sdk'
 import {
   emitIndexChanged,
@@ -21,7 +22,8 @@ import {
   type ImportStatus,
   type XtreamImportSource,
 } from './index-client'
-import { forgetVod } from './vod-client'
+import { forgetVod, vodStatus } from './vod-client'
+import { VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 import { normalizeCuration } from './list-curation'
 import { sanitizeLiveFormat, type LiveFormat } from './live-format'
 
@@ -71,6 +73,8 @@ function sanitizeArchive(raw: unknown): XtreamArchive | undefined {
 
 export const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
 export const LIVE_TV_GLOBAL_EPG_ID = 'global'
+/** Sänds på `window` när en tablåhämtning i bakgrunden blivit klar (live-tv-model.ts). */
+export const EPG_REFRESHED_EVENT = 'lumio-live-tv-epg-refreshed'
 const M3U_URLS_KEY = 'm3u_urls'
 const M3U_DRAFT_URLS_KEY = 'm3u_urls_draft'
 const LIVE_TV_LISTS_KEY = 'lists'
@@ -604,16 +608,64 @@ export function deleteLiveTvList(listId: string): void {
   if (remaining.some((list) => list.source === source)) return
   // Biblioteket hör till källan och ska gå med den. Utan det blev 16 000
   // titlar kvar i indexet för en spellista användaren just raderat.
-  void forgetVod(source).catch(() => {
-    // Samma resonemang som kanalerna nedan: ett nätfel lämnar titlarna kvar,
-    // och nästa radering eller import städar. Listan är borta ur lagringen.
-  })
+  void forgetVodEverywhere(source)
   void resetSource(source)
     .catch(() => {
       // Ett nätfel lämnar kanalerna i indexet. Vyerna läser ändå om: nästa
       // borttagning/import städar, och listan är borta ur lagringen redan.
     })
     .finally(() => emitIndexChanged())
+  // Samma panel kan ligga i indexet under ett ÄLDRE inloggnings-id (kontot
+  // sparades om, listan fick det nya id:t). Då nollade raden ovan fel källa,
+  // och kanaler, guide och bibliotek levde kvar utan någon lista att ta bort.
+  void sweepOrphanIndexSources(sourceHost(source), remaining).catch(() => {})
+}
+
+/**
+ * Släpper en källas film och serier överallt: ur Live TV:s VOD-index och ur
+ * appens biblioteksindex ("Använd som bibliotek", `xtream-vod:<källa>`). Det
+ * senare glömdes förut, så det borttagna kontots titlar ägde startsidan tills
+ * man byggde om biblioteket. Ett nätfel lämnar titlarna kvar; nästa radering
+ * eller import städar, och listan är redan borta ur lagringen.
+ */
+async function forgetVodEverywhere(source: string): Promise<void> {
+  await forgetVod(source).catch(() => {})
+  await resetLibrarySource(`${VOD_LIBRARY_PROVIDER_ID}:${source}`).catch(() => {})
+}
+
+/** Värdnamnet i en källa (`xtream://host/…` eller en M3U-adress), annars null. */
+export function sourceHost(source: string | null | undefined): string | null {
+  if (!source) return null
+  try {
+    const host = new URL(source).host
+    return host.length > 0 ? host.toLowerCase() : null
+  } catch {
+    const match = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i.exec(source)
+    return match ? match[1].toLowerCase() : null
+  }
+}
+
+/**
+ * Nollar indexkällor (kanaler och VOD) från `host` som ingen kvarvarande lista
+ * pekar på. Körs efter att en lista tagits bort — aldrig på egen hand vid
+ * start: indexet delas mellan profiler, och en annan profils listor syns inte
+ * härifrån.
+ */
+export async function sweepOrphanIndexSources(host: string | null, lists: LiveTvList[] = readLists()): Promise<string[]> {
+  if (!host) return []
+  const kept = new Set(lists.map((list) => list.source).filter((entry): entry is string => Boolean(entry)))
+  const [index, vod] = await Promise.all([
+    indexStatus().catch(() => ({ sourceIds: [] as string[] })),
+    vodStatus().catch(() => [] as Array<{ id: string }>),
+  ])
+  const ids = new Set<string>([...index.sourceIds, ...vod.map((entry) => entry.id)])
+  const orphans = [...ids].filter((id) => !kept.has(id) && sourceHost(id) === host)
+  for (const id of orphans) {
+    await forgetVodEverywhere(id)
+    await resetSource(id).catch(() => {})
+  }
+  if (orphans.length > 0) emitIndexChanged()
+  return orphans
 }
 
 function deriveListName(sourceUrl: string): string {
@@ -1007,6 +1059,10 @@ export async function importList(list: LiveTvList, onProgress?: (status: ImportS
           fetchedAt: new Date().toISOString(),
         }
       : entry)))
+    // Katalogen hämtades i sin helhet (vodImportFilter): valet är "allt med"
+    // tills användaren gallrar. Utan det hade Hem och den automatiska
+    // biblioteksgenomgången väntat på ett val som inte efterfrågas någonstans.
+    if (list.kind === 'xtream' && list.source && !isVodChoiceMade(list.source)) setVodCategoryChoice(list.source, [], [])
     emitIndexChanged()
   }
   return status

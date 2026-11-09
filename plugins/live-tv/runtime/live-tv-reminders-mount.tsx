@@ -9,6 +9,12 @@ import { startSportAlertSync } from './sport/sport-alerts'
 import { useHubText } from './hub-strings'
 import { ToastCenter, pushToast } from './toast-center'
 import { displayTitle } from './display-title'
+import { startRecordingWatch } from './recordings-notify'
+import { startTimeshiftSettingsSync } from './timeshift'
+import { formatBytes } from './recordings'
+import { getTvSettings } from './tv/tv-settings-store'
+import { tvText } from './tv/tv-strings'
+import { LIVE_TV_BROWSE_PAGE_ID } from './live-tv-shell'
 
 /**
  * App-övergripande påminnelser: schemat körs från pluginets bootstrap, inte
@@ -75,6 +81,39 @@ export function LiveTvRemindersMount() {
           title: reminders.length > 1 ? `${first.title} · ${when} · ${hh('epgWatchMore', { n: reminders.length - 1 })}` : `${first.title} · ${when}`,
           watchLabel: hh('hubWatchNow'),
           onWatch: () => requestOpenBrowsePage(channelPage(first)),
+          dismissLabel: hh('back'),
+          timeoutMs: 15_000,
+        })
+      }),
+    [],
+  )
+  // Timeshift: appen behöver inställningen innan första kanalen öppnas (mpv-optionerna sätts vid open).
+  useEffect(() => startTimeshiftSettingsSync(), [])
+  // Inspelningar (recordings-notify.ts): start, klart och fel. Texterna via ref
+  // av samma skäl som ovan — bevakningen ska inte startas om vid omritning.
+  useEffect(
+    () =>
+      startRecordingWatch((event) => {
+        if (!getTvSettings().recordNotify) return
+        const { h: hh, locale: loc } = textRef.current
+        const lang = loc.slice(0, 2)
+        const { recording, kind } = event
+        const title = kind === 'started'
+          ? tvText(lang, 'recStarted', { title: recording.title })
+          : kind === 'finished'
+            ? tvText(lang, 'recFinished', { title: recording.title, size: formatBytes(recording.bytes, loc) })
+            : tvText(lang, 'recFailed', { title: recording.title })
+        const page = { pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: 'recordings' } }
+        if (typeof showSystemNotification === 'function') {
+          void showSystemNotification({ id: `rec:${recording.id}:${kind}`, title, body: recording.channelName, openPage: page }).catch(() => {})
+        }
+        pushToast({
+          key: `rec:${recording.id}`,
+          kicker: tvText(lang, 'settingRecording'),
+          title,
+          body: recording.channelName,
+          watchLabel: tvText(lang, 'railRecordings'),
+          onWatch: () => requestOpenBrowsePage(page),
           dismissLabel: hh('back'),
           timeoutMs: 15_000,
         })

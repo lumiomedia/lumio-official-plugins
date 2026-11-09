@@ -674,6 +674,7 @@ const NATIVE_PLAYER_STATE = {
   playbackRestarted: false,
   playbackRestartedToken: 0,
   pausedForCache: false,
+  cacheRange: null as { start: number; end: number } | null,
   coreIdle: true,
   firstFrameRendered: false,
   loadFailed: false,
@@ -829,6 +830,10 @@ export async function runLibraryScan(
   options.onProgress?.({ phase: 'titles', done: 200 })
   return { titles: 200 }
 }
+export async function resetLibrarySource(sourceId: string): Promise<number> {
+  await fetch('/api/library/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceId }) })
+  return 0
+}
 export function __resetLibraryStubForTests(): void {
   LIBRARY_STUB.scanning = false
   LIBRARY_STUB.status = { sources: [] }
@@ -975,4 +980,12 @@ export function openCouchTip(m: TipMatchInfo, starterPhoneId: string | null): bo
 /** Värdens systemnotis (Android-notis eller webbens Notification). Stubben visar inget och svarar false. */
 export async function showSystemNotification(_n: { id: string; title: string; body?: string; channelName?: string; openPage?: { pageId: string; params?: Record<string, string> } }): Promise<boolean> {
   return false
+}
+
+// Skrivbordsvärdens hjälpare (recording-settings.tsx läser dem valfritt): ingen dator i testerna.
+export function isPluginDesktopHost(): boolean {
+  return false
+}
+export async function pickPluginFolder(): Promise<string | null> {
+  return null
 }

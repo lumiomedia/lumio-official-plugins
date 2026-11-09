@@ -205,6 +205,11 @@ export function resetVodCategoryChoiceForTests(): void {
  */
 export function vodImportFilter(source: string): { vodExcludedKeys?: string[]; vodDefer?: boolean } {
   const choice = getVodCategoryChoice(source)
-  if (!choice.decided) return isVodChoiceMigrated() ? { vodDefer: true } : {}
+  // En källa utan val hämtas i sin helhet. Förut sköts hämtningen upp
+  // (`vodDefer`) tills ett val gjorts — men valet går bara att göra när
+  // källan syns i VOD-indexet, så ett nytt konto fick aldrig film och serier
+  // (2026-11-09). Importen räknar valet som "allt med" när den är klar
+  // (`importList`), och gallringen görs i efterhand under Innehåll.
+  if (!choice.decided) return {}
   return choice.excluded.length > 0 ? { vodExcludedKeys: choice.excluded } : {}
 }

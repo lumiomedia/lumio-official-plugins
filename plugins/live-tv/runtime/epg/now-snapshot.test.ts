@@ -27,6 +27,7 @@ describe('nu/nästa stegvis', () => {
     epgNow.mockResolvedValue({
       at: 1_000_000,
       fetchedAt: 5,
+      sources: ['xtream://p/1'],
       items: {
         a: { now: prog('A1', 900_000, 1_050_000), next: prog('A2', 1_050_000, 2_000_000), later: null },
         b: { now: prog('B1', 900_000, 3_000_000), next: null, later: null },
@@ -45,6 +46,8 @@ describe('nu/nästa stegvis', () => {
     })
     const second = await fetchNowSnapshot('l', null)
     expect(epgNow).toHaveBeenCalledTimes(1)
+    // Butikens källor följer med från den hela hämtningen (den stegvisa saknar dem).
+    expect(second.sources).toEqual(['xtream://p/1'])
     expect(epgNowForKeys).toHaveBeenCalledWith(expect.objectContaining({ keys: expect.arrayContaining(['a', 'c']) }))
     expect(second).not.toBe(first)
     expect(second.items.a.now?.title).toBe('A2')

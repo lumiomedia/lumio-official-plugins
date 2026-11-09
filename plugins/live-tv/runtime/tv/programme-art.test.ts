@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import * as sdk from '@/lib/plugin-sdk'
 import { __resetForTests } from '@/lib/plugin-sdk'
 import type { M3uChannel } from '../live-tv-data'
-import { __resetProgrammeArtForTests, looksLikeBroadcast, lookUpArt, normaliseTitle, useProgrammeArt } from './programme-art'
+import { __resetProgrammeArtForTests, epgLanguageFor, looksLikeBroadcast, lookUpArt, normaliseTitle, useProgrammeArt } from './programme-art'
 
 const ch = (name: string, group = 'Entertainment'): M3uChannel => ({ name, group, url: `http://x/${name}`, tvgId: null, logo: null })
 const prog = (title: string, extra: Record<string, unknown> = {}) => ({ title, start: 0, stop: 1, ...extra })
@@ -125,5 +125,27 @@ describe('programme-art', () => {
     expect(write.mock.calls.filter((c) => c[1] === 'live_tv_programme_art_v1')).toHaveLength(0)
     await vi.advanceTimersByTimeAsync(3000)
     expect(write.mock.calls.filter((c) => c[1] === 'live_tv_programme_art_v1')).toHaveLength(1)
+  })
+
+  it('tablåns språk ur kanalen: tvg-id-landet först, sedan gruppen, annars inget', () => {
+    expect(epgLanguageFor({ name: 'Nickelodeon SE', group: 'Live: Sweden', url: 'u', tvgId: 'Nickelodeon.se' })).toBe('sv-SE')
+    expect(epgLanguageFor({ name: 'ZDF', group: 'Misc', url: 'u', tvgId: 'zdf.de' })).toBe('de-DE')
+    expect(epgLanguageFor({ name: 'TV2', group: 'Live: Norway', url: 'u', tvgId: null })).toBe('nb-NO')
+    expect(epgLanguageFor({ name: 'BBC One', group: 'Live: United Kingdom', url: 'u', tvgId: 'BBCOne.uk' })).toBe('en-GB')
+    expect(epgLanguageFor({ name: 'Some', group: 'Movies', url: 'u', tvgId: null })).toBeUndefined()
+  })
+
+  it('uppslaget söker på tablåns språk och svenska titlar matchar det svenska svaret', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const sv = url.includes('language=sv-SE')
+      return new Response(JSON.stringify({ items: [{ title: sv ? 'Svampbob Fyrkant' : 'SpongeBob SquarePants', searchTitles: [sv ? 'Svampbob Fyrkant' : 'SpongeBob SquarePants', 'SpongeBob SquarePants'], backdropUrl: 'https://img/sb.jpg' }] }), { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const url = await lookUpArt('Svampbob Fyrkant', { language: 'sv-SE' })
+    expect(String(fetchMock.mock.calls[0]![0])).toContain('/api/media?titleQuery=Svampbob%20Fyrkant&language=sv-SE')
+    expect(url).toBe('https://img/sb.jpg')
+    // Utan språk: engelskt svar, ingen exakt träff → ingen bild (och egen cachepost).
+    expect(await lookUpArt('Svampbob Fyrkant')).toBeNull()
   })
 })

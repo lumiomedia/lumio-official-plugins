@@ -26,7 +26,9 @@ vi.mock('@/lib/plugin-sdk', async () => {
       close: async () => {},
       setBounds: (rect: { left: number; top: number; width: number; height: number }) => { bounds.push(rect) },
       setMuted: async () => {},
-      onState: () => () => {},
+      // Ritar bild direkt: annars tar ytan om sig efter NO_FRAME_RETRY_MS
+      // (video-surface-host.test.tsx) och mäter om från början igen.
+      onState: (cb: (s: { firstFrameRendered: boolean; loadFailed: boolean }) => void) => { cb({ firstFrameRendered: true, loadFailed: false }); return () => {} },
       destroy: async () => {},
     }),
     closeAllAuxSurfaces: () => {},

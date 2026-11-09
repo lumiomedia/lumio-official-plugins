@@ -19,6 +19,7 @@ import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { TvVodCategoriesPanel, useSourceHasVod } from './vod-categories-picker'
 import { useTvText } from './tv/tv-strings'
 import { nextFallbackAfter, setTvSettings, useTvSettings } from './tv/tv-settings-store'
+import { RecordingSettingsTvRows } from './recording-settings'
 import { nextStartView, startViewLabelKey } from './tv/start-view'
 import { listGroups } from './index-client'
 import { groupOrderLabelKey, nextGroupOrder, rawGroupOrderFor, sortGroups, withRawOrder } from './group-order'
@@ -151,6 +152,7 @@ export function TvSettingsPage() {
       <TvRow testId="tv-stream-fallback" label={tt('settingStreamFallback')} hint={tt('settingStreamFallbackHint')} toggle={tvSettings.streamFallback} onToggle={(streamFallback) => setTvSettings({ streamFallback })} />
       <TvRow testId="tv-stream-fallback-after" label={tt('settingStreamFallbackAfter')} hint={tt('settingStreamFallbackAfterHint')} value={tvSettings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: tvSettings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) })} />
       <TvRow testId="tv-group-order" label={tt('settingGroupOrder')} hint={tt('settingGroupOrderHint')} value={tt(groupOrderLabelKey(tvSettings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(tvSettings.groupOrder) })} />
+      <RecordingSettingsTvRows tvSettings={tvSettings} tt={tt} />
 
       {s.lists.length > 0 ? (
         <>

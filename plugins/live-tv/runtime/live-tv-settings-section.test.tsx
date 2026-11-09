@@ -41,12 +41,13 @@ function stubFetch(next: () => Record<string, unknown>): void {
     if (raw.includes('player_api.php')) return json({ user_info: { auth: 1, status: 'Active' } })
     if (path === '/api/live-tv/import') return json({ job: 'job-1' })
     if (path === '/api/live-tv/import/status') return json(next())
+    if (path === '/api/live-tv/record/list') return json({ recordings: [], folder: '/rec', freeBytes: 5_000_000_000, keepFreeBytes: 2_000_000_000 })
     return json({})
   }) as typeof fetch)
 }
 
 /** Alla sektioner öppna: testerna nedan gäller INNEHÅLLET, inte dragspelet (det har egna tester). */
-const ALL_SECTIONS = ['playlists', 'guide', 'behaviour', 'library', 'sport', 'display']
+const ALL_SECTIONS = ['playlists', 'guide', 'behaviour', 'recording', 'library', 'sport', 'display']
 
 beforeEach(() => {
   __resetForTests()
@@ -122,6 +123,22 @@ describe('LiveTvSettingsSection', () => {
     expect(getTvSettings().streamFallbackAfterS).toBe(10)
     fireEvent.click(toggle)
     expect(getTvSettings().streamFallback).toBe(false)
+  })
+  it('renders recording section with keep-free choice and saves margins', async () => {
+    render(<LiveTvSettingsSection />)
+    const section = screen.getByTestId('lt-section-recording')
+    expect(section).toHaveTextContent('Recording')
+    const keepFree = within(section).getByTestId('lt-record-keep-free')
+    await waitFor(() => expect(within(keepFree).getByTestId('lt-record-keep-free-2')).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(within(section).getByDisplayValue('/rec')).toBeInTheDocument())
+    expect(section).toHaveTextContent('4.7 GB free')
+    fireEvent.click(within(keepFree).getByTestId('lt-record-keep-free-5'))
+    await waitFor(() => expect(calls.some((c) => c.path === '/api/live-tv/record/settings' && c.body.keepFreeGb === 5)).toBe(true))
+    const early = within(section).getByTestId('lt-record-start-early')
+    fireEvent.click(within(early).getByTestId('lt-record-start-early-5'))
+    expect(getTvSettings().recordStartEarlyMin).toBe(5)
+    fireEvent.click(within(section).getByRole('switch', { name: 'Recording' }))
+    expect(getTvSettings().recordingEnabled).toBe(false)
   })
   it('Gruppordning: tre val på skrivbordskortet, Spellistans ordning förvald, skriver till lagret', () => {
     render(<LiveTvSettingsSection />)
