@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTvSettings } from './tv/tv-settings-store'
-import { resumeAction } from './timeshift'
+import { LIVE_EDGE_SLACK_S_HLS, resumeAction } from './timeshift'
+import { createTimeshiftSession, deleteTimeshiftSession, droidTimeshiftRange, startTimeshiftHeartbeat, timeshiftSessionStatus, type TimeshiftSession } from './timeshift-session'
+import { useTimeshiftOnDevice } from './timeshift-device'
+import { useTvText } from './tv/tv-strings'
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
@@ -21,6 +24,7 @@ import {
   openNativePlayer,
   setAndroidImmersive,
   setAndroidOrientation,
+  switchNativeSource,
   setMpvVideoGeometry,
   setWindowNativeFullscreen,
   unlockBodyScroll,
@@ -254,6 +258,47 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   const droid = useNativePlayer(isDroidEngine)
   const htmlVideo = useHtmlVideoPlayer(isHtmlEngine, videoRef)
   const mpv = isDroidEngine ? droid : isHtmlEngine ? htmlVideo : mpvDesktop
+  /*
+   * TIMESHIFT PÅ ANDROID (timeshift-session.ts): appen äger den enda
+   * anslutningen och reläar den; vid paus byter spelaren tyst till den
+   * lokala spellistan. Villkoren (inställning + enhetsflagga) läses via en
+   * ref i `engineOpen`, som är memoiserad.
+   */
+  const timeshiftOnDevice = useTimeshiftOnDevice()
+  const timeshiftWantedRef = useRef<{ wanted: boolean; minutes: number }>({ wanted: false, minutes: 30 })
+  const tsSessionRef = useRef<TimeshiftSession | null>(null)
+  const tsHeartbeatRef = useRef<(() => void) | null>(null)
+  const tsOnPlaylistRef = useRef(false)
+  const [droidOnPlaylist, setDroidOnPlaylist] = useState(false)
+  const [droidBufferSeconds, setDroidBufferSeconds] = useState(0)
+  const [notice, setNotice] = useState<string | null>(null)
+  const { tt: ttPlayer } = useTvText()
+  const endTimeshiftSession = useCallback(async () => {
+    tsHeartbeatRef.current?.()
+    tsHeartbeatRef.current = null
+    const session = tsSessionRef.current
+    tsSessionRef.current = null
+    tsOnPlaylistRef.current = false
+    setDroidOnPlaylist(false)
+    setDroidBufferSeconds(0)
+    if (session) await deleteTimeshiftSession(session.id)
+  }, [])
+  /** Reläet → spellistan, pausad vid livekanten, först när första segmentet finns (max ~10 s). */
+  const switchToPlaylist = useCallback(async (): Promise<boolean> => {
+    const session = tsSessionRef.current
+    if (!session || tsOnPlaylistRef.current) return Boolean(session)
+    for (let i = 0; i < 20; i += 1) {
+      const status = await timeshiftSessionStatus(session.id)
+      if (status?.ready) break
+      if (tsSessionRef.current !== session) return false
+      await new Promise((r) => window.setTimeout(r, 500))
+    }
+    if (tsSessionRef.current !== session) return false
+    await switchNativeSource({ url: session.playlistUrl, paused: true, atEnd: true })
+    tsOnPlaylistRef.current = true
+    setDroidOnPlaylist(true)
+    return true
+  }, [])
   /**
    * IPTV-paneler svarar 403 på tomma eller "app-doftande" User-Agents —
    * särskilt DASH- och HLS-utlägg som filtrerar på webbläsarsträngar. mpv
@@ -295,7 +340,23 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       // HLS ur liveformatet: säg det rakt ut till media3 i stället för att
       // låta den gissa — panelen 302:ar `.m3u8` till en ändelselös /live/play/….
       if (isDroidEngine) {
-        return openNativePlayer({ url: target, ...(viaProxy || isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {}) })
+        if (viaProxy) {
+          // Reservvägen öppnar en egen anslutning: sessionen bort FÖRST, annars ser panelen två.
+          await endTimeshiftSession()
+          return openNativePlayer({ url: target, mimeType: HOST_PROXY_MIME })
+        }
+        if (timeshiftWantedRef.current.wanted) {
+          await endTimeshiftSession()
+          const session = await createTimeshiftSession(url, timeshiftWantedRef.current.minutes)
+          if (session) {
+            tsSessionRef.current = session
+            tsHeartbeatRef.current = startTimeshiftHeartbeat(session.id, (status) => setDroidBufferSeconds(Math.floor(status.seconds)))
+            // Reläet är rå TS (ingen mimeType); för HLS-källor är det proxyns spellista.
+            const liveIsHls = /\.m3u8(?:[?#]|$)/i.test(session.liveUrl)
+            return openNativePlayer({ url: session.liveUrl, ...(liveIsHls ? { mimeType: HOST_PROXY_MIME } : {}) })
+          }
+        }
+        return openNativePlayer({ url: target, ...(isHlsPlayUrl(url) ? { mimeType: HOST_PROXY_MIME } : {}) })
       }
       // HLS-demuxern utan parallella anslutningar (hls-recovery.ts). Sätts
       // före VARJE öppning — tomt för allt annat — eftersom egenskapen lever
@@ -306,11 +367,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         requestHeaders: /\.ts(?:[?#]|$)/i.test(target) ? undefined : { 'User-Agent': IPTV_USER_AGENT },
       })
     },
-    [isDroidEngine, hostProxyUrl],
+    [isDroidEngine, hostProxyUrl, endTimeshiftSession],
   )
   const engineClose = useCallback(
-    (): Promise<void> => (isDroidEngine ? closeNativePlayer() : closeMpvPlayer()),
-    [isDroidEngine],
+    (): Promise<void> => (isDroidEngine ? endTimeshiftSession().then(() => closeNativePlayer()) : closeMpvPlayer()),
+    [isDroidEngine, endTimeshiftSession],
   )
   const engineSetBounds = useCallback(
     (rect: { left: number; top: number; width: number; height: number }) =>
@@ -1129,7 +1190,8 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (mpvPaused) {
       // Med timeshift-buffert (timeshift.ts) fortsätter bilden där den
       // stannade; `timeshift` sätts längre ner men är klart när man klickar.
-      if (resumeAction({ engine: engineKind, timeshiftAvailable: Boolean(timeshift) }) === 'unpause') {
+      // Android: på bufferten räknas som tillgänglig redan innan ExoPlayer rapporterat fönstret.
+      if (resumeAction({ engine: engineKind, timeshiftAvailable: Boolean(timeshift) || tsOnPlaylistRef.current }) === 'unpause') {
         void mpv.setPlayPause(false)
         return
       }
@@ -1140,6 +1202,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
       return
     }
     void mpv.setPlayPause(true)
+    // Android med buffert: bilden står still på reläet; byt tyst till
+    // spellistan (pausad, vid livekanten) så play fortsätter härifrån.
+    if (isDroidEngine && tsSessionRef.current && !tsOnPlaylistRef.current) void switchToPlaylist()
   }
 
   /* Bild-i-bild på telefon (appens lib/pip.ts): kanalbyte som PiP-fönstrets
@@ -1279,16 +1344,44 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
    */
   // Timeshift (timeshift.ts): bara mpv-motorn, bara när bufferten är på och mpv rapporterat ett intervall.
   const tvSettingsForPlayer = useTvSettings()
-  const timeshiftRange = engineKind === 'mpv' && tvSettingsForPlayer.timeshiftEnabled ? mpvDesktop.cacheRange : null
+  timeshiftWantedRef.current = { wanted: engineKind === 'droid' && tvSettingsForPlayer.timeshiftEnabled && timeshiftOnDevice, minutes: tvSettingsForPlayer.timeshiftMinutes }
+  // Android: på spellistan ur ExoPlayers livefönster, på reläet ur buffertens längd (vid livekanten).
+  const droidRange = engineKind === 'droid' && tsSessionRef.current
+    ? droidTimeshiftRange({ onPlaylist: droidOnPlaylist, isLive: droid.isLive === true, duration: droid.duration, bufferSeconds: droidBufferSeconds })
+    : null
+  const timeshiftRange = engineKind === 'mpv' ? (tvSettingsForPlayer.timeshiftEnabled ? mpvDesktop.cacheRange : null) : droidRange
+  const droidSeekTo = (sec: number, range: { start: number; end: number }) => {
+    const target = Math.max(range.start + 1, Math.min(range.end - LIVE_EDGE_SLACK_S_HLS, sec))
+    if (tsOnPlaylistRef.current) { void droid.seek(target); return }
+    void switchToPlaylist().then((ok) => { if (ok) void droid.seek(target) })
+  }
   const timeshift: LiveTvPlayerControls['timeshift'] = timeshiftRange
-    ? {
-        range: timeshiftRange,
-        timePos: mpvTimePos,
-        onSeek: (sec) => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, Math.min(timeshiftRange.end - 1, sec))),
-        onJump: (delta) => mpvDesktop.seekRelative(delta),
-        onGoLive: () => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, timeshiftRange.end - 2)),
-      }
+    ? engineKind === 'droid'
+      ? {
+          range: timeshiftRange,
+          timePos: droidOnPlaylist ? mpvTimePos : timeshiftRange.end,
+          onSeek: (sec) => droidSeekTo(sec, timeshiftRange),
+          onJump: (delta) => {
+            if (tsOnPlaylistRef.current) { void droid.seekRelative(delta); return }
+            void switchToPlaylist().then((ok) => { if (ok) void droid.seekRelative(delta) })
+          },
+          onGoLive: () => { if (tsOnPlaylistRef.current) void droid.seek(Math.max(1, timeshiftRange.end - 1)) },
+        }
+      : {
+          range: timeshiftRange,
+          timePos: mpvTimePos,
+          onSeek: (sec) => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, Math.min(timeshiftRange.end - 1, sec))),
+          onJump: (delta) => mpvDesktop.seekRelative(delta),
+          onGoLive: () => mpvDesktop.seek(Math.max(timeshiftRange.start + 1, timeshiftRange.end - 2)),
+        }
     : undefined
+  // Pausen var längre än bufferten: appen fortsatte från äldsta punkten — säg det, en gång.
+  useEffect(() => {
+    if (!isDroidEngine || droid.behindWindow !== true) return
+    setNotice(ttPlayer('timeshiftBehindWindow'))
+    const timer = window.setTimeout(() => setNotice(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [isDroidEngine, droid.behindWindow, ttPlayer])
   const playerControls: LiveTvPlayerControls = {
     timeshift,
     muted,
@@ -1386,6 +1479,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
           <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
         </div>
       )}
+      {notice ? (
+        <div data-testid="player-notice" className="pointer-events-none absolute left-1/2 top-6 z-30 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-sm text-white">{notice}</div>
+      ) : null}
       <PlayerGoalOverlay channelKey={playingKey} onJump={(next) => tvChrome?.onSwitchChannel(next)} />
       {fallback.target ? <StreamFallbackPrompt key={channelKey(fallback.target)} target={fallback.target} seconds={fallback.autoSwitchS} onSwitch={fallback.switchNow} onStay={fallback.stay} /> : null}
       {tvChrome ? (
