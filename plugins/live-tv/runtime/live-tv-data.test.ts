@@ -255,6 +255,37 @@ describe('deleteLiveTvList', () => {
     expect(getLiveTvLists()).toHaveLength(0)
   })
 
+  it('nollar också föräldralösa indexkällor från samma panel (äldre inloggnings-id)', async () => {
+    // Indexet bar kanaler och VOD under ett tidigare inloggnings-id för samma
+    // panel. Listan pekade på det nya id:t, så raderingen nollade fel källa och
+    // kanaler, guide och bibliotek levde kvar utan lista (Jerry 2026-11-09).
+    const resets: string[] = []
+    const forgets: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const s = String(url)
+      const body = () => JSON.parse(String(init?.body ?? '{}')) as { source?: string }
+      if (s.includes('/api/live-tv/status')) {
+        return jsonResponse({ sources: [
+          { id: 'xtream://panel.test/old-login', channels: 5, updatedAt: 1 },
+          { id: 'http://other.tld/list.m3u', channels: 3, updatedAt: 1 },
+        ] })
+      }
+      if (s.includes('/api/live-tv/vod/status')) return jsonResponse({ sources: [{ id: 'xtream://panel.test/old-login', movies: 1, series: 0, total: 1, updatedAt: 1, importing: false }] })
+      if (s.includes('/api/live-tv/vod/forget')) { forgets.push(body().source ?? ''); return jsonResponse({ ok: true }) }
+      if (s.includes('/api/live-tv/reset')) { resets.push(body().source ?? ''); return jsonResponse({ ok: true, removed: 1 }) }
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'x1', name: 'panel.test', kind: 'xtream', source: 'xtream://panel.test/login1', xtreamLoginId: 'login1' }),
+    ])
+
+    deleteLiveTvList('x1')
+
+    await vi.waitFor(() => expect(resets).toEqual(expect.arrayContaining(['xtream://panel.test/login1', 'xtream://panel.test/old-login'])))
+    expect(resets).not.toContain('http://other.tld/list.m3u')
+    expect(forgets).toContain('xtream://panel.test/old-login')
+  })
+
   it('rör inte indexet för en custom-lista (kanalerna bor i listan)', async () => {
     const { fetch: fetchMock } = stubReset()
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [

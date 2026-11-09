@@ -21,7 +21,7 @@ import {
   type ImportStatus,
   type XtreamImportSource,
 } from './index-client'
-import { forgetVod } from './vod-client'
+import { forgetVod, vodStatus } from './vod-client'
 import { normalizeCuration } from './list-curation'
 import { sanitizeLiveFormat, type LiveFormat } from './live-format'
 
@@ -614,6 +614,45 @@ export function deleteLiveTvList(listId: string): void {
       // borttagning/import städar, och listan är borta ur lagringen redan.
     })
     .finally(() => emitIndexChanged())
+  // Samma panel kan ligga i indexet under ett ÄLDRE inloggnings-id (kontot
+  // sparades om, listan fick det nya id:t). Då nollade raden ovan fel källa,
+  // och kanaler, guide och bibliotek levde kvar utan någon lista att ta bort.
+  void sweepOrphanIndexSources(sourceHost(source), remaining).catch(() => {})
+}
+
+/** Värdnamnet i en källa (`xtream://host/…` eller en M3U-adress), annars null. */
+export function sourceHost(source: string | null | undefined): string | null {
+  if (!source) return null
+  try {
+    const host = new URL(source).host
+    return host.length > 0 ? host.toLowerCase() : null
+  } catch {
+    const match = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i.exec(source)
+    return match ? match[1].toLowerCase() : null
+  }
+}
+
+/**
+ * Nollar indexkällor (kanaler och VOD) från `host` som ingen kvarvarande lista
+ * pekar på. Körs efter att en lista tagits bort — aldrig på egen hand vid
+ * start: indexet delas mellan profiler, och en annan profils listor syns inte
+ * härifrån.
+ */
+export async function sweepOrphanIndexSources(host: string | null, lists: LiveTvList[] = readLists()): Promise<string[]> {
+  if (!host) return []
+  const kept = new Set(lists.map((list) => list.source).filter((entry): entry is string => Boolean(entry)))
+  const [index, vod] = await Promise.all([
+    indexStatus().catch(() => ({ sourceIds: [] as string[] })),
+    vodStatus().catch(() => [] as Array<{ id: string }>),
+  ])
+  const ids = new Set<string>([...index.sourceIds, ...vod.map((entry) => entry.id)])
+  const orphans = [...ids].filter((id) => !kept.has(id) && sourceHost(id) === host)
+  for (const id of orphans) {
+    await forgetVod(id).catch(() => {})
+    await resetSource(id).catch(() => {})
+  }
+  if (orphans.length > 0) emitIndexChanged()
+  return orphans
 }
 
 function deriveListName(sourceUrl: string): string {
