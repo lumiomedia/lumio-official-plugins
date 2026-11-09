@@ -11,6 +11,7 @@ import {
   readPluginJson,
   removePluginStorageByPrefix,
   writePluginJson,
+  resetLibrarySource,
 } from '@/lib/plugin-sdk'
 import {
   emitIndexChanged,
@@ -22,6 +23,7 @@ import {
   type XtreamImportSource,
 } from './index-client'
 import { forgetVod, vodStatus } from './vod-client'
+import { VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
 import { normalizeCuration } from './list-curation'
 import { sanitizeLiveFormat, type LiveFormat } from './live-format'
 
@@ -604,10 +606,7 @@ export function deleteLiveTvList(listId: string): void {
   if (remaining.some((list) => list.source === source)) return
   // Biblioteket hör till källan och ska gå med den. Utan det blev 16 000
   // titlar kvar i indexet för en spellista användaren just raderat.
-  void forgetVod(source).catch(() => {
-    // Samma resonemang som kanalerna nedan: ett nätfel lämnar titlarna kvar,
-    // och nästa radering eller import städar. Listan är borta ur lagringen.
-  })
+  void forgetVodEverywhere(source)
   void resetSource(source)
     .catch(() => {
       // Ett nätfel lämnar kanalerna i indexet. Vyerna läser ändå om: nästa
@@ -618,6 +617,18 @@ export function deleteLiveTvList(listId: string): void {
   // sparades om, listan fick det nya id:t). Då nollade raden ovan fel källa,
   // och kanaler, guide och bibliotek levde kvar utan någon lista att ta bort.
   void sweepOrphanIndexSources(sourceHost(source), remaining).catch(() => {})
+}
+
+/**
+ * Släpper en källas film och serier överallt: ur Live TV:s VOD-index och ur
+ * appens biblioteksindex ("Använd som bibliotek", `xtream-vod:<källa>`). Det
+ * senare glömdes förut, så det borttagna kontots titlar ägde startsidan tills
+ * man byggde om biblioteket. Ett nätfel lämnar titlarna kvar; nästa radering
+ * eller import städar, och listan är redan borta ur lagringen.
+ */
+async function forgetVodEverywhere(source: string): Promise<void> {
+  await forgetVod(source).catch(() => {})
+  await resetLibrarySource(`${VOD_LIBRARY_PROVIDER_ID}:${source}`).catch(() => {})
 }
 
 /** Värdnamnet i en källa (`xtream://host/…` eller en M3U-adress), annars null. */
@@ -648,7 +659,7 @@ export async function sweepOrphanIndexSources(host: string | null, lists: LiveTv
   const ids = new Set<string>([...index.sourceIds, ...vod.map((entry) => entry.id)])
   const orphans = [...ids].filter((id) => !kept.has(id) && sourceHost(id) === host)
   for (const id of orphans) {
-    await forgetVod(id).catch(() => {})
+    await forgetVodEverywhere(id)
     await resetSource(id).catch(() => {})
   }
   if (orphans.length > 0) emitIndexChanged()

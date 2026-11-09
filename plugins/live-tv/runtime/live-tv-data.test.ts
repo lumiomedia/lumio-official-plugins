@@ -261,9 +261,11 @@ describe('deleteLiveTvList', () => {
     // kanaler, guide och bibliotek levde kvar utan lista (Jerry 2026-11-09).
     const resets: string[] = []
     const forgets: string[] = []
+    const libraryResets: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
       const s = String(url)
-      const body = () => JSON.parse(String(init?.body ?? '{}')) as { source?: string }
+      const body = () => JSON.parse(String(init?.body ?? '{}')) as { source?: string; sourceId?: string }
+      if (s.includes('/api/library/reset')) { libraryResets.push(body().sourceId ?? ''); return jsonResponse({ ok: true, removed: 1 }) }
       if (s.includes('/api/live-tv/status')) {
         return jsonResponse({ sources: [
           { id: 'xtream://panel.test/old-login', channels: 5, updatedAt: 1 },
@@ -284,6 +286,9 @@ describe('deleteLiveTvList', () => {
     await vi.waitFor(() => expect(resets).toEqual(expect.arrayContaining(['xtream://panel.test/login1', 'xtream://panel.test/old-login'])))
     expect(resets).not.toContain('http://other.tld/list.m3u')
     expect(forgets).toContain('xtream://panel.test/old-login')
+    // Biblioteksindexet (Använd som bibliotek) släpper också båda kontona —
+    // annars ägde det gamla kontots titlar startsidan efter borttagningen.
+    await vi.waitFor(() => expect(libraryResets).toEqual(expect.arrayContaining(['xtream-vod:xtream://panel.test/login1', 'xtream-vod:xtream://panel.test/old-login'])))
   })
 
   it('rör inte indexet för en custom-lista (kanalerna bor i listan)', async () => {

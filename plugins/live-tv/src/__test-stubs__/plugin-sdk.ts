@@ -830,6 +830,10 @@ export async function runLibraryScan(
   options.onProgress?.({ phase: 'titles', done: 200 })
   return { titles: 200 }
 }
+export async function resetLibrarySource(sourceId: string): Promise<number> {
+  await fetch('/api/library/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sourceId }) })
+  return 0
+}
 export function __resetLibraryStubForTests(): void {
   LIBRARY_STUB.scanning = false
   LIBRARY_STUB.status = { sources: [] }
