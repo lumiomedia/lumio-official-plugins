@@ -64,9 +64,18 @@ describe('Hem i rälsen (VOD)', () => {
   })
   it('spellista utan filmer och serier: säger det, i stället för "förbereds"', async () => {
     setSources([])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u' }])
     const { onNavigate } = mount()
     fireEvent.click(screen.getByTestId('rail-home'))
     expect(await screen.findByRole('status')).toHaveTextContent('This playlist has no films or series')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('ingen spellista alls: säger att en ska läggas till, inte "förbereds"', async () => {
+    setSources([])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [])
+    const { onNavigate } = mount()
+    fireEvent.click(screen.getByTestId('rail-home'))
+    expect(await screen.findByRole('status')).toHaveTextContent('No playlist added yet')
     expect(onNavigate).not.toHaveBeenCalled()
   })
 })
