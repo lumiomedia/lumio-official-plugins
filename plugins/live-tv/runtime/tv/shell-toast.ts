@@ -17,7 +17,11 @@ import { MT } from './mobile/mobile-tokens'
  */
 export function shellToastStyle(opts: { phone: boolean; tabBar: boolean }): CSSProperties {
   const base: CSSProperties = {
-    position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex: 80,
+    // Centrering med marginaler, inte `translateX(-50%)`: lagrets intoning
+    // (`lumio-livetv-fade`) animerar `transform`, och under de 160 ms gällde
+    // animationens värde — rutan stod med vänsterkanten i mitten och hoppade
+    // sedan in (2026-11-09).
+    position: 'fixed', left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto', zIndex: 80,
     boxSizing: 'border-box', width: 'max-content', textAlign: 'center',
     background: TV.glass, color: TV.text, pointerEvents: 'none',
   }
