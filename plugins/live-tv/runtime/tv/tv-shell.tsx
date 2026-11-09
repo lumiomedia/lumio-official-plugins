@@ -164,7 +164,7 @@ type PlayerComponent = ComponentType<{
 
 /** Hem-knappens besked när biblioteket inte finns, per orsak (vod-autoscan.ts `vodHomeState`). */
 const VOD_HOME_TEXT: Record<Exclude<VodHomeState, 'ready'>, TvStringKey> = {
-  hidden: 'vodHomeHidden', 'no-vod': 'vodHomeNoVod', choose: 'vodHomeChoose', importing: 'vodHomeImporting',
+  hidden: 'vodHomeHidden', 'no-playlist': 'vodHomeNoPlaylist', 'no-vod': 'vodHomeNoVod', choose: 'vodHomeChoose', importing: 'vodHomeImporting',
   indexing: 'vodHomeIndexing', failed: 'vodHomeRetrying', waiting: 'vodHomeIndexing',
 }
 

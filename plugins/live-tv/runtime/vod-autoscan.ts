@@ -1,5 +1,5 @@
 import { fetchLibraryStatus, isLibraryScanRunning, readPluginJson, runLibraryScan, writePluginJson } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
+import { LIVE_TV_PLUGIN_ID, getLiveTvLists } from './live-tv-data'
 import { vodStatus } from './vod-client'
 import { vodLibraryProvider } from './vod-library-provider'
 import { vodLibraryRows, type VodLibraryRow } from './vod-library-rows'
@@ -94,6 +94,7 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
  * Varför Hem inte går att öppna, i den ordning användaren kan göra något åt det.
  * - `ready`: biblioteket finns.
  * - `hidden`: VOD är dolt för spellistan.
+ * - `no-playlist`: ingen M3U- eller Xtream-lista alls — inget att vänta på.
  * - `no-vod`: spellistan har inga filmer eller serier (vanlig M3U, ren kanalpanel).
  * - `choose`: en källa väntar på kategorivalet.
  * - `importing`: katalogen hämtas fortfarande från panelen.
@@ -101,7 +102,7 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
  * - `failed`: senaste försöket blev inte färdigt; ett nytt görs efter en stund.
  * - `waiting`: inget har prövats än (startar strax).
  */
-export type VodHomeState = 'ready' | 'hidden' | 'no-vod' | 'choose' | 'importing' | 'indexing' | 'failed' | 'waiting'
+export type VodHomeState = 'ready' | 'hidden' | 'no-playlist' | 'no-vod' | 'choose' | 'importing' | 'indexing' | 'failed' | 'waiting'
 
 export async function vodHomeState(): Promise<VodHomeState> {
   if (vodHiddenForActivePlaylist()) return 'hidden'
@@ -113,7 +114,10 @@ export async function vodHomeState(): Promise<VodHomeState> {
       if (sources.some((s) => s.importing)) return 'importing'
       // Biblioteket känner en VOD-källa fast VOD-statusen är tom (värden svarade inte): säg inte "inga filmer".
       const known = library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`)) ?? false
-      return known ? 'waiting' : 'no-vod'
+      if (known) return 'waiting'
+      // Utan någon M3U- eller Xtream-lista alls finns inget som kan bli film och serier.
+      const hasPlaylist = getLiveTvLists().some((list) => list.kind === 'm3u' || list.kind === 'xtream')
+      return hasPlaylist ? 'no-vod' : 'no-playlist'
     }
     await ensureVodChoiceMigrated(async () => sources)
     if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return 'choose'

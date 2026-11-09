@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
 vi.mock('@/lib/plugin-sdk', async (orig) => ({ ...(await orig<object>()), fetchLibraryStatus: vi.fn(), isLibraryScanRunning: vi.fn(() => false), runLibraryScan: vi.fn(async () => {}) }))
 vi.mock('./vod-client', async (orig) => ({ ...(await orig<object>()), vodStatus: vi.fn() }))
 import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/plugin-sdk'
@@ -113,6 +115,9 @@ describe('vodHomeState: vad Hem väntar på', () => {
     expect(await vodHomeState()).toBe('ready')
     vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
     vi.mocked(vodStatus).mockResolvedValue([])
+    // Utan någon spellista alls är beskedet ett annat: det finns inget att vänta på.
+    expect(await vodHomeState()).toBe('no-playlist')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'm1', name: 'a.tld', kind: 'm3u', source: 'http://a.tld/list.m3u', url: 'http://a.tld/list.m3u', createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, channelCount: 0, groups: [] }])
     expect(await vodHomeState()).toBe('no-vod')
     vi.mocked(vodStatus).mockResolvedValue([{ ...source('a'), total: 0, importing: true }])
     expect(await vodHomeState()).toBe('importing')

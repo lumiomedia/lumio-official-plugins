@@ -69,7 +69,13 @@ export async function scanVodSource(
   if (!source) return { titles: 0, cursor: null }
 
   const sources = await deps.status()
-  const cursor = sources.find((entry) => entry.id === source)?.updatedAt ?? null
+  const known = sources.find((entry) => entry.id === source)
+  // Källan finns inte längre i VOD-indexet (kontot raderat). Värden skriver
+  // alltid en avslutande batch med markör efter en skanning, och den hade
+  // återskapat källposten i biblioteket — en skanning som hunnit starta före
+  // raderingen gjorde exakt det (2026-11-09). Avvisa i stället.
+  if (!known) throw new Error(`vod source removed: ${source}`)
+  const cursor = known.updatedAt ?? null
 
   let titles = 0
   progress({ phase: 'listing', done: 0 })

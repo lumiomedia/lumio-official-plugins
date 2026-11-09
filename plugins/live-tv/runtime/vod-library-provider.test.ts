@@ -87,6 +87,16 @@ describe('scanVodSource', () => {
     expect(out.titles).toBe(VOD_SCAN_PAGE)
   })
 
+  it('vägrar skanna en källa som inte längre finns i VOD-indexet (värden skulle annars återskapa den)', async () => {
+    // Värden skriver alltid en avslutande batch med markör efter en skanning,
+    // vilket återskapar källposten. En borttagen källa (kontot raderat) ska
+    // därför inte "lyckas" med noll titlar utan avvisas.
+    const emit = vi.fn(async () => {})
+    const gone = vi.fn(async () => [])
+    await expect(scanVodSource('xtream-vod:kkz', emit, () => {}, undefined, { query: pagedQuery(0), status: gone })).rejects.toThrow(/removed/)
+    expect(emit).not.toHaveBeenCalled()
+  })
+
   it('gör ingenting för en främmande källa', async () => {
     const query = pagedQuery(100)
     const out = await scanVodSource('plex:1', async () => {}, () => {}, undefined, { query: query as never, status: status(1) as never })
