@@ -14,6 +14,8 @@ export interface CacheRange { start: number; end: number }
 
 /** Så nära live-kanten (sekunder) räknas som live: etiketten visar LIVE, inte "−0:02". */
 export const LIVE_EDGE_SLACK_S = 3
+/** Samma sak för den lokala HLS-bufferten på Android: ExoPlayer ligger några sekunder (sitt liveoffset) efter listans slut. */
+export const LIVE_EDGE_SLACK_S_HLS = 8
 export const TIMESHIFT_MINUTES = [15, 30, 60] as const
 export type TimeshiftMinutes = (typeof TIMESHIFT_MINUTES)[number]
 export const TIMESHIFT_API = '/api/live-tv/timeshift/settings'
@@ -33,8 +35,8 @@ export function timeshiftModel(a: { range: CacheRange | null; timePos: number })
  * vidare och en omladdning räddar en hängd motor); med buffert fortsätter
  * bilden där den stannade. `<video>` sköter sin egen buffert.
  */
-export function resumeAction(a: { isHtmlEngine: boolean; timeshiftAvailable: boolean }): 'unpause' | 'reload' {
-  return a.isHtmlEngine || a.timeshiftAvailable ? 'unpause' : 'reload'
+export function resumeAction(a: { engine: 'mpv' | 'droid' | 'html'; timeshiftAvailable: boolean }): 'unpause' | 'reload' {
+  return a.engine === 'html' || a.timeshiftAvailable ? 'unpause' : 'reload'
 }
 
 export function formatBehind(ms: number): string {

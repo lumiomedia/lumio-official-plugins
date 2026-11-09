@@ -992,6 +992,9 @@ const EN = {
   // Timeshift (live-tv 0.20.0)
   settingTimeshift: 'Pause live TV',
   settingTimeshiftHint: 'A paused channel continues where you paused it, and you can move back and forward within the buffer. Mac, Windows and TV boxes with the mpv engine.',
+  settingTimeshiftDevice: 'Pause live TV on this device',
+  settingTimeshiftDeviceHint: 'Keeps a local copy of the channel while you watch so you can pause and rewind. Off by default on Android until it has been tested on your box.',
+  timeshiftBehindWindow: 'You were paused longer than the buffer — playing from the oldest point',
   settingTimeshiftMinutes: 'Buffer',
   goLive: 'Go live',
   behindLive: '{t} behind',
@@ -1938,6 +1941,9 @@ const SV: Record<keyof typeof EN, string> = {
   // Timeshift (live-tv 0.20.0)
   settingTimeshift: 'Pausa Live TV',
   settingTimeshiftHint: 'En pausad kanal fortsätter där du pausade, och du kan spola bakåt och framåt inom bufferten. Mac, Windows och TV-boxar med mpv-motorn.',
+  settingTimeshiftDevice: 'Pausa Live TV på den här enheten',
+  settingTimeshiftDeviceHint: 'Sparar en lokal kopia av kanalen medan du tittar så att du kan pausa och spola tillbaka. Av som standard på Android tills det testats på din box.',
+  timeshiftBehindWindow: 'Pausen var längre än bufferten — spelar från den äldsta punkten',
   settingTimeshiftMinutes: 'Buffert',
   goLive: 'Gå live',
   behindLive: '{t} efter',
@@ -2880,6 +2886,9 @@ const DE: Record<keyof typeof EN, string> = {
   // Timeshift (live-tv 0.20.0)
   settingTimeshift: 'Live-TV pausieren',
   settingTimeshiftHint: 'Ein pausierter Sender läuft dort weiter, wo du pausiert hast, und du kannst innerhalb des Puffers vor- und zurückspulen. Mac, Windows und TV-Boxen mit mpv.',
+  settingTimeshiftDevice: 'Live-TV auf diesem Gerät pausieren',
+  settingTimeshiftDeviceHint: 'Legt beim Zuschauen eine lokale Kopie des Senders an, damit du pausieren und zurückspulen kannst. Auf Android standardmäßig aus, bis es auf deiner Box getestet wurde.',
+  timeshiftBehindWindow: 'Die Pause war länger als der Puffer – Wiedergabe ab der ältesten Stelle',
   settingTimeshiftMinutes: 'Puffer',
   goLive: 'Live',
   behindLive: '{t} zurück',
@@ -3822,6 +3831,9 @@ const FR: Record<keyof typeof EN, string> = {
   // Timeshift (live-tv 0.20.0)
   settingTimeshift: 'Mettre la TV en direct en pause',
   settingTimeshiftHint: 'Une chaîne en pause reprend là où vous l’avez arrêtée, et vous pouvez avancer ou reculer dans la mémoire tampon. Mac, Windows et box TV avec le moteur mpv.',
+  settingTimeshiftDevice: 'Mettre la TV en direct en pause sur cet appareil',
+  settingTimeshiftDeviceHint: 'Garde une copie locale de la chaîne pendant que vous regardez, pour pouvoir mettre en pause et revenir en arrière. Désactivé par défaut sur Android tant que ce n’est pas testé sur votre box.',
+  timeshiftBehindWindow: 'La pause a dépassé la mémoire tampon : lecture depuis le point le plus ancien',
   settingTimeshiftMinutes: 'Mémoire tampon',
   goLive: 'En direct',
   behindLive: '{t} de retard',
@@ -4764,6 +4776,9 @@ const ES: Record<keyof typeof EN, string> = {
   // Timeshift (live-tv 0.20.0)
   settingTimeshift: 'Pausar la TV en directo',
   settingTimeshiftHint: 'Un canal en pausa continúa donde lo pausaste, y puedes retroceder y avanzar dentro del búfer. Mac, Windows y cajas de TV con el motor mpv.',
+  settingTimeshiftDevice: 'Pausar la TV en directo en este dispositivo',
+  settingTimeshiftDeviceHint: 'Guarda una copia local del canal mientras lo ves para poder pausar y retroceder. Desactivado por defecto en Android hasta probarlo en tu caja.',
+  timeshiftBehindWindow: 'La pausa duró más que el búfer: reproduciendo desde el punto más antiguo',
   settingTimeshiftMinutes: 'Búfer',
   goLive: 'En directo',
   behindLive: '{t} de retraso',

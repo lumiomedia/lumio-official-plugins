@@ -1129,7 +1129,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (mpvPaused) {
       // Med timeshift-buffert (timeshift.ts) fortsätter bilden där den
       // stannade; `timeshift` sätts längre ner men är klart när man klickar.
-      if (resumeAction({ isHtmlEngine, timeshiftAvailable: Boolean(timeshift) }) === 'unpause') {
+      if (resumeAction({ engine: engineKind, timeshiftAvailable: Boolean(timeshift) }) === 'unpause') {
         void mpv.setPlayPause(false)
         return
       }

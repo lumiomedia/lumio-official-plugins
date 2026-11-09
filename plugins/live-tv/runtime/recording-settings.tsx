@@ -11,6 +11,7 @@ import { TIMESHIFT_MINUTE_OPTIONS, nextRecordEndLate, nextRecordStartEarly, next
 import { RECORD_END_LATE_OPTIONS, RECORD_KEEP_FREE_OPTIONS, RECORD_START_EARLY_OPTIONS, type RecordEndLateMin, type RecordStartEarlyMin } from './recording-plan'
 import { formatBytes, saveRecordSettings, useRecordings } from './recordings'
 import { LIVE_TV_BROWSE_PAGE_ID } from './live-tv-shell'
+import { setTimeshiftOnDevice, useTimeshiftOnDevice } from './timeshift-device'
 
 /*
   INSPELNINGENS INSTÄLLNINGAR — samma fyra värden på tre ytor.
@@ -38,7 +39,11 @@ function openRecordings(): void {
 }
 
 /** Appens Inställningar på skrivbordet: ett kort i dragspelet. */
+/** Bara Android (media3): bufferten är boxens egen, så valet är per enhet (timeshift-device.ts). */
+const showDeviceTimeshift = (): boolean => sdk.isAndroidTauriEnv === true
+
 export function RecordingSettingsDesktop({ tvSettings, tt }: { tvSettings: TvSettings; tt: TT }) {
+  const onDevice = useTimeshiftOnDevice()
   const { list } = useRecordings(false)
   const keepFreeGb = list ? Math.round(list.keepFreeBytes / 1_000_000_000) : 2
   const canPick = typeof desktopSdk.isPluginDesktopHost === 'function' && desktopSdk.isPluginDesktopHost() && typeof desktopSdk.pickPluginFolder === 'function'
@@ -89,12 +94,16 @@ export function RecordingSettingsDesktop({ tvSettings, tt }: { tvSettings: TvSet
         value={String(tvSettings.timeshiftMinutes)}
         onChange={(key) => setTvSettings({ timeshiftMinutes: Number(key) as TimeshiftMinutesSetting })}
       />
+      {showDeviceTimeshift() ? (
+        <LtToggleRow first={false} testId="lt-timeshift-device" label={tt('settingTimeshiftDevice')} desc={tt('settingTimeshiftDeviceHint')} checked={onDevice} onChange={(on) => setTimeshiftOnDevice(on)} />
+      ) : null}
     </LtRows>
   )
 }
 
 /** Live TV:s egna inställningar (skrivbord/TV i skalet och telefonen): rader i Beteende-stil. */
 export function RecordingSettingsRows({ settings, tt, phone = false, onOpen }: { settings: TvSettings; tt: TT; phone?: boolean; onOpen: () => void }) {
+  const onDevice = useTimeshiftOnDevice()
   const rows = (
     <>
       <Row phone={phone} testId="setting-recordingEnabled" label={tt('settingRecording')} right={<Toggle on={settings.recordingEnabled} />} onOk={() => setTvSettings({ recordingEnabled: !settings.recordingEnabled })} />
@@ -104,6 +113,9 @@ export function RecordingSettingsRows({ settings, tt, phone = false, onOpen }: {
       <Row phone={phone} testId="setting-recordOpen" label={tt('settingRecordOpen')} right="›" onOk={onOpen} />
       <Row phone={phone} testId="setting-timeshiftEnabled" label={tt('settingTimeshift')} right={<Toggle on={settings.timeshiftEnabled} />} onOk={() => setTvSettings({ timeshiftEnabled: !settings.timeshiftEnabled })} />
       <Row phone={phone} testId="setting-timeshiftMinutes" label={tt('settingTimeshiftMinutes')} right={tt('minutesShort', { min: settings.timeshiftMinutes })} onOk={() => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(settings.timeshiftMinutes) })} />
+      {showDeviceTimeshift() ? (
+        <Row phone={phone} testId="setting-timeshiftDevice" label={tt('settingTimeshiftDevice')} right={<Toggle on={onDevice} />} onOk={() => setTimeshiftOnDevice(!onDevice)} />
+      ) : null}
     </>
   )
   if (phone) return rows
@@ -117,6 +129,7 @@ export function RecordingSettingsRows({ settings, tt, phone = false, onOpen }: {
 
 /** Appens Inställningar i TV-läget: TvRow-rader med hjälptext. */
 export function RecordingSettingsTvRows({ tvSettings, tt }: { tvSettings: TvSettings; tt: TT }) {
+  const onDevice = useTimeshiftOnDevice()
   return (
     <>
       <TvRow testId="tv-record-enabled" label={tt('settingRecording')} hint={tt('settingRecordingHint')} toggle={tvSettings.recordingEnabled} onToggle={(recordingEnabled) => setTvSettings({ recordingEnabled })} />
@@ -126,6 +139,9 @@ export function RecordingSettingsTvRows({ tvSettings, tt }: { tvSettings: TvSett
       <TvRow testId="tv-record-open" label={tt('settingRecordOpen')} caret onOk={openRecordings} />
       <TvRow testId="tv-timeshift-enabled" label={tt('settingTimeshift')} hint={tt('settingTimeshiftHint')} toggle={tvSettings.timeshiftEnabled} onToggle={(timeshiftEnabled) => setTvSettings({ timeshiftEnabled })} />
       <TvRow testId="tv-timeshift-minutes" label={tt('settingTimeshiftMinutes')} value={tt('minutesShort', { min: tvSettings.timeshiftMinutes })} onOk={() => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(tvSettings.timeshiftMinutes) })} />
+      {showDeviceTimeshift() ? (
+        <TvRow testId="tv-timeshift-device" label={tt('settingTimeshiftDevice')} hint={tt('settingTimeshiftDeviceHint')} toggle={onDevice} onToggle={(on) => setTimeshiftOnDevice(on)} />
+      ) : null}
     </>
   )
 }

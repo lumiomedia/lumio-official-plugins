@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests } from '@/lib/plugin-sdk'
-import { LIVE_EDGE_SLACK_S, TIMESHIFT_MINUTES, formatBehind, pushTimeshiftSettings, resumeAction, timeshiftModel } from './timeshift'
+import { LIVE_EDGE_SLACK_S, LIVE_EDGE_SLACK_S_HLS, TIMESHIFT_MINUTES, formatBehind, pushTimeshiftSettings, resumeAction, timeshiftModel } from './timeshift'
 import { getTvSettings, setTvSettings } from './tv/tv-settings-store'
 
 afterEach(() => { vi.unstubAllGlobals(); __resetForTests() })
@@ -34,10 +34,18 @@ describe('timeshiftModel', () => {
 })
 
 describe('resumeAction', () => {
-  it('play after pause reloads the channel without a buffer and resumes in place with one', () => {
-    expect(resumeAction({ isHtmlEngine: false, timeshiftAvailable: false })).toBe('reload')
-    expect(resumeAction({ isHtmlEngine: false, timeshiftAvailable: true })).toBe('unpause')
-    expect(resumeAction({ isHtmlEngine: true, timeshiftAvailable: false })).toBe('unpause')
+  it('play after pause reloads the channel without a buffer and resumes in place with one, per engine', () => {
+    expect(resumeAction({ engine: 'mpv', timeshiftAvailable: false })).toBe('reload')
+    expect(resumeAction({ engine: 'mpv', timeshiftAvailable: true })).toBe('unpause')
+    // Android (media3): samma regel — bufferten är sessionen i appen.
+    expect(resumeAction({ engine: 'droid', timeshiftAvailable: false })).toBe('reload')
+    expect(resumeAction({ engine: 'droid', timeshiftAvailable: true })).toBe('unpause')
+    // <video> sköter sin egen buffert.
+    expect(resumeAction({ engine: 'html', timeshiftAvailable: false })).toBe('unpause')
+  })
+  it('the HLS live edge needs more slack than mpv (ExoPlayer sits a few seconds behind the list end)', () => {
+    expect(LIVE_EDGE_SLACK_S_HLS).toBe(8)
+    expect(LIVE_EDGE_SLACK_S_HLS).toBeGreaterThan(LIVE_EDGE_SLACK_S)
   })
 })
 
