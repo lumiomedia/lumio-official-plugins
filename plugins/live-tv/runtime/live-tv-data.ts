@@ -1,6 +1,6 @@
 'use client'
 
-import { vodImportFilter } from './vod-category-filter'
+import { isVodChoiceMade, setVodCategoryChoice, vodImportFilter } from './vod-category-filter'
 import {
   clearPluginMemoryCache,
   clearPluginMemoryCacheByPrefix,
@@ -73,6 +73,8 @@ function sanitizeArchive(raw: unknown): XtreamArchive | undefined {
 
 export const LIVE_TV_PLUGIN_ID = 'com.lumio.live-tv'
 export const LIVE_TV_GLOBAL_EPG_ID = 'global'
+/** Sänds på `window` när en tablåhämtning i bakgrunden blivit klar (live-tv-model.ts). */
+export const EPG_REFRESHED_EVENT = 'lumio-live-tv-epg-refreshed'
 const M3U_URLS_KEY = 'm3u_urls'
 const M3U_DRAFT_URLS_KEY = 'm3u_urls_draft'
 const LIVE_TV_LISTS_KEY = 'lists'
@@ -1057,6 +1059,10 @@ export async function importList(list: LiveTvList, onProgress?: (status: ImportS
           fetchedAt: new Date().toISOString(),
         }
       : entry)))
+    // Katalogen hämtades i sin helhet (vodImportFilter): valet är "allt med"
+    // tills användaren gallrar. Utan det hade Hem och den automatiska
+    // biblioteksgenomgången väntat på ett val som inte efterfrågas någonstans.
+    if (list.kind === 'xtream' && list.source && !isVodChoiceMade(list.source)) setVodCategoryChoice(list.source, [], [])
     emitIndexChanged()
   }
   return status

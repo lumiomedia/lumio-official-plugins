@@ -9,7 +9,7 @@ vi.mock('../index-client', () => ({
 }))
 
 import { epgStatus, refreshEpg, waitForJob } from '../index-client'
-import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { EPG_REFRESHED_EVENT, LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { useEpgStatus } from './useEpgStatus'
 
 const list: LiveTvList = {
@@ -99,5 +99,14 @@ describe('useEpgStatus', () => {
     expect(refreshEpg).toHaveBeenCalledTimes(1)
     await act(async () => { release?.(); await first })
     expect(result.current.refreshing).toBe(false)
+  })
+
+  it('läser om när en bakgrundshämtning blivit klar — panelen stod på "aldrig hämtad" fast tablån fanns', async () => {
+    vi.mocked(epgStatus).mockResolvedValue({ ...status, fetchedAt: null, programmes: 0 })
+    const { result } = renderHook(() => useEpgStatus())
+    await waitFor(() => expect(result.current.status?.programmes).toBe(0))
+    vi.mocked(epgStatus).mockResolvedValue(status)
+    act(() => { window.dispatchEvent(new Event(EPG_REFRESHED_EVENT)) })
+    await waitFor(() => expect(result.current.status?.programmes).toBe(812))
   })
 })

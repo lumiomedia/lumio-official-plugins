@@ -48,6 +48,7 @@ import {
   type LiveTvList,
   type M3uChannel,
   type ListCuration,
+  EPG_REFRESHED_EVENT,
 } from './live-tv-data'
 import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId, useTvSettings } from './tv/tv-settings-store'
 import { orderedGroups, recordRawGroupOrder } from './group-order'
@@ -859,6 +860,9 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
         try {
           const job = await refreshEpg(listId, epgUrls, sources)
           await waitForJob(job)
+          // Inställningarnas EPG-status läser om på den här: annars stod den på
+          // "aldrig hämtad" tills vyn öppnades om, fast tablån fanns.
+          try { window.dispatchEvent(new Event(EPG_REFRESHED_EVENT)) } catch { /* ingen DOM */ }
         } catch (error) {
           /*
             EN MISSLYCKAD HÄMTNING RÄKNAS INTE SOM GJORD (Jerry 2026-09-19:

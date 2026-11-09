@@ -18,6 +18,7 @@ import {
   type LiveTvList,
   type XtreamLogin,
 } from './live-tv-data'
+import { ensureVodChoiceMigrated, isVodChoiceMade } from './vod-category-filter'
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: () => Promise.resolve(body) } as Response
@@ -177,6 +178,28 @@ describe('importMissingSources', () => {
     const list = getLiveTvLists().find((l) => l.id === 'x2')
     expect(list?.needsReimport).toBe(false)
     expect(list?.lastImportError).toBeUndefined()
+  })
+
+  it('en lyckad import av ett nytt Xtream-konto räknar katalogvalet som gjort (allt med), så biblioteket byggs av sig självt', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: RequestInfo | URL) => {
+      const s = String(url)
+      if (s.includes('/api/live-tv/status')) return jsonResponse({ sources: [] })
+      if (s.includes('/api/live-tv/import/status')) return jsonResponse({ state: 'done', received: 1, result: { total: 1, groups: [], urlTvg: null, truncated: false } })
+      if (s.includes('/api/live-tv/import')) return jsonResponse({ job: 'job-1' })
+      throw new Error(`unexpected fetch: ${s}`)
+    }))
+    await ensureVodChoiceMigrated(async () => [])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [
+      { id: 'login9', base: 'http://panel.test', username: 'u', password: 'p', format: 'ts', categoryIds: [] },
+    ])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [
+      rawList({ id: 'x9', name: 'Panel', kind: 'xtream', source: 'xtream://panel.test/login9', xtreamLoginId: 'login9' }),
+    ])
+    expect(isVodChoiceMade('xtream://panel.test/login9')).toBe(false)
+
+    await importMissingSources()
+
+    expect(isVodChoiceMade('xtream://panel.test/login9')).toBe(true)
   })
 
   it('importerar bara källor som SAKNAS i indexet (appens objektform)', async () => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls, getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
+import { LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls, getLiveTvLists, onLiveTvListsChanged, EPG_REFRESHED_EVENT } from '../live-tv-data'
 import { epgStatus, refreshEpg, waitForJob, type EpgStatus } from '../index-client'
 
 /**
@@ -60,6 +60,14 @@ export function useEpgStatus(): {
   // Adresserna redigeras i samma vy som läser det här; utan prenumerationen
   // visade hooken den uppsättning som råkade gälla vid monteringen.
   useEffect(() => onLiveTvListsChanged(() => setLists(getLiveTvLists())), [])
+
+  // En bakgrundshämtning (live-tv-model.ts) som blir klar medan panelen är
+  // öppen: läs om, annars står "aldrig hämtad" kvar fast tablån finns.
+  useEffect(() => {
+    const onRefreshed = () => { void readStatus().then((next) => setStatus(next)) }
+    window.addEventListener(EPG_REFRESHED_EVENT, onRefreshed)
+    return () => window.removeEventListener(EPG_REFRESHED_EVENT, onRefreshed)
+  }, [readStatus])
 
   const reload = useCallback(async () => {
     setStatus(await readStatus())
