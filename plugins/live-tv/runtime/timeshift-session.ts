@@ -53,9 +53,10 @@ export async function timeshiftSessionStatus(id: string): Promise<TimeshiftSessi
  * ExoPlayer slutar läsa spellistan) river inte bufferten. `onStatus` får
  * svaret, så reläläget kan rita buffertens längd.
  */
-export function startTimeshiftHeartbeat(id: string, onStatus?: (status: TimeshiftSessionStatus) => void, everyMs = HEARTBEAT_MS): () => void {
+export function startTimeshiftHeartbeat(id: string, onStatus?: (status: TimeshiftSessionStatus | null) => void, everyMs = HEARTBEAT_MS): () => void {
   const timer = window.setInterval(() => {
-    void timeshiftSessionStatus(id).then((status) => { if (status) onStatus?.(status) })
+    // `null` = sessionen finns inte längre i appen (ffmpeg dog, tomgång): spelaren släpper tidslinjen.
+    void timeshiftSessionStatus(id).then((status) => onStatus?.(status))
   }, everyMs)
   return () => window.clearInterval(timer)
 }

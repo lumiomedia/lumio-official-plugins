@@ -324,7 +324,7 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
  * den fokuserade linjen hoppar 30 s; ett klick söker till den punkten.
  */
 function TimeshiftBar({ ts, ps, tt }: { ts: NonNullable<LiveTvPlayerControls['timeshift']>; ps: PlayerScale; tt: ReturnType<typeof useTvText>['tt'] }) {
-  const m = timeshiftModel({ range: ts.range, timePos: ts.timePos })
+  const m = timeshiftModel({ range: ts.range, timePos: ts.timePos, slackS: ts.slackS })
   if (!m.available) return null
   const onBarClick = (event: { clientX: number; currentTarget: HTMLElement }) => {
     const rect = event.currentTarget.getBoundingClientRect()

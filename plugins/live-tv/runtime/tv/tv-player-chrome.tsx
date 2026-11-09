@@ -297,7 +297,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     // Roten släpper igenom pekaren till videon; bara fälten tar den.
     <div ref={rootRef} data-live-tv-tv-root="" {...(isTv ? {} : { 'data-live-tv-desktop': '1' })} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
       <TvFocusStyle />
-      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} recording={!!rec.active} behindMs={controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos }).behindMs : 0} />
+      <PlayerTopBar channel={channel} tv={tv} info={info} ps={ps} visible={visible} onClose={onClose} onKeep={keep} onRelease={release} recording={!!rec.active} behindMs={controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos, slackS: controls.timeshift.slackS }).behindMs : 0} />
       <div
         data-testid="banner"
         onMouseEnter={keep}

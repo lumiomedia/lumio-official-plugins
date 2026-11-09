@@ -56,7 +56,7 @@ import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
 
 const TS = 'http://tv.kkz.test:8080/live/u/p/8171.ts'
 const channel = { name: 'SVT1', logo: null, group: 'Sweden', url: TS, tvgId: null }
-const SESSION = { id: 'ab12', liveUrl: '/api/live-tv/timeshift/ab12/live.ts', playlistUrl: '/api/live-tv/timeshift/ab12/index.m3u8' }
+const SESSION = { id: 'ab12', liveUrl: 'http://127.0.0.1:3011/api/live-tv/timeshift/ab12/live.ts', playlistUrl: 'http://127.0.0.1:3011/api/live-tv/timeshift/ab12/index.m3u8' }
 
 function tv(): LiveTvPlayerTvProps {
   return {
@@ -71,6 +71,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 let fetches: Array<{ url: string; method: string }> = []
 let sessionReply: () => Response = () => json(SESSION)
 let statusReady = true
+let statusGone = false
 
 beforeEach(() => {
   __resetForTests()
@@ -79,6 +80,7 @@ beforeEach(() => {
   engine.reset()
   fetches = []
   statusReady = true
+  statusGone = false
   sessionReply = () => json(SESSION)
   setTvSettings({ timeshiftEnabled: true, timeshiftMinutes: 30 })
   setTimeshiftOnDevice(true)
@@ -87,7 +89,7 @@ beforeEach(() => {
     const method = init?.method ?? 'GET'
     fetches.push({ url: u, method })
     if (u.startsWith('/api/live-tv/timeshift/session')) return method === 'DELETE' ? new Response(null, { status: 204 }) : sessionReply()
-    if (u.endsWith('/status')) return json({ ready: statusReady, bytes: 1, segments: 1, seconds: 120 })
+    if (u.endsWith('/status')) return statusGone ? json({ error: 'gone' }, 404) : json({ ready: statusReady, bytes: 1, segments: 1, seconds: 120 })
     return json({})
   }))
 })
@@ -141,7 +143,7 @@ describe('Timeshift på Android', () => {
     const bar = await screen.findByTestId('timeshift-bar')
     expect(bar).toBeTruthy()
     fireEvent.click(screen.getByText('Go live'))
-    await waitFor(() => expect(engine.calls).toContain('seek:599'))
+    await waitFor(() => expect(engine.calls).toContain('seek:594'))
   })
 
   it('stängning tar bort sessionen innan spelaren stängs', async () => {
@@ -164,10 +166,59 @@ describe('Timeshift på Android', () => {
     expect(fetches.some((f) => f.method === 'DELETE' && f.url.includes('id=ab12'))).toBe(true)
   })
 
-  it('pausen var längre än bufferten: ett kort besked, en gång', async () => {
+  it('pausen var längre än bufferten: ett kort besked som försvinner av sig självt', async () => {
     mount()
     await waitFor(() => expect(openCalls()).toHaveLength(1))
     act(() => engine.set({ behindWindow: true }))
     expect(await screen.findByTestId('player-notice')).toHaveTextContent('paused longer than the buffer')
+    // Flaggan är sann för exakt en poll (Kotlin nollar den när den lästs): beskedet ska ändå stå kvar sina sekunder …
+    act(() => engine.set({ behindWindow: false }))
+    expect(screen.getByTestId('player-notice')).toBeTruthy()
+    // … och sedan försvinna, inte sitta kvar över bilden tills spelaren stängs.
+    await waitFor(() => expect(screen.queryByTestId('player-notice')).toBeNull(), { timeout: 7000 })
+  }, 10_000)
+
+  it('−30 direkt från reläet: byter till spellistan UTAN att pausa och hoppar fönsterrelativt från buffertens slut', async () => {
+    mount()
+    await waitFor(() => expect(openCalls()).toHaveLength(1))
+    // Buffertens längd hämtas direkt när sessionen skapats (inte först efter 15 s): tidslinjen finns på reläet.
+    const bar = await screen.findByTestId('timeshift-bar')
+    expect(bar).toBeTruthy()
+    fireEvent.click(screen.getByLabelText('Back 30 s'))
+    await waitFor(() => expect(engine.calls).toContain(`switch:${SESSION.playlistUrl}|false|true`))
+    await waitFor(() => expect(engine.calls).toContain('seek:90'))
+    expect(engine.calls).not.toContain('pause:true')
+  })
+
+  it('TV-kromet räknar livekanten med HLS-slacken: 5 s bakom är LIVE', async () => {
+    mount()
+    await waitFor(() => expect(openCalls()).toHaveLength(1))
+    fireEvent.click(screen.getByLabelText('Pause'))
+    await waitFor(() => expect(engine.calls.some((c) => c.startsWith('switch:'))).toBe(true))
+    act(() => engine.set({ isLive: true, duration: 600, timePos: 595 }))
+    await screen.findByTestId('timeshift-bar')
+    expect(screen.getByTestId('timeshift-label')).toHaveTextContent('LIVE')
+    expect(screen.queryByText('Go live')).toBeNull()
+  })
+
+  it('reläet tog slut (STATE_ENDED): spelaren öppnar om mot samma session i stället för svart ruta', async () => {
+    mount()
+    await waitFor(() => expect(openCalls()).toHaveLength(1))
+    act(() => engine.set({ ended: true }))
+    await waitFor(() => expect(openCalls()).toHaveLength(2))
+    expect(openCalls()[1]).toBe(`open:${SESSION.liveUrl}`)
+    // Samma kanal: sessionen återanvänds (ingen DELETE), appen svarar med samma session på POST.
+    expect(fetches.some((f) => f.method === 'DELETE')).toBe(false)
+  })
+
+  it('sessionen dog i appen (status 404): ingen växling vid paus, tidslinjen släpps', async () => {
+    mount()
+    await waitFor(() => expect(openCalls()).toHaveLength(1))
+    await screen.findByTestId('timeshift-bar')
+    statusGone = true
+    fireEvent.click(screen.getByLabelText('Pause'))
+    await waitFor(() => expect(engine.calls).toContain('pause:true'))
+    await waitFor(() => expect(screen.queryByTestId('timeshift-bar')).toBeNull())
+    expect(engine.calls.some((c) => c.startsWith('switch:'))).toBe(false)
   })
 })

@@ -19500,7 +19500,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -56419,9 +56418,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function startTimeshiftHeartbeat(id, onStatus, everyMs = HEARTBEAT_MS) {
     const timer5 = window.setInterval(() => {
-      void timeshiftSessionStatus(id).then((status) => {
-        if (status) onStatus?.(status);
-      });
+      void timeshiftSessionStatus(id).then((status) => onStatus?.(status));
     }, everyMs);
     return () => window.clearInterval(timer5);
   }
@@ -58817,7 +58814,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     ] });
   }
   function TimeshiftBar({ ts, ps, tt }) {
-    const m = timeshiftModel({ range: ts.range, timePos: ts.timePos });
+    const m = timeshiftModel({ range: ts.range, timePos: ts.timePos, slackS: ts.slackS });
     if (!m.available) return null;
     const onBarClick = (event2) => {
       const rect = event2.currentTarget.getBoundingClientRect();
@@ -59344,7 +59341,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       // Roten släpper igenom pekaren till videon; bara fälten tar den.
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-live-tv-tv-root": "", ...isTv ? {} : { "data-live-tv-desktop": "1" }, style: { position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30 }, children: [
         /* @__PURE__ */ jsx(TvFocusStyle, {}),
-        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2, recording: !!rec.active, behindMs: controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos }).behindMs : 0 }),
+        /* @__PURE__ */ jsx(PlayerTopBar, { channel, tv, info, ps, visible, onClose, onKeep: keep, onRelease: release2, recording: !!rec.active, behindMs: controls?.timeshift ? timeshiftModel({ range: controls.timeshift.range, timePos: controls.timeshift.timePos, slackS: controls.timeshift.slackS }).behindMs : 0 }),
         /* @__PURE__ */ jsxs(
           "div",
           {
@@ -60489,35 +60486,65 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const tsSessionRef = useRef(null);
     const tsHeartbeatRef = useRef(null);
     const tsOnPlaylistRef = useRef(false);
+    const tsSwitchingRef = useRef(null);
+    const [droidSessionOn, setDroidSessionOn] = useState(false);
     const [droidOnPlaylist, setDroidOnPlaylist] = useState(false);
     const [droidBufferSeconds, setDroidBufferSeconds] = useState(0);
     const [notice, setNotice] = useState(null);
     const { tt: ttPlayer } = useTvText();
-    const endTimeshiftSession = useCallback(async () => {
+    const dropTimeshiftSession = useCallback((remote) => {
       tsHeartbeatRef.current?.();
       tsHeartbeatRef.current = null;
       const session2 = tsSessionRef.current;
       tsSessionRef.current = null;
       tsOnPlaylistRef.current = false;
+      setDroidSessionOn(false);
       setDroidOnPlaylist(false);
       setDroidBufferSeconds(0);
-      if (session2) await deleteTimeshiftSession(session2.id);
+      return remote && session2 ? deleteTimeshiftSession(session2.id) : Promise.resolve();
     }, []);
-    const switchToPlaylist = useCallback(async () => {
-      const session2 = tsSessionRef.current;
-      if (!session2 || tsOnPlaylistRef.current) return Boolean(session2);
-      for (let i = 0; i < 20; i += 1) {
-        const status = await timeshiftSessionStatus(session2.id);
-        if (status?.ready) break;
-        if (tsSessionRef.current !== session2) return false;
-        await new Promise((r) => window.setTimeout(r, 500));
+    const endTimeshiftSession = useCallback(async () => {
+      await dropTimeshiftSession(true);
+    }, [dropTimeshiftSession]);
+    const onTimeshiftStatus = useCallback((status) => {
+      if (status) {
+        setDroidBufferSeconds(Math.floor(status.seconds));
+        return;
       }
-      if (tsSessionRef.current !== session2) return false;
-      await switchNativeSource({ url: session2.playlistUrl, paused: true, atEnd: true });
-      tsOnPlaylistRef.current = true;
-      setDroidOnPlaylist(true);
-      return true;
-    }, []);
+      void dropTimeshiftSession(false);
+    }, [dropTimeshiftSession]);
+    const switchToPlaylist = useCallback((paused) => {
+      const session2 = tsSessionRef.current;
+      if (!session2) return Promise.resolve(false);
+      if (tsOnPlaylistRef.current) return Promise.resolve(true);
+      if (tsSwitchingRef.current) return tsSwitchingRef.current;
+      const run3 = (async () => {
+        let ready = false;
+        for (let i = 0; i < 20; i += 1) {
+          const status = await timeshiftSessionStatus(session2.id);
+          if (tsSessionRef.current !== session2) return false;
+          if (status === null) {
+            void dropTimeshiftSession(false);
+            return false;
+          }
+          if (status.ready) {
+            ready = true;
+            break;
+          }
+          await new Promise((r) => window.setTimeout(r, 500));
+        }
+        if (!ready || tsSessionRef.current !== session2) return false;
+        await switchNativeSource({ url: session2.playlistUrl, paused, atEnd: true });
+        tsOnPlaylistRef.current = true;
+        setDroidOnPlaylist(true);
+        return true;
+      })();
+      tsSwitchingRef.current = run3;
+      void run3.finally(() => {
+        if (tsSwitchingRef.current === run3) tsSwitchingRef.current = null;
+      });
+      return run3;
+    }, [dropTimeshiftSession]);
     const IPTV_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
     const hostProxyUrl2 = useCallback((url) => hostProxyUrl(window.location.origin, url), []);
     const engineOpen = useCallback(
@@ -60545,11 +60572,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             return openNativePlayer({ url: target2, mimeType: HOST_PROXY_MIME });
           }
           if (timeshiftWantedRef.current.wanted) {
+            const existing = tsSessionRef.current;
+            if (existing && existing.channelUrl === url) {
+              tsOnPlaylistRef.current = false;
+              setDroidOnPlaylist(false);
+              const liveIsHls = /\.m3u8(?:[?#]|$)/i.test(existing.liveUrl);
+              return openNativePlayer({ url: existing.liveUrl, ...liveIsHls ? { mimeType: HOST_PROXY_MIME } : {} });
+            }
             await endTimeshiftSession();
             const session2 = await createTimeshiftSession(url, timeshiftWantedRef.current.minutes);
             if (session2) {
-              tsSessionRef.current = session2;
-              tsHeartbeatRef.current = startTimeshiftHeartbeat(session2.id, (status) => setDroidBufferSeconds(Math.floor(status.seconds)));
+              tsSessionRef.current = { ...session2, channelUrl: url };
+              setDroidSessionOn(true);
+              tsHeartbeatRef.current = startTimeshiftHeartbeat(session2.id, onTimeshiftStatus);
+              void timeshiftSessionStatus(session2.id).then(onTimeshiftStatus);
               const liveIsHls = /\.m3u8(?:[?#]|$)/i.test(session2.liveUrl);
               return openNativePlayer({ url: session2.liveUrl, ...liveIsHls ? { mimeType: HOST_PROXY_MIME } : {} });
             }
@@ -60563,7 +60599,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           requestHeaders: /\.ts(?:[?#]|$)/i.test(target2) ? void 0 : { "User-Agent": IPTV_USER_AGENT }
         });
       },
-      [isDroidEngine, hostProxyUrl2, endTimeshiftSession]
+      [isDroidEngine, hostProxyUrl2, endTimeshiftSession, onTimeshiftStatus]
     );
     const engineClose = useCallback(
       () => isDroidEngine ? endTimeshiftSession().then(() => closeNativePlayer()) : closeMpvPlayer(),
@@ -61186,7 +61222,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         return;
       }
       void mpv.setPlayPause(true);
-      if (isDroidEngine && tsSessionRef.current && !tsOnPlaylistRef.current) void switchToPlaylist();
+      if (isDroidEngine && tsSessionRef.current && !tsOnPlaylistRef.current) void switchToPlaylist(true);
     };
     const pipPhone = Boolean(tvChrome?.phone) && !isTv && typeof registerPip === "function";
     const pipStateRef = useRef({ tv: tvChrome, channel, paused: mpvPaused, toggle: toggleMpvPause });
@@ -61290,7 +61326,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     };
     const tvSettingsForPlayer = useTvSettings();
     timeshiftWantedRef.current = { wanted: engineKind === "droid" && tvSettingsForPlayer.timeshiftEnabled && timeshiftOnDevice, minutes: tvSettingsForPlayer.timeshiftMinutes };
-    const droidRange = engineKind === "droid" && tsSessionRef.current ? droidTimeshiftRange({ onPlaylist: droidOnPlaylist, isLive: droid.isLive === true, duration: droid.duration, bufferSeconds: droidBufferSeconds }) : null;
+    const droidRange = engineKind === "droid" && droidSessionOn ? droidTimeshiftRange({ onPlaylist: droidOnPlaylist, isLive: droid.isLive === true, duration: droid.duration, bufferSeconds: droidBufferSeconds }) : null;
     const timeshiftRange = engineKind === "mpv" ? tvSettingsForPlayer.timeshiftEnabled ? mpvDesktop.cacheRange : null : droidRange;
     const droidSeekTo = (sec, range) => {
       const target2 = Math.max(range.start + 1, Math.min(range.end - LIVE_EDGE_SLACK_S_HLS, sec));
@@ -61298,25 +61334,19 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         void droid.seek(target2);
         return;
       }
-      void switchToPlaylist().then((ok) => {
+      void switchToPlaylist(mpvPaused).then((ok) => {
         if (ok) void droid.seek(target2);
       });
     };
     const timeshift = timeshiftRange ? engineKind === "droid" ? {
       range: timeshiftRange,
+      slackS: LIVE_EDGE_SLACK_S_HLS,
       timePos: droidOnPlaylist ? mpvTimePos : timeshiftRange.end,
       onSeek: (sec) => droidSeekTo(sec, timeshiftRange),
-      onJump: (delta) => {
-        if (tsOnPlaylistRef.current) {
-          void droid.seekRelative(delta);
-          return;
-        }
-        void switchToPlaylist().then((ok) => {
-          if (ok) void droid.seekRelative(delta);
-        });
-      },
+      onJump: (delta) => droidSeekTo((droidOnPlaylist ? mpvTimePos : timeshiftRange.end) + delta, timeshiftRange),
+      // Fönstrets slut är senast FÄRDIGA segment; stanna ett par sekunder innanför, annars buffrar den om vid varje GOP.
       onGoLive: () => {
-        if (tsOnPlaylistRef.current) void droid.seek(Math.max(1, timeshiftRange.end - 1));
+        if (tsOnPlaylistRef.current) void droid.seek(Math.max(1, timeshiftRange.end - LIVE_EDGE_SLACK_S_HLS + 2));
       }
     } : {
       range: timeshiftRange,
@@ -61328,9 +61358,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     useEffect(() => {
       if (!isDroidEngine || droid.behindWindow !== true) return;
       setNotice(ttPlayer("timeshiftBehindWindow"));
+    }, [isDroidEngine, droid.behindWindow, ttPlayer]);
+    useEffect(() => {
+      if (!notice) return;
       const timer5 = window.setTimeout(() => setNotice(null), 5e3);
       return () => window.clearTimeout(timer5);
-    }, [isDroidEngine, droid.behindWindow, ttPlayer]);
+    }, [notice]);
+    const droidEnded = isDroidEngine && droid.ended;
+    useEffect(() => {
+      if (!droidEnded || !tsSessionRef.current || closingRef.current) return;
+      mpv.resetEnded?.();
+      void engineOpen(channel.url, nativeAttempt > 0);
+    }, [droidEnded]);
     const playerControls = {
       timeshift,
       muted,

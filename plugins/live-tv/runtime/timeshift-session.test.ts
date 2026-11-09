@@ -40,7 +40,7 @@ describe('timeshift session client', () => {
     vi.useFakeTimers()
     reply = () => json({ ready: false, bytes: 0, segments: 0, seconds: 0 })
     const seen: number[] = []
-    const stop = startTimeshiftHeartbeat('ab12', (s) => seen.push(s.seconds))
+    const stop = startTimeshiftHeartbeat('ab12', (s) => { if (s) seen.push(s.seconds) })
     expect(calls).toHaveLength(0)
     await vi.advanceTimersByTimeAsync(15_000)
     expect(calls).toHaveLength(1)
