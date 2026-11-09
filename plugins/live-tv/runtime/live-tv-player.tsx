@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTvSettings } from './tv/tv-settings-store'
+import { resumeAction } from './timeshift'
 import { createPortal } from 'react-dom'
 import {
   closeMpvPlayer,
@@ -1126,7 +1127,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     // tillbaka till livekanten själv. Omladdningen nedan gäller de nativa
     // motorerna.
     if (mpvPaused) {
-      if (isHtmlEngine) {
+      // Med timeshift-buffert (timeshift.ts) fortsätter bilden där den
+      // stannade; `timeshift` sätts längre ner men är klart när man klickar.
+      if (resumeAction({ isHtmlEngine, timeshiftAvailable: Boolean(timeshift) }) === 'unpause') {
         void mpv.setPlayPause(false)
         return
       }

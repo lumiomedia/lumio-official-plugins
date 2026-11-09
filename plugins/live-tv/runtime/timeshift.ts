@@ -28,6 +28,15 @@ export function timeshiftModel(a: { range: CacheRange | null; timePos: number })
 }
 
 /** "−4:32", "−1:02:05". */
+/**
+ * Play efter paus: utan buffert laddas kanalen om (livekanten har rullat
+ * vidare och en omladdning räddar en hängd motor); med buffert fortsätter
+ * bilden där den stannade. `<video>` sköter sin egen buffert.
+ */
+export function resumeAction(a: { isHtmlEngine: boolean; timeshiftAvailable: boolean }): 'unpause' | 'reload' {
+  return a.isHtmlEngine || a.timeshiftAvailable ? 'unpause' : 'reload'
+}
+
 export function formatBehind(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000))
   const h = Math.floor(total / 3600)

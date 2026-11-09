@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests } from '@/lib/plugin-sdk'
-import { LIVE_EDGE_SLACK_S, TIMESHIFT_MINUTES, formatBehind, pushTimeshiftSettings, timeshiftModel } from './timeshift'
+import { LIVE_EDGE_SLACK_S, TIMESHIFT_MINUTES, formatBehind, pushTimeshiftSettings, resumeAction, timeshiftModel } from './timeshift'
 import { getTvSettings, setTvSettings } from './tv/tv-settings-store'
 
 afterEach(() => { vi.unstubAllGlobals(); __resetForTests() })
@@ -30,6 +30,14 @@ describe('timeshiftModel', () => {
     expect(m.fraction).toBe(0)
     expect(m.behindMs).toBe(400_000)
     expect(m.atLive).toBe(false)
+  })
+})
+
+describe('resumeAction', () => {
+  it('play after pause reloads the channel without a buffer and resumes in place with one', () => {
+    expect(resumeAction({ isHtmlEngine: false, timeshiftAvailable: false })).toBe('reload')
+    expect(resumeAction({ isHtmlEngine: false, timeshiftAvailable: true })).toBe('unpause')
+    expect(resumeAction({ isHtmlEngine: true, timeshiftAvailable: false })).toBe('unpause')
   })
 })
 
