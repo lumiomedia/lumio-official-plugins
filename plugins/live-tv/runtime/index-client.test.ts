@@ -261,6 +261,13 @@ describe('epgNow', () => {
     expect(String(fetchMock.mock.calls[0][0])).toBe('/api/live-tv/epg/now?source=src1&listId=list1&at=1000')
     expect(result.fetchedAt).toBeNull()
     expect(result.items.k1).toEqual({ now: { title: 'A', start: 0, stop: 10 }, next: null, later: null })
+    expect(result.sources).toEqual([])
+  })
+  it('passes on the sources the store is scoped to', async () => {
+    const fetchMock = mockFetch()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ at: 1000, fetchedAt: 5, items: {}, sources: ['xtream://p/1'] }))
+    const result = await epgNow({ listId: 'list1' })
+    expect(result.sources).toEqual(['xtream://p/1'])
   })
 })
 

@@ -844,7 +844,14 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
         const first = await fetchNowSnapshot(listId, activeSource)
         if (!live) return
         setSnapshot(first)
-        const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS
+        // Färskt är inte nog: butiken måste också känna listans källor. Ett
+        // konto som tagits bort och lagts till igen får ett nytt käll-id, och
+        // en butik scopad till det gamla svarade tomt i sex timmar fast
+        // programmen låg på disk (Jerry 2026-11-09). Appen gör då bara den
+        // billiga omskrivningen av källorna + namnmatchningen, ingen hämtning.
+        const scoped = first.sources ?? []
+        const unscoped = scoped.length > 0 && sources.some((source) => !scoped.includes(source))
+        const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS || unscoped
         if (!stale || epgUrls.length === 0 || epgRefreshRequested.has(listId)) return
         /*
          * Appen avgör själv om den verkligen hämtar (TTL 6 h); jobbet begärs

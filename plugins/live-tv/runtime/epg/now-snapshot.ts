@@ -26,6 +26,8 @@ export interface NowSnapshot {
   at: number
   fetchedAt: number | null
   items: Record<string, NowNextLater>
+  /** Källorna appens butik scopas till (tomt = oscopad/ingen butik); modellen ber om omhämtning när listans källa saknas. */
+  sources: string[]
   /**
    * Antal kanaler med tablå, räknat EN gång när svaret kom.
    * `Object.keys(items).length` är O(n) över upp till 17 000 nycklar och låg
@@ -125,7 +127,7 @@ async function refreshStaleKeys(
       count -= 1
     }
   }
-  return { at: data.at, fetchedAt: data.fetchedAt, items, count, loadedAt: cached.loadedAt }
+  return { at: data.at, fetchedAt: data.fetchedAt, items, count, loadedAt: cached.loadedAt, sources: cached.sources }
 }
 
 export function getCachedNowSnapshot(listId: string, source: string | null): NowSnapshot | null {
@@ -149,6 +151,7 @@ export async function fetchNowSnapshot(
       at: data.at,
       fetchedAt: data.fetchedAt,
       items: data.items,
+      sources: data.sources ?? [],
       count: Object.keys(data.items).length,
       loadedAt: Date.now(),
     }))
