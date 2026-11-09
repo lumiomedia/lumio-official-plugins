@@ -20,11 +20,11 @@ export const TIMESHIFT_MINUTES = [15, 30, 60] as const
 export type TimeshiftMinutes = (typeof TIMESHIFT_MINUTES)[number]
 export const TIMESHIFT_API = '/api/live-tv/timeshift/settings'
 
-export function timeshiftModel(a: { range: CacheRange | null; timePos: number }): { available: boolean; behindMs: number; fraction: number; atLive: boolean } {
-  const { range, timePos } = a
+export function timeshiftModel(a: { range: CacheRange | null; timePos: number; slackS?: number }): { available: boolean; behindMs: number; fraction: number; atLive: boolean } {
+  const { range, timePos, slackS = LIVE_EDGE_SLACK_S } = a
   if (!range || !(range.end > range.start)) return { available: false, behindMs: 0, fraction: 1, atLive: true }
   const behindS = Math.max(0, range.end - timePos)
-  const atLive = behindS <= LIVE_EDGE_SLACK_S
+  const atLive = behindS <= slackS
   const fraction = Math.min(1, Math.max(0, (timePos - range.start) / (range.end - range.start)))
   return { available: true, behindMs: atLive ? 0 : Math.round(behindS * 1000), fraction: atLive ? 1 : fraction, atLive }
 }
