@@ -601,10 +601,17 @@
     }
     return removed;
   }
+  function localStorageHolds(key, value) {
+    try {
+      return localStorage.getItem(key) === value;
+    } catch {
+      return false;
+    }
+  }
   function setItemWithQuotaRecovery(key, value) {
     try {
       localStorage.setItem(key, value);
-      return true;
+      if (localStorageHolds(key, value)) return true;
     } catch {
     }
     if (isPressureEvictableKey(key)) return false;
@@ -616,7 +623,7 @@
     }
     try {
       localStorage.setItem(key, value);
-      return true;
+      return localStorageHolds(key, value);
     } catch {
       return false;
     }
@@ -42505,7 +42512,7 @@ ${cue.text}`).join("\n\n")}
   }
   function vodImportFilter(source) {
     const choice = getVodCategoryChoice(source);
-    if (!choice.decided) return isVodChoiceMigrated() ? { vodDefer: true } : {};
+    if (!choice.decided) return {};
     return choice.excluded.length > 0 ? { vodExcludedKeys: choice.excluded } : {};
   }
   var LIVE_TV_PLUGIN_ID, FILTER_KEY2, MIGRATED_KEY, VOD_MERGE_PREFIX;
@@ -42708,7 +42715,7 @@ ${cue.text}`).join("\n\n")}
     const at = shift ? (opts.at ?? Date.now()) - shift : opts.at;
     const qs = buildQuery({ source: opts.source, listId: opts.listId, at });
     const data = await requestJson(`/api/live-tv/epg/now${qs}`);
-    return { at: data.at + shift, fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, shift) };
+    return { at: data.at + shift, fetchedAt: data.fetchedAt ?? null, items: shiftedNow(data.items, shift), sources: data.sources ?? [] };
   }
   async function epgNowForKeys(opts) {
     const data = await postJson("/api/live-tv/epg/now", { listId: opts.listId, keys: opts.keys, at: atHost(opts.at) });
@@ -42854,6 +42861,86 @@ ${cue.text}`).join("\n\n")}
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-map.ts
+  function vodLibrarySourceId(vodSource) {
+    return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
+  }
+  function seriesIdFromKey(key) {
+    const match = /^series:(\d+)$/.exec(key);
+    if (!match) return null;
+    const id = Number(match[1]);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+  }
+  function movieMedia(item) {
+    if (!item.url) return [];
+    return [{ key: item.key, label: item.categoryName ?? "", playRef: item.url }];
+  }
+  function vodEpisodeToLibrary(ep, titleKey2) {
+    const key = `${titleKey2}:s${ep.season}e${ep.episode}`;
+    return {
+      episode: {
+        key,
+        season: ep.season,
+        episode: ep.episode,
+        title: ep.title ?? "",
+        runtimeMin: ep.runtimeMin ?? null,
+        stillUrl: ep.stillUrl ?? null
+      },
+      media: { key, label: "", playRef: ep.url, episodeKey: key }
+    };
+  }
+  function vodItemToLibraryTitle(item, vodSource) {
+    const key = typeof item.key === "string" ? item.key.trim() : "";
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    if (!key || !title) return null;
+    const sourceId = vodLibrarySourceId(vodSource);
+    const series = item.kind === "series";
+    return {
+      // Nyckeln MÅSTE bära samma sourceId som batchen skickas med — annars
+      // hoppar `batch_handler` över titeln utan ett ljud (library_index.rs:355).
+      key: `${sourceId}:${key}`,
+      sourceId,
+      kind: series ? "series" : "movie",
+      title,
+      tmdbId: item.tmdbId ?? null,
+      imdbId: item.imdbId ?? null,
+      year: item.year ?? null,
+      rating: item.rating ?? null,
+      posterUrl: item.posterUrl ?? null,
+      // `addedAt` är Unix-SEKUNDER på båda sidor: `VodItem.addedAt` kommer ur
+      // panelens `added`/`last_modified`, och `LibraryTitle.addedAt` är
+      // dokumenterad som sekunder i lib/library/types.ts (samma enhet som
+      // lokala mappar skriver, `as_secs()` i src-tauri/src/local_files.rs).
+      // Ingen konvertering — en sådan hade sorterat hela biblioteket till år 33 000.
+      addedAt: item.addedAt,
+      /*
+        Panelerna ger TMDB-id på 65–97 % av raderna. Svansen får `unmatched`,
+        precis som en Plex-fil utan match: synlig i biblioteket och i sök,
+        frånvarande ur de TMDB-drivna raderna. Det är hela skälet att
+        `matchState` finns.
+      */
+      matchState: item.tmdbId || item.imdbId ? "matched" : "unmatched",
+      /*
+        Genrer och beskrivning lämnas tomma med flit (planens beslut G).
+        `VodItem` har dem inte, och startsidans genrerader kommer från
+        TMDB-rader filtrerade mot indexet — den vägen behöver bara `tmdbId`.
+        Att gissa en genre ur kategorinamnet hade gett "Movie: Swedish" som genre.
+      */
+      genres: [],
+      // Serier har inga versioner på titelnivå — avsnitten bär sina egna (fas B).
+      media: series ? [] : movieMedia(item),
+      episodes: []
+    };
+  }
+  var VOD_LIBRARY_PROVIDER_ID;
+  var init_vod_library_map = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-map.ts"() {
+      "use strict";
+      "use client";
+      VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
     }
   });
 
@@ -43370,10 +43457,44 @@ ${cue.text}`).join("\n\n")}
     const source = removed?.source;
     if (!source || removed?.kind === "custom") return;
     if (remaining2.some((list) => list.source === source)) return;
-    void forgetVod(source).catch(() => {
-    });
+    void forgetVodEverywhere(source);
     void resetSource(source).catch(() => {
     }).finally(() => emitIndexChanged());
+    void sweepOrphanIndexSources(sourceHost(source), remaining2).catch(() => {
+    });
+  }
+  async function forgetVodEverywhere(source) {
+    await forgetVod(source).catch(() => {
+    });
+    await resetLibrarySource(`${VOD_LIBRARY_PROVIDER_ID}:${source}`).catch(() => {
+    });
+  }
+  function sourceHost(source) {
+    if (!source) return null;
+    try {
+      const host3 = new URL(source).host;
+      return host3.length > 0 ? host3.toLowerCase() : null;
+    } catch {
+      const match = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i.exec(source);
+      return match ? match[1].toLowerCase() : null;
+    }
+  }
+  async function sweepOrphanIndexSources(host3, lists = readLists()) {
+    if (!host3) return [];
+    const kept = new Set(lists.map((list) => list.source).filter((entry) => Boolean(entry)));
+    const [index, vod] = await Promise.all([
+      indexStatus().catch(() => ({ sourceIds: [] })),
+      vodStatus().catch(() => [])
+    ]);
+    const ids = /* @__PURE__ */ new Set([...index.sourceIds, ...vod.map((entry) => entry.id)]);
+    const orphans = [...ids].filter((id) => !kept.has(id) && sourceHost(id) === host3);
+    for (const id of orphans) {
+      await forgetVodEverywhere(id);
+      await resetSource(id).catch(() => {
+      });
+    }
+    if (orphans.length > 0) emitIndexChanged();
+    return orphans;
   }
   function deriveListName(sourceUrl) {
     try {
@@ -43620,6 +43741,7 @@ ${cue.text}`).join("\n\n")}
         truncated: result2?.truncated === true,
         fetchedAt: (/* @__PURE__ */ new Date()).toISOString()
       } : entry));
+      if (list.kind === "xtream" && list.source && !isVodChoiceMade(list.source)) setVodCategoryChoice(list.source, [], []);
       emitIndexChanged();
     }
     return status;
@@ -43731,7 +43853,7 @@ ${cue.text}`).join("\n\n")}
   function onLiveTvHideHeroChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID2, HIDE_HERO_KEY, listener);
   }
-  var LIVE_TV_PLUGIN_ID2, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, logoSrcCache, LOGO_SRC_CACHE_MAX, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
+  var LIVE_TV_PLUGIN_ID2, LIVE_TV_GLOBAL_EPG_ID, EPG_REFRESHED_EVENT, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, logoSrcCache, LOGO_SRC_CACHE_MAX, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
     "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
@@ -43740,10 +43862,12 @@ ${cue.text}`).join("\n\n")}
       init_plugin_sdk();
       init_index_client();
       init_vod_client();
+      init_vod_library_map();
       init_list_curation();
       init_live_format();
       LIVE_TV_PLUGIN_ID2 = "com.lumio.live-tv";
       LIVE_TV_GLOBAL_EPG_ID = "global";
+      EPG_REFRESHED_EVENT = "lumio-live-tv-epg-refreshed";
       M3U_URLS_KEY = "m3u_urls";
       M3U_DRAFT_URLS_KEY = "m3u_urls_draft";
       LIVE_TV_LISTS_KEY = "lists";
@@ -45491,6 +45615,7 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Categories",
         xtreamCategoriesTitle: "Xtream categories",
         xtreamAllCategories: "All categories",
+        xtreamCategoriesHint: "Which channel categories are downloaded from the panel. Nothing ticked means all of them. Hiding and merging groups is done under Categories on the playlist.",
         // Spelare
         moreActions: "More",
         nextLabel: "Next",
@@ -45577,9 +45702,13 @@ ${cue.text}`).join("\n\n")}
         vodLibraryWhereToEnable: "Turn it on under Settings \u2192 Home \u2192 Start page.",
         vodLibraryFailed: "Could not build the library: {error}",
         // Hubben
-        vodHomeIndexing: "Film & series are being prepared \u2014 showing channels meanwhile",
+        vodHomeReady: "Films & series are ready \u2014 press Home to browse them",
+        vodPreparingTitle: "Preparing films & series",
+        vodPreparingCount: "{done} of {total} titles",
+        vodPreparingHint: "The first time takes a while \u2014 every title is matched with details and artwork. Channels and the guide work meanwhile, and this page moves on to films & series by itself when it is done.",
         vodHomeHidden: "Film & series are hidden in the Live TV settings",
         vodHomeNoVod: "This playlist has no films or series \u2014 showing channels",
+        vodHomeNoPlaylist: "No playlist added yet \u2014 add one under Playlists in the Live TV settings",
         vodHomeChoose: "Choose film and series categories in Library first",
         vodHomeImporting: "Films and series are still downloading from the playlist \u2014 Home opens when they are in",
         vodHomeRetrying: "The film and series library did not finish \u2014 trying again now",
@@ -46446,6 +46575,7 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Kategorier",
         xtreamCategoriesTitle: "Xtream-kategorier",
         xtreamAllCategories: "Alla kategorier",
+        xtreamCategoriesHint: "Vilka kanalkategorier som h\xE4mtas fr\xE5n panelen. Inget ibockat betyder alla. D\xF6lja och sl\xE5 ihop grupper g\xF6r du under Kategorier p\xE5 spellistan.",
         moreActions: "Mer",
         nextLabel: "Sen",
         zapMiss: "Ingen kanal {n}",
@@ -46527,9 +46657,13 @@ ${cue.text}`).join("\n\n")}
         vodLibraryScanning: "En genomg\xE5ng p\xE5g\xE5r redan.",
         vodLibraryWhereToEnable: "Sl\xE5 p\xE5 det under Inst\xE4llningar \u2192 Hem \u2192 Startsida.",
         vodLibraryFailed: "Kunde inte bygga biblioteket: {error}",
-        vodHomeIndexing: "Film och serier f\xF6rbereds \u2014 kanalerna visas s\xE5 l\xE4nge",
+        vodHomeReady: "Film och serier \xE4r klara \u2014 tryck p\xE5 Hem f\xF6r att bl\xE4ddra",
+        vodPreparingTitle: "F\xF6rbereder film och serier",
+        vodPreparingCount: "{done} av {total} titlar",
+        vodPreparingHint: "F\xF6rsta g\xE5ngen tar en stund \u2014 varje titel matchas mot uppgifter och bilder. Kanalerna och guiden fungerar s\xE5 l\xE4nge, och den h\xE4r sidan g\xE5r vidare till film och serier av sig sj\xE4lv n\xE4r det \xE4r klart.",
         vodHomeHidden: "Film och serier \xE4r dolda i Live TV-inst\xE4llningarna",
         vodHomeNoVod: "Spellistan har inga filmer eller serier \u2014 kanalerna visas",
+        vodHomeNoPlaylist: "Ingen spellista tillagd \xE4n \u2014 l\xE4gg till en under Spellistor i Live TV-inst\xE4llningarna",
         vodHomeChoose: "V\xE4lj kategorier f\xF6r film och serier i Bibliotek f\xF6rst",
         vodHomeImporting: "Filmer och serier h\xE4mtas fortfarande fr\xE5n spellistan \u2014 Hem \xF6ppnas n\xE4r de \xE4r klara",
         vodHomeRetrying: "Biblioteket med film och serier blev inte klart \u2014 f\xF6rs\xF6ker igen nu",
@@ -47383,6 +47517,7 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Kategorien",
         xtreamCategoriesTitle: "Xtream-Kategorien",
         xtreamAllCategories: "Alle Kategorien",
+        xtreamCategoriesHint: "Welche Senderkategorien vom Panel geladen werden. Nichts angehakt hei\xDFt alle. Gruppen ausblenden und zusammenlegen geht unter Kategorien bei der Playlist.",
         moreActions: "Mehr",
         nextLabel: "Danach",
         zapMiss: "Kein Sender {n}",
@@ -47463,9 +47598,13 @@ ${cue.text}`).join("\n\n")}
         vodLibraryScanning: "Ein Bibliotheks-Scan l\xE4uft bereits.",
         vodLibraryWhereToEnable: "Schalte es unter Einstellungen \u2192 Start \u2192 Startseite ein.",
         vodLibraryFailed: "Die Bibliothek konnte nicht erstellt werden: {error}",
-        vodHomeIndexing: "Filme & Serien werden vorbereitet \u2013 bis dahin siehst du Sender",
+        vodHomeReady: "Filme & Serien sind bereit \u2013 dr\xFCcke Start, um zu st\xF6bern",
+        vodPreparingTitle: "Filme & Serien werden vorbereitet",
+        vodPreparingCount: "{done} von {total} Titeln",
+        vodPreparingHint: "Beim ersten Mal dauert es eine Weile \u2013 jeder Titel wird mit Details und Bildern abgeglichen. Sender und Programmf\xFChrer funktionieren solange, und diese Seite wechselt von selbst zu Filmen & Serien, sobald alles fertig ist.",
         vodHomeHidden: "Filme & Serien sind in den Live-TV-Einstellungen ausgeblendet",
         vodHomeNoVod: "Diese Playlist enth\xE4lt keine Filme oder Serien \u2013 es werden Sender gezeigt",
+        vodHomeNoPlaylist: "Noch keine Playlist hinzugef\xFCgt \u2013 f\xFCge eine unter Playlists in den Live-TV-Einstellungen hinzu",
         vodHomeChoose: "W\xE4hle zuerst in der Bibliothek Film- und Serienkategorien",
         vodHomeImporting: "Filme und Serien werden noch aus der Playlist geladen \u2013 der Start \xF6ffnet sich, sobald sie da sind",
         vodHomeRetrying: "Die Film- und Serienbibliothek wurde nicht fertig \u2013 neuer Versuch l\xE4uft",
@@ -48319,6 +48458,7 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Cat\xE9gories",
         xtreamCategoriesTitle: "Cat\xE9gories Xtream",
         xtreamAllCategories: "Toutes les cat\xE9gories",
+        xtreamCategoriesHint: "Quelles cat\xE9gories de cha\xEEnes sont t\xE9l\xE9charg\xE9es depuis le panel. Rien de coch\xE9 signifie toutes. Masquer et fusionner des groupes se fait sous Cat\xE9gories sur la playlist.",
         moreActions: "Plus",
         nextLabel: "Ensuite",
         zapMiss: "Pas de cha\xEEne {n}",
@@ -48399,9 +48539,13 @@ ${cue.text}`).join("\n\n")}
         vodLibraryScanning: "Une analyse de biblioth\xE8que est d\xE9j\xE0 en cours.",
         vodLibraryWhereToEnable: "Activez-le dans Param\xE8tres \u2192 Accueil \u2192 Page de d\xE9marrage.",
         vodLibraryFailed: "Impossible de cr\xE9er la biblioth\xE8que : {error}",
-        vodHomeIndexing: "Les films et s\xE9ries sont en pr\xE9paration : cha\xEEnes affich\xE9es en attendant",
+        vodHomeReady: "Les films et s\xE9ries sont pr\xEAts : appuyez sur Accueil pour les parcourir",
+        vodPreparingTitle: "Pr\xE9paration des films et s\xE9ries",
+        vodPreparingCount: "{done} titres sur {total}",
+        vodPreparingHint: "La premi\xE8re fois prend un moment : chaque titre est associ\xE9 \xE0 ses informations et visuels. Les cha\xEEnes et le guide fonctionnent en attendant, et cette page passe d\u2019elle-m\xEAme aux films et s\xE9ries une fois termin\xE9.",
         vodHomeHidden: "Les films et s\xE9ries sont masqu\xE9s dans les param\xE8tres de TV en direct",
         vodHomeNoVod: "Cette playlist ne contient ni film ni s\xE9rie : cha\xEEnes affich\xE9es",
+        vodHomeNoPlaylist: "Aucune playlist ajout\xE9e pour l\u2019instant : ajoutez-en une sous Playlists dans les r\xE9glages Live TV",
         vodHomeChoose: "Choisissez d\u2019abord les cat\xE9gories de films et s\xE9ries dans la biblioth\xE8que",
         vodHomeImporting: "Les films et s\xE9ries sont encore en cours de t\xE9l\xE9chargement depuis la playlist : l\u2019accueil s\u2019ouvrira une fois termin\xE9",
         vodHomeRetrying: "La biblioth\xE8que de films et s\xE9ries n\u2019a pas abouti : nouvelle tentative en cours",
@@ -49255,6 +49399,7 @@ ${cue.text}`).join("\n\n")}
         xtreamCategories: "Categor\xEDas",
         xtreamCategoriesTitle: "Categor\xEDas de Xtream",
         xtreamAllCategories: "Todas las categor\xEDas",
+        xtreamCategoriesHint: "Qu\xE9 categor\xEDas de canales se descargan del panel. Nada marcado significa todas. Ocultar y combinar grupos se hace en Categor\xEDas de la lista.",
         moreActions: "M\xE1s",
         nextLabel: "Siguiente",
         zapMiss: "No hay canal {n}",
@@ -49335,9 +49480,13 @@ ${cue.text}`).join("\n\n")}
         vodLibraryScanning: "Ya hay un an\xE1lisis de biblioteca en curso.",
         vodLibraryWhereToEnable: "Act\xEDvalo en Ajustes \u2192 Inicio \u2192 P\xE1gina de inicio.",
         vodLibraryFailed: "No se pudo crear la biblioteca: {error}",
-        vodHomeIndexing: "Se est\xE1n preparando las pel\xEDculas y series; mientras tanto se muestran los canales",
+        vodHomeReady: "Las pel\xEDculas y series est\xE1n listas: pulsa Inicio para explorarlas",
+        vodPreparingTitle: "Preparando pel\xEDculas y series",
+        vodPreparingCount: "{done} de {total} t\xEDtulos",
+        vodPreparingHint: "La primera vez tarda un rato: cada t\xEDtulo se empareja con sus datos e im\xE1genes. Los canales y la gu\xEDa funcionan mientras tanto, y esta p\xE1gina pasa sola a pel\xEDculas y series cuando termine.",
         vodHomeHidden: "Las pel\xEDculas y series est\xE1n ocultas en los ajustes de TV en directo",
         vodHomeNoVod: "Esta lista no tiene pel\xEDculas ni series: se muestran los canales",
+        vodHomeNoPlaylist: "A\xFAn no hay ninguna lista: a\xF1ade una en Listas dentro de los ajustes de Live TV",
         vodHomeChoose: "Elige antes las categor\xEDas de pel\xEDculas y series en Biblioteca",
         vodHomeImporting: "Las pel\xEDculas y series a\xFAn se est\xE1n descargando de la lista: Inicio se abre cuando est\xE9n listas",
         vodHomeRetrying: "La biblioteca de pel\xEDculas y series no termin\xF3: se reintenta ahora",
@@ -50626,7 +50775,7 @@ ${cue.text}`).join("\n\n")}
         count -= 1;
       }
     }
-    return { at: data.at, fetchedAt: data.fetchedAt, items: items2, count, loadedAt: cached2.loadedAt };
+    return { at: data.at, fetchedAt: data.fetchedAt, items: items2, count, loadedAt: cached2.loadedAt, sources: cached2.sources };
   }
   function getCachedNowSnapshot(listId, source) {
     return snapshots.get(snapshotKey(listId, source)) ?? null;
@@ -50641,6 +50790,7 @@ ${cue.text}`).join("\n\n")}
       at: data.at,
       fetchedAt: data.fetchedAt,
       items: data.items,
+      sources: data.sources ?? [],
       count: Object.keys(data.items).length,
       loadedAt: Date.now()
     }));
@@ -51267,12 +51417,18 @@ ${cue.text}`).join("\n\n")}
           const first = await fetchNowSnapshot(listId, activeSource);
           if (!live2) return;
           setSnapshot(first);
-          const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS;
+          const scoped = first.sources ?? [];
+          const unscoped = scoped.length > 0 && sources.some((source) => !scoped.includes(source));
+          const stale = first.fetchedAt === null || Date.now() - first.fetchedAt > EPG_TTL_MS || unscoped;
           if (!stale || epgUrls.length === 0 || epgRefreshRequested.has(listId)) return;
           epgRefreshRequested.add(listId);
           try {
             const job = await refreshEpg(listId, epgUrls, sources);
             await waitForJob(job);
+            try {
+              window.dispatchEvent(new Event(EPG_REFRESHED_EVENT));
+            } catch {
+            }
           } catch (error) {
             epgRefreshRequested.delete(listId);
             throw error;
@@ -56133,6 +56289,55 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts
+  function timeshiftModel(a) {
+    const { range, timePos } = a;
+    if (!range || !(range.end > range.start)) return { available: false, behindMs: 0, fraction: 1, atLive: true };
+    const behindS = Math.max(0, range.end - timePos);
+    const atLive = behindS <= LIVE_EDGE_SLACK_S;
+    const fraction = Math.min(1, Math.max(0, (timePos - range.start) / (range.end - range.start)));
+    return { available: true, behindMs: atLive ? 0 : Math.round(behindS * 1e3), fraction: atLive ? 1 : fraction, atLive };
+  }
+  function resumeAction(a) {
+    return a.isHtmlEngine || a.timeshiftAvailable ? "unpause" : "reload";
+  }
+  function formatBehind(ms2) {
+    const total = Math.max(0, Math.round(ms2 / 1e3));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor(total % 3600 / 60);
+    const s = total % 60;
+    const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+    return `\u2212${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+  }
+  function timeshiftBody(s) {
+    return { enabled: s.timeshiftEnabled, minutes: s.timeshiftMinutes };
+  }
+  async function pushTimeshiftSettings(s) {
+    try {
+      await fetch(TIMESHIFT_API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
+    } catch {
+    }
+  }
+  function startTimeshiftSettingsSync() {
+    let last2 = JSON.stringify(timeshiftBody(getTvSettings()));
+    void pushTimeshiftSettings(JSON.parse(last2));
+    return onTvSettingsChanged(() => {
+      const next = JSON.stringify(timeshiftBody(getTvSettings()));
+      if (next === last2) return;
+      last2 = next;
+      void pushTimeshiftSettings(JSON.parse(next));
+    });
+  }
+  var LIVE_EDGE_SLACK_S, TIMESHIFT_API;
+  var init_timeshift = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts"() {
+      "use strict";
+      init_tv_settings_store();
+      LIVE_EDGE_SLACK_S = 3;
+      TIMESHIFT_API = "/api/live-tv/timeshift/settings";
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/couch-channel-player.ts
   function channelSnapshot(a) {
     return {
@@ -58293,52 +58498,6 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts
-  function timeshiftModel(a) {
-    const { range, timePos } = a;
-    if (!range || !(range.end > range.start)) return { available: false, behindMs: 0, fraction: 1, atLive: true };
-    const behindS = Math.max(0, range.end - timePos);
-    const atLive = behindS <= LIVE_EDGE_SLACK_S;
-    const fraction = Math.min(1, Math.max(0, (timePos - range.start) / (range.end - range.start)));
-    return { available: true, behindMs: atLive ? 0 : Math.round(behindS * 1e3), fraction: atLive ? 1 : fraction, atLive };
-  }
-  function formatBehind(ms2) {
-    const total = Math.max(0, Math.round(ms2 / 1e3));
-    const h = Math.floor(total / 3600);
-    const m = Math.floor(total % 3600 / 60);
-    const s = total % 60;
-    const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-    return `\u2212${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
-  }
-  function timeshiftBody(s) {
-    return { enabled: s.timeshiftEnabled, minutes: s.timeshiftMinutes };
-  }
-  async function pushTimeshiftSettings(s) {
-    try {
-      await fetch(TIMESHIFT_API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
-    } catch {
-    }
-  }
-  function startTimeshiftSettingsSync() {
-    let last2 = JSON.stringify(timeshiftBody(getTvSettings()));
-    void pushTimeshiftSettings(JSON.parse(last2));
-    return onTvSettingsChanged(() => {
-      const next = JSON.stringify(timeshiftBody(getTvSettings()));
-      if (next === last2) return;
-      last2 = next;
-      void pushTimeshiftSettings(JSON.parse(next));
-    });
-  }
-  var LIVE_EDGE_SLACK_S, TIMESHIFT_API;
-  var init_timeshift = __esm({
-    "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/timeshift.ts"() {
-      "use strict";
-      init_tv_settings_store();
-      LIVE_EDGE_SLACK_S = 3;
-      TIMESHIFT_API = "/api/live-tv/timeshift/settings";
-    }
-  });
-
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
@@ -59892,6 +60051,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const [live2, setLive] = useState(false);
     const [attempt, setAttempt] = useState(0);
     const idRef = useRef(/* @__PURE__ */ Symbol("surface"));
+    const noFrameRetryRef = useRef({ url: null, count: 0 });
     const enabled = options.enabled !== false && source !== null;
     const url = source?.url ?? null;
     const muted = options.muted;
@@ -59918,10 +60078,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       let setBounds = null;
       let closeSession = null;
       let readyTimer = 0;
+      let noFrameTimer = 0;
+      let gotFrame = false;
       let spent = false;
+      if (noFrameRetryRef.current.url !== url) noFrameRetryRef.current = { url, count: 0 };
       const playUrl = caps.engine === "html" ? url : resolveLivePlayUrl(url);
       const openUrl = caps.engine === "html" ? url : nativeLiveOpenUrl(playUrl);
       const markReady = () => {
+        gotFrame = true;
         if (!cancelled) setReady(true);
       };
       const markFailed = () => {
@@ -59974,6 +60138,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           sync2();
           await surface.open({ url: openUrl, muted }).catch(markFailed);
           sync2();
+          if (!cancelled && noFrameRetryRef.current.count < 1) {
+            noFrameTimer = window.setTimeout(() => {
+              if (cancelled || gotFrame || spent) return;
+              noFrameRetryRef.current.count += 1;
+              void closeOnce().then(() => {
+                if (!cancelled) setAttempt((n) => n + 1);
+              });
+            }, NO_FRAME_RETRY_MS);
+          }
           return;
         }
         if (caps.engine === "mpv" && muted && typeof host.mpvSetPropertyStrings !== "function") {
@@ -60060,6 +60233,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         cancelled = true;
         dropCutout();
         window.clearTimeout(readyTimer);
+        window.clearTimeout(noFrameTimer);
         window.cancelAnimationFrame(settleFrame);
         settleTimers.forEach((timer5) => window.clearTimeout(timer5));
         observer?.disconnect();
@@ -60081,7 +60255,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [enabled, url, muted, audio, rectRef, attempt]);
     return { ready, failed, live: live2, frameUrl };
   }
-  var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
+  var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED, NO_FRAME_RETRY_MS;
   var init_video_surface = __esm({
     "../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
@@ -60102,6 +60276,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       hostSurfaces = /* @__PURE__ */ new Set();
       waiters2 = /* @__PURE__ */ new Set();
       POSITIONED = /* @__PURE__ */ new Set(["relative", "absolute", "fixed", "sticky"]);
+      NO_FRAME_RETRY_MS = 1e4;
     }
   });
 
@@ -60843,7 +61018,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [handleClose]);
     const toggleMpvPause = () => {
       if (mpvPaused) {
-        if (isHtmlEngine) {
+        if (resumeAction({ isHtmlEngine, timeshiftAvailable: Boolean(timeshift) }) === "unpause") {
           void mpv.setPlayPause(false);
           return;
         }
@@ -61053,6 +61228,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       "use client";
       init_react_shim();
       init_tv_settings_store();
+      init_timeshift();
       import_react_dom5 = __toESM(require_react_dom(), 1);
       init_plugin_sdk();
       init_channel_history();
@@ -63254,6 +63430,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       }
     }, []);
     useEffect(() => onLiveTvListsChanged(() => setLists(getLiveTvLists())), []);
+    useEffect(() => {
+      const onRefreshed = () => {
+        void readStatus().then((next) => setStatus(next));
+      };
+      window.addEventListener(EPG_REFRESHED_EVENT, onRefreshed);
+      return () => window.removeEventListener(EPG_REFRESHED_EVENT, onRefreshed);
+    }, [readStatus]);
     const reload = useCallback(async () => {
       setStatus(await readStatus());
     }, [readStatus]);
@@ -63685,81 +63868,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-map.ts
-  var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
-  function vodLibrarySourceId(vodSource) {
-    return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
-  }
-  function seriesIdFromKey(key) {
-    const match = /^series:(\d+)$/.exec(key);
-    if (!match) return null;
-    const id = Number(match[1]);
-    return Number.isSafeInteger(id) && id > 0 ? id : null;
-  }
-  function movieMedia(item) {
-    if (!item.url) return [];
-    return [{ key: item.key, label: item.categoryName ?? "", playRef: item.url }];
-  }
-  function vodEpisodeToLibrary(ep, titleKey2) {
-    const key = `${titleKey2}:s${ep.season}e${ep.episode}`;
-    return {
-      episode: {
-        key,
-        season: ep.season,
-        episode: ep.episode,
-        title: ep.title ?? "",
-        runtimeMin: ep.runtimeMin ?? null,
-        stillUrl: ep.stillUrl ?? null
-      },
-      media: { key, label: "", playRef: ep.url, episodeKey: key }
-    };
-  }
-  function vodItemToLibraryTitle(item, vodSource) {
-    const key = typeof item.key === "string" ? item.key.trim() : "";
-    const title = typeof item.title === "string" ? item.title.trim() : "";
-    if (!key || !title) return null;
-    const sourceId = vodLibrarySourceId(vodSource);
-    const series = item.kind === "series";
-    return {
-      // Nyckeln MÅSTE bära samma sourceId som batchen skickas med — annars
-      // hoppar `batch_handler` över titeln utan ett ljud (library_index.rs:355).
-      key: `${sourceId}:${key}`,
-      sourceId,
-      kind: series ? "series" : "movie",
-      title,
-      tmdbId: item.tmdbId ?? null,
-      imdbId: item.imdbId ?? null,
-      year: item.year ?? null,
-      rating: item.rating ?? null,
-      posterUrl: item.posterUrl ?? null,
-      // `addedAt` är Unix-SEKUNDER på båda sidor: `VodItem.addedAt` kommer ur
-      // panelens `added`/`last_modified`, och `LibraryTitle.addedAt` är
-      // dokumenterad som sekunder i lib/library/types.ts (samma enhet som
-      // lokala mappar skriver, `as_secs()` i src-tauri/src/local_files.rs).
-      // Ingen konvertering — en sådan hade sorterat hela biblioteket till år 33 000.
-      addedAt: item.addedAt,
-      /*
-        Panelerna ger TMDB-id på 65–97 % av raderna. Svansen får `unmatched`,
-        precis som en Plex-fil utan match: synlig i biblioteket och i sök,
-        frånvarande ur de TMDB-drivna raderna. Det är hela skälet att
-        `matchState` finns.
-      */
-      matchState: item.tmdbId || item.imdbId ? "matched" : "unmatched",
-      /*
-        Genrer och beskrivning lämnas tomma med flit (planens beslut G).
-        `VodItem` har dem inte, och startsidans genrerader kommer från
-        TMDB-rader filtrerade mot indexet — den vägen behöver bara `tmdbId`.
-        Att gissa en genre ur kategorinamnet hade gett "Movie: Swedish" som genre.
-      */
-      genres: [],
-      // Serier har inga versioner på titelnivå — avsnitten bär sina egna (fas B).
-      media: series ? [] : movieMedia(item),
-      episodes: []
-    };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-library-rows.ts
+  init_vod_library_map();
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -63785,6 +63894,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_vod_client();
   init_vod_category_filter();
   init_live_tv_data();
+  init_vod_library_map();
   var VOD_SCAN_PAGE = 200;
   function vodSourceFromLibraryId(libraryId) {
     const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
@@ -63795,7 +63905,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps2.status();
-    const cursor = sources.find((entry) => entry.id === source)?.updatedAt ?? null;
+    const known = sources.find((entry) => entry.id === source);
+    if (!known) throw new Error(`vod source removed: ${source}`);
+    const cursor = known.updatedAt ?? null;
     let titles = 0;
     progress2({ phase: "listing", done: 0 });
     const excluded = deps2.excluded?.(source) ?? /* @__PURE__ */ new Set();
@@ -64142,10 +64254,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_vod_category_filter();
   init_vod_client();
   init_live_tv_data();
+  init_vod_library_map();
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_live_tv_shell();
+  init_vod_library_map();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
   function vodHomeTarget() {
@@ -64243,6 +64357,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/picker-panel.tsx
+  init_tv_strings();
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -64255,8 +64370,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     testId = "list-picker",
     opener,
     surface,
-    backButton
+    backButton,
+    doneButton = false
   }) {
+    const { tt } = useTvText();
     const rootRef = useRef(null);
     const openerRef = useRef(null);
     const closeRef = useRef(null);
@@ -64301,7 +64418,16 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600, minWidth: 0 }, children: title })
           ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
           chips,
-          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `${dp(8)}px ${dp(10)}px`, margin: `0 ${-dp(10)}px` }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
+          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `${dp(8)}px ${dp(10)}px`, margin: `0 ${-dp(10)}px` }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows }),
+          doneButton ? /* @__PURE__ */ jsx("div", { style: { display: "flex", justifyContent: "flex-end", paddingTop: dp(16), flexShrink: 0 }, children: /* @__PURE__ */ jsx(
+            "div",
+            {
+              ...station(() => closeRef.current?.()),
+              "data-testid": `${testId}-done`,
+              style: { padding: `${dp(10)}px ${dp(26)}px`, borderRadius: 999, background: TV2.s08, fontSize: dp(18), fontWeight: 600, cursor: "pointer" },
+              children: tt("done")
+            }
+          ) }) : null
         ]
       }
     );
@@ -65035,6 +65161,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(
         PickerPanel,
         {
+          doneButton: true,
           nav,
           title,
           onClose,
@@ -65073,7 +65200,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         nav,
         title,
         onClose,
-        chips: null,
+        doneButton: true,
+        chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), lineHeight: 1.4, color: TV2.dim, paddingTop: dp(6) }, children: tt("xtreamCategoriesHint") }),
         rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsxs(
             "div",
@@ -73253,6 +73381,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var RAIL_ITEM_NARROW = 48;
   function railKeyForView(view) {
     if (view === "channel") return "guide";
+    if (view === "preparing") return "home";
     if (view === "hub" || view === "search" || view === "guide" || view === "sport" || view === "library" || view === "multi" || view === "favs" || view === "recordings" || view === "settings") return view;
     return null;
   }
@@ -75780,29 +75909,36 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_react_shim();
   init_tv_ui();
   init_video_surface();
-  // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
-  // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
-  // bakgrund). Etiketten och LIVE-taggen är överlager inne i rutan.
-  //
-  // `minHeight` speglar alltid `height`: rutan är en station (`role="button"`)
-  // och får inte klämmas ihop av en flex-förälder under sin uttalade höjd.
   init_jsx_runtime_shim();
   function TvPreview({ channel, enabled, live: live2, width, height, label, onOk, extra }) {
     const ref = useRef(null);
     const surface = useVideoSurface(ref, channel && enabled ? { channel, url: channel.url } : null, { muted: true, audio: false, enabled });
-    const showsVideo = enabled && surface.live && !surface.failed;
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref,
-        ...station(onOk, void 0, extra),
-        style: { width, height, minHeight: height, borderRadius: dp(14), border: `1px solid ${TV2.lineCard}`, position: "relative", overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", flexShrink: 0, cursor: "pointer" },
-        children: [
-          channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
-          /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV2.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label }),
-          live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dp(14), bottom: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", children: "LIVE" }) }) : null
-        ]
-      }
+    const showsVideo = enabled && surface.live && surface.ready && !surface.failed;
+    const starting = enabled && surface.live && !surface.ready && !surface.failed;
+    return (
+      // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
+      // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
+      // bakgrund). Etiketten och LIVE-taggen är överlager inne i rutan.
+      //
+      // `minHeight` speglar alltid `height`: rutan är en station (`role="button"`)
+      // och får inte klämmas ihop av en flex-förälder under sin uttalade höjd.
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          ref,
+          ...station(onOk, void 0, extra),
+          style: { width, height, minHeight: height, borderRadius: dp(14), border: `1px solid ${TV2.lineCard}`, position: "relative", overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", flexShrink: 0, cursor: "pointer" },
+          children: [
+            channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
+            /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV2.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label }),
+            live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dp(14), bottom: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", children: "LIVE" }) }) : null,
+            starting ? /* @__PURE__ */ jsxs("span", { "data-testid": "preview-spinner", "aria-hidden": "true", style: { position: "absolute", top: dp(10), right: dp(10), width: dp(22), height: dp(22), borderRadius: "50%", background: "rgba(17,19,26,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }, children: [
+              /* @__PURE__ */ jsx("style", { children: "@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}" }),
+              /* @__PURE__ */ jsx("span", { style: { width: dp(12), height: dp(12), borderRadius: "50%", border: "2px solid rgba(255,255,255,0.25)", borderTopColor: "rgba(255,255,255,0.9)", animation: "lumio-livetv-spin 0.7s linear infinite" } })
+            ] }) : null
+          ]
+        }
+      )
     );
   }
 
@@ -85267,6 +85403,153 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     ] });
   }
 
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-vod-preparing.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-autoscan.ts
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_vod_client();
+  init_vod_library_map();
+  init_vod_category_filter();
+  var ATTEMPTS_KEY = "live_tv_vod_autoscan_v2";
+  function retryDelayMs(n) {
+    return n <= 0 ? 0 : n === 1 ? 10 * 6e4 : n === 2 ? 60 * 6e4 : 6 * 60 * 6e4;
+  }
+  var readAttempts = () => {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, ATTEMPTS_KEY, null);
+    return raw && typeof raw === "object" ? raw : {};
+  };
+  var writeAttempts = (a) => {
+    writePluginJson(LIVE_TV_PLUGIN_ID2, ATTEMPTS_KEY, a, { emitChange: false });
+  };
+  var inFlight2 = false;
+  var VOD_READY_EVENT = "lumio-live-tv-vod-ready";
+  var fullySynced = (library, row) => !!library?.sources?.some((entry) => entry.id === row.libraryId && entry.lastFullSync);
+  async function maybeAutoScanVod(opts = {}) {
+    if (inFlight2) return "skipped";
+    if (vodHiddenForActivePlaylist()) return "skipped";
+    if (isLibraryScanRunning2()) return "skipped";
+    inFlight2 = true;
+    try {
+      const now2 = opts.now ?? Date.now();
+      const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()]);
+      await ensureVodChoiceMigrated(async () => sources);
+      const attempts = readAttempts();
+      const rows = vodLibraryRows(sources, library).filter((row) => !fullySynced(library, row)).filter((row) => isVodChoiceMade(row.vodSource)).filter((row) => {
+        const a = attempts[row.libraryId];
+        return opts.force || !a || now2 - a.at >= retryDelayMs(a.n);
+      });
+      if (rows.length === 0) return "skipped";
+      if (rows.some((row) => row.importing)) return "skipped";
+      if (isLibraryScanRunning2()) return "skipped";
+      for (const row of rows) attempts[row.libraryId] = { n: (attempts[row.libraryId]?.n ?? 0) + 1, at: now2 };
+      writeAttempts(attempts);
+      for (const row of rows) {
+        try {
+          await runLibraryScan2(vodLibraryProvider, { id: row.libraryId, name: row.label, cursor: null }, { mode: "full" });
+        } catch (err) {
+          console.warn("[live-tv] VOD-autoindex", err);
+        }
+      }
+      const after = await fetchLibraryStatus().catch(() => null);
+      if (rows.some((row) => fullySynced(after, row))) window.dispatchEvent(new Event(VOD_READY_EVENT));
+      return "started";
+    } catch (err) {
+      console.warn("[live-tv] VOD-autoindex", err);
+      return "skipped";
+    } finally {
+      inFlight2 = false;
+    }
+  }
+  async function vodHomeStatus() {
+    const only = (state3) => ({ state: state3, indexed: null, total: null });
+    if (vodHiddenForActivePlaylist()) return only("hidden");
+    try {
+      const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()]);
+      if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return only("ready");
+      const rows = vodLibraryRows(sources, library);
+      if (rows.length === 0) {
+        if (sources.some((s) => s.importing)) return only("importing");
+        const known = library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`)) ?? false;
+        if (known) return only("waiting");
+        const hasPlaylist = getLiveTvLists().some((list) => list.kind === "m3u" || list.kind === "xtream");
+        return only(hasPlaylist ? "no-vod" : "no-playlist");
+      }
+      const counted = rows.filter((row) => row.indexedTitles !== null);
+      const progress2 = {
+        indexed: counted.length > 0 ? counted.reduce((sum, row) => sum + (row.indexedTitles ?? 0), 0) : null,
+        total: rows.reduce((sum, row) => sum + row.vodTitles, 0)
+      };
+      await ensureVodChoiceMigrated(async () => sources);
+      if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return { state: "choose", ...progress2 };
+      if (rows.some((row) => row.importing)) return { state: "importing", ...progress2 };
+      if (isLibraryScanRunning2()) return { state: "indexing", ...progress2 };
+      const attempts = readAttempts();
+      return { state: rows.some((row) => attempts[row.libraryId]) ? "failed" : "waiting", ...progress2 };
+    } catch {
+      return only("waiting");
+    }
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-vod-preparing.tsx
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  var PREPARING_POLL_MS = 3e3;
+  var STATE_TEXT = {
+    importing: "vodHomeImporting",
+    failed: "vodHomeRetrying"
+  };
+  function TvVodPreparing({ nav, phone }) {
+    const { tt, locale } = useTvText();
+    const [status, setStatus] = useState(null);
+    useEffect(() => {
+      let cancelled = false;
+      let kicked = false;
+      const poll = async () => {
+        const next = await vodHomeStatus();
+        if (cancelled) return;
+        setStatus(next);
+        if (next.state === "ready") {
+          window.dispatchEvent(new Event(VOD_READY_EVENT));
+          return;
+        }
+        if (!kicked && (next.state === "failed" || next.state === "waiting")) {
+          kicked = true;
+          void maybeAutoScanVod({ force: true });
+        }
+      };
+      void poll();
+      const timer5 = window.setInterval(() => {
+        void poll();
+      }, PREPARING_POLL_MS);
+      return () => {
+        cancelled = true;
+        window.clearInterval(timer5);
+      };
+    }, []);
+    const indexed = status?.indexed ?? null;
+    const total = status?.total ?? null;
+    const showBar = indexed !== null && total !== null && total > 0;
+    const stateKey = status ? STATE_TEXT[status.state] : void 0;
+    const px = (n) => phone ? Math.round(n * 0.75) : dp(n);
+    const muted = phone ? MT.dim : TV2.muted;
+    return /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "tv-vod-preparing", style: { flex: 1, overflowY: "auto", padding: phone ? "24px 16px" : `${dp(34)}px ${dp(48)}px ${dp(40)}px`, display: "flex", flexDirection: "column", gap: px(22) }, children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: px(34), fontWeight: 600 }, children: tt("vodPreparingTitle") }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: px(14), maxWidth: px(760) }, children: [
+        showBar ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { "data-testid": "vod-preparing-bar", children: /* @__PURE__ */ jsx(Progress, { value: indexed / total, height: px(8) }) }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "vod-preparing-count", style: { fontSize: px(22), fontWeight: 600 }, children: tt("vodPreparingCount", { done: indexed.toLocaleString(locale), total: total.toLocaleString(locale) }) })
+        ] }) : null,
+        stateKey ? /* @__PURE__ */ jsx("div", { "data-testid": "vod-preparing-state", style: { fontSize: px(20), color: muted }, children: tt(stateKey) }) : null,
+        /* @__PURE__ */ jsx("div", { style: { fontSize: px(18), color: muted, lineHeight: 1.45 }, children: tt("vodPreparingHint") }),
+        /* @__PURE__ */ jsx("div", { ...station(() => nav.go("guide", { group: "all" }), void 0, { "data-init": "" }), style: { alignSelf: "flex-start", height: px(48), minHeight: px(48), padding: `0 ${px(22)}px`, borderRadius: 999, border: `1px solid ${TV2.lineStrong}`, background: TV2.s06, display: "inline-flex", alignItems: "center", fontSize: px(18), cursor: "pointer" }, children: tt("railGuide") })
+      ] })
+    ] });
+  }
+
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
@@ -85280,7 +85563,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     cast: TvLibraryCast,
     settings: TvSettingsView,
     sport: TvSport,
-    recordings: TvRecordings
+    recordings: TvRecordings,
+    preparing: TvVodPreparing
   };
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
@@ -85307,6 +85591,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   function tabForView(view) {
     if (view === "channel") return "guide";
     if (view === "title" || view === "cast") return "library";
+    if (view === "preparing") return "home";
     if (view === "multi" || view === "settings" || view === "favs" || view === "recordings") return "more";
     return view;
   }
@@ -85366,80 +85651,6 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/vod-autoscan.ts
-  init_plugin_sdk();
-  init_live_tv_data();
-  init_vod_client();
-  init_vod_category_filter();
-  var ATTEMPTS_KEY = "live_tv_vod_autoscan_v2";
-  function retryDelayMs(n) {
-    return n <= 0 ? 0 : n === 1 ? 10 * 6e4 : n === 2 ? 60 * 6e4 : 6 * 60 * 6e4;
-  }
-  var readAttempts = () => {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID2, ATTEMPTS_KEY, null);
-    return raw && typeof raw === "object" ? raw : {};
-  };
-  var writeAttempts = (a) => {
-    writePluginJson(LIVE_TV_PLUGIN_ID2, ATTEMPTS_KEY, a, { emitChange: false });
-  };
-  var inFlight2 = false;
-  var fullySynced = (library, row) => !!library?.sources?.some((entry) => entry.id === row.libraryId && entry.lastFullSync);
-  async function maybeAutoScanVod(opts = {}) {
-    if (inFlight2) return "skipped";
-    if (vodHiddenForActivePlaylist()) return "skipped";
-    if (isLibraryScanRunning2()) return "skipped";
-    inFlight2 = true;
-    try {
-      const now2 = opts.now ?? Date.now();
-      const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()]);
-      await ensureVodChoiceMigrated(async () => sources);
-      const attempts = readAttempts();
-      const rows = vodLibraryRows(sources, library).filter((row) => !fullySynced(library, row)).filter((row) => isVodChoiceMade(row.vodSource)).filter((row) => {
-        const a = attempts[row.libraryId];
-        return opts.force || !a || now2 - a.at >= retryDelayMs(a.n);
-      });
-      if (rows.length === 0) return "skipped";
-      if (rows.some((row) => row.importing)) return "skipped";
-      if (isLibraryScanRunning2()) return "skipped";
-      for (const row of rows) attempts[row.libraryId] = { n: (attempts[row.libraryId]?.n ?? 0) + 1, at: now2 };
-      writeAttempts(attempts);
-      for (const row of rows) {
-        try {
-          await runLibraryScan2(vodLibraryProvider, { id: row.libraryId, name: row.label, cursor: null }, { mode: "full" });
-        } catch (err) {
-          console.warn("[live-tv] VOD-autoindex", err);
-        }
-      }
-      return "started";
-    } catch (err) {
-      console.warn("[live-tv] VOD-autoindex", err);
-      return "skipped";
-    } finally {
-      inFlight2 = false;
-    }
-  }
-  async function vodHomeState() {
-    if (vodHiddenForActivePlaylist()) return "hidden";
-    try {
-      const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()]);
-      if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return "ready";
-      const rows = vodLibraryRows(sources, library);
-      if (rows.length === 0) {
-        if (sources.some((s) => s.importing)) return "importing";
-        const known = library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`)) ?? false;
-        return known ? "waiting" : "no-vod";
-      }
-      await ensureVodChoiceMigrated(async () => sources);
-      if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return "choose";
-      if (rows.some((row) => row.importing)) return "importing";
-      if (isLibraryScanRunning2()) return "indexing";
-      const attempts = readAttempts();
-      return rows.some((row) => attempts[row.libraryId]) ? "failed" : "waiting";
-    } catch {
-      return "waiting";
-    }
-  }
-
   // ../../../lumio-official-plugins/.worktrees/live-tv-recording/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_vod_category_filter();
   init_mobile_sheet();
@@ -85449,9 +85660,15 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_mobile_tokens();
   function shellToastStyle(opts) {
     const base2 = {
+      // Centrering med marginaler, inte `translateX(-50%)`: lagrets intoning
+      // (`lumio-livetv-fade`) animerar `transform`, och under de 160 ms gällde
+      // animationens värde — rutan stod med vänsterkanten i mitten och hoppade
+      // sedan in (2026-11-09).
       position: "fixed",
-      left: "50%",
-      transform: "translateX(-50%)",
+      left: 0,
+      right: 0,
+      marginLeft: "auto",
+      marginRight: "auto",
       zIndex: 80,
       boxSizing: "border-box",
       width: "max-content",
@@ -85523,17 +85740,15 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       }
     );
   }
-  var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings", "sport", "recordings"];
+  var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings", "sport", "recordings", "preparing"];
+  var VOD_HOME_PREPARING = /* @__PURE__ */ new Set(["importing", "indexing", "failed", "waiting"]);
   var VOD_HOME_TEXT = {
     hidden: "vodHomeHidden",
+    "no-playlist": "vodHomeNoPlaylist",
     "no-vod": "vodHomeNoVod",
-    choose: "vodHomeChoose",
-    importing: "vodHomeImporting",
-    indexing: "vodHomeIndexing",
-    failed: "vodHomeRetrying",
-    waiting: "vodHomeIndexing"
+    choose: "vodHomeChoose"
   };
-  var V2_BG_VIEWS = /* @__PURE__ */ new Set(["hub", "guide", "library", "multi", "favs", "settings", "search", "recordings"]);
+  var V2_BG_VIEWS = /* @__PURE__ */ new Set(["hub", "guide", "library", "multi", "favs", "settings", "search", "recordings", "preparing"]);
   var BACK_KEYS4 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   var HOST_OPEN_MENU_EVENT = "lumio-tv-open-menu";
   var ZAP_TIMEOUT_MS = 1500;
@@ -85668,15 +85883,18 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           onNavigate(vodHomeTarget());
           return;
         }
-        const state3 = await vodHomeState();
+        const { state: state3 } = await vodHomeStatus();
         if (state3 === "ready") {
           onNavigate(vodHomeTarget());
           return;
         }
+        if (VOD_HOME_PREPARING.has(state3)) {
+          go("preparing");
+          return;
+        }
         toast(tt(VOD_HOME_TEXT[state3]), 4e3);
-        if (state3 === "failed" || state3 === "waiting") void maybeAutoScanVod({ force: true });
       });
-    }, [onNavigate, toast, tt]);
+    }, [onNavigate, toast, tt, go]);
     useEffect(() => {
       if (sportOnly) return;
       const off = onVodCategoryChoiceChanged(() => {
@@ -85685,11 +85903,17 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       const timer5 = window.setInterval(() => {
         void maybeAutoScanVod();
       }, 5 * 6e4);
+      const onReady = () => {
+        if (view === "preparing") onNavigate(vodHomeTarget());
+        else toast(tt("vodHomeReady"), 6e3);
+      };
+      window.addEventListener(VOD_READY_EVENT, onReady);
       return () => {
         off();
         window.clearInterval(timer5);
+        window.removeEventListener(VOD_READY_EVENT, onReady);
       };
-    }, [sportOnly]);
+    }, [sportOnly, toast, tt, view, onNavigate]);
     const modelRef = useRef(model);
     useEffect(() => {
       modelRef.current = model;
