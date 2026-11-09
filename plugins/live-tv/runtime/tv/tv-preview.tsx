@@ -19,7 +19,11 @@ export function TvPreview({ channel, enabled, live, width, height, label, onOk, 
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const surface = useVideoSurface(ref, channel && enabled ? { channel, url: channel.url } : null, { muted: true, audio: false, enabled })
-  const showsVideo = enabled && surface.live && !surface.failed
+  // Kanalbilden ligger kvar tills FÖRSTA BILDRUTAN är ritad (`ready`), inte
+  // bara tills ytan finns — samma regel som LivePreviewArt. På ett konto med
+  // en anslutning kan starten ta länge, och rutan stod svart under tiden.
+  const showsVideo = enabled && surface.live && surface.ready && !surface.failed
+  const starting = enabled && surface.live && !surface.ready && !surface.failed
   return (
     // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
     // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
@@ -32,6 +36,12 @@ export function TvPreview({ channel, enabled, live, width, height, label, onOk, 
       {channel && !showsVideo ? <ChannelArt channel={channel} style={{ position: 'absolute', inset: 0, borderRadius: 0 }} /> : null}
       <span style={{ position: 'absolute', top: dp(12), left: dp(14), fontFamily: TV.mono, fontSize: dp(12), letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(243,244,248,0.55)' }}>{label}</span>
       {live ? <span style={{ position: 'absolute', left: dp(14), bottom: dp(12) }}><Tag variant="live">LIVE</Tag></span> : null}
+      {starting ? (
+        <span data-testid="preview-spinner" aria-hidden="true" style={{ position: 'absolute', top: dp(10), right: dp(10), width: dp(22), height: dp(22), borderRadius: '50%', background: 'rgba(17,19,26,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+          <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
+          <span style={{ width: dp(12), height: dp(12), borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
+        </span>
+      ) : null}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { cleanup, render, waitFor } from '@testing-library/react'
+import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { useRef } from 'react'
 
 /**
@@ -51,6 +51,23 @@ afterEach(cleanup)
 beforeEach(() => { opened.length = 0; closeAllAux.mockClear() })
 
 describe('useVideoSurface på värdens fleryte-API', () => {
+  it('en yta utan första bildruta på 10 s tas om EN gång (panelen kan ha släppt förra strömmen då)', async () => {
+    vi.useFakeTimers()
+    try {
+      render(<Probe name="A" onHandle={() => {}} />)
+      await act(async () => { await Promise.resolve() })
+      expect(opened).toHaveLength(1)
+      await act(async () => { vi.advanceTimersByTime(10_000); await Promise.resolve() })
+      await act(async () => { await Promise.resolve() })
+      expect(opened).toHaveLength(2)
+      expect(opened[0].destroyed).toBe(true)
+      await act(async () => { vi.advanceTimersByTime(30_000); await Promise.resolve() })
+      expect(opened).toHaveLength(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('rapporterar värdmotorn med maxSurfaces − 1 levande', () => {
     expect(videoSurfaceCapabilities()).toEqual({ maxLive: 2, engine: 'host', nativeBehindDom: false })
   })
