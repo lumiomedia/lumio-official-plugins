@@ -27,6 +27,7 @@ vi.mock('../live-tv-player', () => ({
 
 import { LiveTvTvShell } from './tv-shell'
 import { vodHomeTarget } from '../vod-home'
+import { VOD_READY_EVENT } from '../vod-autoscan'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'Sport'), ch('C', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -55,12 +56,35 @@ describe('Hem i rälsen (VOD)', () => {
     fireEvent.click(screen.getByTestId('rail-home'))
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(vodHomeTarget()))
   })
-  it('inget index: ingen navigering, ett besked visas', async () => {
+  it('inget index än: Hem öppnar förberedelsesidan', async () => {
     setSources([{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 0, lastFullSync: null }])
     const { onNavigate } = mount()
     fireEvent.click(screen.getByTestId('rail-home'))
-    expect(await screen.findByRole('status')).toHaveTextContent('Film & series are being prepared')
-    expect(onNavigate).not.toHaveBeenCalled()
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'preparing' } }))
+    expect(onNavigate).not.toHaveBeenCalledWith(vodHomeTarget())
+  })
+  it('pågående genomgång: Hem öppnar förberedelsesidan i stället för ett besked', async () => {
+    const item = (n: number) => ({ key: `m${n}`, kind: 'movie' as const, title: `Film ${n}`, categoryId: '1', categoryName: 'Film' })
+    seedLiveTvIndex({ vod: { a: [item(1), item(2), item(3), item(4), item(5)] } })
+    setSources([{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 2, lastFullSync: null }])
+    LIBRARY_STUB.scanning = true
+    try {
+      const { onNavigate } = mount()
+      fireEvent.click(screen.getByTestId('rail-home'))
+      await waitFor(() => expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'preparing' } }))
+    } finally {
+      LIBRARY_STUB.scanning = false
+    }
+  })
+  it('förberedelsesidan: när genomgången blir färdig går skalet vidare till film och serier', async () => {
+    const { onNavigate } = mount({ view: 'preparing' })
+    act(() => { window.dispatchEvent(new Event(VOD_READY_EVENT)) })
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(vodHomeTarget()))
+  })
+  it('någon annanstans: när genomgången blir färdig säger skalet till att Hem är redo', async () => {
+    mount()
+    act(() => { window.dispatchEvent(new Event(VOD_READY_EVENT)) })
+    expect(await screen.findByRole('status')).toHaveTextContent('Films & series are ready')
   })
   it('spellista utan filmer och serier: säger det, i stället för "förbereds"', async () => {
     setSources([])

@@ -50,12 +50,13 @@ describe('shellToastStyle', () => {
 
 describe('besked på telefonen', () => {
   afterEach(() => { LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [] } })
-  it('Hem utan VOD-index ger telefonstilen', async () => {
-    LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 0, lastFullSync: null }] } as typeof LIBRARY_STUB.status
+  it('Hem utan spellista ger telefonstilen', async () => {
+    // (Ett bibliotek som byggs öppnar förberedelsesidan i stället för ett besked.)
+    LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [] } as typeof LIBRARY_STUB.status
     mountPhone()
     fireEvent.click(screen.getByTestId('tab-home'))
     const toast = await screen.findByTestId('shell-toast')
-    expect(toast).toHaveTextContent('Film & series are being prepared')
+    expect(toast).toHaveTextContent('No playlist added yet')
     expect(toast.style.borderRadius).toBe('14px')
     expect(toast.style.fontSize).toBe('14px')
     expect(toast.style.maxWidth).toBe('calc(100vw - 32px)')

@@ -66,6 +66,8 @@ export interface TvRailProps {
 /** Vilken radpost som lyser för en vy. Kanalvyn hör till Guide; vyer utan egen post lyser ingen. */
 export function railKeyForView(view: TvView): RailKey | null {
   if (view === 'channel') return 'guide'
+  // Förberedelsesidan är Hem som väntar på biblioteket.
+  if (view === 'preparing') return 'home'
   if (view === 'hub' || view === 'search' || view === 'guide' || view === 'sport' || view === 'library' || view === 'multi' || view === 'favs' || view === 'recordings' || view === 'settings') return view
   return null
 }

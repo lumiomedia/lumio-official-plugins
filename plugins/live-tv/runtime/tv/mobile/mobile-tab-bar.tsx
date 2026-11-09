@@ -38,6 +38,7 @@ export function tabForView(view: TvView): MobileTab {
   if (view === 'channel') return 'guide'
   // Detaljvyn och rollistan nås BARA ur Biblioteket, så fliken ska lysa där.
   if (view === 'title' || view === 'cast') return 'library'
+  if (view === 'preparing') return 'home'
   if (view === 'multi' || view === 'settings' || view === 'favs' || view === 'recordings') return 'more'
   return view
 }

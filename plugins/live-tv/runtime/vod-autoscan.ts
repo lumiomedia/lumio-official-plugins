@@ -35,6 +35,9 @@ const writeAttempts = (a: Attempts): void => { writePluginJson(LIVE_TV_PLUGIN_ID
 /** Skydd mot två samtidiga anrop inom samma session. */
 let inFlight = false
 
+/** Skickas på `window` när en genomgång härifrån gjorde ett bibliotek färdigt — Hem går att öppna. */
+export const VOD_READY_EVENT = 'lumio-live-tv-vod-ready'
+
 type LibraryStatusLike = Awaited<ReturnType<typeof fetchLibraryStatus>> | null
 const fullySynced = (library: LibraryStatusLike, row: VodLibraryRow): boolean =>
   !!library?.sources?.some((entry) => entry.id === row.libraryId && entry.lastFullSync)
@@ -81,6 +84,9 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
         console.warn('[live-tv] VOD-autoindex', err)
       }
     }
+    // Blev något bibliotek färdigt säger vi till, så skalet kan berätta att Hem är redo.
+    const after = await fetchLibraryStatus().catch(() => null)
+    if (rows.some((row) => fullySynced(after, row))) window.dispatchEvent(new Event(VOD_READY_EVENT))
     return 'started'
   } catch (err) {
     console.warn('[live-tv] VOD-autoindex', err)
@@ -104,29 +110,48 @@ export async function maybeAutoScanVod(opts: { force?: boolean; now?: number } =
  */
 export type VodHomeState = 'ready' | 'hidden' | 'no-playlist' | 'no-vod' | 'choose' | 'importing' | 'indexing' | 'failed' | 'waiting'
 
+export interface VodHomeStatus {
+  state: VodHomeState
+  /** Titlar som hittills hamnat i biblioteket, eller null innan något byggts. */
+  indexed: number | null
+  /** Titlar panelen har totalt, eller null när ingen källa med VOD finns. */
+  total: number | null
+}
+
 export async function vodHomeState(): Promise<VodHomeState> {
-  if (vodHiddenForActivePlaylist()) return 'hidden'
+  return (await vodHomeStatus()).state
+}
+
+/** Som `vodHomeState`, med hur långt genomgången kommit — så beskedet kan säga "400 av 8 148". */
+export async function vodHomeStatus(): Promise<VodHomeStatus> {
+  const only = (state: VodHomeState): VodHomeStatus => ({ state, indexed: null, total: null })
+  if (vodHiddenForActivePlaylist()) return only('hidden')
   try {
     const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()])
-    if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return 'ready'
+    if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return only('ready')
     const rows = vodLibraryRows(sources, library)
     if (rows.length === 0) {
-      if (sources.some((s) => s.importing)) return 'importing'
+      if (sources.some((s) => s.importing)) return only('importing')
       // Biblioteket känner en VOD-källa fast VOD-statusen är tom (värden svarade inte): säg inte "inga filmer".
       const known = library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`)) ?? false
-      if (known) return 'waiting'
+      if (known) return only('waiting')
       // Utan någon M3U- eller Xtream-lista alls finns inget som kan bli film och serier.
       const hasPlaylist = getLiveTvLists().some((list) => list.kind === 'm3u' || list.kind === 'xtream')
-      return hasPlaylist ? 'no-vod' : 'no-playlist'
+      return only(hasPlaylist ? 'no-vod' : 'no-playlist')
+    }
+    const counted = rows.filter((row) => row.indexedTitles !== null)
+    const progress = {
+      indexed: counted.length > 0 ? counted.reduce((sum, row) => sum + (row.indexedTitles ?? 0), 0) : null,
+      total: rows.reduce((sum, row) => sum + row.vodTitles, 0),
     }
     await ensureVodChoiceMigrated(async () => sources)
-    if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return 'choose'
-    if (rows.some((row) => row.importing)) return 'importing'
-    if (isLibraryScanRunning()) return 'indexing'
+    if (rows.some((row) => !isVodChoiceMade(row.vodSource))) return { state: 'choose', ...progress }
+    if (rows.some((row) => row.importing)) return { state: 'importing', ...progress }
+    if (isLibraryScanRunning()) return { state: 'indexing', ...progress }
     const attempts = readAttempts()
-    return rows.some((row) => attempts[row.libraryId]) ? 'failed' : 'waiting'
+    return { state: rows.some((row) => attempts[row.libraryId]) ? 'failed' : 'waiting', ...progress }
   } catch {
-    return 'waiting'
+    return only('waiting')
   }
 }
 
