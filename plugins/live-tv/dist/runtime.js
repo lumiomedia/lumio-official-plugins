@@ -46256,7 +46256,11 @@ ${cue.text}`).join("\n\n")}
         settingTimeshift: "Pause live TV",
         settingTimeshiftHint: "A paused channel continues where you paused it, and you can move back and forward within the buffer. Mac, Windows and TV boxes with the mpv engine.",
         settingTimeshiftDevice: "Pause live TV on this device",
-        settingTimeshiftDeviceHint: "Keeps a local copy of the channel while you watch so you can pause and rewind. Off by default on Android until it has been tested on your box.",
+        settingTimeshiftDeviceHint: "Pausing and rewinding on this device. Keeps a local copy of the channel while you watch. Off by default on Android until it has been tested on your box.",
+        settingRecordFreeSpace: "Free space",
+        settingRecordKeepFreeHint: "Space the disk always keeps free; a recording stops before it gets this low.",
+        recNoSpace: "Not enough space to record: {free} free, keeping {keep} free",
+        recStartFailed: "Recording could not start",
         timeshiftBehindWindow: "You were paused longer than the buffer \u2014 playing from the oldest point",
         settingTimeshiftMinutes: "Buffer",
         goLive: "Go live",
@@ -47206,7 +47210,11 @@ ${cue.text}`).join("\n\n")}
         settingTimeshift: "Pausa Live TV",
         settingTimeshiftHint: "En pausad kanal forts\xE4tter d\xE4r du pausade, och du kan spola bak\xE5t och fram\xE5t inom bufferten. Mac, Windows och TV-boxar med mpv-motorn.",
         settingTimeshiftDevice: "Pausa Live TV p\xE5 den h\xE4r enheten",
-        settingTimeshiftDeviceHint: "Sparar en lokal kopia av kanalen medan du tittar s\xE5 att du kan pausa och spola tillbaka. Av som standard p\xE5 Android tills det testats p\xE5 din box.",
+        settingTimeshiftDeviceHint: "Pausa och spola tillbaka p\xE5 den h\xE4r enheten. Sparar en lokal kopia av kanalen medan du tittar. Av som standard p\xE5 Android tills det testats p\xE5 din box.",
+        settingRecordFreeSpace: "Ledigt utrymme",
+        settingRecordKeepFreeHint: "Utrymme disken alltid beh\xE5ller; en inspelning stoppas innan det blir s\xE5 lite.",
+        recNoSpace: "F\xF6r lite plats att spela in: {free} ledigt, beh\xE5ller {keep}",
+        recStartFailed: "Inspelningen kunde inte starta",
         timeshiftBehindWindow: "Pausen var l\xE4ngre \xE4n bufferten \u2014 spelar fr\xE5n den \xE4ldsta punkten",
         settingTimeshiftMinutes: "Buffert",
         goLive: "G\xE5 live",
@@ -48150,7 +48158,11 @@ ${cue.text}`).join("\n\n")}
         settingTimeshift: "Live-TV pausieren",
         settingTimeshiftHint: "Ein pausierter Sender l\xE4uft dort weiter, wo du pausiert hast, und du kannst innerhalb des Puffers vor- und zur\xFCckspulen. Mac, Windows und TV-Boxen mit mpv.",
         settingTimeshiftDevice: "Live-TV auf diesem Ger\xE4t pausieren",
-        settingTimeshiftDeviceHint: "Legt beim Zuschauen eine lokale Kopie des Senders an, damit du pausieren und zur\xFCckspulen kannst. Auf Android standardm\xE4\xDFig aus, bis es auf deiner Box getestet wurde.",
+        settingTimeshiftDeviceHint: "Pausieren und Zur\xFCckspulen auf diesem Ger\xE4t. Legt beim Zuschauen eine lokale Kopie des Senders an. Auf Android standardm\xE4\xDFig aus, bis es auf deiner Box getestet wurde.",
+        settingRecordFreeSpace: "Freier Speicher",
+        settingRecordKeepFreeHint: "Speicher, den die Platte immer frei h\xE4lt; eine Aufnahme stoppt, bevor es so knapp wird.",
+        recNoSpace: "Zu wenig Platz zum Aufnehmen: {free} frei, {keep} bleiben frei",
+        recStartFailed: "Aufnahme konnte nicht starten",
         timeshiftBehindWindow: "Die Pause war l\xE4nger als der Puffer \u2013 Wiedergabe ab der \xE4ltesten Stelle",
         settingTimeshiftMinutes: "Puffer",
         goLive: "Live",
@@ -49094,7 +49106,11 @@ ${cue.text}`).join("\n\n")}
         settingTimeshift: "Mettre la TV en direct en pause",
         settingTimeshiftHint: "Une cha\xEEne en pause reprend l\xE0 o\xF9 vous l\u2019avez arr\xEAt\xE9e, et vous pouvez avancer ou reculer dans la m\xE9moire tampon. Mac, Windows et box TV avec le moteur mpv.",
         settingTimeshiftDevice: "Mettre la TV en direct en pause sur cet appareil",
-        settingTimeshiftDeviceHint: "Garde une copie locale de la cha\xEEne pendant que vous regardez, pour pouvoir mettre en pause et revenir en arri\xE8re. D\xE9sactiv\xE9 par d\xE9faut sur Android tant que ce n\u2019est pas test\xE9 sur votre box.",
+        settingTimeshiftDeviceHint: "Pause et retour en arri\xE8re sur cet appareil. Garde une copie locale de la cha\xEEne pendant que tu regardes. D\xE9sactiv\xE9 par d\xE9faut sur Android tant que ce n\u2019est pas test\xE9 sur ta box.",
+        settingRecordFreeSpace: "Espace libre",
+        settingRecordKeepFreeHint: "Espace que le disque garde toujours libre ; un enregistrement s\u2019arr\xEAte avant d\u2019en arriver l\xE0.",
+        recNoSpace: "Pas assez d\u2019espace pour enregistrer : {free} libres, {keep} conserv\xE9s",
+        recStartFailed: "L\u2019enregistrement n\u2019a pas pu d\xE9marrer",
         timeshiftBehindWindow: "La pause a d\xE9pass\xE9 la m\xE9moire tampon : lecture depuis le point le plus ancien",
         settingTimeshiftMinutes: "M\xE9moire tampon",
         goLive: "En direct",
@@ -50038,7 +50054,11 @@ ${cue.text}`).join("\n\n")}
         settingTimeshift: "Pausar la TV en directo",
         settingTimeshiftHint: "Un canal en pausa contin\xFAa donde lo pausaste, y puedes retroceder y avanzar dentro del b\xFAfer. Mac, Windows y cajas de TV con el motor mpv.",
         settingTimeshiftDevice: "Pausar la TV en directo en este dispositivo",
-        settingTimeshiftDeviceHint: "Guarda una copia local del canal mientras lo ves para poder pausar y retroceder. Desactivado por defecto en Android hasta probarlo en tu caja.",
+        settingTimeshiftDeviceHint: "Pausar y rebobinar en este dispositivo. Guarda una copia local del canal mientras ves. Desactivado por defecto en Android hasta que se pruebe en tu caja.",
+        settingRecordFreeSpace: "Espacio libre",
+        settingRecordKeepFreeHint: "Espacio que el disco siempre mantiene libre; una grabaci\xF3n se detiene antes de llegar a tanto.",
+        recNoSpace: "No hay espacio para grabar: {free} libres, se conservan {keep}",
+        recStartFailed: "La grabaci\xF3n no pudo iniciarse",
         timeshiftBehindWindow: "La pausa dur\xF3 m\xE1s que el b\xFAfer: reproduciendo desde el punto m\xE1s antiguo",
         settingTimeshiftMinutes: "B\xFAfer",
         goLive: "En directo",
@@ -55999,7 +56019,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
     if (!res.ok) {
       const message = data && typeof data === "object" && typeof data.error === "string" ? data.error : `HTTP ${res.status}`;
-      throw new Error(message);
+      throw new RecordRequestError(message, res.status, data);
     }
     return data;
   }
@@ -56095,7 +56115,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (n >= GB) return `${(n / GB).toLocaleString(locale, { maximumFractionDigits: 1 })} GB`;
     return `${Math.round(n / MB).toLocaleString(locale)} MB`;
   }
-  var RECORD_API, RECORDINGS_POLL_ACTIVE_MS, RECORDINGS_POLL_IDLE_MS, jsonInit, cache9, inflight11, listeners14, emit5;
+  var RECORD_API, RECORDINGS_POLL_ACTIVE_MS, RECORDINGS_POLL_IDLE_MS, RecordRequestError, jsonInit, cache9, inflight11, listeners14, emit5;
   var init_recordings = __esm({
     "../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/recordings.ts"() {
       "use strict";
@@ -56104,6 +56124,14 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       RECORD_API = "/api/live-tv/record";
       RECORDINGS_POLL_ACTIVE_MS = 15e3;
       RECORDINGS_POLL_IDLE_MS = 6e4;
+      RecordRequestError = class extends Error {
+        constructor(message, status, data) {
+          super(message);
+          __publicField(this, "status", status);
+          __publicField(this, "data", data);
+          this.name = "RecordRequestError";
+        }
+      };
       jsonInit = (method, body) => ({ method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       cache9 = null;
       inflight11 = null;
@@ -56416,22 +56444,39 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return null;
     }
   }
-  function startTimeshiftHeartbeat(id, onStatus, everyMs = HEARTBEAT_MS) {
-    const timer5 = window.setInterval(() => {
-      void timeshiftSessionStatus(id).then((status) => onStatus?.(status));
-    }, everyMs);
-    return () => window.clearInterval(timer5);
+  function startTimeshiftHeartbeat(id, onStatus, everyMs = HEARTBEAT_MS, warmupMs = HEARTBEAT_WARMUP_MS) {
+    const startedAt = Date.now();
+    let timer5 = 0;
+    let stopped = false;
+    const warm = (seconds2) => seconds2 <= 0 && Date.now() - startedAt < HEARTBEAT_WARMUP_MAX_MS;
+    const schedule3 = (ms2) => {
+      if (stopped) return;
+      timer5 = window.setTimeout(() => {
+        void timeshiftSessionStatus(id).then((status) => {
+          if (stopped) return;
+          onStatus?.(status);
+          if (status) schedule3(warm(status.seconds) ? warmupMs : everyMs);
+        });
+      }, ms2);
+    };
+    schedule3(warmupMs);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer5);
+    };
   }
   function droidTimeshiftRange(a) {
     if (a.onPlaylist) return a.isLive && a.duration > 0 ? { start: 0, end: a.duration } : null;
     return a.bufferSeconds > 0 ? { start: 0, end: a.bufferSeconds } : null;
   }
-  var TIMESHIFT_SESSION_API, HEARTBEAT_MS;
+  var TIMESHIFT_SESSION_API, HEARTBEAT_MS, HEARTBEAT_WARMUP_MS, HEARTBEAT_WARMUP_MAX_MS;
   var init_timeshift_session = __esm({
     "../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/timeshift-session.ts"() {
       "use strict";
       TIMESHIFT_SESSION_API = "/api/live-tv/timeshift/session";
       HEARTBEAT_MS = 15e3;
+      HEARTBEAT_WARMUP_MS = 2e3;
+      HEARTBEAT_WARMUP_MAX_MS = 6e4;
     }
   });
 
@@ -58177,24 +58222,40 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   });
 
   // ../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/use-channel-recording.ts
+  function recordingErrorFrom(e) {
+    if (e instanceof RecordRequestError && e.status === 507) {
+      const data = e.data ?? {};
+      return { kind: "noSpace", freeBytes: Number(data.freeBytes ?? 0), keepFreeBytes: Number(data.keepFreeBytes ?? 0) };
+    }
+    return { kind: "failed", message: e instanceof Error ? e.message : String(e) };
+  }
   function useChannelRecording(channel, now2, nowMs) {
     const settings = useTvSettings();
     const { list } = useRecordings(false);
     const active5 = recordingFor(list, channelKey(channel), null);
     const busy = useRef(false);
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      if (!error) return;
+      const timer5 = window.setTimeout(() => setError(null), RECORD_ERROR_MS);
+      return () => window.clearTimeout(timer5);
+    }, [error]);
     const toggle = useCallback(async () => {
       if (busy.current) return;
       busy.current = true;
       try {
         if (active5) await stopRecording(active5.id);
         else await scheduleRecording(planFromNow(channel, now2, nowMs, recordMargins(settings)));
-      } catch {
+        setError(null);
+      } catch (e) {
+        setError(recordingErrorFrom(e));
       } finally {
         busy.current = false;
       }
     }, [active5, channel, now2, nowMs, settings]);
-    return { enabled: settings.recordingEnabled, active: active5, toggle };
+    return { enabled: settings.recordingEnabled, active: active5, toggle, error };
   }
+  var RECORD_ERROR_MS;
   var init_use_channel_recording = __esm({
     "../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/use-channel-recording.ts"() {
       "use strict";
@@ -58204,6 +58265,22 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_recording_plan();
       init_recordings();
       init_tv_settings_store();
+      RECORD_ERROR_MS = 6e3;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/tv/recording-error-note.tsx
+  function RecordingErrorNote({ error, ps, tt }) {
+    const text2 = error.kind === "noSpace" ? tt("recNoSpace", { free: formatBytes(error.freeBytes, "en"), keep: formatBytes(error.keepFreeBytes, "en") }) : tt("recStartFailed");
+    return /* @__PURE__ */ jsx("div", { "data-testid": "rec-error", role: "status", style: { marginBottom: ps(10), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(255,92,92,0.16)", border: "1px solid rgba(255,92,92,0.45)", color: TV2.text, fontSize: ps(15), maxWidth: ps(640) }, children: text2 });
+  }
+  var init_recording_error_note = __esm({
+    "../../../lumio-official-plugins/.worktrees/android-timeshift/plugins/live-tv/runtime/tv/recording-error-note.tsx"() {
+      "use strict";
+      "use client";
+      init_recordings();
+      init_tv_ui();
+      init_jsx_runtime_shim();
     }
   });
 
@@ -58399,6 +58476,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             tv.quality ? /* @__PURE__ */ jsx("span", { children: tv.quality }) : null
           ] })
         ] }),
+        rec.error ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 12, right: 12, bottom: 120 }, children: /* @__PURE__ */ jsx(RecordingErrorNote, { error: rec.error, ps: (v) => v, tt }) }) : null,
         timeshiftRow ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 12, right: 12, bottom: 64 }, children: timeshiftRow }) : null,
         /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
           muteBtn(40),
@@ -58470,6 +58548,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_sport_day_model();
       init_display_title();
       init_use_channel_recording();
+      init_recording_error_note();
       init_jsx_runtime_shim();
       PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
       ZAP_WINDOW = 25;
@@ -59353,6 +59432,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               replay ? /* @__PURE__ */ jsx(PlayerReplayInfo, { match: replay, ps, nowMs: tv.nowMs, locale: tv.locale }) : null,
               tv.sport && sportHere ? /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport: tv.sport, channel, nowMs: tv.nowMs, ps }) : null,
               tv.sport && sportHere && tv.sport.view === "matchday" ? /* @__PURE__ */ jsx(PlayerSportTicker, { sport: tv.sport, channel, nowMs: tv.nowMs, variant: "ticker", ps }) : null,
+              rec.error ? /* @__PURE__ */ jsx(RecordingErrorNote, { error: rec.error, ps, tt }) : null,
               /* @__PURE__ */ jsx(PlayerControlRow, { channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide: toggleGuide, dotsRef: initRef, onOpenMenu: openMenu, volumeRef, sportAvailable: sportHere, matchesOpen, onToggleMatches: () => {
                 if (matchesOpen) closeMatches();
                 else {
@@ -59393,6 +59473,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_player_chrome_parts();
       init_display_title();
       init_use_channel_recording();
+      init_recording_error_note();
       init_timeshift();
       init_use_remote_keys();
       init_jsx_runtime_shim();
@@ -68557,6 +68638,20 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     requestOpenBrowsePage({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: "recordings" } });
   }
   var showDeviceTimeshift = () => isAndroidTauriEnv === true;
+  function deviceTimeshiftOn(tvSettings, onDevice) {
+    return tvSettings.timeshiftEnabled && onDevice;
+  }
+  function setDeviceTimeshift(tvSettings, on) {
+    setTimeshiftOnDevice(on);
+    if (on && !tvSettings.timeshiftEnabled) setTvSettings({ timeshiftEnabled: true });
+  }
+  function nextKeepFree(gb) {
+    const i = RECORD_KEEP_FREE_OPTIONS.indexOf(gb);
+    return RECORD_KEEP_FREE_OPTIONS[(i + 1) % RECORD_KEEP_FREE_OPTIONS.length];
+  }
+  function keepFreeGbOf(list) {
+    return list ? Math.round(list.keepFreeBytes / 1e9) : 2;
+  }
   function RecordingSettingsDesktop({ tvSettings, tt }) {
     const onDevice = useTimeshiftOnDevice();
     const { list } = useRecordings(false);
@@ -68617,7 +68712,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       ),
       /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-record-notify", label: tt("settingRecordNotify"), checked: tvSettings.recordNotify, onChange: (recordNotify) => setTvSettings({ recordNotify }) }),
       /* @__PURE__ */ jsx(LtChoiceRow, { testId: "lt-record-open", label: tt("settingRecordOpen"), options: [{ key: "open", label: tt("railRecordings") }], value: "", onChange: openRecordings }),
-      /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-timeshift-enabled", label: tt("settingTimeshift"), desc: tt("settingTimeshiftHint"), checked: tvSettings.timeshiftEnabled, onChange: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
+      showDeviceTimeshift() ? null : /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-timeshift-enabled", label: tt("settingTimeshift"), desc: tt("settingTimeshiftHint"), checked: tvSettings.timeshiftEnabled, onChange: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
       /* @__PURE__ */ jsx(
         LtChoiceRow,
         {
@@ -68628,20 +68723,27 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
           onChange: (key) => setTvSettings({ timeshiftMinutes: Number(key) })
         }
       ),
-      showDeviceTimeshift() ? /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-timeshift-device", label: tt("settingTimeshiftDevice"), desc: tt("settingTimeshiftDeviceHint"), checked: onDevice, onChange: (on) => setTimeshiftOnDevice(on) }) : null
+      showDeviceTimeshift() ? /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-timeshift-device", label: tt("settingTimeshift"), desc: tt("settingTimeshiftDeviceHint"), checked: deviceTimeshiftOn(tvSettings, onDevice), onChange: (on) => setDeviceTimeshift(tvSettings, on) }) : null
     ] });
   }
   function RecordingSettingsRows({ settings, tt, phone = false, onOpen }) {
     const onDevice = useTimeshiftOnDevice();
+    const { list } = useRecordings(false);
+    const keepFreeGb = keepFreeGbOf(list);
     const rows = /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordingEnabled", label: tt("settingRecording"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.recordingEnabled }), onOk: () => setTvSettings({ recordingEnabled: !settings.recordingEnabled }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordStartEarlyMin", label: tt("settingRecordStartEarly"), right: minutesLabel(tt, settings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(settings.recordStartEarlyMin) }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordEndLateMin", label: tt("settingRecordEndLate"), right: minutesLabel(tt, settings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(settings.recordEndLateMin) }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordNotify", label: tt("settingRecordNotify"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.recordNotify }), onOk: () => setTvSettings({ recordNotify: !settings.recordNotify }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordKeepFree", label: tt("settingRecordKeepFree"), right: tt("gigabytes", { gb: keepFreeGb }), onOk: () => {
+        void saveRecordSettings({ folder: list?.folder ?? null, keepFreeGb: nextKeepFree(keepFreeGb) });
+      } }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordFreeSpace", label: tt("settingRecordFreeSpace"), right: typeof list?.freeBytes === "number" ? formatBytes(list.freeBytes, "en") : "\u2013", onOk: () => {
+      } }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-recordOpen", label: tt("settingRecordOpen"), right: "\u203A", onOk: onOpen }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftEnabled", label: tt("settingTimeshift"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.timeshiftEnabled }), onOk: () => setTvSettings({ timeshiftEnabled: !settings.timeshiftEnabled }) }),
+      showDeviceTimeshift() ? null : /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftEnabled", label: tt("settingTimeshift"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.timeshiftEnabled }), onOk: () => setTvSettings({ timeshiftEnabled: !settings.timeshiftEnabled }) }),
       /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftMinutes", label: tt("settingTimeshiftMinutes"), right: tt("minutesShort", { min: settings.timeshiftMinutes }), onOk: () => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(settings.timeshiftMinutes) }) }),
-      showDeviceTimeshift() ? /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftDevice", label: tt("settingTimeshiftDevice"), right: /* @__PURE__ */ jsx(Toggle, { on: onDevice }), onOk: () => setTimeshiftOnDevice(!onDevice) }) : null
+      showDeviceTimeshift() ? /* @__PURE__ */ jsx(Row, { phone, testId: "setting-timeshiftDevice", label: tt("settingTimeshift"), right: /* @__PURE__ */ jsx(Toggle, { on: deviceTimeshiftOn(settings, onDevice) }), onOk: () => setDeviceTimeshift(settings, !deviceTimeshiftOn(settings, onDevice)) }) : null
     ] });
     if (phone) return rows;
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
@@ -68651,15 +68753,21 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   function RecordingSettingsTvRows({ tvSettings, tt }) {
     const onDevice = useTimeshiftOnDevice();
+    const { list } = useRecordings(false);
+    const keepFreeGb = keepFreeGbOf(list);
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-enabled", label: tt("settingRecording"), hint: tt("settingRecordingHint"), toggle: tvSettings.recordingEnabled, onToggle: (recordingEnabled) => setTvSettings({ recordingEnabled }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-start-early", label: tt("settingRecordStartEarly"), value: minutesLabel(tt, tvSettings.recordStartEarlyMin), onOk: () => setTvSettings({ recordStartEarlyMin: nextRecordStartEarly(tvSettings.recordStartEarlyMin) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-end-late", label: tt("settingRecordEndLate"), value: minutesLabel(tt, tvSettings.recordEndLateMin), onOk: () => setTvSettings({ recordEndLateMin: nextRecordEndLate(tvSettings.recordEndLateMin) }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-notify", label: tt("settingRecordNotify"), toggle: tvSettings.recordNotify, onToggle: (recordNotify) => setTvSettings({ recordNotify }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-keep-free", label: tt("settingRecordKeepFree"), hint: tt("settingRecordKeepFreeHint"), value: tt("gigabytes", { gb: keepFreeGb }), onOk: () => {
+        void saveRecordSettings({ folder: list?.folder ?? null, keepFreeGb: nextKeepFree(keepFreeGb) });
+      } }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-free-space", label: tt("settingRecordFreeSpace"), value: typeof list?.freeBytes === "number" ? formatBytes(list.freeBytes, "en") : "\u2013", valueTone: "muted" }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-record-open", label: tt("settingRecordOpen"), caret: true, onOk: openRecordings }),
-      /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-enabled", label: tt("settingTimeshift"), hint: tt("settingTimeshiftHint"), toggle: tvSettings.timeshiftEnabled, onToggle: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
+      showDeviceTimeshift() ? null : /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-enabled", label: tt("settingTimeshift"), hint: tt("settingTimeshiftHint"), toggle: tvSettings.timeshiftEnabled, onToggle: (timeshiftEnabled) => setTvSettings({ timeshiftEnabled }) }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-minutes", label: tt("settingTimeshiftMinutes"), value: tt("minutesShort", { min: tvSettings.timeshiftMinutes }), onOk: () => setTvSettings({ timeshiftMinutes: nextTimeshiftMinutes(tvSettings.timeshiftMinutes) }) }),
-      showDeviceTimeshift() ? /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-device", label: tt("settingTimeshiftDevice"), hint: tt("settingTimeshiftDeviceHint"), toggle: onDevice, onToggle: (on) => setTimeshiftOnDevice(on) }) : null
+      showDeviceTimeshift() ? /* @__PURE__ */ jsx(TvRow, { testId: "tv-timeshift-device", label: tt("settingTimeshift"), hint: tt("settingTimeshiftDeviceHint"), toggle: deviceTimeshiftOn(tvSettings, onDevice), onToggle: (on) => setDeviceTimeshift(tvSettings, on) }) : null
     ] });
   }
 
