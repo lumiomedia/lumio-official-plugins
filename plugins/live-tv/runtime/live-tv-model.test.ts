@@ -334,6 +334,18 @@ describe('useLiveTvModel: EPG ur appen', () => {
     await waitFor(() => expect(result.current.epgLoading).toBe(false))
     expect(refreshEpg).not.toHaveBeenCalled()
   })
+  it('släpper spärren när omhämtningen inte gav färsk tablå, så nästa montering frågar igen', async () => {
+    // Jerry 2026-11-10: xmltv.php föll på en nätmiss 09:18 och appen gick över
+    // till Xtream-reserven. Jobbet räknades som lyckat, spärren stod kvar och
+    // ingen montering bad om en ny hämtning förrän Refetch 17:37.
+    vi.mocked(epgNow).mockResolvedValue({ at: Date.now(), fetchedAt: Date.now() - 7 * 60 * 60 * 1000, items: {} })
+    const first = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(refreshEpg).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(first.result.current.epgLoading).toBe(false))
+    first.unmount()
+    renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(refreshEpg).toHaveBeenCalledTimes(2))
+  })
 })
 
 describe('useLiveTvModel: gruppordningen', () => {

@@ -896,6 +896,17 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
         }
         if (!live) return
         const next = await fetchNowSnapshot(listId, activeSource, { force: true })
+        /*
+          ETT JOBB SOM GICK KLART UTAN FÄRSK TABLÅ räknas inte heller som gjort
+          (Jerry 2026-11-10): xmltv.php föll på en nätmiss klockan 09:18, appen
+          gick över till Xtream-reserven och svarade "klart" — men butikens
+          `fetchedAt` stod kvar på gårdagens hämtning. Spärren hölls hela dagen
+          och ingen montering frågade igen förrän Refetch 17:37. Är snapshotet
+          fortfarande gammalt efter jobbet släpps spärren, så nästa montering
+          (eller tiominuterstick) ber appen igen; appen själv väntar tio
+          minuter efter ett fall innan den hämtar på nytt.
+        */
+        if (next.fetchedAt === null || Date.now() - next.fetchedAt > EPG_TTL_MS) epgRefreshRequested.delete(listId)
         if (!live) return
         setSnapshot(next)
       } finally {
