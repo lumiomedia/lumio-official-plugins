@@ -18,6 +18,7 @@ import { PhoneMatchList } from '../../sport/mobile/player-matches-phone'
 import { pickMultiviewKeys } from '../../sport/sport-day-model'
 import { displayTitle } from '../../display-title'
 import { useChannelRecording } from '../../use-channel-recording'
+import { RecordingErrorNote } from '../recording-error-note'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -296,6 +297,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
               {tv.quality ? <span>{tv.quality}</span> : null}
             </span>
           </div>
+          {rec.error ? <div style={{ position: 'absolute', left: 12, right: 12, bottom: 120 }}><RecordingErrorNote error={rec.error} ps={(v) => v} tt={tt} /></div> : null}
           {timeshiftRow ? <div style={{ position: 'absolute', left: 12, right: 12, bottom: 64 }}>{timeshiftRow}</div> : null}
           <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
             {muteBtn(40)}

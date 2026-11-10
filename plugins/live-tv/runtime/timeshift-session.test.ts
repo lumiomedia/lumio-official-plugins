@@ -36,21 +36,41 @@ describe('timeshift session client', () => {
     reply = () => json({}, 404)
     expect(await timeshiftSessionStatus('ab12')).toBeNull()
   })
-  it('the heartbeat pings status every 15 s and stops', async () => {
+  it('the heartbeat polls every 2 s until the buffer has length, then every 15 s, and stops', async () => {
     vi.useFakeTimers()
-    reply = () => json({ ready: false, bytes: 0, segments: 0, seconds: 0 })
+    let seconds = 0
+    reply = () => json({ ready: seconds > 0, bytes: 0, segments: 0, seconds })
     const seen: number[] = []
     const stop = startTimeshiftHeartbeat('ab12', (s) => { if (s) seen.push(s.seconds) })
     expect(calls).toHaveLength(0)
-    await vi.advanceTimersByTimeAsync(15_000)
+    await vi.advanceTimersByTimeAsync(2_000)
     expect(calls).toHaveLength(1)
     expect(calls[0].url).toBe('/api/live-tv/timeshift/ab12/status')
-    await vi.advanceTimersByTimeAsync(15_000)
+    await vi.advanceTimersByTimeAsync(2_000)
     expect(calls).toHaveLength(2)
+    seconds = 6
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(calls).toHaveLength(3)
+    // Bufferten har längd: nu kvartsminuten.
+    await vi.advanceTimersByTimeAsync(14_000)
+    expect(calls).toHaveLength(3)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(calls).toHaveLength(4)
     stop()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(calls).toHaveLength(2)
-    expect(seen).toEqual([0, 0])
+    expect(calls).toHaveLength(4)
+    expect(seen).toEqual([0, 0, 6, 6])
+  })
+  it('the heartbeat stops polling when the app says the session is gone', async () => {
+    vi.useFakeTimers()
+    reply = () => json({}, 404)
+    const seen: Array<number | null> = []
+    const stop = startTimeshiftHeartbeat('ab12', (s) => seen.push(s ? s.seconds : null))
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(seen).toEqual([null])
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(calls).toHaveLength(1)
+    stop()
   })
 })
 

@@ -12,6 +12,7 @@ import { PlayerReplayBadge, PlayerReplayInfo } from '../sport/tv/player-replay-b
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 import { displayTitle } from '../display-title'
 import { useChannelRecording } from '../use-channel-recording'
+import { RecordingErrorNote } from './recording-error-note'
 import { timeshiftModel } from '../timeshift'
 import { REMOTE_ACTION_EVENT } from './use-remote-keys'
 import type { RemoteAction } from './remote-keys'
@@ -307,6 +308,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         {replay ? <PlayerReplayInfo match={replay} ps={ps} nowMs={tv.nowMs} locale={tv.locale} /> : null}
         {tv.sport && sportHere ? <PlayerSourceSwitcher sport={tv.sport} channel={channel} nowMs={tv.nowMs} ps={ps} /> : null}
         {tv.sport && sportHere && tv.sport.view === 'matchday' ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="ticker" ps={ps} /> : null}
+        {rec.error ? <RecordingErrorNote error={rec.error} ps={ps} tt={tt} /> : null}
         <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} sportAvailable={sportHere} matchesOpen={matchesOpen} onToggleMatches={() => { if (matchesOpen) closeMatches(); else { setMatchesOpen(true); setVisible(true); clearTimer() } }} recording={{ enabled: rec.enabled, active: !!rec.active, onToggle: () => { void rec.toggle() } }} />
         <PlayerFavouritesRow channel={channel} tv={tv} ps={ps} onSwitch={switchChannel} onHold={holdChip} />
       </div>

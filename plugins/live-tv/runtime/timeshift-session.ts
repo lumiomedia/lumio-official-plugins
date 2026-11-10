@@ -12,6 +12,10 @@ import type { CacheRange } from './timeshift'
 
 export const TIMESHIFT_SESSION_API = '/api/live-tv/timeshift/session'
 export const HEARTBEAT_MS = 15_000
+/** Tätt tills bufferten har längd: linjen ska komma så fort ffmpeg skrivit de första segmenten, inte vid nästa kvartsminut. */
+export const HEARTBEAT_WARMUP_MS = 2_000
+/** Längst så här länge tätt (en ffmpeg som aldrig producerar ska inte pollas var annan sekund i evighet). */
+export const HEARTBEAT_WARMUP_MAX_MS = 60_000
 
 export interface TimeshiftSession { id: string; liveUrl: string; playlistUrl: string }
 export interface TimeshiftSessionStatus { ready: boolean; bytes: number; segments: number; seconds: number }
@@ -53,12 +57,30 @@ export async function timeshiftSessionStatus(id: string): Promise<TimeshiftSessi
  * ExoPlayer slutar läsa spellistan) river inte bufferten. `onStatus` får
  * svaret, så reläläget kan rita buffertens längd.
  */
-export function startTimeshiftHeartbeat(id: string, onStatus?: (status: TimeshiftSessionStatus | null) => void, everyMs = HEARTBEAT_MS): () => void {
-  const timer = window.setInterval(() => {
-    // `null` = sessionen finns inte längre i appen (ffmpeg dog, tomgång): spelaren släpper tidslinjen.
-    void timeshiftSessionStatus(id).then((status) => onStatus?.(status))
-  }, everyMs)
-  return () => window.clearInterval(timer)
+export function startTimeshiftHeartbeat(id: string, onStatus?: (status: TimeshiftSessionStatus | null) => void, everyMs = HEARTBEAT_MS, warmupMs = HEARTBEAT_WARMUP_MS): () => void {
+  /*
+    Två takter. UPPVÄRMNING: var `warmupMs` tills bufferten har längd (eller
+    tills `HEARTBEAT_WARMUP_MAX_MS` gått) — på TV:n dök linjen upp först när
+    en kvartsminut råkat gå (Jerry 2026-11-10: "kom först när jag tryckte på
+    record"). Sedan `everyMs`, som bara håller sessionen vid liv.
+  */
+  const startedAt = Date.now()
+  let timer = 0
+  let stopped = false
+  const warm = (seconds: number) => seconds <= 0 && Date.now() - startedAt < HEARTBEAT_WARMUP_MAX_MS
+  const schedule = (ms: number) => {
+    if (stopped) return
+    timer = window.setTimeout(() => {
+      // `null` = sessionen finns inte längre i appen (ffmpeg dog, tomgång): spelaren släpper tidslinjen.
+      void timeshiftSessionStatus(id).then((status) => {
+        if (stopped) return
+        onStatus?.(status)
+        if (status) schedule(warm(status.seconds) ? warmupMs : everyMs)
+      })
+    }, ms)
+  }
+  schedule(warmupMs)
+  return () => { stopped = true; window.clearTimeout(timer) }
 }
 
 /**
