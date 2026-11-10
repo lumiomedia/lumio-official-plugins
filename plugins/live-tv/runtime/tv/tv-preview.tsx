@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { M3uChannel } from '../live-tv-data'
 import { ChannelArt, Tag, TV, dp, station } from './tv-ui'
 import { useVideoSurface } from './video-surface'
+import { logSurfaceStack } from './surface-diagnostics'
 
 export function TvPreview({ channel, enabled, live, width, height, label, onOk, extra }: {
   channel: M3uChannel | null
@@ -24,6 +25,15 @@ export function TvPreview({ channel, enabled, live, width, height, label, onOk, 
   // en anslutning kan starten ta länge, och rutan stod svart under tiden.
   const showsVideo = enabled && surface.live && surface.ready && !surface.failed
   const starting = enabled && surface.live && !surface.ready && !surface.failed
+  // Samma felsökningsrad som multivyn: när bilden är ritad men rutan ändå är
+  // svart (Jerry 2026-11-10, efter att en kanal spelats) säger loggen vilket
+  // element som målar över ytan — inget av det syns annars i appens logg.
+  useEffect(() => {
+    if (!showsVideo) return
+    const tiles = () => (ref.current ? [ref.current] : [])
+    const timers = [1500, 5000].map((ms) => window.setTimeout(() => logSurfaceStack(`guide-förhandsvisning +${ms} ms`, tiles()), ms))
+    return () => { for (const t of timers) window.clearTimeout(t) }
+  }, [showsVideo])
   return (
     // Samma regel som multivyns ruta: en NATIV yta ritas UNDER webbvyn, så
     // plattan måste bort medan bilden spelar (skalet klipper hålet i sin
