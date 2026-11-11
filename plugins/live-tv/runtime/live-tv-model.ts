@@ -1,5 +1,6 @@
 'use client'
 
+import { whenLiveTvPlayerClosed } from './player-open'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { playlistTitle } from './playlist-title'
 import {
@@ -894,6 +895,11 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
           epgRefreshRequested.delete(listId)
           throw error
         }
+        if (!live) return
+        // Hela snapshotet är flera MB JSON på en stor lista och ritar om hela
+        // skalet. Finns redan en tablå väntar det tills spelaren stängts; utan
+        // tablå behövs den nu, även i spelaren.
+        if (first.count > 0) await whenLiveTvPlayerClosed(() => !live)
         if (!live) return
         const next = await fetchNowSnapshot(listId, activeSource, { force: true })
         if (!live) return
