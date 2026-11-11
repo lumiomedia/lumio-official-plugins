@@ -23,6 +23,79 @@
     "offcloud"
   ],
   "sharedLimits": [
-    { "id": "torbox", "suffixes": ["tb-cdn.st"], "contains": ["torbox"], "maxLevel": 3 }
-  ]
+    {
+      "id": "torbox",
+      "suffixes": [
+        "tb-cdn.st"
+      ],
+      "contains": [
+        "torbox"
+      ],
+      "maxLevel": 3
+    }
+  ],
+  "connectors": [
+    {
+      "id": "c1",
+      "legacyId": "realdebrid",
+      "keys": [
+        {
+          "storage": "scraper_global_debrid_token_realdebrid",
+          "cookies": [
+            "lumio_provider_token_realdebrid",
+            "lumio_debrid_token_realdebrid"
+          ]
+        },
+        {
+          "storage": "rd_api_key",
+          "cookies": [
+            "rd_api_key"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "legacyId": "torbox",
+      "keys": [
+        {
+          "storage": "scraper_global_debrid_token_torbox",
+          "cookies": [
+            "lumio_provider_token_torbox",
+            "lumio_debrid_token_torbox"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "legacyId": "alldebrid",
+      "keys": [
+        {
+          "storage": "scraper_global_debrid_token_alldebrid",
+          "cookies": [
+            "lumio_provider_token_alldebrid",
+            "lumio_debrid_token_alldebrid"
+          ]
+        }
+      ]
+    }
+  ],
+  "cookieMirror": [
+    {
+      "cookiePrefix": "lumio_provider_token_",
+      "storagePrefix": "scraper_global_debrid_token_"
+    },
+    {
+      "cookiePrefix": "lumio_debrid_token_",
+      "storagePrefix": "scraper_global_debrid_token_"
+    },
+    {
+      "cookie": "rd_api_key",
+      "storage": "rd_api_key"
+    }
+  ],
+  "groupAliases": {
+    "debrid": "cloud"
+  }
 }
