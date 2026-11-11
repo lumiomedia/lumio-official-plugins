@@ -22,10 +22,32 @@ function json(body: unknown, status = 200) {
   return Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }))
 }
 
+/**
+ * Testerna nedan beskriver anropen per leverantör (`/<leverantör>/<sökväg>` och
+ * leverantörens nyckelrubrik). Pluginet går via appens vidarebefordring
+ * (`/api/plugin-relay` + basadress i en rubrik), så attrappen översätter
+ * tillbaka. Rutten själv har egna tester längst ned.
+ */
+const PROVIDER_BY_BASE: Record<string, [string, string]> = {
+  'https://api.real-debrid.com/rest/1.0': ['realdebrid', 'x-stream-provider-token'],
+  'https://api.torbox.app/v1/api': ['torbox', 'x-tb-token'],
+  'https://api.alldebrid.com': ['alldebrid', 'x-ad-token'],
+}
+const rawFetch = vi.fn()
+function relayedFetch(url: string, init?: RequestInit) {
+  rawFetch(url, init)
+  const headers = { ...((init?.headers as Record<string, string>) ?? {}) }
+  const known = PROVIDER_BY_BASE[headers['x-relay-base'] ?? '']
+  if (!url.startsWith('/api/plugin-relay') || !known) return fetchMock(url, init)
+  headers[known[1]] = headers['x-relay-token']
+  return fetchMock(`/api/stream-providers/${known[0]}${url.slice('/api/plugin-relay'.length)}`, { ...init, headers })
+}
+
 beforeEach(() => {
   for (const key of Object.keys(tokens)) delete tokens[key]
   fetchMock.mockReset()
-  vi.stubGlobal('fetch', fetchMock)
+  rawFetch.mockReset()
+  vi.stubGlobal('fetch', relayedFetch)
   // Ny instans per test = tom cache och ingen pågående genomgång.
   cloud = createDebridCloud({ token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
 })
@@ -313,5 +335,41 @@ describe('fallerade upplåsningar rapporteras med status och svar', () => {
       ['torbox', '1|378', 200, { success: false, error: 'DOWNLOAD_NOT_FOUND' }],
       ['realdebrid', 'T|https://rd/l', 404, { error: 'unknown_ressource', error_code: 7 }],
     ])
+  })
+})
+
+describe('appens vidarebefordring', () => {
+  it('skickar basadress och nyckel i rubriker; AllDebrid även nyckelparameter och standardpar', async () => {
+    tokens.torbox = 'tb'
+    tokens.alldebrid = 'ad'
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/torbox/')) return json({ data: [] })
+      return json({ status: 'success', data: { magnets: [] } })
+    })
+    await listDebridCloud()
+    const calls = rawFetch.mock.calls.map(([u, init]) => [u, init?.headers as Record<string, string>] as const)
+    const torbox = calls.find(([, h]) => h['x-relay-base'] === 'https://api.torbox.app/v1/api')!
+    expect(torbox[0]).toBe('/api/plugin-relay/torrents/mylist?bypass_cache=true')
+    expect(torbox[1]['x-relay-token']).toBe('tb')
+    expect(torbox[1]['x-relay-token-param']).toBeUndefined()
+    const alldebrid = calls.find(([, h]) => h['x-relay-base'] === 'https://api.alldebrid.com')!
+    expect(alldebrid[0]).toBe('/api/plugin-relay/v4.1/magnet/status')
+    expect(alldebrid[1]['x-relay-token-param']).toBe('apikey')
+    expect(alldebrid[1]['x-relay-defaults']).toBe('agent=lumio')
+  })
+
+  it('en äldre app utan rutten: samma anrop går via den gamla vägen, och frågas inte om', async () => {
+    tokens.torbox = 'tb'
+    const seen: string[] = []
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      seen.push(url)
+      if (url.startsWith('/api/plugin-relay')) return json({ error: 'route not found' }, 404)
+      expect((init?.headers as Record<string, string>)['x-tb-token']).toBe('tb')
+      return json({ data: [{ id: 1, files: [{ id: 1, name: 'Alien.1979.mkv', size: 1 }] }] })
+    })
+    expect(await listDebridCloud()).toHaveLength(1)
+    expect(seen).toEqual(['/api/plugin-relay/torrents/mylist?bypass_cache=true', '/api/stream-providers/torbox/torrents/mylist?bypass_cache=true'])
+    await listDebridCloud({ force: true })
+    expect(seen.slice(2)).toEqual(['/api/stream-providers/torbox/torrents/mylist?bypass_cache=true'])
   })
 })

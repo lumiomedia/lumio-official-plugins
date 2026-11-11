@@ -72,13 +72,20 @@ export function createDebridCloud(deps: CloudDeps) {
   /** Lista där enstaka torrentuppslag föll: duger en stund, men ska fyllas på snart. */
   const PARTIAL_TTL_MS = 15 * 60 * 1000
   const FETCH_TIMEOUT_MS = 15_000
-  const BASE = '/api/stream-providers'
-
-  const TOKEN_HEADERS: Record<DebridProviderId, string> = {
-    realdebrid: 'x-stream-provider-token',
-    torbox: 'x-tb-token',
-    alldebrid: 'x-ad-token',
+  /**
+   * Appens vidarebefordring (`/api/plugin-relay`): pluginet anger tjänstens
+   * basadress och var nyckeln ska sitta, appen känner inte till någon tjänst.
+   * `legacy*` är vägen i appar före rutten (svarar 404 "route not found" på
+   * den nya); då används den gamla resten av sessionen.
+   */
+  const RELAY = '/api/plugin-relay'
+  const LEGACY_BASE = '/api/stream-providers'
+  const SERVICES: Record<DebridProviderId, { base: string; tokenParam?: string; defaults?: string; legacyHeader: string }> = {
+    realdebrid: { base: 'https://api.real-debrid.com/rest/1.0', legacyHeader: 'x-stream-provider-token' },
+    torbox: { base: 'https://api.torbox.app/v1/api', legacyHeader: 'x-tb-token' },
+    alldebrid: { base: 'https://api.alldebrid.com', tokenParam: 'apikey', defaults: 'agent=lumio', legacyHeader: 'x-ad-token' },
   }
+  let relayMissing = false
 
   /** Kort, icke-reversibel nyckel för tokenuppsättningen (tokens hålls inte i cachen). */
   function tokenSetKey(providers: DebridProviderId[]): string {
@@ -106,11 +113,35 @@ export function createDebridCloud(deps: CloudDeps) {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
     try {
-      const response = await fetch(`${BASE}/${provider}${path}`, {
+      const service = SERVICES[provider]
+      const viaLegacy = () => fetch(`${LEGACY_BASE}/${provider}${path}`, {
         ...init,
-        headers: { ...(init?.headers ?? {}), [TOKEN_HEADERS[provider]]: token },
+        headers: { ...(init?.headers ?? {}), [service.legacyHeader]: token },
         signal: controller.signal,
       })
+      let response: Response
+      if (relayMissing) {
+        response = await viaLegacy()
+      } else {
+        response = await fetch(`${RELAY}${path}`, {
+          ...init,
+          headers: {
+            ...(init?.headers ?? {}),
+            'x-relay-base': service.base,
+            'x-relay-token': token,
+            ...(service.tokenParam ? { 'x-relay-token-param': service.tokenParam } : {}),
+            ...(service.defaults ? { 'x-relay-defaults': service.defaults } : {}),
+          },
+          signal: controller.signal,
+        })
+        if (response.status === 404) {
+          const body = await response.clone().json().catch(() => null)
+          if (body?.error === 'route not found') {
+            relayMissing = true
+            response = await viaLegacy()
+          }
+        }
+      }
       if (!response.ok) return { data: null, failure: { status: response.status, body: await response.json().catch(() => null) } }
       return { data: await response.json(), failure: null }
     } catch (e) {
