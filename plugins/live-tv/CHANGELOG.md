@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0
+
+- Pause live TV on Android (phones and TV boxes with the built-in engine): with Settings → Recording → Pause live TV on this device turned on, the app keeps a local copy of the channel while you watch (15, 30 or 60 minutes). Pausing continues where the picture stopped; -30/+30 and Go live work in the player, on the phone as a row under the controls. One connection at your provider as before, and the channel starts as fast as before. A pause longer than the buffer continues from the oldest point. Off by default on Android. Needs Lumio 0.1.642.
+- Settings → Recording shows the same rows everywhere (desktop card, the app's TV settings and Live TV's own settings): keep free and free space are now on TV and phone too. On Android there is one Pause live TV row, bound to this device.
+- Recording on a box that is already under the keep-free margin is refused up front with the free and kept figures next to the button, instead of a "disk full" entry with nothing to play. Android keeps 1 GB free by default.
+- The timeshift timeline on Android appears as soon as the buffer has content (polled every 2 s until then), not at the next 15-second heartbeat.
+
 ## 0.20.0
 
 - Record channels. A Record button in the channel player records what is on until the programme ends (three hours without a guide, or until you stop it). Hold OK on a programme in the guide, search or a channel page and choose Record: the recording starts by itself when the programme begins, with the margins you choose, even if the app was restarted in between.

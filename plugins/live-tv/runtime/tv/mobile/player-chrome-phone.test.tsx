@@ -158,3 +158,33 @@ describe('TvPlayerChromePhone · liggande', () => {
     expect(onClose).toHaveBeenCalled()
   })
 })
+
+describe('TvPlayerChromePhone · timeshift (Android-bufferten)', () => {
+  it('utan timeshift i kontrollerna: ingen rad', () => {
+    mount()
+    expect(screen.queryByTestId('phone-timeshift')).toBeNull()
+  })
+  it('bakom sändningen: etikett, −30/+30 och Gå live som anropar kontrollerna', () => {
+    const onGoLive = vi.fn()
+    const onJump = vi.fn()
+    mount({ controls: controls({ timeshift: { range: { start: 0, end: 600 }, timePos: 300, onSeek: vi.fn(), onJump, onGoLive } }) })
+    const row = screen.getByTestId('phone-timeshift')
+    expect(row).toHaveTextContent('−5:00')
+    fireEvent.click(screen.getByLabelText('Back 30 s'))
+    expect(onJump).toHaveBeenCalledWith(-30)
+    fireEvent.click(screen.getByLabelText('Forward 30 s'))
+    expect(onJump).toHaveBeenCalledWith(30)
+    fireEvent.click(screen.getByText('Go live'))
+    expect(onGoLive).toHaveBeenCalledTimes(1)
+  })
+  it('vid livekanten (inom HLS-slacken): LIVE och ingen Gå live', () => {
+    mount({ controls: controls({ timeshift: { range: { start: 0, end: 600 }, timePos: 595, onSeek: vi.fn(), onJump: vi.fn(), onGoLive: vi.fn() } }) })
+    const row = screen.getByTestId('phone-timeshift')
+    expect(row).toHaveTextContent('LIVE')
+    expect(screen.queryByText('Go live')).toBeNull()
+  })
+  it('liggande: samma rad', () => {
+    mount({ landscape: true, controls: controls({ timeshift: { range: { start: 0, end: 600 }, timePos: 300, onSeek: vi.fn(), onJump: vi.fn(), onGoLive: vi.fn() } }) })
+    expect(screen.getByTestId('phone-timeshift')).toHaveTextContent('−5:00')
+  })
+})

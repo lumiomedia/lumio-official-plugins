@@ -648,6 +648,7 @@ export async function mpvSetPropertyStrings(props: Array<{ name: string; value: 
 export async function setMpvPause(paused: boolean): Promise<void> { surfaceCalls.push(`mpv:pause:${paused}`) }
 export async function openNativePlayer(opts: { url: string; mimeType?: string }): Promise<void> { surfaceCalls.push(`droid:open:${opts.url}`) }
 export async function closeNativePlayer(): Promise<void> { surfaceCalls.push('droid:close') }
+export async function switchNativeSource(opts: { url: string; paused: boolean; atEnd: boolean }): Promise<void> { surfaceCalls.push(`droid:switch:${opts.url}`) }
 export function nativeSetBounds(_rect: { left: number; top: number; width: number; height: number }): void { surfaceCalls.push('droid:bounds') }
 export async function capturePlayerFrame(_key: string, _video?: HTMLVideoElement | null): Promise<boolean> { return false }
 export function getHls(): null { return null }
@@ -675,6 +676,8 @@ const NATIVE_PLAYER_STATE = {
   playbackRestartedToken: 0,
   pausedForCache: false,
   cacheRange: null as { start: number; end: number } | null,
+  isLive: false,
+  behindWindow: false,
   coreIdle: true,
   firstFrameRendered: false,
   loadFailed: false,

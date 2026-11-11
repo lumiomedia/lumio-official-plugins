@@ -12,11 +12,13 @@ import { MIcons } from './mobile-icons'
 import { MobileLogo } from './mobile-logo'
 import { MobileChannelRow } from './mobile-channel-row'
 import { MobileSheet } from './mobile-sheet'
+import { LIVE_EDGE_SLACK_S_HLS, formatBehind, timeshiftModel } from '../../timeshift'
 import { currentMatchSources, matchesForPlayer } from '../../sport/tv/player-sport'
 import { PhoneMatchList } from '../../sport/mobile/player-matches-phone'
 import { pickMultiviewKeys } from '../../sport/sport-day-model'
 import { displayTitle } from '../../display-title'
 import { useChannelRecording } from '../../use-channel-recording'
+import { RecordingErrorNote } from '../recording-error-note'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -230,6 +232,22 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
     </Round>
   ) : null)
 
+  /*
+   * Timeshift (Android-bufferten, timeshift-session.ts): etiketten "−4:32"
+   * eller LIVE, −30/+30 och Gå live. Ingen dragbar tidslinje på telefonen i
+   * den här omgången — hoppen räcker för "telefonen ringde".
+   */
+  const ts = controls?.timeshift
+  const tsModel = ts ? timeshiftModel({ range: ts.range, timePos: ts.timePos, slackS: LIVE_EDGE_SLACK_S_HLS }) : null
+  const timeshiftRow = ts && tsModel?.available ? (
+    <div data-testid="phone-timeshift" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ minWidth: 56, fontSize: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: tsModel.atLive ? MT.acc : MT.text }}>{tsModel.atLive ? tt('live') : formatBehind(tsModel.behindMs)}</span>
+      <Round size={40} label={tt('jumpBack30')} onPress={() => ts.onJump(-30)} background={MT.s10}><span style={{ fontSize: 12, fontWeight: 700 }}>−30</span></Round>
+      <Round size={40} label={tt('jumpForward30')} onPress={() => ts.onJump(30)} background={MT.s10}><span style={{ fontSize: 12, fontWeight: 700 }}>+30</span></Round>
+      {tsModel.atLive ? null : <Pill label={tt('goLive')} onPress={ts.onGoLive} testId="phone-go-live" />}
+    </div>
+  ) : null
+
   if (landscape) {
     return (
       <>
@@ -257,6 +275,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
                 <Round size={44} label={tt('moreActions')} onPress={() => setSheet('more')} background={MT.s10}><MIcons.DotsThree size={22} /></Round>
               </div>
             </div>
+            {timeshiftRow}
             <div data-testid="phone-landscape-progress" style={{ display: 'flex' }}>
               <ProgressBar value={progress} height={5} />
             </div>
@@ -278,6 +297,8 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
               {tv.quality ? <span>{tv.quality}</span> : null}
             </span>
           </div>
+          {rec.error ? <div style={{ position: 'absolute', left: 12, right: 12, bottom: 120 }}><RecordingErrorNote error={rec.error} ps={(v) => v} tt={tt} /></div> : null}
+          {timeshiftRow ? <div style={{ position: 'absolute', left: 12, right: 12, bottom: 64 }}>{timeshiftRow}</div> : null}
           <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
             {muteBtn(40)}
             <ProgressBar value={progress} height={4} />

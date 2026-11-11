@@ -321,6 +321,46 @@ describe('useLiveTvModel: EPG ur appen', () => {
     await waitFor(() => expect(result.current.nowFor(A).now?.title).toBe('Nyheterna'))
   })
 
+  it('väntar med hela snapshotet tills spelaren stängts när en tablå redan finns', async () => {
+    // Mi TV 2026-11-11: hela nu/nästa för 4 169 kanaler lästes in mitt i spelningen
+    // och huvudtråden stod still i flera sekunder.
+    const old = { title: 'Gammalt', start: Date.now() - 1000, stop: Date.now() + 60_000 }
+    const fresh = { title: 'Nytt', start: Date.now() - 1000, stop: Date.now() + 60_000 }
+    vi.mocked(epgNow)
+      .mockResolvedValueOnce({ at: Date.now(), fetchedAt: Date.now() - 7 * 3_600_000, items: { 'A::http://x/A': { now: old, next: null, later: null } } })
+      .mockResolvedValue({ at: Date.now(), fetchedAt: Date.now(), items: { 'A::http://x/A': { now: fresh, next: null, later: null } } })
+    const player = document.createElement('div')
+    player.setAttribute('data-lumio-player-open', '1')
+    document.body.appendChild(player)
+    try {
+      const { result } = renderHook(() => useLiveTvModel())
+      await waitFor(() => expect(waitForJob).toHaveBeenCalledWith('epg-job'))
+      await new Promise((r) => setTimeout(r, 700))
+      expect(epgNow).toHaveBeenCalledTimes(1)
+      expect(result.current.nowFor(A).now?.title).toBe('Gammalt')
+      player.remove()
+      await waitFor(() => expect(result.current.nowFor(A).now?.title).toBe('Nytt'), { timeout: 3000 })
+    } finally {
+      player.remove()
+    }
+  })
+
+  it('läser in direkt trots öppen spelare när ingen tablå finns än', async () => {
+    const fresh = { title: 'Nyheterna', start: Date.now() - 1000, stop: Date.now() + 1000 }
+    vi.mocked(epgNow)
+      .mockResolvedValueOnce({ at: Date.now(), fetchedAt: null, items: {} })
+      .mockResolvedValue({ at: Date.now(), fetchedAt: Date.now(), items: { 'A::http://x/A': { now: fresh, next: null, later: null } } })
+    const player = document.createElement('div')
+    player.setAttribute('data-lumio-player-open', '1')
+    document.body.appendChild(player)
+    try {
+      const { result } = renderHook(() => useLiveTvModel())
+      await waitFor(() => expect(result.current.nowFor(A).now?.title).toBe('Nyheterna'))
+    } finally {
+      player.remove()
+    }
+  })
+
   it('hämtar om när appens EPG är färskt men inte känner listans källor (ny spellista mot samma panel)', async () => {
     // Jerry 2026-11-09: kontot togs bort och lades till igen → nytt käll-id, men
     // butiken (6 h färsk) var scopad till det gamla. Guiden stod tom i timmar.

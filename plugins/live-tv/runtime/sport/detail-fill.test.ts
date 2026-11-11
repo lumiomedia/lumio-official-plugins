@@ -122,6 +122,48 @@ describe('repriser som tablån inte märker', () => {
   })
 })
 
+describe('repriskollen tar en liga i taget', () => {
+  const flag = globalThis as { __lumioNoKeylessSources?: boolean }
+  const NOW = Date.UTC(2026, 9, 22, 18, 10)
+  beforeEach(() => { flag.__lumioNoKeylessSources = false; __resetEspnForTests(); vi.useFakeTimers(); vi.setSystemTime(NOW) })
+  afterEach(() => { flag.__lumioNoKeylessSources = true; vi.useRealTimers() })
+
+  it('två ligor ger aldrig anrop samtidigt och ritar om en gång', async () => {
+    const event = (id: string, home: string, away: string) => ({ id, date: '2026-10-17T16:30Z', status: { type: { name: 'STATUS_FULL_TIME', state: 'post', shortDetail: 'FT' } },
+      competitions: [{ competitors: [{ homeAway: 'home', score: '0', team: { id: `${id}1`, displayName: home } }, { homeAway: 'away', score: '1', team: { id: `${id}2`, displayName: away } }] }] })
+    const board = (name: string, e: unknown) => ({ leagues: [{ name, season: { year: 2026 } }], events: [e] })
+    const inFlight = new Set<string>()
+    let overlapped = false
+    const direct = vi.fn(async ({ req }: { req: { path: string } }) => {
+      const league = req.path.includes('/eng.1/') ? 'eng.1' : 'esp.1'
+      inFlight.add(league)
+      if (inFlight.size > 1) overlapped = true
+      await new Promise((r) => setTimeout(r, 50))
+      inFlight.delete(league)
+      const hit = req.path.includes('dates=20261017')
+      const data = !hit ? {} : league === 'eng.1' ? board('English Premier League', event('700', 'Newcastle United', 'Aston Villa')) : board('LaLiga', event('800', 'Sevilla', 'Getafe'))
+      return { data, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null } as SportFetchResponse
+    })
+    const router = new SportRouter({}, {}, { direct: direct as never, now: () => NOW, sleep: async () => {} })
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    const epgMatch = (id: string, leagueKey: string, home: string, away: string) =>
+      ({ id, kind: 'football', league: '', leagueKey, home, away, homeKey: home.toLowerCase(), awayKey: away.toLowerCase(), event: null, start: NOW - 30 * 60_000, stop: NOW + 90 * 60_000, status: 'live', rerun: false, round: null, venue: null, sources: [] }) as never
+    const epg = [epgMatch('pl', 'premier-league', 'Newcastle', 'Aston Villa'), epgMatch('ll', 'la-liga', 'Sevilla', 'Getafe')]
+    c.applyFixtures('football', '2026-10-22', [fx('Juventus', 'Rennes', NOW - 80 * 60_000, 'espn')], 'day', NOW)
+    await vi.advanceTimersByTimeAsync(0)
+    let redraws = 0
+    c.subscribe(() => { redraws += 1 })
+    c.probeReplays(epg, '2026-10-22')
+    await vi.advanceTimersByTimeAsync(2_000)
+    const names = c.history('2026-10-22').map((f) => f.home.name)
+    expect(names).toContain('Newcastle United')
+    expect(names).toContain('Sevilla')
+    expect(direct).toHaveBeenCalledTimes(16)
+    expect(overlapped).toBe(false)
+    expect(redraws).toBe(1)
+  })
+})
+
 describe('ESPN-dagar och omritning', () => {
   const flag = globalThis as { __lumioNoKeylessSources?: boolean }
   const NOW = Date.UTC(2026, 9, 22, 18, 10)

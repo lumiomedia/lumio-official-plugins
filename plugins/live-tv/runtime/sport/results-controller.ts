@@ -185,11 +185,32 @@ export class ResultsController {
       if (!index) { index = new TeamIndex(this.fixtures(target.sport, date)); indexes.set(target.sport, index) }
       if (index.candidates(m).some((f) => sameTeams(m, f))) continue
       this.recentAsked.add(key)
-      void espnBudget.run('day', target.sport, espnRecent(target.sport, target.slug, date, this.tz)).then((res) => {
-        if (!res.data?.length) return
-        this.recent.set(key, res.data)
-        this.emit()
-      })
+      this.probeQueue.push({ key, sport: target.sport, slug: target.slug, date })
+    }
+    void this.drainProbes(espnBudget)
+  }
+
+  /**
+   * Repriskollens kö: EN liga i taget och EN omritning när kön är tom. Varje
+   * liga är åtta anrop, och förut gick alla ligor samtidigt och ritade om
+   * skalet per svar — spelaren på en TV frös 3–4 s strax efter kanalstart.
+   */
+  private probeQueue: { key: string; sport: SportKind; slug: string; date: string }[] = []
+  private probing = false
+  private async drainProbes(budget: NonNullable<ReturnType<SportRouter['budget']>>): Promise<void> {
+    if (this.probing) return
+    this.probing = true
+    let changed = false
+    try {
+      for (let job = this.probeQueue.shift(); job; job = this.probeQueue.shift()) {
+        const res = await budget.run('day', job.sport, espnRecent(job.sport, job.slug, job.date, this.tz)).catch(() => null)
+        if (!res?.data?.length) continue
+        this.recent.set(job.key, res.data)
+        changed = true
+      }
+    } finally {
+      this.probing = false
+      if (changed) this.emit()
     }
   }
 

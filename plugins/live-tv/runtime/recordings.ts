@@ -68,6 +68,14 @@ export function recordingPlayUrl(id: string): string {
   return `${origin}${recordingStreamUrl(id)}`
 }
 
+/** Appens felsvar med status och kropp: 507 bär `freeBytes`/`keepFreeBytes` som knappen visar. */
+export class RecordRequestError extends Error {
+  constructor(message: string, public readonly status: number, public readonly data: unknown) {
+    super(message)
+    this.name = 'RecordRequestError'
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init)
   let data: unknown = null
@@ -84,7 +92,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     const message = data && typeof data === 'object' && typeof (data as { error?: unknown }).error === 'string' ? (data as { error: string }).error : `HTTP ${res.status}`
-    throw new Error(message)
+    throw new RecordRequestError(message, res.status, data)
   }
   return data as T
 }

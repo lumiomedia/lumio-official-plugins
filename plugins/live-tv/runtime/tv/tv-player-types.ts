@@ -91,5 +91,7 @@ export interface LiveTvPlayerControls {
     onSeek(sec: number): void
     onJump(deltaSec: number): void
     onGoLive(): void
+    /** Så nära slutet som räknas som live (sekunder); motorn avgör (mpv 3 s, HLS-bufferten på Android 8 s). */
+    slackS?: number
   }
 }

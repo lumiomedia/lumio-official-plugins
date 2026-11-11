@@ -80,4 +80,21 @@ describe('useChannelRecording', () => {
     await act(async () => { await Promise.all([p1, p2]) })
     expect(calls.filter((c) => c.url.endsWith('/schedule'))).toHaveLength(1)
   })
+
+  it('exposes a no-space error when the app refuses with 507, and clears it (Jerry 2026-11-10: TV with 1.5 GB free)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/list')) return json({ recordings: [], folder: '/r', freeBytes: 1_500_000_000, keepFreeBytes: 2_000_000_000 })
+      if (url.endsWith('/schedule')) return new Response(JSON.stringify({ error: 'Not enough free space to record: 1.5 GB free, keeping 2 GB free', freeBytes: 1_500_000_000, keepFreeBytes: 2_000_000_000 }), { status: 507, headers: { 'content-type': 'application/json' } })
+      return json({})
+    }))
+    const { result } = renderHook(() => useChannelRecording(channel, programme, NOW))
+    await waitFor(() => expect(result.current.enabled).toBe(true))
+    await act(() => result.current.toggle())
+    expect(result.current.error).toEqual({ kind: 'noSpace', freeBytes: 1_500_000_000, keepFreeBytes: 2_000_000_000 })
+    await act(async () => { await vi.advanceTimersByTimeAsync(6_500) })
+    expect(result.current.error).toBeNull()
+    vi.useRealTimers()
+  })
 })
