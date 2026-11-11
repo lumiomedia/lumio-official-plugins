@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "parallelHosts": [
+    "tb-cdn.st",
+    "torbox.app",
+    "real-debrid.com",
+    "rdeb.io",
+    "premiumize.me",
+    "alldebrid.com",
+    "debrid-link.fr",
+    "debrid-link.com",
+    "offcloud.com"
+  ],
+  "resolverSegments": [
+    "torbox",
+    "realdebrid",
+    "real-debrid",
+    "premiumize",
+    "alldebrid",
+    "debridlink",
+    "debrid-link",
+    "easydebrid",
+    "offcloud"
+  ],
+  "sharedLimits": [
+    { "id": "torbox", "suffixes": ["tb-cdn.st"], "contains": ["torbox"], "maxLevel": 3 }
+  ]
+}
