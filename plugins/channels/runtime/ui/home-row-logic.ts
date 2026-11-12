@@ -29,6 +29,8 @@ export interface HomeCardModel {
   pct: number
   nextTitle: string | null
   backdropUrl?: string
+  /** `movie-123` / `tv-456` (seriens id för avsnitt) — heron på TV hämtar beskrivning och fakta ur det. */
+  mediaId?: string
   hue: number
   /** Vila: när kanalen sänder igen (ms). */
   restUntil?: number
@@ -64,5 +66,6 @@ export function homeCardModel(channel: ChannelDef, rundown: PoolItem[], now: num
     pct: slot.pct,
     nextTitle: next ? titleOf(next) : null,
     ...(slot.item.backdropUrl ? { backdropUrl: slot.item.backdropUrl } : {}),
+    ...(slot.item.tmdbId ? { mediaId: `${slot.item.kind === 'episode' ? 'tv' : 'movie'}-${slot.item.tmdbId}` } : {}),
   }
 }

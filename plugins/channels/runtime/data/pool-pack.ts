@@ -5,17 +5,20 @@
  * bara det som tablå, hemrad, hero och zapp visar plus spelreferensen — serie-
  * gemensamma fält läggs i en grupptabell och refereras med index.
  *
- * Genrer, tmdbId och imdbId (utom i spelreferensen) sparas inte: filtrering
- * och dubblettrensning är redan gjorda när poolen sparas. Källan följer av
+ * Genrer och imdbId (utom i spelreferensen) sparas inte: filtrering och
+ * dubblettrensning är redan gjorda när poolen sparas. Källan följer av
  * spelreferensen. Ren logik, ingen SDK.
+ *
+ * v3 (2026-10-26): tmdbId sparas per grupp — TV-heron hämtar programmets
+ * beskrivning ur det. v2-cacher räknas som kalla och byggs om en gång.
  */
 import type { PlayRef, PoolItem } from './pool'
 import type { SourceId } from '../model/channel'
 
-export const POOL_PACK_VERSION = 2
+export const POOL_PACK_VERSION = 3
 
 /** Grupp: det som delas av alla poster i samma serie (eller en film). */
-interface PackedGroup { sk?: string; st?: string; p?: string; b?: string }
+interface PackedGroup { sk?: string; st?: string; p?: string; b?: string; i?: number }
 
 /** En post. `g` pekar i grupptabellen; `u` = längden är en standardgissning. */
 interface PackedItem {
@@ -68,6 +71,7 @@ export function packPool(items: PoolItem[]): PackedPool {
       ...(item.seriesTitle ? { st: item.seriesTitle } : {}),
       ...(item.posterUrl ? { p: item.posterUrl } : {}),
       ...(item.backdropUrl ? { b: item.backdropUrl } : {}),
+      ...(item.tmdbId ? { i: item.tmdbId } : {}),
     }
     let g: number | undefined
     if (Object.keys(group).length > 0) {
@@ -110,6 +114,7 @@ export function unpackPool(value: unknown): PoolItem[] | null {
       ...(group.st ? { seriesTitle: group.st } : {}),
       ...(group.p ? { posterUrl: group.p } : {}),
       ...(group.b ? { backdropUrl: group.b } : {}),
+      ...(group.i ? { tmdbId: group.i } : {}),
       ...(play.type === 'stream' ? { imdbId: play.imdbId } : {}),
       play,
     }

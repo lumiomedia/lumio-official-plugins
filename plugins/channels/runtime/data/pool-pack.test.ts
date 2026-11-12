@@ -45,6 +45,17 @@ describe('packPool/unpackPool', () => {
     expect(back.map(shown)).toEqual(items.map(shown))
   })
 
+  it('programmets TMDb-id följer med genom packningen (TV-heron hämtar beskrivningen ur det)', () => {
+    const back = unpackPool(JSON.parse(JSON.stringify(packPool(bigPool(2, 2)))))!
+    expect(back.map((i) => i.tmdbId)).toEqual([90000, 90000, 90001, 90001])
+  })
+
+  it('en cache i förra formatet räknas som kall och byggs om', () => {
+    const packed = JSON.parse(JSON.stringify(packPool(bigPool(1, 1)))) as { v: number }
+    expect(packed.v).toBe(3)
+    expect(unpackPool({ ...packed, v: 2 })).toBeNull()
+  })
+
   it('en gammal (opackad) cache räknas som kall', () => {
     expect(unpackPool({ sig: 'x', items: [] })).toBeNull()
     expect(unpackPool(null)).toBeNull()

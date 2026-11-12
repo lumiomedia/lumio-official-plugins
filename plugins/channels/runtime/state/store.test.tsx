@@ -114,7 +114,7 @@ describe('poolcache och signatur', () => {
     const queryLibrary = async () => ({ items: [{ key: 'm', kind: 'movie', tmdbId: 1, title: 'X', year: 2000, genres: ['Drama'], runtimeMin: 90, posterUrl: 'p', backdropUrl: 'b' }] })
     const fresh = await loadPoolCached(ch, { ...deps, queryLibrary } as never)
     const stored = storage.get(`poolCache:${ch.id}`) as { pool: { v: number } }
-    expect(stored.pool.v).toBe(2)
+    expect(stored.pool.v).toBe(3)
     const again = await loadPoolCached(ch, { ...deps, queryLibrary } as never)
     expect(again).toEqual(fresh)
     expect(fresh[0]).toMatchObject({ ref: 'lib:m', title: 'X', posterUrl: 'p', backdropUrl: 'b', play: { type: 'library', key: 'm', mediaType: 'movie' } })

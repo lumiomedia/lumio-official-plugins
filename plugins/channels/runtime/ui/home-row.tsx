@@ -36,10 +36,17 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
   return (
     <section data-channels-home-row="" style={{ color: C.text, fontFamily: FONT.ui }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dim(12, isTv), marginBottom: dim(14, isTv) }}>
-        <div style={{ minWidth: 0 }}>
-          <h2 data-home-row-title="" style={{ margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: '-0.2px' }}>{t('homeRowTitle')}</h2>
-          <p style={{ margin: `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim }}>{t('homeRowSubtitle', { time: formatClock(now) })}</p>
+        {/* TV: undertiteln på samma rad som rubriken, med • emellan — raden tog
+            en rad mer höjd än de andra (Jerry 2026-10-26). Skrivbord och mobil
+            behåller två rader. */}
+        <div style={isTv ? { display: 'flex', minWidth: 0, alignItems: 'baseline', gap: dim(12, isTv) } : { minWidth: 0 }}>
+          <h2 data-home-row-title="" style={{ margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: '-0.2px', whiteSpace: isTv ? 'nowrap' : undefined }}>{t('homeRowTitle')}</h2>
+          {isTv ? <span aria-hidden="true" style={{ color: C.textDim }}>•</span> : null}
+          <p style={{ margin: isTv ? 0 : `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('homeRowSubtitle', { time: formatClock(now) })}</p>
         </div>
+        {/* TV: ingen rubrikstation (Jerry 2026-10-26) — raden nås genom korten,
+            som på de andra raderna, och tablån har sin egen menyväg. */}
+        {isTv ? null : (
         <button
           type="button"
           data-f=""
@@ -52,6 +59,7 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
         >
           {t('homeRowShowGuide')}
         </button>
+        )}
       </div>
       <div
         data-row=""
@@ -91,6 +99,16 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
     : m.title ?? (loading ? t('guideLoading') : t('playerEmpty'))
   const hasTitle = m.title != null
   const badge = m.resting ? t('homeCardRest') : m.minsLeft != null ? t('playerMinsLeft', { n: m.minsLeft }) : ''
+  // TV-herons spegling av kortet (data-tv-mirror, se hero-text.ts i appen):
+  // titeln är kanalen, programmet står som bisats, kanalnamn och tid kvar i
+  // metaraden, och beskrivningen hämtar heron ur TMDb-id:t (Jerry 2026-10-26).
+  const mirror = isTv && hasTitle ? JSON.stringify({
+    title: t('playerChannelN', { n: m.number }),
+    titleAside: m.title,
+    metaLine: [m.name, m.minsLeft != null ? t('playerMinsLeft', { n: m.minsLeft }) : null].filter(Boolean).join(' · '),
+    ...(m.backdropUrl ? { backdropUrl: m.backdropUrl } : {}),
+    ...(m.mediaId ? { mediaId: m.mediaId, mediaType: m.mediaId.startsWith('tv-') ? 'tv' : 'movie' } : {}),
+  }) : undefined
 
   return (
     <div style={{ width, flex: width ? 'none' : undefined, minWidth: 0, opacity: m.resting ? 0.6 : 1 }}>
@@ -99,6 +117,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
         data-f=""
         data-tv-card=""
         data-channel-card={channel.id}
+        data-tv-mirror={mirror}
         className="focus-card-ring"
         onClick={() => onOpen(channel.id)}
         aria-label={`${t('zapChannelLine', { n: m.number, name: m.name })} · ${title}`}
@@ -124,7 +143,8 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
             style={{
               position: 'absolute', top: dim(8, isTv), right: dim(8, isTv), padding: `${dimS(2, isTv)} ${dimS(7, isTv)}`, borderRadius: RADIUS.pill, fontFamily: FONT.mono, lineHeight: 1.3,
               fontSize: fontSize(9.5, isTv), fontWeight: 600, letterSpacing: '0.06em',
-              background: m.resting ? 'rgba(0,0,0,0.7)' : C.accent, color: m.resting ? C.textDim : C.onAccent,
+              // Vit text på accentbubblan (Jerry 2026-10-26, "vit text på de blå bubblorna").
+              background: m.resting ? 'rgba(0,0,0,0.7)' : C.accent, color: m.resting ? C.textDim : C.text,
             }}
           >
             {badge.toUpperCase()}

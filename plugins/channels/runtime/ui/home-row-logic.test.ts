@@ -25,6 +25,13 @@ describe('hemraden', () => {
     expect(homeCardModel(make(4), [], EPOCH).title).toBeNull()
   })
 
+  it('kortet bär programmets id åt TV-heron: filmens, eller seriens för ett avsnitt', () => {
+    expect(homeCardModel(make(1), [{ ...it1('a', 60), tmdbId: 603 }], EPOCH).mediaId).toBe('movie-603')
+    const ep: PoolItem = { ...it1('e', 45), kind: 'episode', seriesTitle: 'Serien', tmdbId: 1399 }
+    expect(homeCardModel(make(1), [ep], EPOCH).mediaId).toBe('tv-1399')
+    expect(homeCardModel(make(1), [it1('a', 60)], EPOCH).mediaId).toBeUndefined()
+  })
+
   it('serieavsnitt visar serietiteln och backdrop följer med', () => {
     const ep: PoolItem = { ...it1('e', 45), kind: 'episode', title: 'Pilot', seriesTitle: 'Serien', backdropUrl: 'http://x/b.jpg' }
     expect(homeCardModel(make(1), [ep], EPOCH)).toMatchObject({ title: 'Serien', backdropUrl: 'http://x/b.jpg', nextTitle: null })
