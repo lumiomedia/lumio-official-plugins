@@ -97,5 +97,10 @@
   ],
   "groupAliases": {
     "debrid": "cloud"
-  }
+  },
+  "creditWords": [
+    "yify",
+    "yts",
+    "rarbg"
+  ]
 }
