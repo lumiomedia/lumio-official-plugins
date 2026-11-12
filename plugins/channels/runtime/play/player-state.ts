@@ -94,6 +94,8 @@ export type Action =
    * uppslag. Andra gången räknas den som fallerad (nästa version).
    */
   | { type: 'retrySame'; seq: number; initialTime: number; now: number }
+  /** Filen räcker längre än tablån: gränsen flyttas fram (overrunDeadline). */
+  | { type: 'extend'; seq: number; deadline: number }
 
 export function initialPlayerState(channelId: string, mode: PlayMode): PlayerState {
   return {
@@ -222,5 +224,30 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
     case 'reveal':
       if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s
       return { ...s, framedSeq: a.seq }
+    case 'extend':
+      if (!s.onScreen || s.onScreen.seq !== a.seq || a.deadline <= s.onScreen.deadline) return s
+      return { ...s, onScreen: { ...s.onScreen, deadline: a.deadline } }
   }
+}
+
+/** Högst så långt förbi tablåns gräns får ett program spela klart. */
+const MAX_OVERRUN_MS = 30 * 60_000
+
+/**
+ * Ny gräns när filen räcker längre än tablån, annars null.
+ *
+ * Tablåns längd kommer från TMDb och kan vara kortare än filen; då klipptes
+ * programmet vid gränsen fast avsnittet inte var slut (Elements: Skyhooks
+ * 2026-11-12). Som på riktig TV får det spela klart: gränsen flyttas till
+ * filens slut och nästa program tar vid där det då är. Taket — en halvtimme,
+ * och aldrig mer än platsen själv — håller en felmatchad långfilm på en
+ * avsnittsplats från att äta upp kvällen.
+ */
+export function overrunDeadline(input: { now: number; position: number; duration: number; deadline: number; slotStart: number }): number | null {
+  const { now, position, duration, deadline, slotStart } = input
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(position)) return null
+  const fileEnd = now + Math.max(0, duration - position) * 1000 + 1000
+  if (fileEnd <= deadline) return null
+  const cap = deadline + Math.min(MAX_OVERRUN_MS, Math.max(0, deadline - slotStart))
+  return Math.min(fileEnd, cap)
 }

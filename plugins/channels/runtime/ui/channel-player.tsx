@@ -20,7 +20,7 @@ import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
 import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, pastEndAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
-import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, slotKey, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
+import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, slotKey, triedFor, TRUSTED_FIRST_PLAY_MS, type Request, overrunDeadline } from '../play/player-state'
 import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
 import { noteDuration } from '../data/runtime-fix'
 import { readCachedRundown, useChannelClock, useChannelPool } from '../state/store'
@@ -777,6 +777,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             noteProgress(seq)
             noteFileDuration(seq, slot.item.ref, duration)
             const cur = stateRef.current
+            // Filen räcker längre än tablån: programmet spelar klart (overrunDeadline).
+            if (cur.onScreen?.seq === seq && cur.framedSeq === seq) {
+              const extended = overrunDeadline({ now: Date.now(), position, duration, deadline: cur.onScreen.deadline, slotStart: slot.start })
+              if (extended != null && extended - cur.onScreen.deadline > 5_000) {
+                trace(`programmet spelar klart: gränsen ${new Date(cur.onScreen.deadline).toLocaleTimeString()} → ${new Date(extended).toLocaleTimeString()} (${slot.item.title})`)
+                dispatch({ type: 'extend', seq, deadline: extended })
+              }
+            }
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
             // mpv laddade om strömmen från början mitt i (Adventure Time 2026-10-17:

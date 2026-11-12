@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, type Plan, type PlayerState } from './player-state'
+import { awaitingPicture, initialPlayerState, overrunDeadline, playerReducer, replanOnNewRundown, triedFor, type Plan, type PlayerState } from './player-state'
 
 const slot = (ref: string, stop: number) => ({ kind: 'programme', item: { ref }, start: 0, stop } as never)
 const plan = (seq: number, ref = 'a', stop = 100_000): Plan => ({ seq, slot: slot(ref, stop), initialTime: 0, deadline: stop, mode: 'live' })
@@ -8,6 +8,33 @@ const playing = (): PlayerState => {
   s = playerReducer(s, { type: 'planned', plan: plan(0) })
   return playerReducer(s, { type: 'resolved', seq: 0, playable: { url: 'u1' } })
 }
+
+describe('programmet spelar klart', () => {
+  // Elements: Skyhooks 2026-11-12: tablån sa kortare än filen, avsnittet klipptes vid gränsen.
+  it('filen räcker längre än tablån: gränsen flyttas till filens slut', () => {
+    expect(overrunDeadline({ now: 1_000_000, position: 600, duration: 900, deadline: 1_100_000, slotStart: 400_000 })).toBe(1_000_000 + 300_000 + 1_000)
+  })
+
+  it('filen tar slut före gränsen, eller okänd längd: ingen ändring', () => {
+    expect(overrunDeadline({ now: 1_000_000, position: 600, duration: 650, deadline: 1_100_000, slotStart: 400_000 })).toBeNull()
+    expect(overrunDeadline({ now: 1_000_000, position: 600, duration: Number.NaN, deadline: 1_100_000, slotStart: 400_000 })).toBeNull()
+    expect(overrunDeadline({ now: 1_000_000, position: 600, duration: 0, deadline: 1_100_000, slotStart: 400_000 })).toBeNull()
+  })
+
+  it('aldrig mer än en halvtimme förbi gränsen, och aldrig mer än platsen själv', () => {
+    // 3 h kvar av filen på en 30-minutersplats: högst 30 min extra.
+    expect(overrunDeadline({ now: 1_000_000, position: 0, duration: 3 * 3600, deadline: 1_000_000 + 30 * 60_000, slotStart: 1_000_000 })).toBe(1_000_000 + 60 * 60_000)
+    // En kort plats (10 min) får högst 10 min extra.
+    expect(overrunDeadline({ now: 1_000_000, position: 0, duration: 3600, deadline: 1_000_000 + 10 * 60_000, slotStart: 1_000_000 })).toBe(1_000_000 + 20 * 60_000)
+  })
+
+  it('gränsen flyttas i tillståndet, bara för det som visas', () => {
+    const s = playerReducer(playing(), { type: 'extend', seq: 0, deadline: 150_000 })
+    expect(s.onScreen?.deadline).toBe(150_000)
+    expect(playerReducer(playing(), { type: 'extend', seq: 7, deadline: 150_000 }).onScreen?.deadline).toBe(100_000)
+    expect(playerReducer(playing(), { type: 'extend', seq: 0, deadline: 90_000 }).onScreen?.deadline).toBe(100_000)
+  })
+})
 
 describe('spelarens tillstånd', () => {
   it('det visade ligger kvar medan nästa slås upp', () => {
