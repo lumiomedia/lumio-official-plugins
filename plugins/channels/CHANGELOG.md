@@ -1,8 +1,15 @@
+## 0.1.43
+
+- Molnkonton: tjänsterna pluginet talar med ligger inte längre i pluginet utan hämtas vid start och sparas, så nya eller ändrade tjänster når dig utan en ny pluginversion. Dina konton, kanaler och sparade nycklar fungerar som förut.
+- Källan för molnkonton heter nu Molnet i studion.
+- TV, startsidan: kanalraden tar en rad mindre (undertiteln står på rubrikens rad), och kortet i fokus visas i heron med kanal, program, tid kvar och programmets beskrivning.
+- Sparade kanalpooler byggs om en gång efter uppdateringen.
+
 ## 0.1.40
 
 - Molnet: listning och upplåsning av filer i molnkonton ligger nu i LumioTV i stället för i appen. Appen ger bara neutrala hjälpare (filnamnstolk, titelmatchning, sparad nyckel). Kräver app 0.1.631.
 - Android TV-boxar (direktströmning): grannkanaler och nästa program förhämtas i spelaren (filens början och index i minnet), så kanalbyten slipper rundresorna till källan. Strömuppslag förhämtas aldrig.
-- Döda molnfiler: en fil tjänsten säger inte finns (borttagen torrent, spärrad fil) faller ur tablån i ett dygn. Programplatsen spelar nästa post direkt i stället för Ingen signal, och kommande platser byts av sig själva. Nyckelfel, anropsgränser och serverfel räknas inte.
+- Döda molnfiler: en fil tjänsten säger inte finns (borttaget paket, spärrad fil) faller ur tablån i ett dygn. Programplatsen spelar nästa post direkt i stället för Ingen signal, och kommande platser byts av sig själva. Nyckelfel, anropsgränser och serverfel räknas inte.
 - Loggen visar varför en upplåsning föll (tjänst, status, svar).
 - Datorn: medan guiden är öppen förvärms programmet just nu på alla kanaler, en i taget (bibliotek och moln; aldrig strömuppslag eller IPTV-VOD). Första bytet till en kanal går då lika fort som till en granne.
 - Inställningar: "Molnkonton" visar konton med sparad nyckel och låter dig ta bort ett du inte använder längre (två tryck på skrivbordet, bekräftelse på TV). Kontots filer försvinner ur kanalerna.
@@ -12,7 +19,7 @@
 - Tablån: program som började före fönstret (eller fortsätter efter det) får en rak kant mot fönstrets kant, så det inte ser ut som om de startar vid halvtimmen.
 - Telefon: spelarens kontroller är kompaktare (rundade ikonknappar), och trycket som tar fram dem kan inte samtidigt byta kanal.
 - Android: system- och navigeringsfälten blinkar inte längre fram över laddningskortet vid kanalbyte.
-- Debrid: samma film i flera versioner i molnet (flera torrents eller konton) blir en post som minns alla filer. Versionerna provas i ordning efter "Max storlek per stream" och "Max upplösning", och nekas en upplåsning (t.ex. ett utgånget konto) provas nästa i stället för Ingen signal.
+- Molnet: samma film i flera versioner (flera paket eller konton) blir en post som minns alla filer. Versionerna provas i ordning efter "Max storlek per stream" och "Max upplösning", och nekas en upplåsning (t.ex. ett utgånget konto) provas nästa i stället för Ingen signal.
 - Inställningar: "Snabbare kanalbyten (mellanlagra strömmar)" på Android, samma val som appens "Mellanlagra strömmar". Förvärmningen följer valet (kräver app 0.1.630 från 2026-10-19).
 
 ## 0.1.38
@@ -20,7 +27,7 @@
 - Telefon: tablån går kant i kant och rullas ut helt åt höger; kanalkolumnen ligger mot vänsterkanten, svart ända upp till linjen under GUIDE, och första kanalen 3 px under linjen utan uttoning.
 - Telefon: GUIDE-rubriken rullar med tiderna; heron och knapparna närmare menypillret.
 - Telefon: kanalchippet i spelaren hamnar under spelarens rad med Stäng.
-- Kanaler på en enhet utan bibliotek visar och spelar inte längre en annan enhets biblioteksfiler (som gav Ingen signal) — debrid och watchlist som vanligt.
+- Kanaler på en enhet utan bibliotek visar och spelar inte längre en annan enhets biblioteksfiler (som gav Ingen signal) — molnet och watchlist som vanligt.
 
 ## 0.1.37
 
@@ -39,7 +46,7 @@
 
 ## 0.1.34
 
-- Avsnitt utan känd längd (debrid, WebDAV, Plex) får TMDb-säsongernas längd per avsnitt i stället för standardvärdet 45 min, och ett spelat avsnitt lär resten av serien sin verkliga längd. Adventure Time sände annars "Programmet är slut" tre fjärdedelar av tiden.
+- Avsnitt utan känd längd (molnet, WebDAV, Plex) får TMDb-säsongernas längd per avsnitt i stället för standardvärdet 45 min, och ett spelat avsnitt lär resten av serien sin verkliga längd. Adventure Time sände annars "Programmet är slut" tre fjärdedelar av tiden.
 - Tablålåset lägger om platser vars program visat sig vara mycket kortare än platsen; det som redan sänts rörs inte.
 
 ## 0.1.33
@@ -52,7 +59,7 @@
 
 ## 0.1.31
 
-- Snabbare kanalbyten: filens början och index förvärms för kanalen i heron, grannkanalerna (CH ▲▼) och nästa program — bibliotek (WebDAV, Plex, Jellyfin, Emby) och debrid-filer. Strömuppslag förvärms aldrig (leverantörens anropsgräns). Kräver appen med indexcachen.
+- Snabbare kanalbyten: filens början och index förvärms för kanalen i heron, grannkanalerna (CH ▲▼) och nästa program — bibliotek (WebDAV, Plex, Jellyfin, Emby) och molnfiler. Strömuppslag förvärms aldrig (leverantörens anropsgräns). Kräver appen med indexcachen.
 
 ## 0.1.30
 
@@ -183,7 +190,7 @@
 ## 0.1.5
 
 - IPTV-VOD (Xtream-katalogen) är en egen källa, av som standard. Kanaler utan den spelar aldrig en titels VOD-version.
-- Nya kanaler har bibliotek, watchlist och debrid förvalda. Befintliga kanaler med Bibliotek räknas utan VOD — kryssa i IPTV-VOD i studion för att ta med den.
+- Nya kanaler har bibliotek, watchlist och molnet förvalda. Befintliga kanaler med Bibliotek räknas utan VOD — kryssa i IPTV-VOD i studion för att ta med den.
 - Kräver Lumio med stöd för allowCatalog för att utesluta VOD-versioner av sammanslagna titlar; äldre versioner spelar som förut.
 
 ## 0.1.4
@@ -209,13 +216,13 @@
 
 - TABLÅ i spelaren öppnar tablån som lager ovanpå videon; en kanal i tablån spelas live direkt.
 - Zappläget ser ut som gamla TV:n: inga spelarkontroller, LUMIO TV, stort kanalnummer, brus vid varje byte och knappraden CH ▼ CH ▲ KANALLISTA ↩ FÖRRA.
-- Kanalbyten visar ett inställningskort (kanal, program, bild) tills den nya bilden syns — aldrig svart skärm. Grannkanaler ur bibliotek och debrid förladdas.
+- Kanalbyten visar ett inställningskort (kanal, program, bild) tills den nya bilden syns — aldrig svart skärm. Grannkanaler ur bibliotek och molnet förladdas.
 - Kanallistan fladdrar inte längre och byter aldrig film mitt i ett program när tablån räknas om.
 - En källa som tar slut före programgränsen startar inte nästa program i förväg; kanalen fortsätter live vid gränsen.
 
 ## 0.1.0 — första versionen
 
 - Personliga kanaler med regler för genre, årtionde, längd, typ och ordning.
-- Källor: bibliotek, watchlist och debrid.
+- Källor: bibliotek, watchlist och molnet.
 - Deterministisk tablå som följer väggklockan, med sändningsfönster (kvällar, sent).
 - Ingångar i huvudmenyn, som hemrad och i inställningar.

@@ -186,16 +186,16 @@
   var require_tslib_es6 = __commonJS({
     "../../node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
       "use strict";
-      function __classPrivateFieldGet(receiver, state2, kind, f) {
+      function __classPrivateFieldGet(receiver, state3, kind, f) {
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state2.get(receiver);
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state3.get(receiver);
       }
-      function __classPrivateFieldSet(receiver, state2, value, kind, f) {
+      function __classPrivateFieldSet(receiver, state3, value, kind, f) {
         if (kind === "m") throw new TypeError("Private method is not writable");
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state2.set(receiver, value), value;
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state3.set(receiver, value), value;
       }
       exports.__classPrivateFieldGet = __classPrivateFieldGet;
       exports.__classPrivateFieldSet = __classPrivateFieldSet;
@@ -388,7 +388,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit3(event, payload) {
+      async function emit4(event, payload) {
         await core.invoke("plugin:event|emit", {
           event,
           payload
@@ -402,7 +402,7 @@
           payload
         });
       }
-      exports.emit = emit3;
+      exports.emit = emit4;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -436,18 +436,205 @@
   });
 
   // lib/storage-cache-keys.ts
+  function splitProfileKey(key) {
+    if (!key.startsWith(PROFILE_PREFIX)) return { profileId: null, baseKey: key };
+    const rest = key.slice(PROFILE_PREFIX.length);
+    const colon = rest.indexOf(":");
+    if (colon <= 0) return { profileId: null, baseKey: key };
+    return { profileId: rest.slice(0, colon), baseKey: rest.slice(colon + 1) };
+  }
+  function baseKeyOf(key) {
+    return splitProfileKey(key).baseKey;
+  }
+  function isDeadStorageKey(key) {
+    return /^lumio_tv_calendar_v[12]:/.test(baseKeyOf(key));
+  }
+  function isRebuildableCacheKey(key) {
+    if (isDeadStorageKey(key)) return true;
+    const baseKey = baseKeyOf(key);
+    return CACHE_BASE_PATTERNS.some((pattern) => pattern.test(baseKey));
+  }
+  function isPressureEvictableKey(key) {
+    if (isRebuildableCacheKey(key)) return true;
+    return PRESSURE_ONLY_PATTERNS.some((pattern) => pattern.test(key));
+  }
+  function profileIdsFromRaw(raw) {
+    if (raw === null || raw === void 0) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : parsed?.profiles;
+      if (!Array.isArray(list)) return null;
+      const ids = /* @__PURE__ */ new Set();
+      for (const entry of list) {
+        const id = entry?.id;
+        if (typeof id === "string" && id) ids.add(id);
+      }
+      if (list.length > 0 && ids.size === 0) return null;
+      return ids;
+    } catch {
+      return null;
+    }
+  }
+  function isOrphanedProfileKey(key, liveIds) {
+    if (!liveIds) return false;
+    const { profileId } = splitProfileKey(key);
+    return profileId !== null && !liveIds.has(profileId);
+  }
+  function keyFamily(key) {
+    const baseKey = baseKeyOf(key);
+    const colon = baseKey.indexOf(":");
+    return colon > 0 ? baseKey.slice(0, colon) : baseKey;
+  }
+  var PROFILE_PREFIX, CACHE_BASE_PATTERNS, PRESSURE_ONLY_PATTERNS;
   var init_storage_cache_keys = __esm({
     "lib/storage-cache-keys.ts"() {
+      PROFILE_PREFIX = "profile:";
+      CACHE_BASE_PATTERNS = [
+        // Startsidans rader — lib/home-rows/row-sources.ts, en nyckel per källa/filter.
+        /^home_row_cache_/,
+        // MDBList-pluginets listcache — byggs om från MDBList, säger inget om smaken.
+        /^mdblist_list_items_/,
+        /^mdblist_lists_cache$/,
+        // SIMKL-pluginets listcache (statuslistor och trendande) — byggs om från SIMKL.
+        /^simkl_list_items_/,
+        // Skådespelarnas krediter för "Känner du igen dem?" — lib/cast-recognition.ts.
+        // Hämtas om från TMDb (TTL 7 dygn).
+        /^cast_credits_cache_v\d+$/,
+        // Egna Trakt-betyg — lib/trakt-ratings.ts. Hämtas om från Trakt (TTL 6 h).
+        /^trakt_ratings_cache_v\d+$/,
+        // Kalenderfönster — lib/use-series-schedule.ts. Alla versioner, så att nästa
+        // prefixbyte inte tyst gör fönstren synkade och omöjliga att utrymma.
+        /^lumio_tv_calendar_v\d+:/,
+        // Matchning av lokala mappar — lib/library/local-folder-provider.ts.
+        /^local_library_match_cache_/,
+        // Lumioplay-pluginets posterluckor.
+        /poster_miss_cache/,
+        // Strömstatus för releasebevakningen — release-watchlist-feed.ts.
+        /^release_watchlist_stream_status$/,
+        /^series_watchlist_stream_status/,
+        // Hero och dess platshållare — media-explorer.tsx, hero-pool.ts,
+        // tv-view-hero.ts, hero-rotation-ledger.ts.
+        /^hero_banner_playable_candidates:/,
+        /^hero_backdrops/,
+        /^hero_pool_cache$/,
+        /^hero_cooldown_ledger$/,
+        /^tv_view_hero_/,
+        // Sedan tidigare i utrymningslistan.
+        /(^|:)last_backdrop/,
+        /(^|:)backdrop_data_url/,
+        /(^|:)live-tv-cache:/,
+        /plugin:com\.lumio\.live-tv:channels:/,
+        // Kanalpluginets poolcache, tablålås, TMDb-metadata och säsongslistor —
+        // byggs om från källorna. `:channels` och `:zap` (kanalerna och zappminnet) är användardata.
+        /plugin:com\.lumio\.channels:(poolCache:|lock:|(meta|seasons|poolIndex)$)/,
+        /:epg_cache:/,
+        /(^|:)watchlist_item_cache/,
+        /(^|:)plex_library_cache/,
+        /(^|:)plugin_youtube_cache/
+      ];
+      PRESSURE_ONLY_PATTERNS = [
+        /lumio:plugin-runtime-cache:/
+      ];
     }
   });
 
   // lib/storage-quota.ts
-  var lastEmptyPassAt;
+  function storageKeys() {
+    const keys2 = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key) keys2.push(key);
+    }
+    return keys2;
+  }
+  function entrySize(key) {
+    try {
+      return key.length + (localStorage.getItem(key)?.length ?? 0);
+    } catch {
+      return key.length;
+    }
+  }
+  function liveProfileIds() {
+    try {
+      return profileIdsFromRaw(getItem("app_profiles"));
+    } catch {
+      return null;
+    }
+  }
+  function orphanedProfileKeys(keys2) {
+    const liveIds = liveProfileIds();
+    if (!liveIds) return [];
+    try {
+      const active3 = getItem("app_active_profile");
+      if (active3) liveIds.add(active3);
+    } catch {
+    }
+    return keys2.filter((key) => isOrphanedProfileKey(key, liveIds));
+  }
+  function evictionCandidates(keys2, underPressure) {
+    const isCandidateCache = underPressure ? isPressureEvictableKey : isRebuildableCacheKey;
+    const orphans = new Set(orphanedProfileKeys(keys2));
+    const hasProfiles = (liveProfileIds()?.size ?? 0) > 0;
+    const rank = (key) => {
+      if (isDeadStorageKey(key)) return 0;
+      if (orphans.has(key)) return 1;
+      if (hasProfiles && splitProfileKey(key).profileId === null) return 2;
+      return 3;
+    };
+    return keys2.filter((key) => orphans.has(key) || isCandidateCache(key)).map((key) => ({ key, size: entrySize(key), rank: rank(key) })).sort((a, b) => a.rank - b.rank || b.size - a.size).map(({ key, size }) => ({ key, size }));
+  }
+  function evictCaches(targetChars = Number.POSITIVE_INFINITY, underPressure = false) {
+    if (typeof window === "undefined") return 0;
+    let freed = 0;
+    let removed = 0;
+    try {
+      for (const { key, size } of evictionCandidates(storageKeys(), underPressure)) {
+        if (freed >= targetChars) break;
+        try {
+          localStorage.removeItem(key);
+          freed += size;
+          removed += 1;
+        } catch {
+        }
+      }
+    } catch {
+    }
+    return removed;
+  }
+  function localStorageHolds(key, value) {
+    try {
+      return localStorage.getItem(key) === value;
+    } catch {
+      return false;
+    }
+  }
+  function setItemWithQuotaRecovery(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      if (localStorageHolds(key, value)) return true;
+    } catch {
+    }
+    if (isPressureEvictableKey(key)) return false;
+    if (Date.now() - lastEmptyPassAt < EMPTY_PASS_COOLDOWN_MS) return false;
+    const removed = evictCaches(key.length + value.length + 256e3, true);
+    if (removed === 0) {
+      lastEmptyPassAt = Date.now();
+      return false;
+    }
+    try {
+      localStorage.setItem(key, value);
+      return localStorageHolds(key, value);
+    } catch {
+      return false;
+    }
+  }
+  var EMPTY_PASS_COOLDOWN_MS, lastEmptyPassAt;
   var init_storage_quota = __esm({
     "lib/storage-quota.ts"() {
       "use client";
       init_app_storage();
       init_storage_cache_keys();
+      EMPTY_PASS_COOLDOWN_MS = 3e4;
       lastEmptyPassAt = Number.NEGATIVE_INFINITY;
     }
   });
@@ -458,6 +645,13 @@
     const internals = window.__TAURI_INTERNALS__;
     return internals && typeof internals.invoke === "function" ? internals : null;
   }
+  function isAndroidWebview() {
+    try {
+      return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent ?? "");
+    } catch {
+      return false;
+    }
+  }
   function isMissingCommandError(error) {
     const message = error instanceof Error ? error.message : String(error ?? "");
     return /not found|unknown command|no such command|command .* not (registered|allowed)/i.test(message);
@@ -465,12 +659,36 @@
   function markRejected(error) {
     if (isMissingCommandError(error)) markNative("absent");
   }
-  function markNative(state2) {
-    if (nativeState === state2) return;
-    nativeState = state2;
-    if (state2 === "absent" && tauriInternals()) {
+  function markNative(state3) {
+    if (nativeState === state3) return;
+    nativeState = state3;
+    if (state3 === "absent" && tauriInternals()) {
       console.warn("[app-storage] ingen nativ lagring bakom invoke \u2014 localStorage \xE4r den enda durabla kopian");
     }
+  }
+  function probeNativeStore() {
+    if (nativeProbed) return;
+    nativeProbed = true;
+    const internals = tauriInternals();
+    if (!internals) {
+      nativeState = "absent";
+      return;
+    }
+    if (nativeState === "unknown" && isAndroidWebview()) nativeState = "absent";
+    try {
+      const result = internals.invoke("storage_get_item", { key: "app_profiles" });
+      if (result && typeof result.then === "function") {
+        ;
+        result.then(() => markNative("durable"), markRejected);
+      }
+    } catch (error) {
+      markRejected(error);
+    }
+  }
+  function nativeIsDurable() {
+    ensureStore();
+    probeNativeStore();
+    return nativeState === "durable";
   }
   function nativeInvoke(command, payload) {
     const internals = tauriInternals();
@@ -554,6 +772,49 @@
     if (typeof window === "undefined") return null;
     return ensureStore().get(key) ?? null;
   }
+  function setItem(key, value) {
+    if (typeof window === "undefined") return false;
+    ensureStore().set(key, value);
+    const nativeDurable = nativeIsDurable();
+    const durableNative = nativeInvoke("storage_set_item", { key, value }) && nativeDurable;
+    updateSnapshot(key, value);
+    if (durableNative && value.length > 2e5) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+      }
+      notifyWrite(key);
+      return true;
+    }
+    const wroteLocal = setItemWithQuotaRecovery(key, value);
+    if (!wroteLocal) {
+      if (durableNative) {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+        }
+      } else {
+        warnWriteFailed(key, value.length);
+      }
+    }
+    notifyWrite(key);
+    return durableNative || wroteLocal;
+  }
+  function warnWriteFailed(key, length) {
+    const family = keyFamily(key);
+    if (warnedFamilies.has(family)) return;
+    warnedFamilies.add(family);
+    try {
+      console.warn(`[app-storage] kunde inte spara ${family} (${length} tecken) \u2014 lagringen \xE4r full, gamla v\xE4rdet ligger kvar p\xE5 disk`);
+    } catch {
+    }
+  }
+  function notifyWrite(key) {
+    try {
+      window.dispatchEvent(new CustomEvent("lumio-storage-write", { detail: { key } }));
+    } catch {
+    }
+  }
   function removeItem(key) {
     if (typeof window === "undefined") return;
     ensureStore().delete(key);
@@ -564,7 +825,7 @@
     } catch {
     }
   }
-  var pending, nativeState, store;
+  var pending, nativeState, nativeProbed, store, warnedFamilies;
   var init_app_storage = __esm({
     "lib/app-storage.ts"() {
       "use client";
@@ -572,7 +833,9 @@
       init_storage_cache_keys();
       pending = /* @__PURE__ */ new Set();
       nativeState = "unknown";
+      nativeProbed = false;
       store = null;
+      warnedFamilies = /* @__PURE__ */ new Set();
     }
   });
 
@@ -628,15 +891,15 @@
   });
 
   // lib/plugin-state.ts
-  function normalizeState(state2, fallback) {
+  function normalizeState(state3, fallback) {
     return {
       ...fallback,
-      ...state2,
-      installed: state2?.installed ?? fallback.installed,
-      active: state2?.active ?? fallback.active,
-      order: state2?.order ?? fallback.order,
-      sourceType: state2?.sourceType ?? fallback.sourceType,
-      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
+      ...state3,
+      installed: state3?.installed ?? fallback.installed,
+      active: state3?.active ?? fallback.active,
+      order: state3?.order ?? fallback.order,
+      sourceType: state3?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state3?.runtimeAvailable ?? fallback.runtimeAvailable
     };
   }
   function readAll() {
@@ -660,8 +923,8 @@
     });
   }
   function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
-    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
-    return Boolean(state2.installed && state2.active);
+    const state3 = getPluginPersistedState(pluginId, defaultOrder, defaults);
+    return Boolean(state3.installed && state3.active);
   }
   var STORAGE_KEY;
   var init_plugin_state = __esm({
@@ -1036,6 +1299,78 @@
     }
   });
 
+  // lib/source-hints.ts
+  function connectors(value) {
+    if (!Array.isArray(value)) return [];
+    const out = [];
+    for (const entry of value) {
+      const id = text(entry?.id);
+      if (!id) continue;
+      const keys2 = (Array.isArray(entry.keys) ? entry.keys : []).map((k) => ({ storage: text(k?.storage), cookies: Array.isArray(k?.cookies) ? k.cookies.map(text).filter(Boolean) : [] })).filter((k) => k.storage || k.cookies.length > 0);
+      out.push({ id, ...text(entry.legacyId) ? { legacyId: text(entry.legacyId) } : {}, keys: keys2 });
+    }
+    return out;
+  }
+  function mirrorRules(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((r) => ({ cookiePrefix: text(r?.cookiePrefix), storagePrefix: text(r?.storagePrefix), cookie: text(r?.cookie), storage: text(r?.storage) })).filter((r) => r.cookiePrefix && r.storagePrefix || r.cookie && r.storage);
+  }
+  function strings(value) {
+    return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim() !== "").map((v) => v.trim().toLowerCase()) : [];
+  }
+  function normalize(value) {
+    const record = value && typeof value === "object" ? value : {};
+    const list = connectors(record.connectors);
+    const mirror = mirrorRules(record.cookieMirror);
+    const aliases = {};
+    if (record.groupAliases && typeof record.groupAliases === "object") {
+      for (const [from, to] of Object.entries(record.groupAliases)) {
+        if (from && text(to)) aliases[from] = text(to);
+      }
+    }
+    return {
+      parallelHosts: strings(record.parallelHosts),
+      resolverSegments: strings(record.resolverSegments),
+      ...list.length > 0 ? { connectors: list } : {},
+      ...mirror.length > 0 ? { cookieMirror: mirror } : {},
+      ...Object.keys(aliases).length > 0 ? { groupAliases: aliases } : {},
+      ...strings(record.creditWords).length > 0 ? { creditWords: strings(record.creditWords) } : {}
+    };
+  }
+  function getSourceHints() {
+    let raw = null;
+    try {
+      raw = getItem(SOURCE_HINTS_KEY);
+    } catch {
+      return memo2.value;
+    }
+    if (raw === memo2.raw) return memo2.value;
+    let value = EMPTY;
+    if (raw) {
+      try {
+        value = normalize(JSON.parse(raw));
+      } catch {
+        value = EMPTY;
+      }
+    }
+    memo2 = { raw, value };
+    return value;
+  }
+  function hostHasSuffix(host, suffixes) {
+    const h = host.toLowerCase();
+    return suffixes.some((suffix) => h === suffix || h.endsWith(`.${suffix}`));
+  }
+  var SOURCE_HINTS_KEY, EMPTY, text, memo2;
+  var init_source_hints = __esm({
+    "lib/source-hints.ts"() {
+      init_app_storage();
+      SOURCE_HINTS_KEY = "source_hints_v1";
+      EMPTY = { parallelHosts: [], resolverSegments: [] };
+      text = (value) => typeof value === "string" ? value.trim() : "";
+      memo2 = { raw: null, value: EMPTY };
+    }
+  });
+
   // lib/parallel-ranges.ts
   function parallelDirectEnabled() {
     if (typeof window === "undefined") return false;
@@ -1054,15 +1389,17 @@
       return false;
     }
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
-    return HOST.test(parsed.hostname) || RESOLVER.test(parsed.pathname);
+    const hints = getSourceHints();
+    if (hostHasSuffix(parsed.hostname, hints.parallelHosts)) return true;
+    const resolved = /\/resolve\/([^/]+)\//i.exec(parsed.pathname);
+    return !!resolved && hints.resolverSegments.includes(resolved[1].toLowerCase());
   }
-  var KEY_PARALLEL_DIRECT, RESOLVER, HOST;
+  var KEY_PARALLEL_DIRECT;
   var init_parallel_ranges = __esm({
     "lib/parallel-ranges.ts"() {
       init_app_storage();
+      init_source_hints();
       KEY_PARALLEL_DIRECT = "playback_parallel_direct";
-      RESOLVER = /\/resolve\/(torbox|realdebrid|real-debrid|premiumize|alldebrid|debridlink|debrid-link|easydebrid|offcloud)\//i;
-      HOST = /(^|\.)(tb-cdn\.st|torbox\.app|real-debrid\.com|rdeb\.io|premiumize\.me|alldebrid\.com|debrid-link\.(fr|com)|offcloud\.com)$/i;
     }
   });
 
@@ -1082,14 +1419,14 @@
   function assSubtitleTypography(prefs, fontSize2, nativeFontSize) {
     const factor = ASS_SIZE_FACTOR[prefs.font];
     const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
-    const round1 = (value) => Math.round(value * 10) / 10;
+    const round12 = (value) => Math.round(value * 10) / 10;
     return {
       fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
       bold: prefs.bold,
-      assFontSize: round1(fontSize2 * factor),
+      assFontSize: round12(fontSize2 * factor),
       nativeFontSize: Math.round(nativeFontSize * factor),
-      assSpacing: round1(fontSize2 * em),
-      nativeSpacing: round1(nativeFontSize * em)
+      assSpacing: round12(fontSize2 * em),
+      nativeSpacing: round12(nativeFontSize * em)
     };
   }
   var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
@@ -1221,6 +1558,14 @@
     setScopedStorageItem(KEY_MATCH_RESOLUTION, value ? "1" : "0");
     emitPlaybackSettingsChanged();
   }
+  function getSleepFade() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_SLEEP_FADE) !== "0";
+  }
+  function setSleepFade(value) {
+    setScopedStorageItem(KEY_SLEEP_FADE, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
   function getScrubPreviews() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_SCRUB_PREVIEWS) === "1";
@@ -1244,6 +1589,10 @@
   function getAllowSoftwareVideoDecoding() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
+  }
+  function getStyledAssSubtitles() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_STYLED_ASS_SUBTITLES) !== "0";
   }
   function getDv7AsHdr10() {
     if (typeof window === "undefined") return DEFAULT_DV7_AS_HDR10;
@@ -1489,7 +1838,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_STYLED_ASS_SUBTITLES, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SLEEP_FADE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1515,6 +1864,7 @@
       KEY_MATCH_RESOLUTION = "playback_matchResolution";
       KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
       KEY_DV7_AS_HDR10 = "playback_dv7AsHdr10";
+      KEY_STYLED_ASS_SUBTITLES = "playback_styledAssSubtitles";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
       KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
       KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
@@ -1631,6 +1981,7 @@
       DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
       DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
       DEFAULT_NIGHT_MODE = "off";
+      KEY_SLEEP_FADE = "playback_sleepFade";
       KEY_SCRUB_PREVIEWS = "playback_scrubPreviews";
       KEY_SCRUB_PREVIEWS_PREPARE = "playback_scrubPreviewsPrepare";
       KEY_SCRUB_PREVIEWS_FAST = "playback_scrubPreviewsFast";
@@ -2277,8 +2628,8 @@
     await closeAllAuxSurfaces3("primary-open");
     const knownFinal = knownFinalUrl(opts.url);
     const parallelOk = parallelDirectEnabled() && (opts.kind ?? "live") === "vod" && (allowsParallelRanges(opts.url) || allowsParallelRanges(knownFinal));
-    const parallelIfDebrid = !parallelOk && parallelDirectEnabled() && !!opts.heavy && (opts.kind ?? "live") === "vod";
-    const heavyOnTight = parallelDirectEnabled() && !!opts.heavy && !parallelOk && !parallelIfDebrid && (await getDeviceCapabilities())?.tightMemory === true;
+    const parallelIfFileHost = !parallelOk && parallelDirectEnabled() && !!opts.heavy && (opts.kind ?? "live") === "vod";
+    const heavyOnTight = parallelDirectEnabled() && !!opts.heavy && !parallelOk && !parallelIfFileHost && (await getDeviceCapabilities())?.tightMemory === true;
     const direct = androidStreamsDirect() && !heavyOnTight || directAfterCacheFailure.has(opts.url);
     const cacheable = sourceCacheUrl(opts.url, opts.requestHeaders);
     const wrapped = direct ? null : cacheable;
@@ -2302,21 +2653,36 @@
       allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
       // Dolby Vision profil 7 som HDR10-bas: auto/on/off, spelaren avgör auto.
       dv7AsHdr10: getDv7AsHdr10(),
+      // ASS/SSA med libass (stil, position, typsnitt) eller som text. Gäller när
+      // spelaren byggs, alltså från den här starten.
+      styledAss: getStyledAssSubtitles(),
       // Tung ström utan känd storlek (Fortsätt titta har ingen): räkna med en
       // remux, annars fick spelaren 64 MB och ~2 s framåt (2026-11-01).
       ...opts.bitrateBps && opts.bitrateBps > 0 ? { bitrateHint: Math.round(opts.bitrateBps) } : opts.heavy ? { bitrateHint: HEAVY_UNKNOWN_BITRATE_BPS } : {},
-      // Debrid-ström direkt från källan: flera anslutningar (lib/parallel-ranges).
+      // Filvärdsström direkt från källan: flera anslutningar (lib/parallel-ranges).
       ...!wrapped && parallelOk ? { parallel: true } : {},
-      // Tung film bakom en resolver vars slutadress inte är känd än (Comet,
-      // AIOStreams): spelaren avgör efter första omdirigeringen.
-      ...!wrapped && parallelIfDebrid ? { parallelIfDebrid: true } : {},
+      // Tung film bakom en resolver vars slutadress inte är känd än:
+      // spelaren avgör efter första omdirigeringen.
+      ...!wrapped && parallelIfFileHost ? { parallelIfFileHost: true, parallelHosts: getSourceHints().parallelHosts } : {},
       // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
       ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
   }
+  async function setNativeExternalAss(url) {
+    const res = await np({ cmd: "setExternalAss", url });
+    return res?.ok === true;
+  }
+  function looksLikeAssSubtitle(urlOrPath, content) {
+    const path = urlOrPath.split(/[?#]/)[0].toLowerCase();
+    if (/\.(ass|ssa)$/.test(path)) return true;
+    return typeof content === "string" && /^\s*(WEBVTT\s*)?\[Script Info\]/i.test(content.replace(/^\uFEFF/, ""));
+  }
   function setNativeMatchResolution(on) {
     if (!isAndroidTauriEnv) return;
     void np({ cmd: "setMatchResolution", on });
+  }
+  async function switchNativeSource(opts) {
+    await np({ cmd: "switchSource", url: opts.url, paused: opts.paused, atEnd: opts.atEnd });
   }
   async function closeNativePlayer() {
     await np({ cmd: "close" });
@@ -2387,6 +2753,8 @@
   function useNativePlayer(enabled = true) {
     const [timePos, setTimePos] = useState(0);
     const [duration2, setDuration] = useState(0);
+    const [isLive, setIsLive] = useState(false);
+    const [behindWindow, setBehindWindow] = useState(false);
     const [paused, setPaused] = useState(false);
     const pendingPauseRef = useRef(null);
     const [ended, setEnded] = useState(false);
@@ -2425,6 +2793,8 @@
         }
         prev.timePos = s.timePos;
         setDuration(s.duration);
+        setIsLive(s.isLive === true);
+        setBehindWindow(s.behindWindow === true);
         const pending5 = pendingPauseRef.current;
         if (pending5 && (s.paused === pending5.value || Date.now() > pending5.until)) pendingPauseRef.current = null;
         if (!pendingPauseRef.current) setPaused(s.paused);
@@ -2555,6 +2925,11 @@
       sid,
       fileLoaded,
       fileLoadedToken,
+      // Inget demuxercache-intervall i media3: Live TV:s timeshift på Android
+      // räknar fönstret ur `isLive` + `duration` (lokal HLS-buffert) i stället.
+      cacheRange: null,
+      isLive,
+      behindWindow,
       // ExoPlayer har inget andraspår; texten bärs av cueText. Inlärningsläget
       // ritar andraspråket ur VTT här.
       subText: "",
@@ -2596,6 +2971,7 @@
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_parallel_ranges();
+      init_source_hints();
       init_timing();
       init_react_shim();
       init_tauri_mpv();
@@ -2674,10 +3050,10 @@
         let video = null;
         let hls = null;
         let pendingRect = null;
-        let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit3 = (patch) => {
-          state2 = { ...state2, ...patch };
-          for (const l of [...listeners9]) l(state2);
+        let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+        const emit4 = (patch) => {
+          state3 = { ...state3, ...patch };
+          for (const l of [...listeners9]) l(state3);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -2700,10 +3076,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit3({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit3({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit3({ paused: true }));
-            v.addEventListener("error", () => emit3({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit4({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit4({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit4({ paused: true }));
+            v.addEventListener("error", () => emit4({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -2757,7 +3133,7 @@
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit3({ loadFailed: true });
+            if (reason) emit4({ loadFailed: true });
             listeners9.clear();
           }
         };
@@ -2780,8 +3156,8 @@
     closingSharedListener = false;
     if (sharedUnlisten) return;
     sharedUnlisten = (0, import_event.listen)("mpv-surface-state", (event) => {
-      const { surface, ...state2 } = event.payload;
-      dispatchersByRustId.get(surface)?.(state2);
+      const { surface, ...state3 } = event.payload;
+      dispatchersByRustId.get(surface)?.(state3);
     });
   }
   function teardownSharedListenerIfIdle() {
@@ -2815,18 +3191,18 @@
     const listeners9 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners9]) listener(state2);
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit4 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners9]) listener(state3);
     };
     const dispatch = (next2) => {
-      state2 = next2;
+      state3 = next2;
       for (const listener of [...listeners9]) listener(next2);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit3({ loadFailed: true });
+        if (!destroyed) emit4({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -2848,7 +3224,7 @@
             }
           });
         } catch {
-          emit3({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit4({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -2905,7 +3281,7 @@
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit3({ loadFailed: true });
+        if (reason) emit4({ loadFailed: true });
         listeners9.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
@@ -2970,10 +3346,10 @@
   }
   function createDroidSurfaceBackend() {
     const listeners9 = /* @__PURE__ */ new Set();
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners9]) listener(state2);
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit4 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners9]) listener(state3);
     };
     let nativeId = null;
     let destroyed = false;
@@ -3012,7 +3388,7 @@
           if (myGeneration !== generation) return;
           const next2 = toSurfaceState(value);
           if (!next2) return;
-          state2 = next2;
+          state3 = next2;
           for (const listener of [...listeners9]) listener(next2);
         });
       }, 250);
@@ -3034,7 +3410,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit3({ loadFailed: true });
+            if (!destroyed) emit4({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -3098,7 +3474,7 @@
         destroyed = true;
         generation++;
         stopPolling();
-        if (reason) emit3({ loadFailed: true });
+        if (reason) emit4({ loadFailed: true });
         listeners9.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
@@ -3529,6 +3905,7 @@
     const [playbackRestarted, setPlaybackRestarted] = useState(false);
     const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
     const [pausedForCache, setPausedForCache] = useState(false);
+    const [cacheRange, setCacheRange] = useState(null);
     const [coreIdle, setCoreIdle] = useState(true);
     const [firstFrameRendered, setFirstFrameRendered] = useState(false);
     const [loadFailed, setLoadFailed] = useState(false);
@@ -3545,6 +3922,7 @@
       void (0, import_event2.listen)("mpv://sub-text", (e) => setSubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://secondary-sub-text", (e) => setSecondarySubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://file-loaded", () => {
+        setCacheRange(null);
         setFileLoaded(true);
         setFileLoadedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
@@ -3553,6 +3931,10 @@
         setPlaybackRestartedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event2.listen)("mpv://cache-state", (e) => {
+        const p = e.payload;
+        setCacheRange(p && typeof p.start === "number" && typeof p.end === "number" && p.end > p.start ? { start: p.start, end: p.end } : null);
+      }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://first-frame-rendered", () => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
@@ -3625,6 +4007,7 @@
       playbackRestartedToken,
       pausedForCache,
       coreIdle,
+      cacheRange,
       firstFrameRendered,
       loadFailed,
       loadFailedToken,
@@ -3957,14 +4340,6 @@
         streamProviderCustomUrl: "Custom URL",
         streamProviderNoUrl: "No URL set",
         streamProviderAddComet: "+ Comet",
-        streamProviderAddJackettio: "+ Jackettio",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        streamProviderAddAiostreams: "+ AIOStreams",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsOpenConfig: "Open the configurator",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsManifestLabel: "Manifest URL",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
         streamProviderAddCustom: "+ Custom URL",
         useGlobal: "Use global",
         clearFilters: "Clear filters",
@@ -4288,6 +4663,7 @@
         subtitleLoadFile: "Open subtitle file\u2026",
         subtitleExternalGroup: "Own file",
         subtitleEmbeddedTrack: "Embedded track",
+        subtitleLibraryTrack: "From your server",
         subtitleFileUnsupported: "This format can only be shown by the built-in player on Mac (mpv). Use .srt or .vtt here.",
         subtitleFileUnsupportedWindows: "This format can only be shown by the built-in player (mpv). Use .srt or .vtt here.",
         subtitleFileLoadFailed: "Could not load the subtitle file. {message}",
@@ -4305,6 +4681,13 @@
         vpSecondarySubMissing: "No {lang} subtitle found",
         learningModeTitle: "Learning mode",
         learningModeHint: "Show a second subtitle language under the main one",
+        spokenSubtitlesGroup: "Spoken subtitles",
+        spokenSubtitles: "Read subtitles aloud",
+        spokenSubtitlesDesc: "Reads the current subtitle line aloud with the device's voice and lowers the film's sound while it speaks. Uses a voice for the subtitle's language when one is installed.",
+        spokenSubtitlesRate: "Reading speed",
+        spokenSubtitlesRateDesc: "How fast the voice reads the lines.",
+        spokenSubtitlesRateNormal: "Normal",
+        spokenSubtitlesRateFast: "Fast",
         subtitleSlotPrimary: "Main",
         subtitleSlotSecondary: "Second",
         subtitleSecondaryEmbeddedUnsupported: "Not supported on Android yet",
@@ -4652,6 +5035,11 @@
         plSleepEnd: "End of episode or film",
         plSleepStillThere: "Are you still there?",
         plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+        plSleepFade: "Fade out over the last 2 min",
+        incognitoBadge: "Incognito",
+        incognitoToggle: "Watch without it showing",
+        incognitoTurnOff: "Turn off incognito",
+        incognitoPlay: "Play incognito",
         plCompanions: "Who's watching",
         plWhoWatches: "Who's watching with you?",
         plCompanionsJustMe: "Just me",
@@ -6065,6 +6453,7 @@
         exitAppAction: "Quit Lumio",
         exitAppTitle: "Quit Lumio?",
         exitAppConfirm: "Quit",
+        exitAppHoldHint: "Tip: hold Back anywhere to get here.",
         quizMenuLabel: "Film quiz",
         couchMenuLabel: "Couch mode",
         couchOpenButton: "Open Couch mode",
@@ -6239,6 +6628,9 @@
         creditsThresholdTvDesc: "Only when the season has ended and no next season exists.",
         advanceAtOutro: "Skip the credits and go straight to the next episode",
         advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
+        nextEpAfterLastSub: "Next episode after the last subtitle line",
+        nextEpAfterLastSubDesc: "For episodes without a detected outro, the next-episode card appears this long after the subtitle file's last line. Waiting a little leaves room for a closing scene without dialogue; the card can always be dismissed.",
+        nextEpAfterLastSubOff: "Off",
         stayFullscreenOnClose: "Stay fullscreen when the player closes",
         stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
         showTitleOnStart: "Show title when playback starts",
@@ -6568,6 +6960,8 @@
         subtitleAutoSyncGroup: "Auto-sync",
         subtitleSyncFastReadAhead: "Faster sync (uses more data)",
         subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
+        styledAssSubtitles: "Styled ASS subtitles",
+        styledAssSubtitlesHint: "Draws ASS/SSA subtitles (anime and fansubs) with their own fonts, colours and positions. Turn off if heavy typesetting stutters on a slow box; they then show as plain text. Applies from the next playback.",
         subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
         subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
         subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
@@ -6620,6 +7014,9 @@
         subtitleBold: "Bold text",
         subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
         skipIntro: "Skip intro",
+        skipLearned: "Skip (learned)",
+        plLearnSkips: "Learn my skips",
+        plForgetLearnedSkips: "Forget learned skips for this series",
         originalFirst: "Original / first",
         noFallback: "No fallback",
         autoplayNextEpisode: "Auto-play next episode",
@@ -8224,7 +8621,20 @@
         tvEdTitlesRowStation: "Titles in the row \xB7 pin or hide",
         tvEdTitlesRowTitle: "Titles in the row",
         tvEdTitlesRefNote: "The titles come from the row this one points to \u2014 pin or hide them there.",
-        tvEdTemplateEyebrow: "Template for the theme"
+        tvEdTemplateEyebrow: "Template for the theme",
+        ratingRate: "Rate",
+        ratingRateEpisode: "Rate episode",
+        ratingRated: "Rated {n}/10",
+        ratingEyebrow: "Your rating \xB7 Trakt",
+        ratingNone: "Not rated yet",
+        ratingValue: "{stars} stars \xB7 {n}/10",
+        ratingRemove: "Remove rating",
+        ratingSaveFailed: "Couldn't save to Trakt. Try again.",
+        ratingExpired: "Your Trakt sign-in has expired. Connect Trakt again in Settings.",
+        ratingHint: "Pick a star \u2014 each half is one point on Trakt's 1\u201310 scale.",
+        castSeenIn: "You've seen them in {titles}",
+        personSeenIn: "You've seen them in",
+        personSeenInSorted: "Most recently watched first"
       };
     }
   });
@@ -8276,9 +8686,9 @@
     }
     return pack?.[key] ?? en[key];
   }
-  function pickLangText(text, lang) {
-    const own = text[baseLang(lang)];
-    return own ?? text.en;
+  function pickLangText(text2, lang) {
+    const own = text2[baseLang(lang)];
+    return own ?? text2.en;
   }
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
@@ -8812,7 +9222,7 @@
       try {
         const sourceParam = key || void 0;
         const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
-        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY;
+        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY2;
         const payload = await response.json();
         const next2 = {
           movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
@@ -8827,7 +9237,7 @@
         }
         return next2;
       } catch {
-        return cache2 && cacheKey === key ? cache2 : EMPTY;
+        return cache2 && cacheKey === key ? cache2 : EMPTY2;
       } finally {
         if (inflight === run) {
           inflight = null;
@@ -8857,7 +9267,7 @@
   function useLibraryIdSets() {
     const [mode, setMode] = useState(() => getLibraryMode());
     const key = modeKey(mode);
-    const [state2, setState] = useState(() => {
+    const [state3, setState] = useState(() => {
       const cached = key != null ? cachedLibraryIdSetsFor(key) : null;
       return key != null && cached ? { key, sets: cached } : null;
     });
@@ -8884,9 +9294,9 @@
       };
     }, [key]);
     if (key == null) return null;
-    return state2 && state2.key === key ? state2.sets : LIBRARY_ID_SETS_LOADING;
+    return state3 && state3.key === key ? state3.sets : LIBRARY_ID_SETS_LOADING;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY2, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -8894,7 +9304,7 @@
       init_react_shim();
       init_mode();
       LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
-      EMPTY = {
+      EMPTY2 = {
         movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         total: 0,
@@ -9025,14 +9435,14 @@
     return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
   }
   function tvSceneBoxScale(element) {
-    const read11 = (raw) => {
+    const read12 = (raw) => {
       const value = parseFloat(raw);
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    const inline = read11(element.style.getPropertyValue("--tv-scene-box-scale"));
+    const inline = read12(element.style.getPropertyValue("--tv-scene-box-scale"));
     if (inline !== null) return inline;
     if (typeof getComputedStyle === "undefined") return 1;
-    return read11(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
+    return read12(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
   var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX, applied, TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
@@ -9321,7 +9731,7 @@
     let titles = 0;
     let unmatched = 0;
     const report = (progress) => options.onProgress?.(progress);
-    const emit3 = async (incoming) => {
+    const emit4 = async (incoming) => {
       if (options.signal?.aborted) return;
       const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
@@ -9334,7 +9744,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit3, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit3, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit4, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit4, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -9419,22 +9829,22 @@
       held = held.filter((candidate) => candidate !== entry);
       entry = void 0;
     }
-    let state2;
+    let state3;
     if (entry) {
       entry.last = now2;
-      state2 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
+      state3 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
     } else {
       held.push({ key: event.key, keyCode, since: now2, last: now2 });
-      state2 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
+      state3 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
     }
-    answered.set(identity, state2);
-    return state2;
+    answered.set(identity, state3);
+    return state3;
   }
-  function heldLongerThan(state2, ms2) {
-    return state2.repeat && state2.heldMs > ms2;
+  function heldLongerThan(state3, ms2) {
+    return state3.repeat && state3.heldMs > ms2;
   }
-  function tvSeekStepSeconds(state2) {
-    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  function tvSeekStepSeconds(state3) {
+    return heldLongerThan(state3, 1e3) ? 60 : 10;
   }
   var KEY_HOLD_STALE_MS, held, installed, answered;
   var init_key_hold = __esm({
@@ -10708,24 +11118,24 @@
     }
   }
   function isTraktUnsynced(mediaType, tmdbId) {
-    const state2 = readTraktLimitState();
-    if (!state2) return false;
-    const unsynced = mediaType === "show" ? state2.unsyncedShows : state2.unsyncedMovies;
+    const state3 = readTraktLimitState();
+    if (!state3) return false;
+    const unsynced = mediaType === "show" ? state3.unsyncedShows : state3.unsyncedMovies;
     return unsynced.includes(tmdbId);
   }
   function getTraktLimitSummary() {
-    const state2 = readTraktLimitState();
-    if (!state2) {
+    const state3 = readTraktLimitState();
+    if (!state3) {
       return { hit: false, unsyncedShows: 0, unsyncedMovies: 0, total: 0, limit: null, used: null };
     }
-    const unsyncedShows = state2.unsyncedShows.length;
-    const unsyncedMovies = state2.unsyncedMovies.length;
+    const unsyncedShows = state3.unsyncedShows.length;
+    const unsyncedMovies = state3.unsyncedMovies.length;
     return {
       hit: unsyncedShows + unsyncedMovies > 0,
       unsyncedShows,
       unsyncedMovies,
       total: unsyncedShows + unsyncedMovies,
-      limit: readReportedWatchlistLimit(state2.reported),
+      limit: readReportedWatchlistLimit(state3.reported),
       used: null
     };
   }
@@ -11672,8 +12082,8 @@
           // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
           // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
           // ecl argument if it can be done without increasing the version.
-          static encodeText(text, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text);
+          static encodeText(text2, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text2);
             return _QrCode2.encodeSegments(segs, ecl);
           }
           // Returns a QR Code representing the given binary data at the given error correction level.
@@ -12186,31 +12596,31 @@
           // Returns a segment representing the given text string encoded in alphanumeric mode.
           // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
           // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text) {
-            if (!_QrSegment2.isAlphanumeric(text))
+          static makeAlphanumeric(text2) {
+            if (!_QrSegment2.isAlphanumeric(text2))
               throw new RangeError("String contains unencodable characters in alphanumeric mode");
             let bb = [];
             let i;
-            for (i = 0; i + 2 <= text.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
+            for (i = 0; i + 2 <= text2.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i + 1));
               appendBits(temp, 11, bb);
             }
-            if (i < text.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
+            if (i < text2.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text2.length, bb);
           }
           // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
           // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text) {
-            if (text == "")
+          static makeSegments(text2) {
+            if (text2 == "")
               return [];
-            else if (_QrSegment2.isNumeric(text))
-              return [_QrSegment2.makeNumeric(text)];
-            else if (_QrSegment2.isAlphanumeric(text))
-              return [_QrSegment2.makeAlphanumeric(text)];
+            else if (_QrSegment2.isNumeric(text2))
+              return [_QrSegment2.makeNumeric(text2)];
+            else if (_QrSegment2.isAlphanumeric(text2))
+              return [_QrSegment2.makeAlphanumeric(text2)];
             else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text2))];
           }
           // Returns a segment representing an Extended Channel Interpretation
           // (ECI) designator with the given assignment value.
@@ -12232,14 +12642,14 @@
           }
           // Tests whether the given string can be encoded as a segment in numeric mode.
           // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text) {
-            return _QrSegment2.NUMERIC_REGEX.test(text);
+          static isNumeric(text2) {
+            return _QrSegment2.NUMERIC_REGEX.test(text2);
           }
           // Tests whether the given string can be encoded as a segment in alphanumeric mode.
           // A string is encodable iff each character is in the following set: 0 to 9, A to Z
           // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
+          static isAlphanumeric(text2) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text2);
           }
           /*-- Methods --*/
           // Returns a new copy of the data bits of this segment.
@@ -13032,24 +13442,24 @@
     const strict = level === "strict";
     const activeContext = context ?? readStreamFilterContext();
     return streams.map((s) => {
-      const text = `${s.name} ${s.title}`.toUpperCase();
-      if ((strict || filters.hideCam) && /\bCAM\b|\bCAMRIP\b|\bCAM-RIP\b/.test(text)) return false;
-      if ((strict || filters.hideTs) && /\bHDTS\b|\bHDTC\b|\bTELESYNC\b|\bTELECINE\b/.test(text)) return false;
-      if ((strict || filters.hideTs) && /(?<![A-Z])TS(?![A-Z])/.test(text) && !/\d{3,4}P/.test(text)) return false;
-      if ((strict || filters.hideScr) && /\bSCR\b|\bSCREENER\b|\bDVDSCR\b|\bDVD-SCR\b/.test(text)) return false;
-      if (filters.hideBelow720p && /\b(480|360|240)P\b/.test(text)) return false;
+      const text2 = `${s.name} ${s.title}`.toUpperCase();
+      if ((strict || filters.hideCam) && /\bCAM\b|\bCAMRIP\b|\bCAM-RIP\b/.test(text2)) return false;
+      if ((strict || filters.hideTs) && /\bHDTS\b|\bHDTC\b|\bTELESYNC\b|\bTELECINE\b/.test(text2)) return false;
+      if ((strict || filters.hideTs) && /(?<![A-Z])TS(?![A-Z])/.test(text2) && !/\d{3,4}P/.test(text2)) return false;
+      if ((strict || filters.hideScr) && /\bSCR\b|\bSCREENER\b|\bDVDSCR\b|\bDVD-SCR\b/.test(text2)) return false;
+      if (filters.hideBelow720p && /\b(480|360|240)P\b/.test(text2)) return false;
       if (strict) {
-        if (/\bSAMPLE\b|\bTRAILER\b/.test(text)) return false;
-        if (/\.(EXE|MSI|ISO|ZIP|RAR|7Z|LNK|BAT|CMD|SCR|APK)\b/.test(text)) return false;
+        if (/\bSAMPLE\b|\bTRAILER\b/.test(text2)) return false;
+        if (/\.(EXE|MSI|ISO|ZIP|RAR|7Z|LNK|BAT|CMD|SCR|APK)\b/.test(text2)) return false;
         if (activeContext.episode != null) {
           const epTag = `E${String(activeContext.episode).padStart(2, "0")}`;
-          const hasSeasonMarker = /\bS\d{1,2}\b|\bSEASON[\s.]?\d{1,2}\b|\bS\d{2}[\s.-]/.test(text);
-          const hasAnyEpisode = /S\d{1,2}E\d{1,3}|\bE\d{2,3}\b|\d{1,2}X\d{2}/.test(text);
-          if (hasAnyEpisode && !text.includes(epTag) && !new RegExp(`\\d{1,2}X${String(activeContext.episode).padStart(2, "0")}`).test(text)) return false;
-          if (!hasAnyEpisode && hasSeasonMarker && /\bCOMPLETE\b|\bPACK\b|\bSEASON\b/.test(text)) return false;
+          const hasSeasonMarker = /\bS\d{1,2}\b|\bSEASON[\s.]?\d{1,2}\b|\bS\d{2}[\s.-]/.test(text2);
+          const hasAnyEpisode = /S\d{1,2}E\d{1,3}|\bE\d{2,3}\b|\d{1,2}X\d{2}/.test(text2);
+          if (hasAnyEpisode && !text2.includes(epTag) && !new RegExp(`\\d{1,2}X${String(activeContext.episode).padStart(2, "0")}`).test(text2)) return false;
+          if (!hasAnyEpisode && hasSeasonMarker && /\bCOMPLETE\b|\bPACK\b|\bSEASON\b/.test(text2)) return false;
         }
         if (activeContext.year && activeContext.episode == null) {
-          const years = (text.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
+          const years = (text2.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
           if (years.length > 0 && !years.some((y) => Math.abs(y - Number(activeContext.year)) <= 1)) return false;
         }
       }
@@ -13089,8 +13499,8 @@
   function availabilityRateLimited() {
     return Date.now() < rateLimitedUntil;
   }
-  function isRateLimitNotice(text) {
-    return Boolean(text && (/rate.?limit/i.test(text) || /\b429\b/.test(text)));
+  function isRateLimitNotice(text2) {
+    return Boolean(text2 && (/rate.?limit/i.test(text2) || /\b429\b/.test(text2)));
   }
   var MIN_INTERVAL_MS, nextSlotAt, RATE_LIMIT_COOLDOWN_MS, rateLimitedUntil;
   var init_availability_throttle = __esm({
@@ -13113,48 +13523,12 @@
     }
   });
 
-  // lib/media-stream/config.ts
-  var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
-  var init_config = __esm({
-    "lib/media-stream/config.ts"() {
-      init_addon_url();
+  // lib/media-stream/source-list.ts
+  var init_source_list = __esm({
+    "lib/media-stream/source-list.ts"() {
       init_app_storage();
+      init_addon_url();
       init_profile_storage_shim();
-      SCRAPER_PRESETS = [
-        {
-          id: "torrentio",
-          name: "Torrentio",
-          url: "https://torrentio.strem.fun",
-          type: "torrentio",
-          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-          configUrl: "https://torrentio.strem.fun/configure"
-        },
-        {
-          id: "comet",
-          name: "Comet",
-          url: "",
-          type: "preconfigured",
-          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-          configUrl: "https://comet.elfhosted.com"
-        },
-        {
-          id: "jackettio",
-          name: "Jackettio",
-          url: "",
-          type: "preconfigured",
-          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-          configUrl: "https://jackettio.elfhosted.com/configure"
-        },
-        {
-          id: "aiostreams",
-          name: "AIOStreams",
-          url: "",
-          type: "preconfigured",
-          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-        }
-      ];
-      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
     }
   });
 
@@ -13180,7 +13554,7 @@
       "use client";
       init_addon_url();
       init_profile_storage_shim();
-      init_config();
+      init_source_list();
       KEY8 = "core_stream_addons_v1";
     }
   });
@@ -13195,8 +13569,8 @@
     if (normalized.includes("480p")) return 480;
     return null;
   }
-  function parseSizeBytes(text) {
-    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
+  function parseSizeBytes(text2) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text2);
     if (!match) return null;
     const value = Number.parseFloat(match[1].replace(",", "."));
     const unit = SIZE_UNITS[match[2].toLowerCase()];
@@ -13204,7 +13578,7 @@
     return Math.round(value * unit);
   }
   function getStreamSizeBytes(stream) {
-    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file2) => sum + (Number.isFinite(file2.filesize) ? file2.filesize : 0), 0);
     if (cachedFileBytes > 0) return cachedFileBytes;
     if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
     return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
@@ -13227,8 +13601,8 @@
     return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
   }
   function streamLooksDolbyVision(stream) {
-    const text = `${stream.name} ${stream.title}`;
-    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text) || /dolby[.\s_-]?vision/i.test(text);
+    const text2 = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text2) || /dolby[.\s_-]?vision/i.test(text2);
   }
   function streamLooksLosslessAudio(stream) {
     return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
@@ -13299,6 +13673,268 @@
       };
       INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
       INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/core-streams/addon-episode-numbering.ts
+  function regularVideos(videos) {
+    return videos.filter((v) => Number.isInteger(v.season) && Number.isInteger(v.episode) && v.season > 0 && v.episode > 0).sort((a, b) => a.season - b.season || a.episode - b.episode);
+  }
+  function regularSeasons(seasons) {
+    return seasons.filter((s) => s.season > 0 && s.count > 0).sort((a, b) => a.season - b.season);
+  }
+  function seasonStructuresMatch(tmdbSeasons, videos) {
+    const tmdb = regularSeasons(tmdbSeasons);
+    const addon = /* @__PURE__ */ new Map();
+    for (const v of regularVideos(videos)) addon.set(v.season, (addon.get(v.season) ?? 0) + 1);
+    if (tmdb.length === 0 || tmdb.length !== addon.size) return false;
+    return tmdb.every((s) => addon.get(s.season) === s.count);
+  }
+  function dayNumber(raw) {
+    if (!raw) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (!m) return null;
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / 864e5;
+  }
+  function datesClose(a, b) {
+    const da = dayNumber(a);
+    const db = dayNumber(b);
+    return da !== null && db !== null && Math.abs(da - db) <= 1;
+  }
+  function normalizeName(raw) {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed || GENERIC_NAME.test(trimmed)) return null;
+    const norm = trimmed.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "");
+    return norm.length >= 3 ? norm : null;
+  }
+  function namesMatch(a, b) {
+    const na = normalizeName(a);
+    const nb = normalizeName(b);
+    return na !== null && na === nb;
+  }
+  function absoluteEpisodeIndex(tmdbSeasons, season, episode) {
+    const seasons = regularSeasons(tmdbSeasons);
+    const own = seasons.find((s) => s.season === season);
+    if (!own || episode < 1) return null;
+    const before = seasons.filter((s) => s.season < season).reduce((sum, s) => sum + s.count, 0);
+    if (episode <= own.count) return before + episode;
+    if (episode > before && episode <= before + own.count) return episode;
+    return null;
+  }
+  function mapTmdbEpisodeToAddon(tmdbSeasons, target2, videos) {
+    const list = regularVideos(videos);
+    if (list.length === 0) return null;
+    const ref = (v) => ({ season: v.season, episode: v.episode });
+    const hasName = normalizeName(target2.name) !== null;
+    const hasEvidence = Boolean(dayNumber(target2.airDate) !== null || hasName);
+    const exact = list.find((v) => v.season === target2.season && v.episode === target2.episode) ?? null;
+    if (exact && (!hasEvidence || datesClose(exact.released, target2.airDate) || namesMatch(exact.name, target2.name))) {
+      return ref(exact);
+    }
+    const abs = absoluteEpisodeIndex(tmdbSeasons, target2.season, target2.episode);
+    const indexed = list.map((v, i) => ({ v, i }));
+    if (dayNumber(target2.airDate) !== null) {
+      let candidates = indexed.filter(({ v }) => datesClose(v.released, target2.airDate));
+      if (candidates.length > 1 && hasName) {
+        const named = candidates.filter(({ v }) => namesMatch(v.name, target2.name));
+        if (named.length >= 1) candidates = named;
+      }
+      if (candidates.length === 1) return ref(candidates[0].v);
+      if (candidates.length > 1) {
+        if (abs === null) return null;
+        const ranked = candidates.map((c) => ({ ...c, dist: Math.abs(c.i - (abs - 1)) })).sort((a, b) => a.dist - b.dist);
+        if (ranked.length > 1 && ranked[0].dist === ranked[1].dist) return null;
+        return ref(ranked[0].v);
+      }
+    }
+    if (hasName) {
+      const named = list.filter((v) => namesMatch(v.name, target2.name));
+      if (named.length === 1) return ref(named[0]);
+    }
+    return null;
+  }
+  async function defaultFetchJson(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer4 = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } finally {
+      clearTimeout(timer4);
+    }
+  }
+  function defaultStorage() {
+    try {
+      return typeof window !== "undefined" ? window.localStorage : null;
+    } catch {
+      return null;
+    }
+  }
+  function defaultLog(line) {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+    });
+  }
+  function defaultDeps() {
+    return { fetchJson: defaultFetchJson, now: () => Date.now(), storage: defaultStorage(), log: defaultLog };
+  }
+  function readStore(deps) {
+    try {
+      const raw = deps.storage?.getItem(STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function writeStore(deps, store2) {
+    try {
+      const entries = Object.entries(store2).sort((a, b) => b[1].at - a[1].at).slice(0, MAX_SERIES);
+      deps.storage?.setItem(STORE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+    }
+  }
+  function updateSeries(deps, imdbId, change) {
+    const store2 = readStore(deps);
+    store2[imdbId] = change(store2[imdbId]);
+    writeStore(deps, store2);
+  }
+  function asNumber(value) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+  function parseVideos(payload) {
+    const meta = payload?.meta;
+    const videos = Array.isArray(meta?.videos) ? meta.videos : [];
+    const out = [];
+    for (const v of videos) {
+      const season = asNumber(v.season);
+      const episode = asNumber(v.episode) ?? asNumber(v.number);
+      if (season === null || episode === null) continue;
+      const released = typeof v.released === "string" ? v.released : typeof v.firstAired === "string" ? v.firstAired : null;
+      const name = typeof v.name === "string" ? v.name : typeof v.title === "string" ? v.title : null;
+      out.push({ season, episode, released, name });
+    }
+    return out;
+  }
+  function parseSeasons(payload) {
+    const seasons = payload?.seasons;
+    if (!Array.isArray(seasons)) return [];
+    return seasons.flatMap((s) => {
+      const season = asNumber(s.season_number);
+      const count = asNumber(s.episode_count);
+      return season === null || count === null ? [] : [{ season, count }];
+    });
+  }
+  function loadSeries(imdbId, deps) {
+    const cached = seriesMemo.get(imdbId);
+    if (cached && deps.now() - cached.at < cached.ttl) return cached.promise;
+    const promise = (async () => {
+      const tmdbPart = (async () => {
+        const found = await deps.fetchJson(`/api/tmdb/find?imdb=${encodeURIComponent(imdbId)}&type=tv`, FETCH_TIMEOUT_MS);
+        const tmdbId = found && (typeof found.tmdbId === "string" || typeof found.tmdbId === "number") ? String(found.tmdbId) : null;
+        if (!tmdbId) return null;
+        const info = await deps.fetchJson(`/api/tv-info?tmdbId=${encodeURIComponent(tmdbId)}`, FETCH_TIMEOUT_MS);
+        return { tmdbId, seasons: parseSeasons(info) };
+      })();
+      const [tmdb, meta] = await Promise.all([
+        tmdbPart,
+        deps.fetchJson(`${CINEMETA_META}${encodeURIComponent(imdbId)}.json`, FETCH_TIMEOUT_MS)
+      ]);
+      if (!tmdb) return null;
+      return { ...tmdb, videos: parseVideos(meta) };
+    })();
+    const entry = { at: deps.now(), ttl: SERIES_MEMO_MS, promise };
+    seriesMemo.set(imdbId, entry);
+    promise.catch(() => {
+      entry.ttl = FAILURE_MEMO_MS;
+    });
+    return promise;
+  }
+  async function resolveUncached(imdbId, season, episode, deps) {
+    const original = { season, episode };
+    const data = await loadSeries(imdbId, deps);
+    if (!data) return original;
+    if (data.videos.length === 0) {
+      updateSeries(deps, imdbId, () => ({ at: deps.now(), same: true, ttl: NO_DATA_TTL_MS }));
+      return original;
+    }
+    if (seasonStructuresMatch(data.seasons, data.videos)) {
+      updateSeries(deps, imdbId, () => ({ at: deps.now(), same: true, ttl: SAME_TTL_MS }));
+      return original;
+    }
+    const seasonPayload = await deps.fetchJson(
+      `/api/tv-info?tmdbId=${encodeURIComponent(data.tmdbId)}&season=${season}`,
+      FETCH_TIMEOUT_MS
+    );
+    const row = (seasonPayload?.episodes ?? []).find((e) => asNumber(e.episode_number) === episode);
+    const info = {
+      season,
+      episode,
+      airDate: typeof row?.air_date === "string" ? row.air_date : null,
+      name: typeof row?.name === "string" ? row.name : null
+    };
+    const mapped = mapTmdbEpisodeToAddon(data.seasons, info, data.videos) ?? original;
+    if (mapped.season !== season || mapped.episode !== episode) {
+      deps.log(`[episode-remap] ${imdbId} tmdb=${season}:${episode} addon=${mapped.season}:${mapped.episode}`);
+    }
+    updateSeries(deps, imdbId, (prev) => {
+      const eps = { ...prev && !prev.same ? prev.eps : {}, [`${season}:${episode}`]: [mapped.season, mapped.episode] };
+      const trimmed = Object.entries(eps).slice(-MAX_EPISODES_PER_SERIES);
+      return { at: deps.now(), eps: Object.fromEntries(trimmed) };
+    });
+    return mapped;
+  }
+  async function addonEpisodeFor(imdbId, season, episode, options = {}) {
+    const deps = { ...defaultDeps(), ...options.deps };
+    const original = { season, episode };
+    if (!/^tt\d+$/.test(imdbId) || season < 1 || episode < 1) return original;
+    const stored = readStore(deps)[imdbId];
+    if (stored) {
+      const age = deps.now() - stored.at;
+      if (stored.same && age < (stored.ttl ?? SAME_TTL_MS)) return original;
+      const hit = stored.eps?.[`${season}:${episode}`];
+      if (hit && age < EPISODE_TTL_MS) return { season: hit[0], episode: hit[1] };
+    }
+    const key = `${imdbId}:${season}:${episode}`;
+    let pending5 = pendingEpisodes.get(key);
+    if (!pending5) {
+      pending5 = resolveUncached(imdbId, season, episode, deps).catch(() => original);
+      pendingEpisodes.set(key, pending5);
+      void pending5.finally(() => pendingEpisodes.delete(key));
+    }
+    const budgetMs = options.budgetMs ?? ADDON_NUMBERING_BUDGET_MS;
+    let timer4;
+    const timeout = new Promise((resolve) => {
+      timer4 = setTimeout(() => resolve(original), budgetMs);
+    });
+    try {
+      return await Promise.race([pending5, timeout]);
+    } finally {
+      if (timer4) clearTimeout(timer4);
+    }
+  }
+  var GENERIC_NAME, CINEMETA_META, STORE_KEY, SAME_TTL_MS, NO_DATA_TTL_MS, EPISODE_TTL_MS, MAX_SERIES, MAX_EPISODES_PER_SERIES, SERIES_MEMO_MS, FAILURE_MEMO_MS, FETCH_TIMEOUT_MS, ADDON_NUMBERING_BUDGET_MS, seriesMemo, pendingEpisodes;
+  var init_addon_episode_numbering = __esm({
+    "lib/core-streams/addon-episode-numbering.ts"() {
+      "use strict";
+      "use client";
+      GENERIC_NAME = /^(episode|episodio|épisode|epizod|folge|avsnitt|afsnit|jakso|aflevering|odcinek|ep)\s*\d+$/i;
+      CINEMETA_META = "https://v3-cinemeta.strem.io/meta/series/";
+      STORE_KEY = "__addon_episode_numbering_v1";
+      SAME_TTL_MS = 7 * 24 * 36e5;
+      NO_DATA_TTL_MS = 24 * 36e5;
+      EPISODE_TTL_MS = 7 * 24 * 36e5;
+      MAX_SERIES = 150;
+      MAX_EPISODES_PER_SERIES = 80;
+      SERIES_MEMO_MS = 6 * 36e5;
+      FAILURE_MEMO_MS = 5 * 6e4;
+      FETCH_TIMEOUT_MS = 1e4;
+      ADDON_NUMBERING_BUDGET_MS = 4e3;
+      seriesMemo = /* @__PURE__ */ new Map();
+      pendingEpisodes = /* @__PURE__ */ new Map();
     }
   });
 
@@ -13447,12 +14083,12 @@
     return result.streams.length > 0 && result.reports.every(isAnswered) ? COMPLETE_MEMO_TTL_MS : MEMO_TTL_MS;
   }
   function freshMemo(target2) {
-    const cached = memo2.get(memoKey(target2));
+    const cached = memo3.get(memoKey(target2));
     return cached && Date.now() - cached.at < cached.ttl ? cached.result : null;
   }
   function resetCoreStreamLookupMemo() {
     inflight2.clear();
-    memo2.clear();
+    memo3.clear();
   }
   function coreLookupAnsweredEmpty(target2) {
     const result = freshMemo(target2);
@@ -13460,9 +14096,9 @@
   }
   async function retryFailedCoreSources(target2, options = {}) {
     const key = memoKey(target2);
-    const previous = memo2.get(key)?.result;
+    const previous = memo3.get(key)?.result;
     if (!previous) {
-      memo2.delete(key);
+      memo3.delete(key);
       return lookupCoreStreams(target2, options);
     }
     const failed = previous.reports.filter((report) => !isAnswered(report)).map((report) => report.addon);
@@ -13479,7 +14115,7 @@
     const retriedNames = new Set(retried.reports.map((report) => report.addon.name));
     const reports = [...previous.reports.filter((report) => !retriedNames.has(report.addon.name)), ...retried.reports];
     const result = { streams, reports };
-    memo2.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
+    memo3.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
     if (options.signal?.aborted) return result;
     return replayLookup(result, options);
   }
@@ -13495,16 +14131,22 @@
       const answered2 = result.reports.some(isAnswered);
       const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
       if (answered2 && !framedSkip) {
-        memo2.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
+        memo3.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
       }
       return result;
     }).finally(() => inflight2.delete(key));
     inflight2.set(key, run);
     return run;
   }
-  async function lookupCoreStreamsUncached(target2, options = {}) {
+  async function toAddonNumbering(target2) {
+    if (target2.type !== "series" || target2.season == null || target2.episode == null) return target2;
+    const mapped = await addonEpisodeFor(target2.imdbId, target2.season, target2.episode);
+    return mapped.season === target2.season && mapped.episode === target2.episode ? target2 : { ...target2, ...mapped };
+  }
+  async function lookupCoreStreamsUncached(tmdbTarget, options = {}) {
     const addons = options.addons ?? getEnabledCoreStreamAddons();
     if (addons.length === 0) return { streams: [], reports: [] };
+    const target2 = await toAddonNumbering(tmdbTarget);
     const seen = /* @__PURE__ */ new Set();
     const merged = [];
     const reports = [];
@@ -13524,7 +14166,7 @@
     });
     return { streams: merged, reports };
   }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo2;
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo3;
   var init_lookup = __esm({
     "lib/core-streams/lookup.ts"() {
       "use client";
@@ -13534,6 +14176,7 @@
       init_async_utils();
       init_stream_utils();
       init_mode();
+      init_addon_episode_numbering();
       cooldownUntil = /* @__PURE__ */ new Map();
       COOLDOWN_MS = 9e4;
       FRESH_SOURCE_MS = 10 * 6e4;
@@ -13542,7 +14185,7 @@
       MEMO_TTL_MS = 45e3;
       COMPLETE_MEMO_TTL_MS = FRESH_SOURCE_MS;
       inflight2 = /* @__PURE__ */ new Map();
-      memo2 = /* @__PURE__ */ new Map();
+      memo3 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -14573,7 +15216,12 @@
   function getNextEpPreloadLeadSeconds() {
     return FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
   }
-  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
+  function getNextEpAfterLastSubSeconds() {
+    if (typeof window === "undefined") return DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+    const v = parseInt(getScopedStorageItem(KEY_AFTER_LAST_SUB) ?? "");
+    return NEXT_EP_AFTER_LAST_SUB_OPTIONS.includes(v) ? v : DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+  }
+  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS, KEY_AFTER_LAST_SUB, NEXT_EP_AFTER_LAST_SUB_OPTIONS, DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
   var init_autoplay_settings = __esm({
     "lib/autoplay-settings.ts"() {
       "use strict";
@@ -14585,6 +15233,9 @@
       KEY_ADVANCE_AT_OUTRO = "autoplay_advanceAtOutro";
       OUTRO_FIRED_KEY = "__lumioOutroFired";
       FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS = 300;
+      KEY_AFTER_LAST_SUB = "nextEpAfterLastSubSeconds";
+      NEXT_EP_AFTER_LAST_SUB_OPTIONS = [0, 10, 20, 45, 90];
+      DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS = 20;
     }
   });
 
@@ -14973,6 +15624,14 @@
           /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z" }),
           /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
         ] });
+      case "incognito":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11h18" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 11l1.6-5.2A1.5 1.5 0 0 1 8 4.8h8a1.5 1.5 0 0 1 1.4 1L19 11" }),
+          /* @__PURE__ */ jsx("circle", { cx: "7.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("circle", { cx: "16.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("path", { d: "M10.3 16c1.1-.8 2.3-.8 3.4 0" })
+        ] });
       case "previews":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "8", height: "6", rx: "1" }),
@@ -15001,6 +15660,11 @@
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
           /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
         ] });
+      case "speak":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 10v4h3l4 3.5v-11L7 10z" }),
+          /* @__PURE__ */ jsx("path", { d: "M15 9.5a3.5 3.5 0 0 1 0 5M17.8 7a7 7 0 0 1 0 10" })
+        ] });
     }
   }
   function clipUploadIcon(cls) {
@@ -15011,8 +15675,8 @@
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
-      playerIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-      playerLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerIconButtonClass = (state3 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerLabelButtonClass = (state3 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     }
   });
 
@@ -15058,8 +15722,8 @@
     return ordered.find((option) => matchesLanguage(option, language)) ?? null;
   }
   function buildDualSubtitleLines(primary, secondary, stripSdh, strip) {
-    const clean = (text) => {
-      const trimmed = text?.trim() ?? "";
+    const clean = (text2) => {
+      const trimmed = text2?.trim() ?? "";
       if (!trimmed) return null;
       const result = stripSdh ? strip(trimmed).trim() : trimmed;
       return result || null;
@@ -17058,10 +17722,10 @@
          *
          * @return A promise indicating the success or failure of the operation.
          */
-        async setProgressBar(state2) {
+        async setProgressBar(state3) {
           return core.invoke("plugin:window|set_progress_bar", {
             label: this.label,
-            value: state2
+            value: state3
           });
         }
         /**
@@ -17492,6 +18156,50 @@
     }
   });
 
+  // lib/incognito.ts
+  function state() {
+    const g = globalThis;
+    let s = g[GLOBAL_KEY];
+    if (!s) {
+      s = { on: false, since: null };
+      g[GLOBAL_KEY] = s;
+    }
+    return s;
+  }
+  function isIncognito() {
+    return state().on === true;
+  }
+  function incognitoBlocks(path) {
+    void path;
+    return isIncognito();
+  }
+  function setIncognito(on) {
+    const s = state();
+    if (s.on === on) return;
+    s.on = on;
+    s.since = on ? Date.now() : null;
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new CustomEvent(INCOGNITO_EVENT, { detail: { on } }));
+      } catch {
+      }
+    }
+  }
+  function onIncognitoChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = () => listener(isIncognito());
+    window.addEventListener(INCOGNITO_EVENT, handler);
+    return () => window.removeEventListener(INCOGNITO_EVENT, handler);
+  }
+  var INCOGNITO_EVENT, GLOBAL_KEY;
+  var init_incognito = __esm({
+    "lib/incognito.ts"() {
+      INCOGNITO_EVENT = "lumio-incognito-changed";
+      GLOBAL_KEY = "__lumioIncognitoSession";
+    }
+  });
+
   // lib/library/progress.ts
   function isLibraryStreamUrl(url) {
     return Boolean(url && /X-Plex-Token=|[?&]api_key=|MediaBrowser Token/i.test(url));
@@ -17507,6 +18215,7 @@
   }
   function reportLibraryProgress(entry) {
     if (!getLibraryMode() || !isLibraryStreamUrl(entry.url)) return;
+    if (incognitoBlocks("library-progress")) return;
     if (entry.type !== "movie" && entry.type !== "tv") return;
     const scopeKey = `${entry.id}:${entry.season ?? ""}:${entry.episode ?? ""}`;
     const customPct = getWatchedThresholdPct();
@@ -17542,6 +18251,7 @@
       init_mode();
       init_source_provider();
       init_watched_threshold();
+      init_incognito();
       REPORT_EVERY_MS = 15e3;
       TITLE_TTL_MS = 5 * 6e4;
       lastReport = /* @__PURE__ */ new Map();
@@ -17764,7 +18474,8 @@
       if (!kept.has(entryKey(entry.id, entry.season, entry.episode))) deleteContinueFrame(entry);
     }
   }
-  function saveStreamProgress(entry) {
+  function saveStreamProgress(entry, opts) {
+    if (!opts?.bypassIncognito && incognitoBlocks("progress")) return;
     const sanitizedEntry = sanitizeEntry(entry);
     const before = read7();
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
@@ -17795,6 +18506,7 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
+      init_incognito();
       init_progress_finished();
       EVENT11 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
@@ -17856,20 +18568,20 @@
       chosen = null;
       return deps.defaultCoViewers?.() ?? [];
     }
-    function close() {
+    function close2() {
       if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
       open2 = null;
       openKey = "";
     }
     function finish() {
-      close();
+      close2();
       chosen = null;
     }
     function tick2(input, final = false) {
       if (input.type === "audiobook" || !(input.duration > 0)) return;
       const nowMs = deps.now();
       const key = viewingKey(input);
-      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close2();
       const iso = new Date(nowMs).toISOString();
       if (!open2) {
         open2 = {
@@ -18137,6 +18849,7 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
   function journalTick(input, final = false) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.tick(input, final);
     } catch (error) {
@@ -18158,6 +18871,7 @@
     }
   }
   function journalMarkAsleep(pos, atMs) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.markAsleep(pos, atMs);
     } catch (error) {
@@ -18171,6 +18885,7 @@
       init_recorder_core();
       init_store();
       init_weather();
+      init_incognito();
       LAST_COMPANIONS_KEY = "journal_last_companions_v1";
       last = null;
       if (typeof window !== "undefined") {
@@ -18257,22 +18972,350 @@
   function armSleepTimer(mode, nowMs) {
     return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
   }
-  function sleepTimerRemainingMs(state2, nowMs) {
-    if (typeof state2.mode !== "number" || state2.armedAtMs == null) return null;
-    return Math.max(0, state2.armedAtMs + state2.mode * 6e4 - nowMs);
+  function sleepTimerRemainingMs(state3, nowMs) {
+    if (typeof state3.mode !== "number" || state3.armedAtMs == null) return null;
+    return Math.max(0, state3.armedAtMs + state3.mode * 6e4 - nowMs);
   }
-  function sleepTimerDue(state2, c) {
-    if (state2.mode === "off" || state2.armedAtMs == null) return false;
-    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
-    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  function sleepTimerDue(state3, c) {
+    if (state3.mode === "off" || state3.armedAtMs == null) return false;
+    if (state3.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state3.armedAtMs >= state3.mode * 6e4;
   }
-  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  function sleepFadeLevel(state3, c, fadeMs = SLEEP_FADE_MS) {
+    if (state3.mode === "off" || state3.armedAtMs == null || fadeMs <= 0) return 1;
+    let remainingMs;
+    if (state3.mode === "end") {
+      if (c.ended) return 0;
+      if (!(c.duration > 0)) return 1;
+      remainingMs = (c.duration - SLEEP_END_MARGIN_S - c.position) * 1e3;
+    } else {
+      remainingMs = state3.armedAtMs + state3.mode * 6e4 - c.nowMs;
+    }
+    if (remainingMs >= fadeMs) return 1;
+    return Math.max(0, Math.min(1, remainingMs / fadeMs));
+  }
+  function sleepFadedVolume(userVolume, level) {
+    const l = Math.max(0, Math.min(1, level));
+    return Math.max(0, userVolume) * l * l;
+  }
+  function sleepDimOpacity(level) {
+    return (1 - Math.max(0, Math.min(1, level))) * SLEEP_DIM_MAX;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED, SLEEP_FADE_MS, SLEEP_DIM_MAX;
   var init_sleep_timer = __esm({
     "lib/sleep-timer.ts"() {
       SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
       SLEEP_PROMPT_SECONDS = 60;
       SLEEP_END_MARGIN_S = 20;
       DISARMED = { mode: "off", armedAtMs: null };
+      SLEEP_FADE_MS = 12e4;
+      SLEEP_DIM_MAX = 0.85;
+    }
+  });
+
+  // lib/spoken-subtitles.ts
+  function speechRateFor(rate) {
+    return rate === "fast" ? 1.35 : 1;
+  }
+  function cleanSpokenText(raw) {
+    if (!raw) return "";
+    const text2 = raw.replace(/\r\n?/g, "\n").replace(/\{\\[^}]*\}/g, "").replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'");
+    const lines2 = text2.split("\n").map((line) => {
+      if (/[♪♫♬♩]/.test(line) || /^\s*#.*#\s*$/.test(line)) return "";
+      return line.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^\s*[-–—]+\s*/, "").replace(/^\s*[A-ZÅÄÖÜÉÈÑ][A-ZÅÄÖÜÉÈÑ0-9 .'’-]{1,24}:\s*/u, "").replace(/\s{2,}/g, " ").trim();
+    });
+    const spoken = lines2.filter((line) => /[\p{L}\p{N}]/u.test(line)).map((line) => /[.!?…:;,]$/.test(line) ? line : `${line}.`).join(" ").trim();
+    return spoken;
+  }
+  function pickVoice(voices, language, uiLanguage) {
+    if (voices.length === 0) return null;
+    const base = (code) => (code ?? "").toLowerCase().replace("_", "-").split("-")[0];
+    const want = base(language) || base(uiLanguage);
+    if (!want) return voices.find((v) => v.default) ?? null;
+    const matching = voices.filter((v) => base(v.lang) === want);
+    if (matching.length === 0) return null;
+    const ui = (uiLanguage ?? "").toLowerCase().replace("_", "-");
+    return matching.find((v) => ui && v.lang.toLowerCase().replace("_", "-") === ui) ?? matching.find((v) => v.default) ?? matching.find((v) => v.localService) ?? matching[0];
+  }
+  function rampLevel(from, to, elapsedMs, durationMs) {
+    if (durationMs <= 0 || elapsedMs >= durationMs) return to;
+    if (elapsedMs <= 0) return from;
+    return from + (to - from) * (elapsedMs / durationMs);
+  }
+  var DUCK_LEVEL, DUCK_ATTACK_MS, DUCK_RELEASE_MS, DUCK_HOLD_MS, SpokenSubtitleQueue;
+  var init_spoken_subtitles = __esm({
+    "lib/spoken-subtitles.ts"() {
+      DUCK_LEVEL = 0.35;
+      DUCK_ATTACK_MS = 180;
+      DUCK_RELEASE_MS = 600;
+      DUCK_HOLD_MS = 350;
+      SpokenSubtitleQueue = class {
+        constructor(engine, options = {}) {
+          __publicField(this, "engine");
+          __publicField(this, "now");
+          __publicField(this, "staleMs");
+          __publicField(this, "maxLagMs");
+          __publicField(this, "onSpeakingChange");
+          __publicField(this, "speaking", false);
+          __publicField(this, "startedAt", 0);
+          /** Bumped on every speak/cancel so a late onEnd from a cut line is ignored. */
+          __publicField(this, "generation", 0);
+          __publicField(this, "pending", null);
+          __publicField(this, "lastLine", "");
+          __publicField(this, "lang", null);
+          __publicField(this, "rate", 1);
+          this.engine = engine;
+          this.now = options.now ?? (() => Date.now());
+          this.staleMs = options.staleMs ?? 3e3;
+          this.maxLagMs = options.maxLagMs ?? 4500;
+          this.onSpeakingChange = options.onSpeakingChange;
+        }
+        configure(options) {
+          if (options.lang !== void 0) this.lang = options.lang;
+          if (options.rate !== void 0) this.rate = options.rate;
+        }
+        get isSpeaking() {
+          return this.speaking;
+        }
+        get pendingText() {
+          return this.pending?.text ?? null;
+        }
+        /** The subtitle on screen changed (raw text; '' or null = nothing on screen). */
+        line(raw) {
+          const text2 = cleanSpokenText(raw);
+          if (!text2) {
+            if (!(raw ?? "").trim()) this.lastLine = "";
+            return;
+          }
+          if (text2 === this.lastLine) return;
+          this.lastLine = text2;
+          const at = this.now();
+          if (!this.speaking) {
+            this.start(text2);
+            return;
+          }
+          if (at - this.startedAt >= this.maxLagMs) {
+            this.pending = null;
+            this.cut();
+            this.start(text2);
+            return;
+          }
+          this.pending = { text: text2, at };
+        }
+        /** Playback paused: stop talking, forget what was waiting. */
+        pause() {
+          this.pending = null;
+          if (this.speaking) this.cut();
+          this.setSpeaking(false);
+        }
+        /** Seek, track change or close: as pause, and the current line counts as new. */
+        reset() {
+          this.pause();
+          this.lastLine = "";
+        }
+        start(text2) {
+          const gen = ++this.generation;
+          this.startedAt = this.now();
+          this.setSpeaking(true);
+          this.engine.speak(text2, { lang: this.lang, rate: this.rate }, () => this.ended(gen));
+        }
+        cut() {
+          this.generation++;
+          this.engine.cancel();
+        }
+        ended(gen) {
+          if (gen !== this.generation) return;
+          const next2 = this.pending;
+          this.pending = null;
+          if (next2 && this.now() - next2.at <= this.staleMs) {
+            this.start(next2.text);
+            return;
+          }
+          this.setSpeaking(false);
+        }
+        setSpeaking(value) {
+          if (this.speaking === value) return;
+          this.speaking = value;
+          this.onSpeakingChange?.(value);
+        }
+      };
+    }
+  });
+
+  // lib/spoken-subtitles-engine.ts
+  function estimatedSpeechMs(text2, rate) {
+    const words = text2.split(/\s+/).filter(Boolean).length;
+    return Math.round(words / 2.7 * 1e3 / Math.max(0.5, rate)) + 1500;
+  }
+  function hasWebSpeech() {
+    return typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
+  }
+  function spokenSubtitlesSupported() {
+    return isAndroidTauriEnv || hasWebSpeech();
+  }
+  function createWebSpeechEngine(uiLanguage) {
+    const synth = window.speechSynthesis;
+    let voices = [];
+    const loadVoices = () => {
+      try {
+        voices = synth.getVoices();
+      } catch {
+        voices = [];
+      }
+    };
+    loadVoices();
+    try {
+      synth.addEventListener?.("voiceschanged", loadVoices);
+    } catch {
+    }
+    let current2 = null;
+    let finish = null;
+    let guard;
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        let done = false;
+        const end = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(guard);
+          if (finish === end) {
+            finish = null;
+            current2 = null;
+          }
+          onEnd();
+        };
+        if (voices.length === 0) loadVoices();
+        const utterance = new SpeechSynthesisUtterance(text2);
+        const voice = pickVoice(voices, lang, uiLanguage());
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
+        } else if (lang) utterance.lang = lang;
+        utterance.rate = rate;
+        utterance.onend = end;
+        utterance.onerror = end;
+        current2 = utterance;
+        finish = end;
+        guard = window.setTimeout(end, estimatedSpeechMs(text2, rate) + 4e3);
+        try {
+          synth.speak(utterance);
+        } catch {
+          end();
+        }
+      },
+      cancel() {
+        const pendingEnd = finish;
+        try {
+          synth.cancel();
+        } catch {
+        }
+        pendingEnd?.();
+      }
+    };
+  }
+  function createAndroidEngine() {
+    let seq = 0;
+    let poll;
+    let finish = null;
+    let currentId = null;
+    const stopPolling = () => {
+      if (poll !== void 0) {
+        window.clearInterval(poll);
+        poll = void 0;
+      }
+    };
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        const id = `s${++seq}`;
+        let done = false;
+        const startedAt = Date.now();
+        const limit = estimatedSpeechMs(text2, rate) + 4e3;
+        const end = () => {
+          if (done) return;
+          done = true;
+          if (finish === end) {
+            finish = null;
+            stopPolling();
+          }
+          onEnd();
+        };
+        stopPolling();
+        finish = end;
+        currentId = id;
+        void np({ cmd: "ttsSpeak", id, text: text2, lang: lang ?? "", rate }, 3e3).then((res) => {
+          const ok = Boolean(res && typeof res === "object" && res.ok);
+          if (!ok) {
+            end();
+            return;
+          }
+          poll = window.setInterval(() => {
+            if (done) {
+              stopPolling();
+              return;
+            }
+            if (Date.now() - startedAt > limit) {
+              end();
+              return;
+            }
+            void np({ cmd: "ttsStatus" }, 1500).then((status) => {
+              const s = status;
+              if (!s || !s.speaking || s.id !== id) end();
+            });
+          }, 250);
+        });
+      },
+      cancel() {
+        const pendingEnd = finish;
+        stopPolling();
+        if (currentId) void np({ cmd: "ttsStop", id: currentId }, 1500);
+        currentId = null;
+        pendingEnd?.();
+      }
+    };
+  }
+  function createSpeechEngine(uiLanguage) {
+    if (typeof window === "undefined") return null;
+    if (isAndroidTauriEnv) return createAndroidEngine();
+    if (hasWebSpeech()) return createWebSpeechEngine(uiLanguage);
+    return null;
+  }
+  var init_spoken_subtitles_engine = __esm({
+    "lib/spoken-subtitles-engine.ts"() {
+      init_spoken_subtitles();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/spoken-subtitles-settings.ts
+  function emit2() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(SPOKEN_SUBTITLES_CHANGED_EVENT));
+  }
+  function getSpokenSubtitles() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_ENABLED3) === "1";
+  }
+  function setSpokenSubtitles(value) {
+    setScopedStorageItem(KEY_ENABLED3, value ? "1" : "0");
+    emit2();
+  }
+  function getSpokenSubtitlesRate() {
+    if (typeof window === "undefined") return "normal";
+    return getScopedStorageItem(KEY_RATE) === "fast" ? "fast" : "normal";
+  }
+  function onSpokenSubtitlesChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+  }
+  var KEY_ENABLED3, KEY_RATE, SPOKEN_SUBTITLES_CHANGED_EVENT;
+  var init_spoken_subtitles_settings = __esm({
+    "lib/spoken-subtitles-settings.ts"() {
+      init_profile_storage_shim();
+      KEY_ENABLED3 = "spokenSubtitles";
+      KEY_RATE = "spokenSubtitlesRate";
+      SPOKEN_SUBTITLES_CHANGED_EVENT = "lumio:spoken-subtitles-changed";
     }
   });
 
@@ -18497,29 +19540,29 @@
   function createSamplerState() {
     return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0, pauseUntil: 0 };
   }
-  function recordSampleResult(state2, ok, now2 = Date.now()) {
-    state2.inFlight = false;
+  function recordSampleResult(state3, ok, now2 = Date.now()) {
+    state3.inFlight = false;
     if (ok) {
-      state2.failures = 0;
+      state3.failures = 0;
       return false;
     }
-    state2.failures += 1;
-    if (state2.failures < MAX_FAILED_SAMPLES) return false;
-    state2.failures = 0;
-    state2.pauseUntil = now2 + FAILURE_PAUSE_MS;
+    state3.failures += 1;
+    if (state3.failures < MAX_FAILED_SAMPLES) return false;
+    state3.failures = 0;
+    state3.pauseUntil = now2 + FAILURE_PAUSE_MS;
     return true;
   }
-  function decideSample(input, state2) {
+  function decideSample(input, state3) {
     const { now: now2, time, duration: duration2, columns, colors } = input;
-    const prev = state2.lastTime;
+    const prev = state3.lastTime;
     const jumped = !Number.isFinite(prev) || Math.abs(time - prev) > SEEK_JUMP_S;
     const advancing = Number.isFinite(prev) && time - prev > MIN_ADVANCE_S;
-    state2.lastTime = time;
+    state3.lastTime = time;
     if (jumped) {
-      state2.settleUntil = now2 + SETTLE_MS;
+      state3.settleUntil = now2 + SETTLE_MS;
       return -1;
     }
-    if (!advancing || state2.inFlight || now2 < state2.pauseUntil || now2 < state2.settleUntil) return -1;
+    if (!advancing || state3.inFlight || now2 < state3.pauseUntil || now2 < state3.settleUntil) return -1;
     const i = columnIndex(time, duration2, columns);
     if (i < 0) return -1;
     if (colors && colors[i]) return -1;
@@ -18543,7 +19586,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit2() {
+  function emit3() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -18576,7 +19619,7 @@
       }
       loadedFor2 = profile;
       loading = null;
-      emit2();
+      emit3();
       return listBarcodes();
     })();
     return loading;
@@ -18612,6 +19655,7 @@
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
+    if (incognitoBlocks("barcode")) return;
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
     const current2 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
     const next2 = withColumn(current2, i, color, now2);
@@ -18619,7 +19663,7 @@
     items.set(meta.id, next2);
     dirty.add(meta.id);
     schedule2(meta.id);
-    emit2();
+    emit3();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -18630,11 +19674,12 @@
     if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
+    if (incognitoBlocks("barcode")) return;
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit2();
+    emit3();
     await flushBarcode(id);
     emitSyncWorthy();
   }
@@ -18642,7 +19687,7 @@
     const b = items.get(id);
     if (!b) return;
     items.set(id, { ...b, meta });
-    emit2();
+    emit3();
     await put2(id);
   }
   function onBarcodesChanged(listener) {
@@ -18666,6 +19711,7 @@
       "use strict";
       init_profile_storage_shim();
       init_barcode_model();
+      init_incognito();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
@@ -19075,8 +20121,8 @@
     }
     return out;
   }
-  function cutSynopsis(text, max = SYNOPSIS_MAX) {
-    const clean = text.replace(/\s+/g, " ").trim();
+  function cutSynopsis(text2, max = SYNOPSIS_MAX) {
+    const clean = text2.replace(/\s+/g, " ").trim();
     if (clean.length <= max) return clean;
     const cut = clean.slice(0, max);
     const space = cut.lastIndexOf(" ");
@@ -19223,7 +20269,7 @@
     useEffect(() => {
       if (!applies || !id) return;
       void loadBarcodes();
-      const state2 = createSamplerState();
+      const state3 = createSamplerState();
       const columns = settings.columns;
       const timer4 = setInterval(() => {
         const snap = args.snapshotRef.current;
@@ -19235,12 +20281,12 @@
           duration: snap.totalDuration,
           columns: n,
           colors: existing?.colors ?? null
-        }, state2);
+        }, state3);
         if (i < 0) return;
-        state2.inFlight = true;
+        state3.inFlight = true;
         const now2 = metaRef.current;
         void sampleColor(now2.engine, now2.videoRef?.current ?? null).then((color) => {
-          const pausing = recordSampleResult(state2, color != null);
+          const pausing = recordSampleResult(state3, color != null);
           if (!color) {
             if (pausing) {
               logDisabled(`${id}: ${MAX_FAILED_SAMPLES} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 paus ${FAILURE_PAUSE_MS / 1e3} s, sedan nytt f\xF6rs\xF6k`);
@@ -19300,13 +20346,13 @@
   }
   function unseenColor(unseen, shape, i) {
     if (unseen === "dim") return DIM;
-    if (unseen === "empty") return EMPTY2;
+    if (unseen === "empty") return EMPTY3;
     return shape === "ring" ? RING_HATCH[i % 2] : "transparent";
   }
   function barcodeBackground(colors, unseen, shape, tailFrom2 = null) {
     const n = colors.length;
     const underlay = unseen === "hatch" && shape !== "ring" ? HATCH_UNDERLAY : null;
-    if (n === 0) return { background: EMPTY2, underlay };
+    if (n === 0) return { background: EMPTY3, underlay };
     const stops = [];
     let runColor = "";
     let runStart = 0;
@@ -19329,12 +20375,12 @@
     cache5.set(key, value);
     return value;
   }
-  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache5, CACHE_MAX;
+  var HATCH_UNDERLAY, DIM, EMPTY3, TAIL, RING_HATCH, cache5, CACHE_MAX;
   var init_barcode_gradient = __esm({
     "lib/barcode/barcode-gradient.ts"() {
       HATCH_UNDERLAY = "repeating-linear-gradient(135deg,#1c1d23 0 3px,#111216 3px 7px)";
       DIM = "#1a1b22";
-      EMPTY2 = "#141519";
+      EMPTY3 = "#141519";
       TAIL = "#0b0b0d";
       RING_HATCH = ["#1b1c22", "#111216"];
       cache5 = /* @__PURE__ */ new Map();
@@ -19418,36 +20464,36 @@
       init_barcode_strip();
       init_jsx_runtime_shim();
       CHIP_MS = 5e3;
-      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state2, duration: duration2, tv, hoverable }) {
+      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state3, duration: duration2, tv, hoverable }) {
         const { t } = useLang();
-        const [barcode, setBarcode] = useState(() => state2.id ? getBarcode(state2.id) : null);
+        const [barcode, setBarcode] = useState(() => state3.id ? getBarcode(state3.id) : null);
         const [unseen, setUnseen] = useState(() => getBarcodeSettings().unseenStyle);
         const [hover, setHover] = useState(null);
         const [chipUntil, setChipUntil] = useState(0);
         useEffect(() => {
-          if (!state2.id) return;
-          const id = state2.id;
-          const read11 = () => setBarcode(getBarcode(id));
-          read11();
-          return onBarcodesChanged(read11);
-        }, [state2.id]);
+          if (!state3.id) return;
+          const id = state3.id;
+          const read12 = () => setBarcode(getBarcode(id));
+          read12();
+          return onBarcodesChanged(read12);
+        }, [state3.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
-          if (!state2.status) return;
+          if (!state3.status) return;
           setChipUntil(Date.now() + CHIP_MS);
           const timer4 = setTimeout(() => setChipUntil(0), CHIP_MS);
           return () => clearTimeout(timer4);
-        }, [state2.status]);
+        }, [state3.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
-          if (!state2.id || !state2.recording) return null;
+          if (!state3.id || !state3.recording) return null;
           const columns = getBarcodeSettings().columns;
-          return { id: state2.id, tmdbId: null, title: "", year: null, posterUrl: null, duration: duration2, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
-        }, [barcode, state2.id, state2.recording, duration2]);
-        if (!state2.showStrip || !shown) return null;
+          return { id: state3.id, tmdbId: null, title: "", year: null, posterUrl: null, duration: duration2, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
+        }, [barcode, state3.id, state3.recording, duration2]);
+        if (!state3.showStrip || !shown) return null;
         const d = shown.duration > 0 ? shown.duration : duration2;
         const hoverColor = hover != null ? shown.colors[columnIndex(hover * d, d, shown.columns)] : null;
-        const chipText = state2.status === "recording" ? t("barcodeRecording") : state2.status === "paused" ? t("barcodePaused") : state2.status === "off" ? t("barcodeOff") : null;
+        const chipText = state3.status === "recording" ? t("barcodeRecording") : state3.status === "paused" ? t("barcodePaused") : state3.status === "off" ? t("barcodeOff") : null;
         const onMove = (e) => {
           if (!hoverable) return;
           const r = e.currentTarget.getBoundingClientRect();
@@ -19607,18 +20653,18 @@
     if (c.includes("vorbis")) return { family: "vorbis", atmos: false, dtsHd: false };
     return null;
   }
-  function releaseAudioFamily(text) {
-    if (TRUEHD.test(text)) return "truehd";
-    if (DTS_X.test(text) || DTS_HD.test(text) || DTS.test(text)) return "dts";
-    if (DDP.test(text)) return "ddp";
-    if (DD.test(text)) return "dd";
-    if (AAC.test(text)) return "aac";
-    if (FLAC.test(text)) return "flac";
-    if (OPUS.test(text)) return "opus";
+  function releaseAudioFamily(text2) {
+    if (TRUEHD.test(text2)) return "truehd";
+    if (DTS_X.test(text2) || DTS_HD.test(text2) || DTS.test(text2)) return "dts";
+    if (DDP.test(text2)) return "ddp";
+    if (DD.test(text2)) return "dd";
+    if (AAC.test(text2)) return "aac";
+    if (FLAC.test(text2)) return "flac";
+    if (OPUS.test(text2)) return "opus";
     return null;
   }
-  function releaseChannels(text) {
-    const match = CHANNELS.exec(text.replace(/h\.?26[45]|x26[45]/gi, " "));
+  function releaseChannels(text2) {
+    const match = CHANNELS.exec(text2.replace(/h\.?26[45]|x26[45]/gi, " "));
     if (!match) return null;
     return Number(match[1]) + Number(match[2]);
   }
@@ -19670,29 +20716,29 @@
     const channels = engineChannels ?? (releaseApplies ? releaseChannels(releaseText) : null);
     return { family, codec, channels, atmos };
   }
-  function releaseSourceLabel(text) {
-    if (/\bremux\b/i.test(text)) return "REMUX";
-    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text)) return "BluRay";
-    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text)) return "WEB-DL";
-    if (/\bweb[.\s_-]?rip\b/i.test(text)) return "WEBRip";
-    if (/\bhdtv\b/i.test(text)) return "HDTV";
-    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text)) return "DVD";
+  function releaseSourceLabel(text2) {
+    if (/\bremux\b/i.test(text2)) return "REMUX";
+    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text2)) return "BluRay";
+    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text2)) return "WEB-DL";
+    if (/\bweb[.\s_-]?rip\b/i.test(text2)) return "WEBRip";
+    if (/\bhdtv\b/i.test(text2)) return "HDTV";
+    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text2)) return "DVD";
     return null;
   }
   function titleChipText(chip) {
     return chip.parts.map((part) => part.text).join(" \xB7 ");
   }
   function playerTitleChips(input) {
-    const text = input.releaseText ?? "";
+    const text2 = input.releaseText ?? "";
     const chips = [];
     const push = (kind, parts) => {
       if (parts.length > 0) chips.push({ kind, parts, priority: CHIP_PRIORITY[kind] });
     };
-    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text));
+    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text2));
     if (resolution) push("resolution", [{ text: resolution }]);
-    const hdr = hdrFormatLabel(text, input.engineVideo);
+    const hdr = hdrFormatLabel(text2, input.engineVideo);
     if (hdr) push("hdr", [hdr === "Dolby Vision" ? { text: hdr, icon: "dolby" } : { text: hdr }]);
-    const audio = audioFormatParts(text, input.audioTrack);
+    const audio = audioFormatParts(text2, input.audioTrack);
     const track = input.audioTrack;
     const languageName2 = track ? track.title && COMMENTARY.test(track.title) ? input.commentaryLabel : audioLanguageLabel(track.language, input.uiLang) : null;
     const layout = channelLayoutLabel(audio.channels);
@@ -19706,7 +20752,7 @@
       push("audio", parts);
     }
     if (input.includeSource !== false) {
-      const source = releaseSourceLabel(text);
+      const source = releaseSourceLabel(text2);
       if (source) push("source", [{ text: source }]);
     }
     const languageText = languageName2 ? [languageName2, layout].filter(Boolean).join(" ") : !(audio.codec || audio.atmos) ? layout : null;
@@ -19891,7 +20937,7 @@
     return !entry || entry.genres.length === 0 || entry.imdbRating == null && entry.tmdbRating == null || entry.runtimeMinutes == null;
   }
   function schedulePlayerTitleMetaFetch(input, onUpdate, overrides = {}) {
-    const deps = { ...defaultDeps, ...overrides };
+    const deps = { ...defaultDeps2, ...overrides };
     const { kind, playbackStarted } = input;
     if (!playbackStarted || kind !== "movie" && kind !== "tv") return () => {
     };
@@ -19970,7 +21016,7 @@
       cancelIdle?.();
     };
   }
-  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners5;
+  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps2, attempted, listeners5;
   var init_player_title_meta = __esm({
     "lib/player-title-meta.ts"() {
       init_api_json_cache();
@@ -19982,7 +21028,7 @@
       imdbToTmdb = /* @__PURE__ */ new Map();
       PLAYER_META_FETCH_DELAY_MS = 5e3;
       PLAYER_META_RETRY_DELAY_MS = 6e4;
-      defaultDeps = {
+      defaultDeps2 = {
         fetchItem: async (kind, tmdbId) => {
           const data = await fetchApiJsonCached(
             `/api/item?tmdbId=${encodeURIComponent(tmdbId)}&type=${kind}`,
@@ -20204,6 +21250,7 @@
       init_session_host();
       init_lookup();
       init_prepare();
+      init_incognito();
       init_stream_utils();
       SLATE_MIN_BYTES = 256 * 1024;
       DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
@@ -20303,6 +21350,42 @@
     }
   });
 
+  // lib/playback-watched.ts
+  function markPlaybackEpisodeWatched(input) {
+    if (incognitoBlocks("watched")) return false;
+    setWatched(input.tmdbId, input.season, input.episode, true, { imdbId: input.imdbId ?? null });
+    removeStreamProgress(`tv-${input.tmdbId}`, input.season, input.episode);
+    return true;
+  }
+  function markPlaybackMovieWatched(entry) {
+    if (incognitoBlocks("watched")) return false;
+    setMovieWatched(entry, true);
+    return true;
+  }
+  var init_playback_watched = __esm({
+    "lib/playback-watched.ts"() {
+      "use client";
+      init_incognito();
+      init_watched_episodes();
+      init_watched_movies();
+      init_video_progress();
+    }
+  });
+
+  // lib/use-incognito.ts
+  function useIncognito() {
+    return useSyncExternalStore(subscribe2, isIncognito, () => false);
+  }
+  var subscribe2;
+  var init_use_incognito = __esm({
+    "lib/use-incognito.ts"() {
+      "use client";
+      init_react_shim();
+      init_incognito();
+      subscribe2 = (listener) => onIncognitoChanged(() => listener());
+    }
+  });
+
   // lib/trakt-scrobble.ts
   function identityKey(identity) {
     const id = identity.imdbId || `tmdb:${identity.tmdbId ?? ""}`;
@@ -20396,6 +21479,7 @@
     return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
   }
   async function scrobbleAll(action, identity, progressPercent, opts) {
+    if (incognitoBlocks("scrobble")) return;
     const event = buildTrackerEvent(action, identity, progressPercent, opts);
     const key = trackerEventKey(event);
     const now2 = Date.now();
@@ -20423,9 +21507,203 @@
       init_plugin_registry();
       init_plugin_state();
       init_trakt_scrobble();
+      init_incognito();
       DUPLICATE_WINDOW_MS2 = 5e3;
       lastTrackerKey = "";
       lastTrackerAt = -Infinity;
+    }
+  });
+
+  // lib/learned-skip.ts
+  function classifySkip(start2, end, duration2) {
+    if (!(duration2 > 0) || !Number.isFinite(start2) || !Number.isFinite(end)) return null;
+    if (end - start2 < MIN_SKIP_S) return null;
+    if (start2 < 0 || start2 > duration2) return null;
+    if (start2 <= duration2 * START_REGION_FRACTION) return "start";
+    if (start2 >= duration2 * (1 - END_REGION_FRACTION)) return "end";
+    return null;
+  }
+  function round1(n) {
+    return Math.round(n * 10) / 10;
+  }
+  function recordSkip(store2, seriesId, obs, now2) {
+    if (!seriesId) return store2;
+    const prev = store2[seriesId]?.obs ?? [];
+    const kept = prev.filter((o) => !(o.season === obs.season && o.episode === obs.episode && o.region === obs.region));
+    const nextObs = [...kept, { ...obs, start: round1(obs.start), end: round1(obs.end), at: now2 }].slice(-MAX_OBS_PER_SERIES);
+    const next2 = { ...store2, [seriesId]: { obs: nextObs, at: now2 } };
+    return capSeries(next2);
+  }
+  function forgetSeries(store2, seriesId) {
+    if (!(seriesId in store2)) return store2;
+    const next2 = { ...store2 };
+    delete next2[seriesId];
+    return next2;
+  }
+  function capSeries(store2) {
+    const ids = Object.keys(store2);
+    if (ids.length <= MAX_SERIES2) return store2;
+    const keep = ids.sort((a, b) => (store2[b].at ?? 0) - (store2[a].at ?? 0)).slice(0, MAX_SERIES2);
+    const next2 = {};
+    for (const id of keep) next2[id] = store2[id];
+    return next2;
+  }
+  function isNextEpisode(a, b) {
+    if (b.season === a.season) return b.episode === a.episode + 1;
+    return b.season === a.season + 1 && b.episode === 1;
+  }
+  function close(a, b) {
+    return Math.abs(a.start - b.start) <= MATCH_TOLERANCE_S && Math.abs(a.end - b.end) <= MATCH_TOLERANCE_S;
+  }
+  function median(values) {
+    const s = [...values].sort((x, y) => x - y);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+  function learnedInterval(series, region) {
+    if (!series) return null;
+    const inRegion = series.obs.filter((o) => o.region === region).sort((a, b) => a.season - b.season || a.episode - b.episode);
+    if (inRegion.length < LEARN_STREAK) return null;
+    const run = inRegion.slice(-LEARN_STREAK);
+    for (let i = 1; i < run.length; i++) {
+      if (!isNextEpisode(run[i - 1], run[i])) return null;
+    }
+    for (let i = 0; i < run.length; i++) {
+      for (let j = i + 1; j < run.length; j++) {
+        if (!close(run[i], run[j])) return null;
+      }
+    }
+    return { start: median(run.map((o) => o.start)), end: median(run.map((o) => o.end)) };
+  }
+  function usableLearnedSkip(learned, region, ctx) {
+    if (!learned) return null;
+    if (region === "start" && ctx.intro) return null;
+    if (region === "end" && ctx.outro) return null;
+    for (const seg of [ctx.intro, ctx.outro]) {
+      if (seg && learned.start < seg.end && seg.start < learned.end) return null;
+    }
+    if (ctx.duration > 0) {
+      if (learned.start >= ctx.duration - 1) return null;
+      const end = Math.min(learned.end, ctx.duration - 0.5);
+      if (end - learned.start < MIN_SKIP_S / 2) return null;
+      return { start: learned.start, end };
+    }
+    return learned;
+  }
+  function trackSeekSample(state3, pos, wall, playing) {
+    if (!Number.isFinite(pos)) return { state: state3, done: null };
+    if (state3.lastPos == null || state3.lastWall == null) {
+      return { state: { ...state3, lastPos: pos, lastWall: wall, steadySince: wall }, done: null };
+    }
+    const elapsedS = Math.max(0, (wall - state3.lastWall) / 1e3);
+    const expected = playing ? elapsedS * 2 : 0;
+    const delta = pos - state3.lastPos;
+    let pending5 = state3.pending;
+    let steadySince = state3.steadySince;
+    let done = null;
+    const inWindow = pending5 != null && wall - pending5.lastJumpWall <= MERGE_WINDOW_MS;
+    if (delta > expected + JUMP_SLACK_S) {
+      if (pending5 && inWindow) {
+        pending5 = { ...pending5, end: pos, lastJumpWall: wall };
+      } else {
+        if (pending5) done = { start: pending5.start, end: pending5.end };
+        const steady = steadySince != null && wall - steadySince >= STEADY_MS;
+        pending5 = steady ? { start: state3.lastPos, end: pos, lastJumpWall: wall } : null;
+      }
+      steadySince = wall;
+    } else if (delta < -JUMP_SLACK_S) {
+      if (pending5 && inWindow) {
+        pending5 = pos <= pending5.start + 1 ? null : { ...pending5, end: pos, lastJumpWall: wall };
+      } else if (pending5) {
+        done = { start: pending5.start, end: pending5.end };
+        pending5 = null;
+      }
+      steadySince = wall;
+    } else if (pending5 && !inWindow) {
+      done = { start: pending5.start, end: pending5.end };
+      pending5 = null;
+    }
+    return { state: { lastPos: pos, lastWall: wall, steadySince, pending: pending5 }, done };
+  }
+  function flushSeekTracker(state3) {
+    return state3.pending ? { start: state3.pending.start, end: state3.pending.end } : null;
+  }
+  var START_REGION_FRACTION, END_REGION_FRACTION, MIN_SKIP_S, MATCH_TOLERANCE_S, LEARN_STREAK, MAX_OBS_PER_SERIES, MAX_SERIES2, MERGE_WINDOW_MS, STEADY_MS, JUMP_SLACK_S, SEEK_TRACKER_INITIAL;
+  var init_learned_skip = __esm({
+    "lib/learned-skip.ts"() {
+      START_REGION_FRACTION = 0.25;
+      END_REGION_FRACTION = 0.15;
+      MIN_SKIP_S = 15;
+      MATCH_TOLERANCE_S = 5;
+      LEARN_STREAK = 3;
+      MAX_OBS_PER_SERIES = 8;
+      MAX_SERIES2 = 60;
+      MERGE_WINDOW_MS = 4e3;
+      STEADY_MS = 2e3;
+      JUMP_SLACK_S = 4;
+      SEEK_TRACKER_INITIAL = { lastPos: null, lastWall: null, steadySince: null, pending: null };
+    }
+  });
+
+  // lib/learned-skip-store.ts
+  function read8() {
+    try {
+      const raw = getScopedStorageItem(KEY15);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function write6(store2) {
+    try {
+      if (Object.keys(store2).length === 0) setScopedStorageItem(KEY15, "{}");
+      else setScopedStorageItem(KEY15, JSON.stringify(store2));
+    } catch {
+    }
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function getLearnSkipsEnabled() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_ENABLED4) !== "0";
+  }
+  function setLearnSkipsEnabled(on) {
+    setScopedStorageItem(KEY_ENABLED4, on ? "1" : "0");
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function recordLearnedSkip(seriesId, obs) {
+    if (!seriesId || !getLearnSkipsEnabled()) return;
+    write6(recordSkip(read8(), seriesId, obs, Date.now()));
+  }
+  function getLearnedSkips(seriesId) {
+    if (!seriesId || !getLearnSkipsEnabled()) return { start: null, end: null };
+    const series = read8()[seriesId];
+    return { start: learnedInterval(series, "start"), end: learnedInterval(series, "end") };
+  }
+  function hasLearnedSkipData(seriesId) {
+    return Boolean(seriesId && (read8()[seriesId]?.obs.length ?? 0) > 0);
+  }
+  function forgetLearnedSkips(seriesId) {
+    if (!seriesId) return;
+    const store2 = read8();
+    if (!(seriesId in store2)) return;
+    write6(forgetSeries(store2, seriesId));
+  }
+  function onLearnedSkipsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(LEARNED_SKIPS_EVENT, listener);
+    return () => window.removeEventListener(LEARNED_SKIPS_EVENT, listener);
+  }
+  var KEY15, KEY_ENABLED4, LEARNED_SKIPS_EVENT;
+  var init_learned_skip_store = __esm({
+    "lib/learned-skip-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_learned_skip();
+      KEY15 = "learned_skips_v1";
+      KEY_ENABLED4 = "playback_learnSkips";
+      LEARNED_SKIPS_EVENT = "lumio-learned-skips-changed";
     }
   });
 
@@ -20452,7 +21730,7 @@
   function getStoredVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY15);
+      const raw = getScopedStorageItem(KEY16);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp2 = (v, lo, hi, dflt) => {
@@ -20471,7 +21749,7 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY15, JSON.stringify(tuning));
+    setScopedStorageItem(KEY16, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onVideoTuningChanged(listener) {
@@ -20537,7 +21815,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY15, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY16, EVENT13, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -20550,7 +21828,7 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY15 = "video_tuning";
+      KEY16 = "video_tuning";
       EVENT13 = "lumio-video-tuning-changed";
       filmTuning = null;
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
@@ -20571,7 +21849,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY16);
+      const raw = getScopedStorageItem(KEY17);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -20585,7 +21863,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY16, JSON.stringify(tuning));
+    setScopedStorageItem(KEY17, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
   }
   function onAudioTuningChanged(listener) {
@@ -20601,7 +21879,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY16, EVENT14;
+  var DEFAULT_AUDIO_TUNING, KEY17, EVENT14;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -20612,7 +21890,7 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY16 = "audio_tuning";
+      KEY17 = "audio_tuning";
       EVENT14 = "lumio-audio-tuning-changed";
     }
   });
@@ -20763,7 +22041,7 @@
           onStep(e.key === "ArrowRight" ? 1 : -1);
         }
       });
-      const value = (text) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text });
+      const value = (text2) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text2 });
       const toggle = (key, label, on, flip) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, "data-f": "1", onClick: flip, className: TV_ROW, children: [
         /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: label }),
         /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
@@ -20818,7 +22096,7 @@
             /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("advCustomShadersTitle") }),
             shaderStatusText ? /* @__PURE__ */ jsx("div", { "data-shader-status": "", className: "px-3 pb-1.5 text-[12px] text-slate-400", children: shaderStatusText }) : null,
             customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[12px] text-slate-500", children: t("rtShadersEmpty") }) : null,
-            (customShaders.files ?? []).map((file) => toggle(`shader:${file.name}`, file.name, customShaders.selected.includes(file.name), () => customShaders.toggle(file.name))),
+            (customShaders.files ?? []).map((file2) => toggle(`shader:${file2.name}`, file2.name, customShaders.selected.includes(file2.name), () => customShaders.toggle(file2.name))),
             /* @__PURE__ */ jsx("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: customShaders.openFolder, children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("advCustomShadersOpen") }) })
           ] }) : null
         ] }),
@@ -20982,17 +22260,17 @@
               shaderStatusText ? /* @__PURE__ */ jsx("p", { "data-shader-status": "", className: `mb-2 text-[10.5px] ${shaders?.status && (shaders.status.anime4k || shaders.status.custom > 0) ? "text-accent-200" : "text-slate-400"}`, children: shaderStatusText }) : null,
               /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
                 customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-[10.5px] text-slate-500", children: t("rtShadersEmpty") }) : null,
-                (customShaders.files ?? []).map((file) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
-                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file.name, children: file.name }),
+                (customShaders.files ?? []).map((file2) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file2.name, children: file2.name }),
                   /* @__PURE__ */ jsx(
                     MiniToggle,
                     {
                       tv: isTv,
-                      checked: customShaders.selected.includes(file.name),
-                      onChange: () => customShaders.toggle(file.name)
+                      checked: customShaders.selected.includes(file2.name),
+                      onChange: () => customShaders.toggle(file2.name)
                     }
                   )
-                ] }, file.name)),
+                ] }, file2.name)),
                 /* @__PURE__ */ jsx(
                   "button",
                   {
@@ -21217,6 +22495,7 @@
   var VOD_GROUP, CLOUD_GROUP;
   var init_source_groups = __esm({
     "lib/core-streams/source-groups.ts"() {
+      init_source_hints();
       init_stream_utils();
       VOD_GROUP = "vod";
       CLOUD_GROUP = "cloud";
@@ -21711,7 +22990,7 @@
       let lastError = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS2);
         try {
           const res = await fetch(url, { cache: "no-store", signal: controller.signal });
           if (!res.ok) {
@@ -21756,13 +23035,13 @@
     inflight7.set(cacheKey2, request);
     return request;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS2, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
       NON_EMPTY_CACHE_TTL_MS = 2e4;
       EMPTY_CACHE_TTL_MS = 3e3;
-      FETCH_TIMEOUT_MS = 4800;
+      FETCH_TIMEOUT_MS2 = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
       inflight7 = /* @__PURE__ */ new Map();
@@ -21863,7 +23142,8 @@
     onCreditClick,
     defaultExpanded = false,
     className = "",
-    variant = "standalone"
+    variant = "standalone",
+    seenCredits
   }) {
     const { t } = useLang();
     const [person, setPerson] = useState(null);
@@ -22011,6 +23291,16 @@
               person.alsoKnownAs.join(", ")
             ] }) : null
           ] }),
+          seenCredits && seenCredits.length > 0 ? /* @__PURE__ */ jsx(
+            CreditRail,
+            {
+              credits: seenCredits,
+              onCreditClick,
+              movieLabel,
+              seriesLabel,
+              title: t("personSeenIn")
+            }
+          ) : null,
           /* @__PURE__ */ jsx(
             CreditRail,
             {
@@ -22474,7 +23764,7 @@
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
-    const [state2, setState] = useState("loading");
+    const [state3, setState] = useState("loading");
     const [result, setResult] = useState(null);
     const [errorKind, setErrorKind] = useState(null);
     useEffect(() => {
@@ -22537,7 +23827,7 @@
       const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
       ro?.observe(el);
       return () => ro?.disconnect();
-    }, [isTv, state2]);
+    }, [isTv, state3]);
     const wanted = 1.25 / (tvSceneScale() || 1);
     const embedZoom = isTv && embedBox && embedBox.w > 0 ? Math.min(wanted, embedBox.w / SPOTIFY_MIN_LAYOUT_PX) : 1;
     const embedZoomStyle = !isTv || !embedBox ? {} : {
@@ -22571,13 +23861,13 @@
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state2 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state2 !== "embed" ? { "data-scroll": "" } : {}, children: [
-            state2 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
-            state2 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
+          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state3 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state3 !== "embed" ? { "data-scroll": "" } : {}, children: [
+            state3 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
+            state3 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               t("soundtrackLoadError"),
               errorKind === "timeout" ? " (timeout)" : ""
             ] }),
-            state2 === "fallback" && result && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
+            state3 === "fallback" && result && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
               /* @__PURE__ */ jsx("svg", { className: "h-10 w-10 text-green-400", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" }) }),
               /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("noSoundtrackFound") }),
               /* @__PURE__ */ jsxs(
@@ -22595,7 +23885,7 @@
                 }
               )
             ] }),
-            state2 === "embed" && result?.embedUrl && /**
+            state3 === "embed" && result?.embedUrl && /**
              * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
              *
              * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
@@ -23011,14 +24301,14 @@
     const m = mode === "end" ? "end" : Number(mode);
     return armSleepTimer(m, nowMs);
   }
-  function couchSleep(state2, nowMs, pos, dur) {
-    if (state2.mode === "off") return { mode: "off" };
-    if (state2.mode === "end") {
+  function couchSleep(state3, nowMs, pos, dur) {
+    if (state3.mode === "off") return { mode: "off" };
+    if (state3.mode === "end") {
       const left = Math.max(0, dur - pos - SLEEP_END_MARGIN_S);
       return { mode: "end", endsAt: nowMs + left * 1e3 };
     }
-    const remaining = sleepTimerRemainingMs(state2, nowMs);
-    const mode = String(state2.mode);
+    const remaining = sleepTimerRemainingMs(state3, nowMs);
+    const mode = String(state3.mode);
     return remaining == null ? { mode } : { mode, endsAt: nowMs + remaining };
   }
   function nextEpisodeOf(ep) {
@@ -23046,13 +24336,13 @@
     return streams.filter((s) => !!s.directUrl);
   }
   function pushCue(buffer, cue, now2) {
-    const text = cue.text.trim();
-    if (!text) return buffer;
+    const text2 = cue.text.trim();
+    if (!text2) return buffer;
     const last2 = buffer[buffer.length - 1];
-    if (last2 && last2.text === text) return buffer;
+    if (last2 && last2.text === text2) return buffer;
     const base = last2 && last2.start > cue.start ? [] : buffer;
     const kept = base.filter((c) => c.start >= now2 - SAID_WINDOW_S);
-    kept.push({ text, start: cue.start });
+    kept.push({ text: text2, start: cue.start });
     return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
   }
   var SAID_WINDOW_S, SAID_MAX_CUES;
@@ -23085,6 +24375,7 @@
 
   // lib/continue-frame-capture.ts
   async function captureContinueFrame(engine, ref, video) {
+    if (incognitoBlocks("continue-frame")) return false;
     const key = continueFrameKey(ref);
     try {
       if (engine === "mpv") {
@@ -23117,6 +24408,7 @@
       init_continue_frames();
       init_tauri_mpv();
       init_tauri_native_player();
+      init_incognito();
     }
   });
 
@@ -23249,7 +24541,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY17);
+      const raw = getScopedStorageItem(KEY18);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -23278,11 +24570,11 @@
   function hasCommandModifier(e) {
     return e.metaKey || e.ctrlKey || e.altKey;
   }
-  var KEY17, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
+  var KEY18, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY17 = "keyboard_shortcuts";
+      KEY18 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -23306,28 +24598,96 @@
     }
   });
 
+  // lib/credits-from-subs.ts
+  function stripCueMarkup(text2) {
+    return text2.replace(/\{\\[^}]*\}/g, " ").replace(/<[^>]+>/g, " ").replace(/\\[Nn]/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+  }
+  function creditPattern() {
+    const extra = (getSourceHints().creditWords ?? []).filter((word) => /^[a-z0-9][a-z0-9-]*$/.test(word)).join("|");
+    if (creditRe && creditRe.extra === extra) return creditRe.re;
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])(${CREDIT_WORDS}${extra ? `|${extra}` : ""})(?![\\p{L}\\p{N}])`, "iu");
+    creditRe = { extra, re };
+    return re;
+  }
+  function isTailNoiseCue(rawText) {
+    const text2 = stripCueMarkup(rawText);
+    if (!text2) return true;
+    if (MUSIC_RE.test(text2)) return true;
+    if (URL_RE.test(text2)) return true;
+    if (creditPattern().test(text2)) return true;
+    const spoken = text2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^[-–—\s]*[A-ZÅÄÖÜ0-9 .'-]{2,}:\s*/u, "").replace(/[-–—.…!?,\s]+/g, " ").trim();
+    if (!spoken) return true;
+    if (END_CARD_RE.test(spoken)) return true;
+    return false;
+  }
+  function estimateCreditsStartFromCues(cues, durationSeconds, options = {}) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds < MIN_DURATION_SECONDS) return { start: null, reason: "short" };
+    const offset = Number.isFinite(options.offsetSeconds) ? options.offsetSeconds : 0;
+    const timed = cues.filter((c) => Number.isFinite(c.start) && Number.isFinite(c.end) && c.end > c.start).map((c) => ({ start: c.start + offset, end: c.end + offset, text: c.text ?? "" })).filter((c) => c.end > 0).sort((a, b) => a.start - b.start || a.end - b.end);
+    if (timed.length === 0) return { start: null, reason: "no_cues" };
+    const dialogueCount = timed.reduce((n, c) => n + (isTailNoiseCue(c.text) ? 0 : 1), 0);
+    if (dialogueCount < MIN_DIALOGUE_CUES || dialogueCount < durationSeconds / 60 * MIN_CUES_PER_MINUTE) {
+      return { start: null, reason: "sparse" };
+    }
+    const lastEnd = timed.reduce((m, c) => Math.max(m, c.end), 0);
+    if (lastEnd > durationSeconds + PAST_END_TOLERANCE) return { start: null, reason: "past_end" };
+    const noiseFloor = durationSeconds * (1 - NOISE_SKIP_FRACTION);
+    let lastDialogueEnd = null;
+    const byEnd = [...timed].sort((a, b) => b.end - a.end);
+    for (const cue of byEnd) {
+      if (cue.end >= noiseFloor && isTailNoiseCue(cue.text)) continue;
+      lastDialogueEnd = cue.end;
+      break;
+    }
+    if (lastDialogueEnd == null) return { start: null, reason: "no_dialogue" };
+    if (lastDialogueEnd < durationSeconds * (1 - TAIL_FRACTION)) return { start: null, reason: "too_early" };
+    const delay = Number.isFinite(options.delayAfterLastLineSeconds) && options.delayAfterLastLineSeconds >= 0 ? options.delayAfterLastLineSeconds : DEFAULT_DELAY_AFTER_LAST_LINE;
+    const candidate = lastDialogueEnd + delay;
+    if (durationSeconds - candidate < MIN_SECONDS_BEFORE_END) return { start: null, reason: "too_late" };
+    return { start: candidate, reason: "ok" };
+  }
+  var TAIL_FRACTION, MIN_SECONDS_BEFORE_END, MIN_DURATION_SECONDS, MIN_DIALOGUE_CUES, MIN_CUES_PER_MINUTE, DEFAULT_DELAY_AFTER_LAST_LINE, PAST_END_TOLERANCE, NOISE_SKIP_FRACTION, URL_RE, CREDIT_WORDS, creditRe, END_CARD_RE, MUSIC_RE;
+  var init_credits_from_subs = __esm({
+    "lib/credits-from-subs.ts"() {
+      init_source_hints();
+      TAIL_FRACTION = 0.12;
+      MIN_SECONDS_BEFORE_END = 30;
+      MIN_DURATION_SECONDS = 480;
+      MIN_DIALOGUE_CUES = 60;
+      MIN_CUES_PER_MINUTE = 3;
+      DEFAULT_DELAY_AFTER_LAST_LINE = 20;
+      PAST_END_TOLERANCE = 5;
+      NOISE_SKIP_FRACTION = 0.25;
+      URL_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|org|net|tv|io|me|info|se|de|fr|es|nl|ru|ro|pl)\b)/i;
+      CREDIT_WORDS = "subtitles?|subtitled|subs|captions?|captioned|captioning|closed captioning|translat\\w*|transcri\\w*|synced|sync(?:ed|hronized)?\\s+(by|and)|resync\\w*|re-?synced|corrected\\s+by|corrections\\s+by|proofread\\w*|encoded\\s+by|ripped\\s+by|timed\\s+by|timing\\s+by|opensubtitles|addic7ed|podnapisi|subscene|osdb|undertext\\w*|svensk text|\xF6versatt\\w*|\xF6vers\xE4ttning|textning|textad\\w*|untertitel\\w*|\xFCbersetz\\w*|sous-titr\\w*|traduct\\w*|traduit|subt[i\xED]tul\\w*|traducci[o\xF3]n|traducido";
+      creditRe = null;
+      END_CARD_RE = /^(the end|to be continued|fin|slut|ende|continuará|à suivre|fortsättning följer|fortsetzung folgt)[.!…]*$/i;
+      MUSIC_RE = /[♪♫♬♩]|^#|#$/;
+    }
+  });
+
   // lib/player-reveal-hold.ts
-  function state() {
+  function state2() {
     const g = globalThis;
-    if (!g[KEY18]) g[KEY18] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY18];
+    if (!g[KEY19]) g[KEY19] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY19];
   }
   function isPlayerRevealHeld() {
-    return state().holders > 0;
+    return state2().holders > 0;
   }
   function markPlayerReadyToReveal() {
-    if (state().holders > 0) state().ready = true;
+    if (state2().holders > 0) state2().ready = true;
   }
   function captureUserMutedOnce(current2) {
-    const s = state();
+    const s = state2();
     if (s.userMuted === null) s.userMuted = current2;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY18;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY19;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY18 = "__lumioRevealHold";
+      KEY19 = "__lumioRevealHold";
     }
   });
 
@@ -23783,33 +25143,33 @@
   });
 
   // lib/gesture-settings.ts
-  function read8(key) {
+  function read9(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read8(KEY_LEFT);
+    const stored = read9(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read8(KEY_RIGHT);
+    const stored = read9(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read8(KEY_HORIZONTAL);
+    const stored = read9(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read8(KEY_BRIGHTNESS_TARGET);
+    const stored = read9(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read8(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read9(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read8(KEY_HOLD_SPEED) === "1";
+    return read9(KEY_HOLD_SPEED) === "1";
   }
   var VERTICAL_GESTURE_ACTIONS, HORIZONTAL_GESTURE_ACTIONS, BRIGHTNESS_TARGETS, DOUBLE_TAP_SECONDS, KEY_LEFT, KEY_RIGHT, KEY_HORIZONTAL, KEY_BRIGHTNESS_TARGET, KEY_DOUBLE_TAP, KEY_HOLD_SPEED;
   var init_gesture_settings = __esm({
@@ -23849,7 +25209,7 @@
   });
 
   // lib/subtitle-delay-store.ts
-  function readStore() {
+  function readStore2() {
     if (typeof window === "undefined") return {};
     try {
       const raw = getScopedStorageItem(STORAGE_KEY5);
@@ -23860,7 +25220,7 @@
       return {};
     }
   }
-  function writeStore(store2) {
+  function writeStore2(store2) {
     if (typeof window === "undefined") return;
     try {
       const keys2 = Object.keys(store2);
@@ -23879,7 +25239,7 @@
     return `${mediaType ?? "media"}:${id}`;
   }
   function getSavedSubtitleDelay(mediaKey, season, episode) {
-    const store2 = readStore();
+    const store2 = readStore2();
     if (season != null && episode != null) {
       const exact = store2[`${mediaKey}:s${season}e${episode}`];
       if (exact && Number.isFinite(exact.d)) return exact.d;
@@ -23888,7 +25248,7 @@
     return series && Number.isFinite(series.d) ? series.d : null;
   }
   function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
-    const store2 = readStore();
+    const store2 = readStore2();
     const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
     if (season != null && episode != null) {
       const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
@@ -23897,7 +25257,7 @@
     return pick2(store2[mediaKey]);
   }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
-    const store2 = readStore();
+    const store2 = readStore2();
     const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
     if (delay === 0) {
       if (exactKey) delete store2[exactKey];
@@ -23907,7 +25267,7 @@
       if (exactKey) store2[exactKey] = entry;
       store2[mediaKey] = entry;
     }
-    writeStore(store2);
+    writeStore2(store2);
   }
   var STORAGE_KEY5, MAX_ENTRIES4;
   var init_subtitle_delay_store = __esm({
@@ -24257,7 +25617,7 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/subtitle-sync/opt-out.ts
-  function read9() {
+  function read10() {
     try {
       const parsed = JSON.parse(getScopedStorageItem(STORAGE_KEY6) ?? "{}");
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -24266,10 +25626,10 @@ ${effectiveName(url, id)}`;
     }
   }
   function isAutoSyncOptedOut(mediaKey, subtitleId) {
-    return `${mediaKey}|${subtitleId}` in read9();
+    return `${mediaKey}|${subtitleId}` in read10();
   }
   function setAutoSyncOptOut(mediaKey, subtitleId) {
-    const store2 = read9();
+    const store2 = read10();
     const key = `${mediaKey}|${subtitleId}`;
     delete store2[key];
     const next2 = Math.max(0, ...Object.values(store2)) + 1;
@@ -24463,7 +25823,7 @@ ${effectiveName(url, id)}`;
       const sel = a.selected;
       const key = a.mediaKey ?? `file:${a.fileName ?? a.mediaUrl}`;
       const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
-      const file = fileLabel(a.mediaUrl, identity);
+      const file2 = fileLabel(a.mediaUrl, identity);
       const savedDelay = () => {
         const l = latest2.current;
         return bindingSavedDelay(l.mediaKey ? getSavedSubtitleDelayEntry(l.mediaKey, l.season ?? null, l.episode ?? null) : null);
@@ -24493,7 +25853,7 @@ ${effectiveName(url, id)}`;
         if (loggedSkipRef.current !== logKey) {
           loggedSkipRef.current = logKey;
           const delay = reason === "saved-delay" ? saved : reason === "manual-delay" ? u.currentDelay : null;
-          logSubsyncClient(describeSkip(reason, { file, sub: sel ? subLabel(sel.id) : "-", source: sel?.source ?? "-", delay }));
+          logSubsyncClient(describeSkip(reason, { file: file2, sub: sel ? subLabel(sel.id) : "-", source: sel?.source ?? "-", delay }));
         }
         if (!waitsForPlayback(reason)) handledTokenRef.current = args.selectionToken;
         return;
@@ -24513,7 +25873,7 @@ ${effectiveName(url, id)}`;
         if (!dropLogged) {
           dropLogged = true;
           const why = !current2() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
-          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel.id)}`);
+          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file2} undertext=${subLabel(sel.id)}`);
         }
         if (current2() && inFlightRef.current) {
           inFlightRef.current = false;
@@ -24530,7 +25890,7 @@ ${effectiveName(url, id)}`;
       const undoAction = (other) => () => {
         if (other) setAutoSyncOptOut(key, other.id);
         setAutoSyncOptOut(key, sel.id);
-        logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file2}`);
         controller.abort();
         void live2().restoreOriginal(sel, { undo: true });
       };
@@ -24546,7 +25906,7 @@ ${effectiveName(url, id)}`;
         const done = await applyWithRetry(
           () => live2().applySynced(sel, vttUrl),
           waitReady,
-          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sel.id)} fil=${file}`)
+          () => logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpning misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(sel.id)} fil=${file2}`)
         );
         if (!done) {
           inFlightRef.current = true;
@@ -24556,7 +25916,7 @@ ${effectiveName(url, id)}`;
         applied2 = r.vttUrl;
         const path = pathLabel(r.path);
         const late = playedSoFar > 0 ? ` efter ${Math.round(playedSoFar)}s spelat` : "";
-        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file2}`);
         const offset = formatCorrection(r.correctionMs ?? 0);
         if (refined) {
           l.setStatus({ type: "done", message: l.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
@@ -24572,7 +25932,7 @@ ${effectiveName(url, id)}`;
         const other = l.options.find((o) => o.id === r.subtitleId) ?? null;
         const usable2 = r.status === "already_synced" || r.status === "synced" && !!r.vttUrl;
         if (!other || !usable2) {
-          logSubsyncClient(`${CLIENT_PREFIX} svar om en annan undertext (${subLabel(r.subtitleId ?? "-")}, ${r.status}) utan byte: g\xE4ller inte den valda undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} svar om en annan undertext (${subLabel(r.subtitleId ?? "-")}, ${r.status}) utan byte: g\xE4ller inte den valda undertext=${subLabel(sel.id)} fil=${file2}`);
           return false;
         }
         if (!valid()) {
@@ -24588,7 +25948,7 @@ ${effectiveName(url, id)}`;
           const done = await applyWithRetry(
             () => live2().applySynced(other, vttUrl),
             waitReady,
-            () => logSubsyncClient(`${CLIENT_PREFIX} byte misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(other.id)} fil=${file}`)
+            () => logSubsyncClient(`${CLIENT_PREFIX} byte misslyckades, nytt f\xF6rs\xF6k n\xE4r spelaren \xE4r redo undertext=${subLabel(other.id)} fil=${file2}`)
           );
           if (!done) {
             switched = null;
@@ -24604,7 +25964,7 @@ ${effectiveName(url, id)}`;
           markFinal(r);
           await live2().restoreOriginal(other);
         }
-        logSubsyncClient(`${CLIENT_PREFIX} bytte till ${subLabel(other.id)} (${r.status}${r.provisional ? " provisoriskt" : ""}${pathLabel(r.path) ? ` v\xE4g=${pathLabel(r.path)}` : ""}) fr\xE5n ${subLabel(sel.id)}: den valda gick inte att synka fil=${file}`);
+        logSubsyncClient(`${CLIENT_PREFIX} bytte till ${subLabel(other.id)} (${r.status}${r.provisional ? " provisoriskt" : ""}${pathLabel(r.path) ? ` v\xE4g=${pathLabel(r.path)}` : ""}) fr\xE5n ${subLabel(sel.id)}: den valda gick inte att synka fil=${file2}`);
         const message = l.t("subtitleAutoSyncSwapped");
         l.showNotice({ message, actionLabel: l.t("subtitleAutoSyncUndo"), onAction: undoAction(other) });
         l.setStatus({ type: "done", message });
@@ -24644,7 +26004,7 @@ ${effectiveName(url, id)}`;
           const s = seekStep(seek, now2);
           seek = s.st;
           if (s.fire) {
-            logSubsyncClient(`${CLIENT_PREFIX} hopp till ${Math.round(now2)}s: fr\xE5gar direkt undertext=${subLabel(sel.id)} fil=${file}`);
+            logSubsyncClient(`${CLIENT_PREFIX} hopp till ${Math.round(now2)}s: fr\xE5gar direkt undertext=${subLabel(sel.id)} fil=${file2}`);
             return played;
           }
         }
@@ -24664,13 +26024,13 @@ ${effectiveName(url, id)}`;
       const handleSelected = async (r, final, wait) => {
         if (r.otherEdit && !otherEditSeen && sel.source !== "embedded") {
           otherEditSeen = true;
-          logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} annan version av filmen (regioner > 2 s is\xE4r) undertext=${subLabel(sel.id)} fil=${file2}`);
           live2().onOtherEdit?.(sel);
         }
         if (!final && wait !== null && (r.status === "reference_pending" || isTransientNoFit(r))) {
-          logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} v\xE4ntar ${Math.round(wait)}s spelat (${r.reason ?? r.status}${typeof r.retryAfterPlayedS === "number" ? ` igen-om=${r.retryAfterPlayedS}s` : ""}) spelat=${Math.round(playedSoFar)}s undertext=${subLabel(sel.id)} fil=${file2}`);
         } else if (final && r.status === "reference_pending") {
-          logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel.id)} fil=${file2}`);
         }
         if (r.status === "reference_pending") {
           if (applied2 === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
@@ -24688,7 +26048,7 @@ ${effectiveName(url, id)}`;
           applied2 = null;
           restored = true;
           inFlightRef.current = false;
-          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file2}`);
           await live2().restoreOriginal(sel);
           live2().clearNotice?.();
           finish(r);
@@ -24702,7 +26062,7 @@ ${effectiveName(url, id)}`;
           applied2 = null;
           restored = true;
           inFlightRef.current = false;
-          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file}`);
+          logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file2}`);
           await live2().restoreOriginal(sel);
           live2().clearNotice?.();
           live2().setStatus({ type: "done", message: live2().t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
@@ -24715,7 +26075,7 @@ ${effectiveName(url, id)}`;
             request: () => {
               attempt += 1;
               const candidates = buildCandidates(toCandidate(sel), live2().options.filter((o) => o.source === "opensubtitles").map(toCandidate));
-              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file} undertext=${subLabel(sel.id)} spr\xE5k=${sel.lang3 || "-"} kandidater=${candidates.length}`);
+              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file2} undertext=${subLabel(sel.id)} spr\xE5k=${sel.lang3 || "-"} kandidater=${candidates.length}`);
               const l = live2();
               const health = l.getPlaybackHealth?.();
               return requestSubtitleSync({
@@ -24741,7 +26101,7 @@ ${effectiveName(url, id)}`;
           if (!last2 || !current2()) return;
           if (last2.status === "ambiguous" && last2.jobId) {
             if (await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS) === false) return;
-            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
+            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file2} undertext=${subLabel(sel.id)}`);
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
             logSubsyncClient(describeResult(v, "ljud"));
             if (!current2()) return;
@@ -24762,7 +26122,7 @@ ${effectiveName(url, id)}`;
           }
           if (applied2 === null && !restored && switched === null) finish(last2);
         } catch (err) {
-          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel.id)}`);
+          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file2} undertext=${subLabel(sel.id)}`);
           drop();
         } finally {
           stopWatch();
@@ -24800,17 +26160,17 @@ ${effectiveName(url, id)}`;
   function createOwnTrackOffers() {
     const offered = /* @__PURE__ */ new Set();
     const choices = /* @__PURE__ */ new Map();
-    const key = (file, subId) => `${file}|${subId}`;
+    const key = (file2, subId) => `${file2}|${subId}`;
     return {
-      shouldOffer: (file, subId) => !offered.has(key(file, subId)),
-      markOffered: (file, subId) => {
-        offered.add(key(file, subId));
+      shouldOffer: (file2, subId) => !offered.has(key(file2, subId)),
+      markOffered: (file2, subId) => {
+        offered.add(key(file2, subId));
       },
-      decide: (file, subId, choice) => {
-        offered.add(key(file, subId));
-        choices.set(key(file, subId), choice);
+      decide: (file2, subId, choice) => {
+        offered.add(key(file2, subId));
+        choices.set(key(file2, subId), choice);
       },
-      choice: (file, subId) => choices.get(key(file, subId)) ?? null
+      choice: (file2, subId) => choices.get(key(file2, subId)) ?? null
     };
   }
   function languageName(code, uiLang) {
@@ -24895,13 +26255,13 @@ ${effectiveName(url, id)}`;
       return null;
     }
   }
-  async function removeOwned(deps, state2, keep) {
+  async function removeOwned(deps, state3, keep) {
     const tracks = await readTracks(deps);
     if (!tracks) return;
     const listed = /* @__PURE__ */ new Set();
     for (const t of tracks) {
       const p = t.external ? t.externalFilename : null;
-      if (!p || !state2.owned.has(p)) continue;
+      if (!p || !state3.owned.has(p)) continue;
       listed.add(p);
       if (p === keep) continue;
       try {
@@ -24910,34 +26270,34 @@ ${effectiveName(url, id)}`;
       } catch {
       }
     }
-    state2.owned = new Set([...state2.owned].filter((p) => listed.has(p) || p === keep));
+    state3.owned = new Set([...state3.owned].filter((p) => listed.has(p) || p === keep));
   }
-  async function swapSyncedTrack(deps, state2, mediaUrl, path) {
-    if (state2.mediaUrl !== mediaUrl) {
-      state2.mediaUrl = mediaUrl;
-      state2.current = null;
-      state2.owned = /* @__PURE__ */ new Set();
+  async function swapSyncedTrack(deps, state3, mediaUrl, path) {
+    if (state3.mediaUrl !== mediaUrl) {
+      state3.mediaUrl = mediaUrl;
+      state3.current = null;
+      state3.owned = /* @__PURE__ */ new Set();
     }
     const sidRaw = await Promise.resolve(deps.command(["get_property", "sid"])).catch(() => null);
     const sid = sidRaw === null || sidRaw === void 0 ? null : String(sidRaw);
     const off = sid === "no" || sid === "false";
     let select;
-    if (state2.current === null) {
+    if (state3.current === null) {
       select = !off;
     } else {
       const tracks = await readTracks(deps) ?? [];
-      const ours = tracks.find((t) => t.external && t.externalFilename === state2.current);
+      const ours = tracks.find((t) => t.external && t.externalFilename === state3.current);
       select = !off && ours !== void 0 && sid === String(ours.sid);
     }
     await deps.command(["sub-add", path, select ? "select" : "auto"]);
-    state2.owned.add(path);
-    state2.current = path;
-    await removeOwned(deps, state2, path);
+    state3.owned.add(path);
+    state3.current = path;
+    await removeOwned(deps, state3, path);
     return select;
   }
-  async function forgetSyncedTracks(deps, state2) {
-    await removeOwned(deps, state2, null);
-    state2.current = null;
+  async function forgetSyncedTracks(deps, state3) {
+    await removeOwned(deps, state3, null);
+    state3.current = null;
   }
   var init_mpv_swap = __esm({
     "lib/subtitle-sync/mpv-swap.ts"() {
@@ -25362,15 +26722,15 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-share-button.tsx
-  function ClipShareButton({ state: state2, onClick, t, variant }) {
+  function ClipShareButton({ state: state3, onClick, t, variant }) {
     const ref = useRef(null);
-    const label = state2.kind === "ready" ? t("clipShareNow") : state2.kind === "rendering" ? state2.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state2.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
+    const label = state3.kind === "ready" ? t("clipShareNow") : state3.kind === "rendering" ? state3.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state3.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
     return /* @__PURE__ */ jsxs(
       "button",
       {
         ref,
         type: "button",
-        disabled: state2.kind === "rendering",
+        disabled: state3.kind === "rendering",
         onClick: () => {
           if (ref.current) onClick(ref.current.getBoundingClientRect());
         },
@@ -25408,11 +26768,11 @@ ${effectiveName(url, id)}`;
     if (duration2 <= CLIP_WINDOW_SEC) return 0;
     return ms(clamp(anchorSec - CLIP_WINDOW_SEC / 2, 0, duration2 - CLIP_WINDOW_SEC));
   }
-  function clipWindowEnd(state2) {
-    return Math.min(state2.duration, state2.windowStart + CLIP_WINDOW_SEC);
+  function clipWindowEnd(state3) {
+    return Math.min(state3.duration, state3.windowStart + CLIP_WINDOW_SEC);
   }
-  function clipLength(state2) {
-    return ms(state2.outSec - state2.inSec);
+  function clipLength(state3) {
+    return ms(state3.outSec - state3.inSec);
   }
   function formatClipTime(sec) {
     const total = Math.max(0, Math.floor(sec));
@@ -25421,7 +26781,7 @@ ${effectiveName(url, id)}`;
     const ss = String(total % 60).padStart(2, "0");
     return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   }
-  function normalize(s, fixed2) {
+  function normalize2(s, fixed2) {
     const lo = s.windowStart;
     const hi = clipWindowEnd(s);
     const max = maxLengthFor(s.format);
@@ -25454,29 +26814,29 @@ ${effectiveName(url, id)}`;
       activeHandle: null,
       scrubbing: false
     };
-    return normalize(base, base.inSec <= base.windowStart ? "in" : "out");
+    return normalize2(base, base.inSec <= base.windowStart ? "in" : "out");
   }
-  function clipReducer(state2, action) {
+  function clipReducer(state3, action) {
     switch (action.type) {
       case "setHandle": {
         const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
         const other = action.handle === "in" ? "out" : "in";
-        return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+        return normalize2({ ...state3, ...moved, activeHandle: action.handle, scrubbing: true }, other);
       }
       case "nudge": {
-        const current2 = action.handle === "in" ? state2.inSec : state2.outSec;
-        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current2 + action.delta });
+        const current2 = action.handle === "in" ? state3.inSec : state3.outSec;
+        return clipReducer(state3, { type: "setHandle", handle: action.handle, sec: current2 + action.delta });
       }
       case "setLength": {
-        const len = Math.min(action.sec, maxLengthFor(state2.format));
-        return normalize({ ...state2, inSec: state2.outSec - len }, "out");
+        const len = Math.min(action.sec, maxLengthFor(state3.format));
+        return normalize2({ ...state3, inSec: state3.outSec - len }, "out");
       }
       case "setFormat":
-        return normalize({ ...state2, format: action.format }, "out");
+        return normalize2({ ...state3, format: action.format }, "out");
       case "setTitle":
-        return { ...state2, title: action.title, titleEdited: true };
+        return { ...state3, title: action.title, titleEdited: true };
       case "scrubEnd":
-        return { ...state2, scrubbing: false };
+        return { ...state3, scrubbing: false };
     }
   }
   var CLIP_WINDOW_SEC, CLIP_MIN_SEC, CLIP_MAX_SEC, GIF_MAX_SEC, CLIP_DEFAULT_SEC, clamp, ms;
@@ -25493,10 +26853,10 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-panel.tsx
-  function ClipLengthButtons({ state: state2, dispatch, heightClass, roundedClass, tv = false }) {
-    if (state2.format === "still") return null;
-    const len = Math.round(clipLength(state2));
-    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state2.format).map((sec) => {
+  function ClipLengthButtons({ state: state3, dispatch, heightClass, roundedClass, tv = false }) {
+    if (state3.format === "still") return null;
+    const len = Math.round(clipLength(state3));
+    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state3.format).map((sec) => {
       const on = len === sec;
       return /* @__PURE__ */ jsxs(
         "button",
@@ -25515,7 +26875,7 @@ ${effectiveName(url, id)}`;
       );
     }) });
   }
-  function ClipFormatSegment({ state: state2, dispatch, formats, heightClass, t }) {
+  function ClipFormatSegment({ state: state3, dispatch, formats, heightClass, t }) {
     if (formats.length <= 1) return null;
     const formatLabel = { mp4: "MP4", gif: "GIF", still: t("clipFormatStill") };
     return /* @__PURE__ */ jsx("div", { className: "flex self-start rounded-[10px] bg-white/[0.04] p-[3px]", children: formats.map((format) => /* @__PURE__ */ jsx(
@@ -25523,17 +26883,17 @@ ${effectiveName(url, id)}`;
       {
         type: "button",
         onClick: () => dispatch({ type: "setFormat", format }),
-        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state2.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
+        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state3.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
         children: formatLabel[format]
       },
       format
     )) });
   }
-  function ClipTitleField({ state: state2, dispatch }) {
+  function ClipTitleField({ state: state3, dispatch }) {
     return /* @__PURE__ */ jsx(
       "input",
       {
-        value: state2.title,
+        value: state3.title,
         onChange: (event) => dispatch({ type: "setTitle", title: event.target.value }),
         onKeyDown: (event) => {
           if (event.key !== "Escape") event.stopPropagation();
@@ -25558,8 +26918,8 @@ ${effectiveName(url, id)}`;
     ] });
   }
   function ClipPanel(p) {
-    const { state: state2, dispatch, t } = p;
-    const len = Math.round(clipLength(state2));
+    const { state: state3, dispatch, t } = p;
+    const len = Math.round(clipLength(state3));
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs("button", { type: "button", onClick, disabled, className: `${p.rowClass} disabled:opacity-50`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${p.rowTextClass}`, children: label })
@@ -25576,15 +26936,15 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
             /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-lg bg-black/60", children: [
               p.previewClip?.kind === "mp4" ? /* @__PURE__ */ jsx("video", { src: p.previewClip.src, autoPlay: true, loop: true, muted: true, playsInline: true, className: "h-full w-full object-cover" }) : p.previewClip?.kind === "gif" ? /* @__PURE__ */ jsx("img", { src: p.previewClip.src, alt: "", className: "h-full w-full object-cover" }) : p.previewSrc ? /* @__PURE__ */ jsx("img", { src: p.previewSrc, alt: "", className: "h-full w-full object-cover" }) : null,
-              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state2.inSec)) }),
+              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state3.inSec)) }),
               /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: formatClipTime(len) })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
             /* @__PURE__ */ jsx("div", { className: "px-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("clipShareSection") }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
-              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state2.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
+              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state3.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
               row("save", downloadIcon(p.iconClass), t("clipSaveFile"), p.onSaveFile, p.busy !== null),
               row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
             ] }),
@@ -25616,13 +26976,13 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-trimmer.tsx
-  function ClipTrimmer({ state: state2, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
+  function ClipTrimmer({ state: state3, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
     const touch = size === "touch";
     const tv = size === "tv";
     const trackRef = useRef(null);
     const lastHandle = useRef("out");
-    const start2 = state2.windowStart;
-    const end = clipWindowEnd(state2);
+    const start2 = state3.windowStart;
+    const end = clipWindowEnd(state3);
     const span = Math.max(1, end - start2);
     const percent = (sec) => Math.min(100, Math.max(0, (sec - start2) / span * 100));
     const secAt = (clientX) => {
@@ -25690,12 +27050,12 @@ ${effectiveName(url, id)}`;
             "div",
             {
               className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
-              style: { left: `${percent(state2.inSec)}%`, width: `${percent(state2.outSec) - percent(state2.inSec)}%` }
+              style: { left: `${percent(state3.inSec)}%`, width: `${percent(state3.outSec) - percent(state3.inSec)}%` }
             }
           ),
           tv ? /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute -bottom-1 -top-1 w-[2px] -translate-x-1/2 bg-white", style: { left: `${percent(position)}%` } }) : null,
-          renderHandle("in", state2.inSec),
-          renderHandle("out", state2.outSec)
+          renderHandle("in", state3.inSec),
+          renderHandle("out", state3.outSec)
         ]
       }
     );
@@ -25799,9 +27159,9 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-phone-panels.tsx
   function ClipLandscapePanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
-    const len = Math.round(clipLength(state2));
+    const len = Math.round(clipLength(state3));
     const tile = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -25827,14 +27187,14 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx(
             ClipPanelHeader,
             {
-              label: t("clipNewWithLength").replace("{len}", state2.format === "still" ? t("clipFormatStill") : `${len} s`),
+              label: t("clipNewWithLength").replace("{len}", state3.format === "still" ? t("clipFormatStill") : `${len} s`),
               onClose: p.onClose,
               t
             }
           ),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-8", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-8", t }),
             /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1.5", children: [
               tile("link", gearRowIcon("link", "h-[18px] w-[18px]"), t("clipTileLink"), p.onCopyLink),
               tile("save", clipDownloadIcon("h-[18px] w-[18px]"), t("clipTileSave"), p.onSave, busy),
@@ -25847,7 +27207,7 @@ ${effectiveName(url, id)}`;
     );
   }
   function ClipPortraitSheet(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
@@ -25874,9 +27234,9 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
           /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               row("link", gearRowIcon("link", "h-5 w-5 flex-none text-slate-300"), t("clipCopyLink"), p.onCopyLink),
               row("save", clipDownloadIcon("h-5 w-5 flex-none text-slate-300"), t("clipSavePhotos"), p.onSave, busy),
@@ -25901,7 +27261,7 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-tv-panel.tsx
   function ClipTvPanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const row = (key, icon, label, onClick, extra) => /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", "data-clip-station": "row", "data-clip-row": key, onClick, className: `${p.rowClass} py-3`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left text-[length:var(--st-body)] ${p.rowTextClass}`, children: label }),
@@ -25922,14 +27282,14 @@ ${effectiveName(url, id)}`;
               /* @__PURE__ */ jsx("div", { className: "h-[63px] w-[112px] flex-none overflow-hidden rounded-md bg-black/60", children: p.stillSrc ? /* @__PURE__ */ jsx("img", { src: p.stillSrc, alt: "", className: "h-full w-full object-cover" }) : null }),
               /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
                 /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] font-semibold tabular-nums text-white", children: [
-                  formatClipTime(state2.inSec),
+                  formatClipTime(state3.inSec),
                   " \u2013 ",
-                  formatClipTime(state2.outSec)
+                  formatClipTime(state3.outSec)
                 ] }),
                 /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-small)] text-slate-400", children: t("clipTvStill") })
               ] })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               p.phones.map((phone) => row(`send-${phone.id}`, phoneIcon(p.iconClass), t("clipSendTo").replace("{phone}", phone.name), () => p.onSend(phone.id))),
               p.canShowQr === false ? null : row("qr", qrIcon(p.iconClass), t("clipShowQr"), p.onShowQr),
@@ -26071,7 +27431,7 @@ ${effectiveName(url, id)}`;
       if (color) return color;
       if (tail != null && i >= tail) return TAIL2;
       if (unseen === "dim") return DIM2;
-      if (unseen === "empty") return EMPTY3;
+      if (unseen === "empty") return EMPTY4;
       return "hatch";
     });
   }
@@ -26097,7 +27457,7 @@ ${effectiveName(url, id)}`;
   function drawBarcode(ctx, fills, r, vertical, hatchScale) {
     const n = fills.length;
     if (n === 0) {
-      ctx.fillStyle = EMPTY3;
+      ctx.fillStyle = EMPTY4;
       ctx.fillRect(r.x, r.y, r.w, r.h);
       return;
     }
@@ -26118,8 +27478,8 @@ ${effectiveName(url, id)}`;
       i = j;
     }
   }
-  function drawSpaced(ctx, text, x, y, spacing, align) {
-    const chars = [...text];
+  function drawSpaced(ctx, text2, x, y, spacing, align) {
+    const chars = [...text2];
     const widths = chars.map((c) => ctx.measureText(c).width);
     const total = widths.reduce((s, w) => s + w, 0) + spacing * Math.max(0, chars.length - 1);
     let cx = align === "left" ? x : align === "right" ? x - total : x - total / 2;
@@ -26129,9 +27489,9 @@ ${effectiveName(url, id)}`;
       cx += widths[k] + spacing;
     });
   }
-  function fitText(ctx, text, maxWidth) {
-    if (ctx.measureText(text).width <= maxWidth) return text;
-    let t = text;
+  function fitText(ctx, text2, maxWidth) {
+    if (ctx.measureText(text2).width <= maxWidth) return text2;
+    let t = text2;
     while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > maxWidth) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
@@ -26206,7 +27566,7 @@ ${effectiveName(url, id)}`;
     const suffix = kind === "image" ? "" : kind === "story" ? " story" : kind === "wallDesktop" ? " tapet" : " tapet mobil";
     return `${safe}${b.year ? ` (${b.year})` : ""} \u2013 barcode${suffix}.png`;
   }
-  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY3, TAIL2, FONT;
+  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY4, TAIL2, FONT;
   var init_barcode_share_render = __esm({
     "lib/barcode/barcode-share-render.ts"() {
       "use strict";
@@ -26227,7 +27587,7 @@ ${effectiveName(url, id)}`;
       HATCH_BASE = "#111216";
       HATCH_LINE = "#1c1d23";
       DIM2 = "#1a1b22";
-      EMPTY3 = "#141519";
+      EMPTY4 = "#141519";
       TAIL2 = "#0b0b0d";
       FONT = '"Avenir Next", "Segoe UI Variable", "Segoe UI", "Trebuchet MS", system-ui, sans-serif';
     }
@@ -26256,22 +27616,22 @@ ${effectiveName(url, id)}`;
   function setFont(ctx, weight, size) {
     ctx.font = `${weight} ${size}px ${FONT2}`;
   }
-  function spacedWidth(ctx, text, spacing) {
-    const chars = [...text];
+  function spacedWidth(ctx, text2, spacing) {
+    const chars = [...text2];
     return chars.reduce((sum, c) => sum + ctx.measureText(c).width, 0) + spacing * Math.max(0, chars.length - 1);
   }
   function baseline(top2, lineH, size) {
     return top2 + lineH / 2 + size * 0.34;
   }
-  function clip(ctx, text, maxW, spacing = 0) {
-    if (spacedWidth(ctx, text, spacing) <= maxW) return text;
-    let t = text;
+  function clip(ctx, text2, maxW, spacing = 0) {
+    if (spacedWidth(ctx, text2, spacing) <= maxW) return text2;
+    let t = text2;
     while (t.length > 1 && spacedWidth(ctx, `${t}\u2026`, spacing) > maxW) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
-  function wrapLines(ctx, text, maxW, maxLines) {
+  function wrapLines(ctx, text2, maxW, maxLines) {
     const lines2 = [];
-    for (const word of text.split(/\s+/).filter(Boolean)) {
+    for (const word of text2.split(/\s+/).filter(Boolean)) {
       const last2 = lines2[lines2.length - 1];
       if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines2[lines2.length - 1] = `${last2} ${word}`;
       else lines2.push(word);
@@ -26562,20 +27922,20 @@ ${effectiveName(url, id)}`;
       const parts = [];
       if (m?.directors.length) {
         const h = 9.5 * 1.2 * s;
-        const text = opts.labels.line(opts.labels.directedBy, m.directors);
+        const text2 = opts.labels.line(opts.labels.directedBy, m.directors);
         parts.push({ h, draw: (y) => {
           setFont(ctx, 600, 9.5 * s);
           ctx.fillStyle = paper.ink;
-          ctx.fillText(clip(ctx, text, bw), bx, baseline(y, h, 9.5 * s));
+          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y, h, 9.5 * s));
         } });
       }
       if (m?.writers.length) {
         const h = 8 * 1.2 * s;
-        const text = opts.labels.line(opts.labels.writtenBy, m.writers);
+        const text2 = opts.labels.line(opts.labels.writtenBy, m.writers);
         parts.push({ h: h + 2 * s, draw: (y) => {
           setFont(ctx, 400, 8 * s);
           ctx.fillStyle = paper.dim;
-          ctx.fillText(clip(ctx, text, bw), bx, baseline(y + 2 * s, h, 8 * s));
+          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y + 2 * s, h, 8 * s));
         } });
       }
       if (m?.synopsis) {
@@ -26752,10 +28112,10 @@ ${effectiveName(url, id)}`;
       if (!result?.ok) throw new Error(result?.error ?? "delning misslyckades");
       return "shared";
     }
-    const file = new File([blob], name, { type: "image/png" });
+    const file2 = new File([blob], name, { type: "image/png" });
     const nav = navigator;
-    if (nav.share && nav.canShare?.({ files: [file] })) {
-      await nav.share({ files: [file], title });
+    if (nav.share && nav.canShare?.({ files: [file2] })) {
+      await nav.share({ files: [file2], title });
       return "shared";
     }
     await saveCanvasPng(canvas2, name);
@@ -26818,10 +28178,10 @@ ${effectiveName(url, id)}`;
   function anchorArgs(anchor) {
     return { x: anchor.x, y: anchor.y, w: anchor.width, h: anchor.height };
   }
-  async function webShareFile(file) {
+  async function webShareFile(file2) {
     const nav = navigator;
-    if (!nav.share || !nav.canShare?.({ files: [file] })) return false;
-    await nav.share({ files: [file] });
+    if (!nav.share || !nav.canShare?.({ files: [file2] })) return false;
+    await nav.share({ files: [file2] });
     return true;
   }
   async function saveRenderedClip(clip3, name, ext) {
@@ -26869,11 +28229,11 @@ ${effectiveName(url, id)}`;
     const blob = await (await fetchImpl(routes.file(clip3.id))).blob();
     return new File([blob], name, { type: mime });
   }
-  async function shareWebFile(file, nav = navigator) {
+  async function shareWebFile(file2, nav = navigator) {
     const n = nav;
-    if (!n.share || !n.canShare?.({ files: [file] })) return "unsupported";
+    if (!n.share || !n.canShare?.({ files: [file2] })) return "unsupported";
     try {
-      await n.share({ files: [file] });
+      await n.share({ files: [file2] });
       return "shared";
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return "cancelled";
@@ -27096,56 +28456,56 @@ ${effectiveName(url, id)}`;
     }
     return `movie:${id}`;
   }
-  function read10() {
+  function read11() {
     try {
-      const raw = getScopedStorageItem(KEY19);
+      const raw = getScopedStorageItem(KEY20);
       const parsed = raw ? JSON.parse(raw) : null;
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
       return {};
     }
   }
-  function write6(store2) {
+  function write7(store2) {
     const nycklar = Object.keys(store2);
     if (nycklar.length > MAX_TITLES) {
       nycklar.sort((a, b) => store2[a].at - store2[b].at);
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
     }
     try {
-      setScopedStorageItem(KEY19, JSON.stringify(store2));
+      setScopedStorageItem(KEY20, JSON.stringify(store2));
     } catch {
     }
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT15));
   }
   function getMoments(titleKey) {
     if (!titleKey) return [];
-    return [...read10()[titleKey]?.t ?? []];
+    return [...read11()[titleKey]?.t ?? []];
   }
   function addMoment(titleKey, seconds2, nowMs = Date.now()) {
     const sekund = Math.max(0, Math.floor(seconds2));
-    const store2 = read10();
+    const store2 = read11();
     const lista = store2[titleKey]?.t ?? [];
     const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
     if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
     const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
     store2[titleKey] = { at: nowMs, t: n\u00E4sta };
-    write6(store2);
+    write7(store2);
     return { kind: "added", seconds: sekund };
   }
   function removeMoment(titleKey, seconds2) {
-    const store2 = read10();
+    const store2 = read11();
     const lista = store2[titleKey]?.t;
     if (!lista) return;
     const kvar = lista.filter((t) => t !== seconds2);
     if (kvar.length === 0) delete store2[titleKey];
     else store2[titleKey] = { at: Date.now(), t: kvar };
-    write6(store2);
+    write7(store2);
   }
   function clearMoments(titleKey) {
-    const store2 = read10();
+    const store2 = read11();
     if (!store2[titleKey]) return;
     delete store2[titleKey];
-    write6(store2);
+    write7(store2);
   }
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -27153,11 +28513,11 @@ ${effectiveName(url, id)}`;
     window.addEventListener(EVENT15, listener);
     return () => window.removeEventListener(EVENT15, listener);
   }
-  var KEY19, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY20, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY19 = "player_moments_v1";
+      KEY20 = "player_moments_v1";
       EVENT15 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
@@ -27204,7 +28564,7 @@ ${effectiveName(url, id)}`;
     });
   }
   function cuesToSrt(cues) {
-    const stamp = (sec) => {
+    const stamp2 = (sec) => {
       const ms2 = Math.max(0, Math.round(sec * 1e3));
       const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
       const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
@@ -27213,12 +28573,12 @@ ${effectiveName(url, id)}`;
       return `${h}:${m}:${s},${rest}`;
     };
     return cues.map((cue, i) => `${i + 1}
-${stamp(cue.start)} --> ${stamp(cue.end)}
+${stamp2(cue.start)} --> ${stamp2(cue.end)}
 ${cue.text}
 `).join("\n");
   }
   function cuesToVtt(cues, delay) {
-    const stamp = (sec) => {
+    const stamp2 = (sec) => {
       const ms2 = Math.max(0, Math.round((sec + delay) * 1e3));
       const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
       const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
@@ -27228,7 +28588,7 @@ ${cue.text}
     };
     return `WEBVTT
 
-${cues.map((cue) => `${stamp(cue.start)} --> ${stamp(cue.end)}
+${cues.map((cue) => `${stamp2(cue.start)} --> ${stamp2(cue.end)}
 ${cue.text}`).join("\n\n")}
 `;
   }
@@ -27245,8 +28605,8 @@ ${cue.text}`).join("\n\n")}
     if (parts.length === 3) return +parts[0] * 3600 + +parts[1] * 60 + parseFloat(parts[2]);
     return +parts[0] * 60 + parseFloat(parts[1]);
   }
-  function stripSdhText(text) {
-    const lines2 = text.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+  function stripSdhText(text2) {
+    const lines2 = text2.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
     return lines2.filter((line) => line.length > 0 && line !== "-").join("\n");
   }
   function parseVtt(vtt) {
@@ -27258,8 +28618,8 @@ ${cue.text}`).join("\n\n")}
       const [s, e] = timeLine.split("-->");
       const start2 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
-      const text = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
-      if (text) cues.push({ start: start2, end, text });
+      const text2 = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
+      if (text2) cues.push({ start: start2, end, text: text2 });
     }
     return cues;
   }
@@ -27380,8 +28740,8 @@ ${cue.text}`).join("\n\n")}
     }
     const step = Math.min(5, Math.max(2, Math.ceil(durationSec / 1e3)));
     return {
-      // `id`: filmen oberoende av länken (torrenthash + filnamn), så bilderna
-      // överlever att debridlänken byts och sparas till nästa gång.
+      // `id`: filmen oberoende av länken (källhash + filnamn), så bilderna
+      // överlever att källänken byts och sparas till nästa gång.
       // `d`: längden, så hjälparens glesa rutnät spänner över hela filmen.
       urlTemplate: `/api/trickplay/grab?src=${encodeURIComponent(direct)}&s=${step}&d=${Math.floor(durationSec)}${identity ? `&id=${encodeURIComponent(identity)}` : ""}${identity && title ? `&title=${encodeURIComponent(title)}` : ""}&i={index}`,
       width: 320,
@@ -27403,24 +28763,24 @@ ${cue.text}`).join("\n\n")}
     }
     return null;
   }
-  async function writeTextToClipboard(text) {
+  async function writeTextToClipboard(text2) {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(text2);
         return true;
       }
     } catch {
     }
     try {
       const ta = document.createElement("textarea");
-      ta.value = text;
+      ta.value = text2;
       ta.setAttribute("readonly", "");
       ta.style.position = "fixed";
       ta.style.top = "0";
       ta.style.left = "-9999px";
       document.body.appendChild(ta);
       ta.select();
-      ta.setSelectionRange(0, text.length);
+      ta.setSelectionRange(0, text2.length);
       const ok = document.execCommand("copy");
       ta.remove();
       return ok;
@@ -27598,7 +28958,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp, librarySubtitles }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     useEffect(() => {
       if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
@@ -27823,7 +29183,10 @@ ${cue.text}`).join("\n\n")}
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
     const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
     const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const incognito = useIncognito();
     const sleepFiredAtRef = useRef(0);
+    const sleepFadeCancelRef = useRef(() => {
+    });
     const [companionIds, setCompanionIds] = useState([]);
     const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
@@ -28070,9 +29433,9 @@ ${cue.text}`).join("\n\n")}
       if (!hasStarted || isDroidEngine) return void 0;
       if (isMpvEngine) {
         let cancelled = false;
-        const read11 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
+        const read12 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
         const timer4 = window.setTimeout(() => {
-          void Promise.all([read11("video-params/w"), read11("video-params/h"), read11("video-params/gamma"), read11("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
+          void Promise.all([read12("video-params/w"), read12("video-params/h"), read12("video-params/gamma"), read12("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
             if (cancelled) return;
             const width = Number(w);
             const height = Number(h);
@@ -28326,6 +29689,7 @@ ${cue.text}`).join("\n\n")}
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [externalSubtitles, setExternalSubtitles] = useState([]);
     const externalVttRef = useRef(/* @__PURE__ */ new Map());
+    const nativeAssSubIdRef = useRef(null);
     const externalFileInputRef = useRef(null);
     const [subVerticalPos, setSubVerticalPos] = useState(() => getDefaultSubtitleVerticalPosition());
     const [subOpacity, setSubOpacity] = useState(() => getDefaultSubtitleOpacity());
@@ -28425,7 +29789,7 @@ ${cue.text}`).join("\n\n")}
       const id = window.setTimeout(() => setMomentNotice(null), 2600);
       return () => window.clearTimeout(id);
     }, [momentNotice]);
-    const showMomentNotice = (text) => setMomentNotice({ text, id: Date.now() });
+    const showMomentNotice = (text2) => setMomentNotice({ text: text2, id: Date.now() });
     useEffect(() => {
       if (!showMoreMenu || !isTv) return;
       moreMenuRef.current?.querySelector("[data-f]")?.focus();
@@ -28992,12 +30356,12 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv || !streams) return;
       const id = window.setInterval(() => {
         const now2 = Date.now();
-        const state2 = starveStateRef.current;
+        const state3 = starveStateRef.current;
         const pos = realTimeRef.current;
-        if (state2.at > 0 && Math.abs(pos - state2.pos) > (now2 - state2.at) / 1e3 + 3) starvationRef.current.seeked(now2);
-        state2.pos = pos;
-        state2.at = now2;
-        if (!starvationRef.current.update(state2.buffering, now2)) return;
+        if (state3.at > 0 && Math.abs(pos - state3.pos) > (now2 - state3.at) / 1e3 + 3) starvationRef.current.seeked(now2);
+        state3.pos = pos;
+        state3.at = now2;
+        if (!starvationRef.current.update(state3.buffering, now2)) return;
         if (starvedOfferedRef.current === url) return;
         starvedOfferedRef.current = url;
         const lighter = pickLighterStream(streams.items, streams.currentUrl);
@@ -29504,6 +30868,7 @@ ${cue.text}`).join("\n\n")}
     }
     const togglePlay = useCallback(() => {
       const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (sleepPromptUp) return;
       if (useMpv) {
@@ -29560,6 +30925,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, [useMpv, videoSrc]);
     const seek = useCallback((delta) => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       castSeekRef.current?.(realTimeRef.current + delta);
       if (useMpv) {
@@ -29600,6 +30966,7 @@ ${cue.text}`).join("\n\n")}
       }, 220);
     }, [useMpv, videoSrc, url, videoCodec, audioTracks, effectiveProxyAudioMode, nightMode, realTime, showStillWatchingPrompt, activeAudioTrack, shouldForceProxyTranscode, applyStreamSrc]);
     const toggleMute = useCallback(() => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (useMpv) {
         const next2 = !muted;
@@ -30555,6 +31922,23 @@ ${cue.text}`).join("\n\n")}
       setSubtitleClientDebugInfo(null);
       subtitlePreferenceRef.current = nextSubtitlePreference(subtitlePreferenceRef.current, sub, Boolean(options?.manual));
       if (options?.manual) saveSeriesSubtitlePreference(seriesTrackTmdbRef.current, subtitlePreferenceRef.current);
+      if (isDroidEngine && nativeAssSubIdRef.current && nativeAssSubIdRef.current !== sub?.id) {
+        nativeAssSubIdRef.current = null;
+        await setNativeExternalAss(null);
+      }
+      const tryNativeAss = async (target2, content2) => {
+        if (!isDroidEngine || !getStyledAssSubtitles() || !looksLikeAssSubtitle(target2.url, content2)) return false;
+        if (!(await getDeviceCapabilities())?.styledAss) return false;
+        const raw = `${window.location.origin}/api/subtitles/raw?${new URLSearchParams({ url: target2.url }).toString()}`;
+        if (!await setNativeExternalAss(raw)) return false;
+        nativeAssSubIdRef.current = target2.id;
+        if (subtitleDownloadRequestIdRef.current === requestId) {
+          setCues([]);
+          setSubtitleLoadError(null);
+          setLoadingSub(false);
+        }
+        return true;
+      };
       if (!sub) {
         setActiveSubId(null);
         setCues([]);
@@ -30579,6 +31963,7 @@ ${cue.text}`).join("\n\n")}
       if (sub.source === "external") {
         setActiveSubId(sub.id);
         setSubtitleLoadError(null);
+        if (await tryNativeAss(sub)) return;
         if (useMpv) {
           try {
             await mpvCommand2(["sub-add", sub.url, "select"]);
@@ -30598,6 +31983,10 @@ ${cue.text}`).join("\n\n")}
           setSubtitleLoadError(t("subtitleFileUnsupported"));
         }
         setLoadingSub(false);
+        return;
+      }
+      if (await tryNativeAss(sub)) {
+        setActiveSubId(sub.id);
         return;
       }
       setLoadingSub(true);
@@ -30705,6 +32094,7 @@ ${cue.text}`).join("\n\n")}
           );
         }
         if (subtitleDownloadRequestIdRef.current !== requestId) return;
+        if (await tryNativeAss(sub, subtitleVtt)) return;
         setCues(parseVtt(subtitleVtt));
         setSubtitleLoadError(null);
       } catch (error) {
@@ -30717,7 +32107,7 @@ ${cue.text}`).join("\n\n")}
         clearTimeout(loadingGuard);
         if (subtitleDownloadRequestIdRef.current === requestId) setLoadingSub(false);
       }
-    }, [refreshMpvSubtitleTracks, useMpv]);
+    }, [refreshMpvSubtitleTracks, useMpv, isDroidEngine]);
     const selectSecondarySubtitle = useCallback(async (sub, options) => {
       const requestId = ++secondaryRequestIdRef.current;
       const stale = () => secondaryRequestIdRef.current !== requestId;
@@ -31114,13 +32504,13 @@ ${cue.text}`).join("\n\n")}
       const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("movie", realTime, totalDuration);
       if (!shouldMarkWatched) return;
       if (!wikiTmdbId && !resolvedImdbId && !imdbId) return;
-      setMovieWatched({
+      if (!markPlaybackMovieWatched({
         tmdbId: wikiTmdbId ?? null,
         imdbId: resolvedImdbId ?? imdbId ?? null,
         title,
         year: year ?? null,
         posterUrl: posterUrl ?? null
-      }, true);
+      })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, hasEndedPlayback, hasStarted, imdbId, mediaType, posterUrl, realTime, resolvedImdbId, title, totalDuration, wikiTmdbId]);
     useEffect(() => {
@@ -31153,11 +32543,96 @@ ${cue.text}`).join("\n\n")}
       if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
       setSleepTimer(DISARMED);
       sleepFiredAtRef.current = Date.now();
-      if (useMpv) void setMpvPause2(true);
-      else videoRef.current?.pause();
+      sleepFadeEndingRef.current = sleepFadeRef.current < 1;
+      const paused = useMpv ? Promise.resolve(setMpvPause2(true)).catch(() => {
+      }) : Promise.resolve(videoRef.current?.pause());
+      void paused.finally(() => {
+        if (!sleepFadeEndingRef.current) return;
+        sleepFadeEndingRef.current = false;
+        sleepFadeApplyRef.current(1);
+      });
       setStillWatchingReason("sleep");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    const [sleepFadeOn, setSleepFadeOn] = useState(() => getSleepFade());
+    const [sleepFade, setSleepFadeState] = useState(1);
+    const sleepFadeRef = useRef(1);
+    const sleepFadeCancelledForRef = useRef(null);
+    const sleepFadeEndingRef = useRef(false);
+    const sleepTimerRef = useRef(sleepTimer);
+    sleepTimerRef.current = sleepTimer;
+    const sleepUserVolumeRef = useRef(volume);
+    sleepUserVolumeRef.current = volume;
+    const sleepFadeApplyRef = useRef(() => {
+    });
+    sleepFadeApplyRef.current = (level) => {
+      const next2 = Math.max(0, Math.min(1, level));
+      const prev = sleepFadeRef.current;
+      if (next2 >= 1 && prev >= 1) return;
+      if (next2 < 1 && next2 > 0 && Math.abs(next2 - prev) < 0.01) return;
+      if (next2 === prev) return;
+      sleepFadeRef.current = next2;
+      setSleepFadeState(next2);
+      const user = sleepUserVolumeRef.current;
+      const val = (next2 >= 1 ? user : sleepFadedVolume(user, next2)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    const spokenDuckRef = useRef(1);
+    const writeSpokenDuckRef = useRef(() => {
+    });
+    writeSpokenDuckRef.current = () => {
+      const user = sleepUserVolumeRef.current;
+      const fade = sleepFadeRef.current;
+      const val = (fade >= 1 ? user : sleepFadedVolume(user, fade)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    sleepFadeCancelRef.current = () => {
+      if (sleepFadeRef.current >= 1 || sleepFadeEndingRef.current) return;
+      sleepFadeCancelledForRef.current = sleepTimerRef.current.armedAtMs;
+      sleepFadeApplyRef.current(1);
+    };
+    useEffect(() => {
+      if (sleepFadeEndingRef.current) return;
+      const armed = sleepTimer.mode !== "off" && sleepTimer.armedAtMs != null;
+      const cancelled = armed && sleepFadeCancelledForRef.current === sleepTimer.armedAtMs;
+      const level = !sleepFadeOn || !armed || cancelled || showStillWatchingPrompt || !hasStarted ? 1 : sleepFadeLevel(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback });
+      sleepFadeApplyRef.current(level);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepFadeOn, sleepTimer, totalDuration]);
+    useEffect(() => {
+      if (sleepFade >= 1) return;
+      const cancel = () => sleepFadeCancelRef.current();
+      const onPointerMove = (e) => {
+        if (e.movementX !== 0 || e.movementY !== 0) cancel();
+      };
+      const opts = { capture: true, passive: true };
+      const events = ["pointerdown", "keydown", "wheel", "touchstart"];
+      for (const ev of events) window.addEventListener(ev, cancel, opts);
+      window.addEventListener("pointermove", onPointerMove, opts);
+      return () => {
+        for (const ev of events) window.removeEventListener(ev, cancel, opts);
+        window.removeEventListener("pointermove", onPointerMove, opts);
+      };
+    }, [sleepFade]);
+    useEffect(() => () => {
+      sleepFadeEndingRef.current = false;
+      sleepFadeApplyRef.current(1);
+    }, []);
     useEffect(() => {
       if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
     }, [isTv, showStillWatchingPrompt, tvFocus]);
@@ -31183,8 +32658,7 @@ ${cue.text}`).join("\n\n")}
       const watchedEnoughThisSession = watchedThisSession >= Math.min(120, Math.max(30, totalDuration * 0.03));
       const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("episode", realTime, totalDuration);
       if (!shouldMarkWatched) return;
-      setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-      removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
+      if (!markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, episode, hasEndedPlayback, hasStarted, mediaType, realTime, season, totalDuration, wikiTmdbId]);
     useEffect(() => {
@@ -31376,6 +32850,46 @@ ${cue.text}`).join("\n\n")}
         });
       }
     }, [mpvChapters, introDataReady, introSegment, url]);
+    const learnedSeriesId = mediaType === "tv" && wikiTmdbId ? `tmdb:${wikiTmdbId}` : null;
+    const [learnSkipsOn, setLearnSkipsOn] = useState(() => getLearnSkipsEnabled());
+    const [learnedSkips, setLearnedSkips] = useState({ start: null, end: null });
+    const [learnedHasData, setLearnedHasData] = useState(false);
+    useEffect(() => {
+      const sync = () => {
+        setLearnSkipsOn(getLearnSkipsEnabled());
+        setLearnedSkips(learnedSeriesId ? getLearnedSkips(learnedSeriesId) : { start: null, end: null });
+        setLearnedHasData(learnedSeriesId ? hasLearnedSkipData(learnedSeriesId) : false);
+      };
+      sync();
+      return onLearnedSkipsChanged(sync);
+    }, [learnedSeriesId]);
+    const seekTrackerRef = useRef(SEEK_TRACKER_INITIAL);
+    const learnCtxRef = useRef(null);
+    const commitLearnedSkipRef = useRef(() => {
+    });
+    commitLearnedSkipRef.current = (interval) => {
+      const c = learnCtxRef.current;
+      if (!interval || !c) return;
+      const region = classifySkip(interval.start, interval.end, c.duration);
+      if (!region) return;
+      recordLearnedSkip(c.seriesId, { season: c.season, episode: c.episode, region, start: interval.start, end: interval.end });
+    };
+    useEffect(() => {
+      seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+      return () => {
+        commitLearnedSkipRef.current(flushSeekTracker(seekTrackerRef.current));
+        seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+        learnCtxRef.current = null;
+      };
+    }, [learnedSeriesId, season, episode, url]);
+    useEffect(() => {
+      if (!learnSkipsOn || !learnedSeriesId || season == null || episode == null) return;
+      if (!hasStarted || !hasStartedForUrlRef.current || !(totalDuration > 0)) return;
+      learnCtxRef.current = { seriesId: learnedSeriesId, season, episode, duration: totalDuration };
+      const result = trackSeekSample(seekTrackerRef.current, realTime, Date.now(), isPlaying);
+      seekTrackerRef.current = result.state;
+      commitLearnedSkipRef.current(result.done);
+    }, [realTime, isPlaying, hasStarted, learnSkipsOn, learnedSeriesId, season, episode, totalDuration]);
     function resumeAfterSleepPrompt() {
       setStillWatchingReason("episodes");
       if (useMpv) {
@@ -31810,11 +33324,30 @@ ${cue.text}`).join("\n\n")}
         label: track.title ?? void 0
       }));
     }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine, detectedEmbeddedLanguages, t]);
+    const librarySubtitleOptions = useMemo(() => (librarySubtitles ?? []).map((sub, index) => {
+      const language = toSubtitleLangGroup(sub.language || sub.label);
+      return {
+        language,
+        lang3: language,
+        url: sub.url,
+        id: `library:${index}:${sub.url}`,
+        source: "library",
+        hashMatch: true,
+        release: sub.label,
+        label: sub.label,
+        ...sub.forced ? { forced: true } : {},
+        ...sub.sdh ? { sdh: true } : {}
+      };
+    }), [librarySubtitles]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
         ...externalSubtitles,
-        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
+        // Serverns sidofiler: lika mycket filens egna som de inbäddade spåren.
+        // Tvingade (bara skyltar) sist, så automatvalet aldrig tar dem före en hel text.
+        ...librarySubtitleOptions.filter((option) => !option.forced),
+        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions],
+        ...librarySubtitleOptions.filter((option) => option.forced)
       ];
       const seen = /* @__PURE__ */ new Set();
       return merged.filter((option) => {
@@ -31822,7 +33355,7 @@ ${cue.text}`).join("\n\n")}
         seen.add(option.id);
         return true;
       });
-    }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
+    }, [subtitles, embeddedSubtitleOptions, externalSubtitles, librarySubtitleOptions]);
     const applySyncedSubtitle = useCallback(async (sub, vttUrl) => {
       const current2 = activeSubIdRef.current;
       if (!current2 || current2.startsWith("embedded:")) {
@@ -32108,18 +33641,20 @@ ${cue.text}`).join("\n\n")}
     }
     const volumeCeiling = useMpv ? 2 : 1;
     function pushVolume(val) {
+      const out = val * spokenDuckRef.current;
       if (useMpv) {
-        if (val > 1) void mpvCommand2(["set_property", "volume-max", 200]);
-        void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
+        if (out > 1) void mpvCommand2(["set_property", "volume-max", 200]);
+        void mpvCommand2(["set_property", "volume", Math.round(out * 100)]);
         void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
         return;
       }
       const v = videoRef.current;
       if (!v) return;
-      v.volume = Math.min(1, val);
+      v.volume = Math.min(1, out);
       v.muted = val === 0;
     }
     function applyVolume(raw) {
+      sleepFadeCancelRef.current();
       const val = Math.min(volumeCeiling, Math.max(0, raw));
       setVolume(val);
       setMuted(val === 0);
@@ -32140,6 +33675,17 @@ ${cue.text}`).join("\n\n")}
     const shouldShowSkipIntroButton = Boolean(
       hasStarted && !autoSkipIntro && activeIntro && introDataReady && !skipButtonExpired && !skipIntroDismissed
     );
+    const learnedSkipCtx = {
+      duration: totalDuration,
+      intro: introSegment ? { start: introSegment.startMs / 1e3, end: introSegment.endMs / 1e3 } : null,
+      outro: outroSegment ? { start: outroSegment.startMs / 1e3, end: outroSegment.endMs / 1e3 } : null
+    };
+    const activeLearnedSkip = learnSkipsOn && introDataReady && !activeIntro ? [usableLearnedSkip(learnedSkips.start, "start", learnedSkipCtx), usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx)].find((seg) => seg != null && realTime >= seg.start && realTime < seg.end) ?? null : null;
+    const shouldShowLearnedSkipButton = Boolean(
+      hasStarted && activeLearnedSkip && !skipIntroDismissed && !(skipButtonAutoHideSeconds > 0 && activeLearnedSkip && realTime - activeLearnedSkip.start > skipButtonAutoHideSeconds)
+    );
+    const skipButtonUp = shouldShowSkipIntroButton && activeIntro != null || shouldShowLearnedSkipButton;
+    const skipButtonEnd = shouldShowSkipIntroButton && activeIntro ? activeIntro.endMs / 1e3 : activeLearnedSkip?.end ?? 0;
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted || hasStarted;
     const collapseMpvTopBar = useMpv && !controlsVisible && !desktopFullscreen;
     const isLastEpisodeOfSeason = useMemo(() => {
@@ -32178,11 +33724,30 @@ ${cue.text}`).join("\n\n")}
     const creditsModeAllowed = Boolean(
       getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? getCreditsRecommendationsTv() && isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
     );
+    const nextEpAfterLastSubSeconds = getNextEpAfterLastSubSeconds();
+    const hasLearnedEndSkip = learnSkipsOn && usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx) != null;
+    const creditsCueSource = useMemo(() => {
+      if (cues.length > 0) return cues;
+      const vtt = activeSubId ? externalVttRef.current.get(activeSubId) : null;
+      return vtt ? parseVtt(vtt) : [];
+    }, [cues, activeSubId]);
+    const roundedDuration = Math.round(totalDuration);
+    const subtitleCreditsStart = useMemo(() => {
+      if (mediaType !== "tv" || nextEpAfterLastSubSeconds <= 0) return null;
+      if (!introDataReady || outroSegment || hasLearnedEndSkip) return null;
+      if (!durationConfirmed || roundedDuration <= 0 || creditsCueSource.length === 0) return null;
+      const result = estimateCreditsStartFromCues(creditsCueSource, roundedDuration, {
+        offsetSeconds: subDelay,
+        delayAfterLastLineSeconds: nextEpAfterLastSubSeconds
+      });
+      queueDebugLog(`[credits-subs] ${result.reason}${result.start != null ? ` vid ${Math.round(result.start)}s` : ""} av ${roundedDuration}s (${creditsCueSource.length} rader, +${nextEpAfterLastSubSeconds}s)`);
+      return result.start;
+    }, [mediaType, nextEpAfterLastSubSeconds, introDataReady, outroSegment, hasLearnedEndSkip, durationConfirmed, roundedDuration, creditsCueSource, subDelay]);
     const creditsTriggerSeconds = (() => {
       if (totalDuration <= 600) return null;
       const tailSeconds = (mediaType === "tv" ? getCreditsThresholdMinutesTv() : getCreditsThresholdMinutes()) * 60;
       const lateThreshold = Math.max(0, totalDuration - tailSeconds);
-      if (!outroSegment) return lateThreshold;
+      if (!outroSegment) return subtitleCreditsStart ?? lateThreshold;
       const outroEndsAt = outroSegment.endMs / 1e3;
       if (totalDuration - outroEndsAt > tailSeconds) return lateThreshold;
       return outroSegment.startMs / 1e3;
@@ -32414,16 +33979,34 @@ ${cue.text}`).join("\n\n")}
       outroFiredRef.current = true;
       markOutroFired(true);
       if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current && durationConfirmedRef.current) {
-        setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-        removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
-        watchedMarkedRef.current = true;
+        if (markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) watchedMarkedRef.current = true;
       }
-      onOutroStartRef.current?.();
+      onOutroStartRef.current?.({ source: "segment" });
     }, [episode, hasStarted, imdbId, mediaType, outroSegment, realTime, season, wikiTmdbId]);
-    const handleExternalSubtitleFile = useCallback(async (file) => {
+    const subtitleCreditsArmedRef = useRef(false);
+    useEffect(() => {
+      subtitleCreditsArmedRef.current = false;
+    }, [url]);
+    useEffect(() => {
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
+      if (outroFiredRef.current || outroSegment || subtitleCreditsStart == null) return;
+      if (realTime < subtitleCreditsStart) {
+        subtitleCreditsArmedRef.current = false;
+        return;
+      }
+      if (!subtitleCreditsArmedRef.current) {
+        subtitleCreditsArmedRef.current = true;
+        return;
+      }
+      if (totalDuration - realTime < 5) return;
+      outroFiredRef.current = true;
+      queueDebugLog(`[credits-subs] kortet vid ${Math.round(realTime)}s (uppskattat ${Math.round(subtitleCreditsStart)}s)`);
+      onOutroStartRef.current?.({ source: "subtitles" });
+    }, [hasStarted, outroSegment, subtitleCreditsStart, realTime, totalDuration]);
+    const handleExternalSubtitleFile = useCallback(async (file2) => {
       setSubtitleLoadError(null);
       try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        const bytes = new Uint8Array(await file2.arrayBuffer());
         const decode = (label, fatal) => new TextDecoder(label, { fatal }).decode(bytes);
         let content2;
         if (bytes[0] === 255 && bytes[1] === 254 || bytes[0] === 254 && bytes[1] === 255) {
@@ -32439,7 +34022,7 @@ ${cue.text}`).join("\n\n")}
         const response = await fetch("/api/subtitles/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: file.name, content: content2 })
+          body: JSON.stringify({ name: file2.name, content: content2 })
         });
         if (!response.ok) throw new Error(`upload ${response.status}`);
         const payload = await response.json();
@@ -32451,11 +34034,11 @@ ${cue.text}`).join("\n\n")}
           lang3: "ext",
           url: payload.path,
           source: "external",
-          label: file.name
+          label: file2.name
         };
         externalVttRef.current.set(id, payload.vtt ?? null);
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
-          `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
+          `[ext-sub] ${file2.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
         setExternalSubtitles((current2) => [option, ...current2]);
@@ -33132,9 +34715,9 @@ ${cue.text}`).join("\n\n")}
             return;
           }
           const seq = clipRenderSeqRef.current;
-          const file = await prepareWebShareFile(rendered, name, clipMime(clip3.format));
+          const file2 = await prepareWebShareFile(rendered, name, clipMime(clip3.format));
           if (seq !== clipRenderSeqRef.current) return;
-          clipWebFileRef.current = file;
+          clipWebFileRef.current = file2;
           setClipShareState({ kind: "ready" });
           return;
         }
@@ -33179,6 +34762,11 @@ ${cue.text}`).join("\n\n")}
       gearValue(value)
     ] });
     const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
+    const toggleSleepFade = () => {
+      const next2 = !sleepFadeOn;
+      setSleepFade(next2);
+      setSleepFadeOn(next2);
+    };
     const nightLabel = (mode) => t(nightModeLabelKey(mode, true));
     const applySpeed = (next2) => {
       setPlaybackSpeedState(next2);
@@ -33193,6 +34781,8 @@ ${cue.text}`).join("\n\n")}
         playerIcon("clip", dtMoreIconClass),
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("clipTitle") })
       ] }, "clip") : null,
+      gearToggleRow("incognito", "incognito", t("incognitoToggle"), incognito, () => setIncognito(!incognito)),
+      spokenSubsSupported ? gearToggleRow("spokenSubs", "speak", t("spokenSubtitles"), spokenSubsOn, () => setSpokenSubtitles(!spokenSubsOn)) : null,
       gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
       gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
       gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
@@ -33203,6 +34793,11 @@ ${cue.text}`).join("\n\n")}
         setAutoSkipIntro(next2);
         setAutoSkipIntroState(next2);
       }) : null,
+      mediaType === "tv" ? gearToggleRow("learnSkips", "skip", t("plLearnSkips"), learnSkipsOn, () => setLearnSkipsEnabled(!learnSkipsOn)) : null,
+      mediaType === "tv" && learnedSeriesId && learnedHasData ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => forgetLearnedSkips(learnedSeriesId), className: dtMoreRowClass, children: [
+        gearRowIcon("skip", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plForgetLearnedSkips") })
+      ] }, "forgetLearnedSkips") : null,
       resolutionSwitch ? gearToggleRow("resolution", "resolution", t("matchResolution"), matchResolutionOn, () => {
         const next2 = !matchResolutionOn;
         setMatchResolution(next2);
@@ -33242,7 +34837,8 @@ ${cue.text}`).join("\n\n")}
         case "sleep":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
             gearSubHeader(t("plSleepTimer"), sleepStateLabel()),
-            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
+            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now()))),
+            gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade)
           ] });
         case "night":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -34010,11 +35606,101 @@ ${cue.text}`).join("\n\n")}
     const saidBufferRef = useRef([]);
     const saidText = isMpvEngine ? mpv.subText : rawSubtitleText;
     useEffect(() => {
-      const text = (saidText ?? "").trim();
-      if (!text) return;
+      const text2 = (saidText ?? "").trim();
+      if (!text2) return;
       const now2 = realTimeRef.current;
-      saidBufferRef.current = pushCue(saidBufferRef.current, { text, start: now2 }, now2);
+      saidBufferRef.current = pushCue(saidBufferRef.current, { text: text2, start: now2 }, now2);
     }, [saidText]);
+    const [spokenSubsOn, setSpokenSubsOn] = useState(() => getSpokenSubtitles());
+    const [spokenSubsRate, setSpokenSubsRate] = useState(() => getSpokenSubtitlesRate());
+    const [spokenSubsSupported, setSpokenSubsSupported] = useState(false);
+    useEffect(() => {
+      setSpokenSubsSupported(spokenSubtitlesSupported());
+    }, []);
+    useEffect(() => onSpokenSubtitlesChanged(() => {
+      setSpokenSubsOn(getSpokenSubtitles());
+      setSpokenSubsRate(getSpokenSubtitlesRate());
+    }), []);
+    const spokenActive = spokenSubsOn && spokenSubsSupported;
+    const spokenUiLangRef = useRef(lang);
+    spokenUiLangRef.current = lang;
+    const spokenQueueRef = useRef(null);
+    const spokenRampRef = useRef({ timer: void 0, hold: void 0 });
+    const spokenRampTo = useCallback((target2, durationMs) => {
+      const ramp = spokenRampRef.current;
+      window.clearInterval(ramp.timer);
+      ramp.timer = void 0;
+      const from = spokenDuckRef.current;
+      if (from === target2) return;
+      const startedAt = Date.now();
+      const stepMs = isDroidEngine ? 90 : 40;
+      const step = () => {
+        const level = rampLevel(from, target2, Date.now() - startedAt, durationMs);
+        spokenDuckRef.current = level;
+        writeSpokenDuckRef.current();
+        if (level === target2) {
+          window.clearInterval(ramp.timer);
+          ramp.timer = void 0;
+        }
+      };
+      step();
+      if (spokenDuckRef.current !== target2) ramp.timer = window.setInterval(step, stepMs);
+    }, [isDroidEngine]);
+    const spokenSpeakingChange = useCallback((speaking) => {
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      ramp.hold = void 0;
+      if (speaking) {
+        spokenRampTo(DUCK_LEVEL, DUCK_ATTACK_MS);
+        return;
+      }
+      ramp.hold = window.setTimeout(() => spokenRampTo(1, DUCK_RELEASE_MS), DUCK_HOLD_MS);
+    }, [spokenRampTo]);
+    const spokenStopNow = useCallback(() => {
+      spokenQueueRef.current?.reset();
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      window.clearInterval(ramp.timer);
+      ramp.hold = void 0;
+      ramp.timer = void 0;
+      if (spokenDuckRef.current !== 1) {
+        spokenDuckRef.current = 1;
+        writeSpokenDuckRef.current();
+      }
+    }, []);
+    useEffect(() => {
+      if (!spokenActive) {
+        spokenStopNow();
+        return;
+      }
+      if (!spokenQueueRef.current) {
+        const engine = createSpeechEngine(() => spokenUiLangRef.current);
+        if (!engine) return;
+        spokenQueueRef.current = new SpokenSubtitleQueue(engine, { onSpeakingChange: (speaking) => spokenSpeakingChange(speaking) });
+      }
+    }, [spokenActive]);
+    useEffect(() => () => spokenStopNow(), [spokenStopNow]);
+    const activeSubtitleOption = activeSubId ? subtitleOptions.find((o) => o.id === activeSubId) ?? null : null;
+    const spokenLang = normalizeLanguageCode(activeSubtitleOption?.lang3 || activeSubtitleOption?.language) ?? null;
+    useEffect(() => {
+      spokenQueueRef.current?.configure({ lang: spokenLang, rate: speechRateFor(spokenSubsRate) });
+    }, [spokenActive, spokenLang, spokenSubsRate]);
+    useEffect(() => {
+      if (!isPlaying) spokenQueueRef.current?.pause();
+    }, [isPlaying]);
+    useEffect(() => {
+      spokenQueueRef.current?.reset();
+    }, [url, activeSubId]);
+    const spokenLastTimeRef = useRef(realTime);
+    useEffect(() => {
+      const prev = spokenLastTimeRef.current;
+      spokenLastTimeRef.current = realTime;
+      if (Math.abs(realTime - prev) > 3) spokenQueueRef.current?.reset();
+    }, [realTime]);
+    useEffect(() => {
+      if (!spokenActive || !isPlaying) return;
+      spokenQueueRef.current?.line(saidText ?? "");
+    }, [spokenActive, isPlaying, saidText]);
     const couchRef = useRef({ snapshot: () => null, run: () => {
     }, said: () => [] });
     couchRef.current = {
@@ -34336,17 +36022,17 @@ ${cue.text}`).join("\n\n")}
     const gestureHudTimerRef = useRef(null);
     const gestureRef = useRef(null);
     const GESTURE_SEEK_SPAN_SECONDS = 90;
-    const showGestureHud = (kind, value, text) => {
+    const showGestureHud = (kind, value, text2) => {
       if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
-      setGestureHud({ kind, value, text });
+      setGestureHud({ kind, value, text: text2 });
     };
     const keySeekHudRef = useRef({ total: 0, at: 0 });
     showKeySeekHudRef.current = (delta) => {
       const now2 = Date.now();
-      const state2 = keySeekHudRef.current;
-      state2.total = now2 - state2.at < 900 ? state2.total + delta : delta;
-      state2.at = now2;
-      showGestureHud("skip", state2.total);
+      const state3 = keySeekHudRef.current;
+      state3.total = now2 - state3.at < 900 ? state3.total + delta : delta;
+      state3.at = now2;
+      showGestureHud("skip", state3.total);
       gestureHudTimerRef.current = window.setTimeout(() => setGestureHud(null), 700);
     };
     const onGesturePointerDown = (event) => {
@@ -34647,7 +36333,7 @@ ${cue.text}`).join("\n\n")}
     const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
     const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
     const phoneClusterIds = phoneDedicatedIds.filter((id) => showsControl(id) && Boolean(phoneControls[id]));
-    const phoneStateClass = (state2, idleClass = "text-slate-200") => state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
+    const phoneStateClass = (state3, idleClass = "text-slate-200") => state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
     const renderPhoneTile = (id, spec) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -35136,8 +36822,8 @@ ${cue.text}`).join("\n\n")}
                               const foundE = Number(m[2]);
                               if (foundS !== season || foundE !== episode) {
                                 const pad2 = (n) => String(n).padStart(2, "0");
-                                const text = t("vpWrongEpisodeWarning").replace("{found}", `S${pad2(foundS)}E${pad2(foundE)}`).replace("{wanted}", `S${pad2(season)}E${pad2(episode)}`);
-                                setSourceMismatchWarning(text);
+                                const text2 = t("vpWrongEpisodeWarning").replace("{found}", `S${pad2(foundS)}E${pad2(foundE)}`).replace("{wanted}", `S${pad2(season)}E${pad2(episode)}`);
+                                setSourceMismatchWarning(text2);
                                 if (sourceMismatchTimerRef.current) window.clearTimeout(sourceMismatchTimerRef.current);
                                 sourceMismatchTimerRef.current = window.setTimeout(() => setSourceMismatchWarning(null), 12e3);
                                 void emitDesktopPlaybackTelemetry({ stage: "player.lifecycle", status: "error", detail: "source_episode_mismatch", context: { wanted: `S${pad2(season)}E${pad2(episode)}`, found: `S${pad2(foundS)}E${pad2(foundE)}`, playbackTraceId } });
@@ -35204,6 +36890,7 @@ ${cue.text}`).join("\n\n")}
                       }
                     },
                     onVolumeChange: (e) => {
+                      if (sleepFadeRef.current < 1) return;
                       setMuted(e.currentTarget.muted);
                       setVolume(e.currentTarget.volume);
                     },
@@ -35729,7 +37416,7 @@ ${cue.text}`).join("\n\n")}
                                 /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
                                   /* @__PURE__ */ jsx("div", { className: isActive ? dtActiveTextClass : "text-slate-300", children: sub.source === "external" ? sub.label ?? t("subtitleExternalGroup") : LANG_NAMES[selectedLang] ?? selectedLang }),
                                   /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-500", children: secondaryBlocked ? sub.id === activeSubId ? t("subtitleSlotPrimary") : t("subtitleSecondaryEmbeddedUnsupported") : [
-                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : t("subtitleProvider"),
+                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : sub.source === "library" ? sub.label ? `${t("subtitleLibraryTrack")} \xB7 ${sub.label}` : t("subtitleLibraryTrack") : t("subtitleProvider"),
                                     sub.forced ? t("subtitleForced") : null,
                                     sub.sdh ? t("subtitleSdh") : null
                                   ].filter(Boolean).join(" \xB7 ") })
@@ -35762,6 +37449,21 @@ ${cue.text}`).join("\n\n")}
                             ]
                           }
                         ) }),
+                        spokenSubsSupported && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2", children: /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            "aria-pressed": spokenSubsOn,
+                            onClick: () => setSpokenSubtitles(!spokenSubsOn),
+                            className: `flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition ${spokenSubsOn ? "border-white/25 bg-white/10 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"}`,
+                            title: t("spokenSubtitlesDesc"),
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("spokenSubtitles") }),
+                              /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(spokenSubsOn ? "on" : "off") })
+                            ]
+                          }
+                        ) }),
                         /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
                           /* @__PURE__ */ jsx(
                             "input",
@@ -35771,9 +37473,9 @@ ${cue.text}`).join("\n\n")}
                               accept: ".srt,.vtt,.ass,.ssa,.sub,.txt,text/vtt,text/plain,application/x-subrip",
                               className: "hidden",
                               onChange: (event) => {
-                                const file = event.target.files?.[0];
+                                const file2 = event.target.files?.[0];
                                 event.target.value = "";
-                                if (file) void handleExternalSubtitleFile(file);
+                                if (file2) void handleExternalSubtitleFile(file2);
                               }
                             }
                           ),
@@ -35868,6 +37570,15 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ] }) }),
+                sleepFade < 1 && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    "data-sleep-fade-dim": "",
+                    "aria-hidden": true,
+                    className: "pointer-events-none absolute inset-0 z-[57] bg-black",
+                    style: { opacity: sleepDimOpacity(sleepFade), transition: "opacity 1.2s linear" }
+                  }
+                ),
                 showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
                   /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
@@ -35921,7 +37632,7 @@ ${cue.text}`).join("\n\n")}
                   },
                   momentNotice.id
                 ) : null,
-                shouldShowSkipIntroButton && activeIntro && openSurface === null && /* @__PURE__ */ jsxs(
+                skipButtonUp && openSurface === null && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     inert: !controlsVisible,
@@ -35940,10 +37651,10 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
+                          onClick: () => seekToAbsolute(skipButtonEnd),
                           className: "flex items-center gap-2 py-1.5 pr-2 text-sm font-medium text-white",
                           children: [
-                            t("skipIntro"),
+                            shouldShowSkipIntroButton && activeIntro ? t("skipIntro") : t("skipLearned"),
                             /* @__PURE__ */ jsx("svg", { className: "h-[15px] w-[15px]", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) })
                           ]
                         }
@@ -36808,7 +38519,8 @@ ${cue.text}`).join("\n\n")}
                                 },
                                 String(mode)
                               );
-                            })
+                            }),
+                            /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] pt-1", children: gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade) })
                           ]
                         }
                       ),
@@ -37052,6 +38764,10 @@ ${cue.text}`).join("\n\n")}
       init_profile_storage_shim();
       init_profile_avatar();
       init_sleep_timer();
+      init_playback_settings();
+      init_spoken_subtitles();
+      init_spoken_subtitles_engine();
+      init_spoken_subtitles_settings();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -37063,9 +38779,12 @@ ${cue.text}`).join("\n\n")}
       init_android_media_keys();
       init_resume_playback();
       init_subtitle_autopick();
-      init_watched_episodes();
-      init_watched_movies();
+      init_playback_watched();
+      init_incognito();
+      init_use_incognito();
       init_scrobble_fanout();
+      init_learned_skip();
+      init_learned_skip_store();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -37103,6 +38822,7 @@ ${cue.text}`).join("\n\n")}
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
+      init_credits_from_subs();
       init_player_reveal_hold();
       init_player_silent_start();
       init_credits_recommendations();
@@ -37178,6 +38898,299 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // lib/cast-recognition-core.ts
+  function normalizeTitle3(value) {
+    if (typeof value !== "string") return null;
+    const normalized = value.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+  function stamp(value) {
+    const t = typeof value === "string" ? Date.parse(value) : Number.NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function keepLatest(map, key, at) {
+    const prev = map.get(key);
+    if (prev === void 0 || at > prev) map.set(key, at);
+  }
+  function buildWatchedIndex(movies, episodes) {
+    const index = { movies: /* @__PURE__ */ new Map(), moviesByTitle: /* @__PURE__ */ new Map(), series: /* @__PURE__ */ new Map() };
+    for (const m of movies) {
+      const at = stamp(m.watchedAt);
+      if (m.tmdbId && /^\d+$/.test(m.tmdbId)) keepLatest(index.movies, m.tmdbId, at);
+      else {
+        const title = normalizeTitle3(m.title);
+        if (title && typeof m.year === "number") keepLatest(index.moviesByTitle, `${title}|${m.year}`, at);
+      }
+    }
+    for (const e of episodes) {
+      if (e.tmdbId && /^\d+$/.test(e.tmdbId)) keepLatest(index.series, e.tmdbId, stamp(e.watchedAt));
+    }
+    return index;
+  }
+  function isWatchedIndexEmpty(index) {
+    return index.movies.size === 0 && index.moviesByTitle.size === 0 && index.series.size === 0;
+  }
+  function encodeCredit(c) {
+    const title = c.title.replace(/\s+/g, " ").trim().slice(0, TITLE_MAX_CHARS);
+    return `${c.mediaType === "tv" ? "t" : "m"}${c.id}|${c.year ?? ""}|${title}`;
+  }
+  function decodeCredit(raw) {
+    const match = /^([mt])(\d+)\|(\d{0,4})\|(.*)$/.exec(raw);
+    if (!match) return null;
+    const year = match[3] ? Number(match[3]) : null;
+    return { mediaType: match[1] === "t" ? "tv" : "movie", id: match[2], year, title: match[4] };
+  }
+  function compactCreditsFromApi(credits) {
+    if (!Array.isArray(credits)) return [];
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const raw of credits) {
+      if (!raw || typeof raw !== "object") continue;
+      const r = raw;
+      const id = typeof r.id === "number" || typeof r.id === "string" ? String(r.id) : "";
+      if (!/^\d+$/.test(id)) continue;
+      const mediaType = r.mediaType === "tv" ? "tv" : "movie";
+      const title = typeof r.title === "string" ? r.title.trim() : "";
+      if (!title) continue;
+      const key = `${mediaType}-${id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ mediaType, id, title, year: typeof r.year === "number" && Number.isFinite(r.year) ? r.year : null });
+      if (out.length >= CREDITS_PER_PERSON) break;
+    }
+    return out;
+  }
+  function watchedAtOf(c, index) {
+    const id = String(c.id);
+    if (c.mediaType === "tv") return index.series.get(id);
+    const at = index.movies.get(id);
+    if (at !== void 0 || c.year == null) return at;
+    const title = normalizeTitle3(c.title);
+    return title ? index.moviesByTitle.get(`${title}|${c.year}`) : void 0;
+  }
+  function matchWatchedCreditItems(credits, index, exclude = null) {
+    const hits = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const c of credits) {
+      if (exclude && c.mediaType === exclude.mediaType && String(c.id) === exclude.id) continue;
+      const at = watchedAtOf(c, index);
+      if (at === void 0) continue;
+      const key = `${c.mediaType}-${c.id}`;
+      const norm = normalizeTitle3(c.title) ?? c.title;
+      if (seen.has(key) || seen.has(norm)) continue;
+      seen.add(key);
+      seen.add(norm);
+      hits.push({ credit: c, at });
+    }
+    hits.sort((a, b) => b.at - a.at);
+    return hits.map((h) => h.credit);
+  }
+  function matchWatchedCredits(credits, index, exclude, limit = 3) {
+    return matchWatchedCreditItems(credits, index, exclude).slice(0, Math.max(0, limit)).map((c) => c.title);
+  }
+  function parseCreditsCache(raw) {
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+      const out = {};
+      for (const [id, value] of Object.entries(parsed)) {
+        if (!/^\d+$/.test(id) || !value || typeof value !== "object") continue;
+        const v = value;
+        if (typeof v.at !== "number" || !Array.isArray(v.c)) continue;
+        out[id] = { at: v.at, c: v.c.filter((s) => typeof s === "string") };
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  }
+  function isCachedPersonFresh(entry, now2, ttlMs = CREDITS_TTL_MS) {
+    if (!entry) return false;
+    const age = now2 - entry.at;
+    return age >= 0 && age < ttlMs;
+  }
+  function putCachedPerson(file2, personId, credits, now2, max = CACHE_MAX_PERSONS) {
+    const next2 = { ...file2, [personId]: { at: now2, c: credits.map(encodeCredit) } };
+    const ids = Object.keys(next2);
+    if (ids.length <= max) return next2;
+    ids.sort((a, b) => next2[b].at - next2[a].at);
+    const trimmed = {};
+    for (const id of ids.slice(0, max)) trimmed[id] = next2[id];
+    return trimmed;
+  }
+  function creditsOf(entry) {
+    if (!entry) return [];
+    const out = [];
+    for (const raw of entry.c) {
+      const c = decodeCredit(raw);
+      if (c) out.push(c);
+    }
+    return out;
+  }
+  var MAX_PERSONS_PER_TITLE, CREDITS_TTL_MS, CACHE_MAX_PERSONS, CREDITS_PER_PERSON, TITLE_MAX_CHARS;
+  var init_cast_recognition_core = __esm({
+    "lib/cast-recognition-core.ts"() {
+      MAX_PERSONS_PER_TITLE = 6;
+      CREDITS_TTL_MS = 7 * 864e5;
+      CACHE_MAX_PERSONS = 80;
+      CREDITS_PER_PERSON = 200;
+      TITLE_MAX_CHARS = 60;
+    }
+  });
+
+  // lib/cast-recognition.ts
+  function loadFile() {
+    if (file) return file;
+    try {
+      file = parseCreditsCache(getItem(CACHE_KEY));
+    } catch {
+      file = {};
+    }
+    return file;
+  }
+  function scheduleSave() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      if (!file) return;
+      try {
+        setItem(CACHE_KEY, JSON.stringify(file));
+      } catch {
+      }
+    }, SAVE_DEBOUNCE_MS);
+  }
+  function getCachedCredits(personId, now2 = Date.now()) {
+    const entry = loadFile()[personId];
+    return isCachedPersonFresh(entry, now2) ? creditsOf(entry) : null;
+  }
+  function loadPersonCredits(personId) {
+    if (!/^\d+$/.test(personId)) return Promise.resolve(null);
+    const cached = getCachedCredits(personId);
+    if (cached) return Promise.resolve(cached);
+    const stale = loadFile()[personId];
+    const failed = failedAt.get(personId);
+    if (failed !== void 0 && Date.now() - failed < FAILURE_BACKOFF_MS) {
+      return Promise.resolve(stale ? creditsOf(stale) : null);
+    }
+    const running2 = inflight8.get(personId);
+    if (running2) return running2;
+    const request = (async () => {
+      try {
+        const data = await fetchApiJsonCached(
+          `/api/person?id=${encodeURIComponent(personId)}`,
+          { ttlMs: CREDITS_TTL_MS, retries: 0, priority: "low" }
+        );
+        const credits = compactCreditsFromApi(data?.person?.credits);
+        file = putCachedPerson(loadFile(), personId, credits, Date.now());
+        failedAt.delete(personId);
+        scheduleSave();
+        return credits;
+      } catch {
+        failedAt.set(personId, Date.now());
+        return stale ? creditsOf(stale) : null;
+      } finally {
+        inflight8.delete(personId);
+      }
+    })();
+    inflight8.set(personId, request);
+    return request;
+  }
+  function readWatchedIndex() {
+    try {
+      return buildWatchedIndex(getWatchedMovies(), getWatchedEpisodes());
+    } catch {
+      return buildWatchedIndex([], []);
+    }
+  }
+  function useWatchedIndex(enabled) {
+    const [index, setIndex] = useState(null);
+    useEffect(() => {
+      if (!enabled) return;
+      const refresh = () => setIndex(readWatchedIndex());
+      refresh();
+      const offs = [onWatchedMoviesChanged(refresh), onWatchedEpisodesChanged(refresh), onProfileChanged(refresh)];
+      return () => {
+        for (const off of offs) off();
+      };
+    }, [enabled]);
+    return index;
+  }
+  function useCastRecognition(input) {
+    const { active: active3, exclude, limit = 3 } = input;
+    const ids = useMemo(
+      () => Array.from(new Set(input.personIds.map(String).filter((id) => /^\d+$/.test(id)))).slice(0, MAX_PERSONS_PER_TITLE),
+      [input.personIds.slice(0, MAX_PERSONS_PER_TITLE * 2).join(",")]
+    );
+    const index = useWatchedIndex(active3 && ids.length > 0);
+    const [credits, setCredits] = useState({});
+    useEffect(() => {
+      if (!active3 || !index || isWatchedIndexEmpty(index) || ids.length === 0) return;
+      let cancelled = false;
+      for (const id of ids) {
+        const cached = getCachedCredits(id);
+        if (cached) {
+          setCredits((prev) => prev[id] === void 0 ? { ...prev, [id]: cached } : prev);
+          continue;
+        }
+        void loadPersonCredits(id).then((list) => {
+          if (cancelled || !list) return;
+          setCredits((prev) => ({ ...prev, [id]: list }));
+        });
+      }
+      return () => {
+        cancelled = true;
+      };
+    }, [active3, index, ids]);
+    const excludeKey = exclude ? `${exclude.mediaType}-${exclude.id}` : "";
+    return useMemo(() => {
+      const out = {};
+      if (!index || isWatchedIndexEmpty(index)) return out;
+      for (const id of ids) {
+        const list = credits[id];
+        if (!list) continue;
+        const titles = matchWatchedCredits(list, index, exclude, limit);
+        if (titles.length > 0) out[id] = titles;
+      }
+      return out;
+    }, [credits, index, ids, excludeKey, limit]);
+  }
+  function primePersonCredits(personId, credits) {
+    const id = String(personId);
+    if (!/^\d+$/.test(id) || getCachedCredits(id)) return;
+    const list = compactCreditsFromApi(credits);
+    if (list.length === 0) return;
+    file = putCachedPerson(loadFile(), id, list, Date.now());
+    scheduleSave();
+  }
+  function useWatchedCreditsOf(credits) {
+    const index = useWatchedIndex(Boolean(credits && credits.length > 0));
+    return useMemo(() => {
+      if (!credits || credits.length === 0 || !index || isWatchedIndexEmpty(index)) return [];
+      return matchWatchedCreditItems(credits, index);
+    }, [credits, index]);
+  }
+  var CACHE_KEY, FAILURE_BACKOFF_MS, SAVE_DEBOUNCE_MS, file, saveTimer, inflight8, failedAt;
+  var init_cast_recognition = __esm({
+    "lib/cast-recognition.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_api_json_cache();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      init_cast_recognition_core();
+      CACHE_KEY = "cast_credits_cache_v1";
+      FAILURE_BACKOFF_MS = 10 * 6e4;
+      SAVE_DEBOUNCE_MS = 400;
+      file = null;
+      saveTimer = null;
+      inflight8 = /* @__PURE__ */ new Map();
+      failedAt = /* @__PURE__ */ new Map();
+    }
+  });
+
   // lib/stremio/addons-storage.ts
   var init_addons_storage = __esm({
     "lib/stremio/addons-storage.ts"() {
@@ -37231,31 +39244,31 @@ ${cue.text}`).join("\n\n")}
   });
 
   // lib/tv-tab-heading.tsx
-  function useRepeatsTvTabHeading(text) {
+  function useRepeatsTvTabHeading(text2) {
     const label = useContext(TvTabHeadingContext);
-    if (!label || typeof text !== "string") return false;
-    return normalize2(text) === normalize2(label);
+    if (!label || typeof text2 !== "string") return false;
+    return normalize3(text2) === normalize3(label);
   }
-  var TvTabHeadingContext, normalize2;
+  var TvTabHeadingContext, normalize3;
   var init_tv_tab_heading = __esm({
     "lib/tv-tab-heading.tsx"() {
       "use client";
       init_react_shim();
       init_jsx_runtime_shim();
       TvTabHeadingContext = createContext(null);
-      normalize2 = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
+      normalize3 = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
     }
   });
 
   // lib/settings-heading.ts
-  function normalize3(value) {
+  function normalize4(value) {
     if (typeof value === "string") return value.trim().toLowerCase().replace(/\s+/g, " ");
     if (typeof value === "number") return String(value);
     return null;
   }
   function eyebrowRepeatsTitle(eyebrow, title) {
-    const a = normalize3(eyebrow);
-    const b = normalize3(title);
+    const a = normalize4(eyebrow);
+    const b = normalize4(title);
     if (a === null || b === null || a === "" || b === "") return false;
     return a === b;
   }
@@ -37473,20 +39486,20 @@ ${cue.text}`).join("\n\n")}
       focusOnOpen.current = false;
       optionRefs.current[Math.max(0, selectedIndex)]?.focus();
     }, [open2, menuPos, selectedIndex]);
-    const close = (returnFocus) => {
+    const close2 = (returnFocus) => {
       setOpen(false);
       if (returnFocus) triggerRef.current?.focus();
     };
     const choose = (o, returnFocus) => {
       if (onChange) onChange(o.value);
-      close(returnFocus);
+      close2(returnFocus);
     };
     const onTriggerKeyDown = (e) => {
       if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         if (open2) {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") optionRefs.current[Math.max(0, selectedIndex)]?.focus();
-          else close(false);
+          else close2(false);
           return;
         }
         focusOnOpen.current = true;
@@ -37494,7 +39507,7 @@ ${cue.text}`).join("\n\n")}
       } else if (e.key === "Escape" && open2) {
         e.preventDefault();
         e.stopPropagation();
-        close(false);
+        close2(false);
       }
     };
     const onMenuKeyDown = (e) => {
@@ -37526,11 +39539,11 @@ ${cue.text}`).join("\n\n")}
         case "Escape":
           e.preventDefault();
           e.stopPropagation();
-          close(true);
+          close2(true);
           break;
         case "Tab":
           e.preventDefault();
-          close(true);
+          close2(true);
           break;
       }
     };
@@ -38091,7 +40104,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
-    const raw = getScopedStorageItem(KEY20);
+    const raw = getScopedStorageItem(KEY21);
     return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
@@ -38100,12 +40113,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY20, DEFAULT_TV_KEYBOARD_MODE;
+  var KEY21, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY20 = "tv_keyboard_mode_v1";
+      KEY21 = "tv_keyboard_mode_v1";
       DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
@@ -38208,8 +40221,8 @@ ${cue.text}`).join("\n\n")}
       setValue(value + (shift && !numeric ? char.toUpperCase() : char));
       setShift(false);
     };
-    const insert = (text) => {
-      const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
+    const insert = (text2) => {
+      const cleaned = numeric ? text2.replace(/\D/g, "") : text2.replace(/\s+/g, " ");
       if (!cleaned) return;
       setValue((current2) => clamp2(current2 + cleaned));
     };
@@ -38230,10 +40243,10 @@ ${cue.text}`).join("\n\n")}
         insert(event.key);
       };
       const onPaste = (event) => {
-        const text = event.clipboardData?.getData("text");
-        if (!text) return;
+        const text2 = event.clipboardData?.getData("text");
+        if (!text2) return;
         event.preventDefault();
-        insert(text);
+        insert(text2);
       };
       window.addEventListener("keydown", onKeyDown, true);
       window.addEventListener("paste", onPaste, true);
@@ -38616,6 +40629,15 @@ ${cue.text}`).join("\n\n")}
       else if (sort === "popularity") list.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
       return list;
     }, [data, debouncedQuery, sort, lang]);
+    const seenCredits = useWatchedCreditsOf(person?.credits ?? null);
+    useEffect(() => {
+      if (person?.credits) primePersonCredits(person.id, person.credits);
+    }, [person]);
+    const castRecognition = useCastRecognition({
+      personIds: (data?.cast ?? []).map((member) => member.id),
+      active: data != null && tab === "cast" && personId == null,
+      exclude: { mediaType, id: tmdbId }
+    });
     const visibleCrew = useMemo(() => {
       let list = crew.filter((member) => member.department === tab);
       if (debouncedQuery) list = list.filter((member) => `${member.name} ${member.job}`.toLowerCase().includes(debouncedQuery));
@@ -38822,7 +40844,8 @@ ${cue.text}`).join("\n\n")}
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-0.5 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 sm:pt-3.5", children: [
                     /* @__PURE__ */ jsx("p", { className: `truncate text-slate-100 transition group-hover:text-white text-sm`, children: member.name }),
                     /* @__PURE__ */ jsx("p", { className: `truncate text-slate-400 text-xs`, children: member.character }),
-                    episodeLabel(member.episodeCount) ? /* @__PURE__ */ jsx("p", { className: "truncate text-slate-500 text-[11px]", children: episodeLabel(member.episodeCount) }) : null
+                    episodeLabel(member.episodeCount) ? /* @__PURE__ */ jsx("p", { className: "truncate text-slate-500 text-[11px]", children: episodeLabel(member.episodeCount) }) : null,
+                    castRecognition[String(member.id)] ? /* @__PURE__ */ jsx("p", { "data-cast-seen-in": "", className: "line-clamp-2 pt-0.5 text-xs leading-snug text-accent-400/80", children: t("castSeenIn").replace("{titles}", castRecognition[String(member.id)].join(", ")) }) : null
                   ] })
                 ]
               },
@@ -38932,7 +40955,8 @@ ${cue.text}`).join("\n\n")}
                 personName: person?.name ?? "",
                 defaultExpanded: true,
                 variant: "sidebar",
-                onCreditClick: (credit) => onOpenCredit({ id: credit.id, mediaType: credit.mediaType })
+                onCreditClick: (credit) => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
+                seenCredits
               }
             ),
             (person?.credits?.length ?? 0) > 0 ? /* @__PURE__ */ jsxs("div", { className: "mt-4", children: [
@@ -38987,6 +41011,26 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 !isTv || bioClipped || bioExpanded ? /* @__PURE__ */ jsx("button", { type: "button", ...station, onClick: () => setBioExpanded((value) => !value), className: "mt-2.5 text-[0.65rem] font-normal uppercase tracking-[0.22em] text-slate-400 transition hover:text-white focus-visible:text-white focus-visible:outline-none", children: bioExpanded ? t("readLess") : t("readMore") }) : null
+              ] }) : null,
+              seenCredits.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-person-seen-in": "", children: [
+                /* @__PURE__ */ jsxs("div", { className: "mb-2.5 flex items-baseline gap-3", children: [
+                  /* @__PURE__ */ jsx("p", { className: `font-semibold text-slate-50 ${isTv ? "text-lg sm:text-2xl" : "text-base"}`, children: t("personSeenIn") }),
+                  /* @__PURE__ */ jsx("p", { className: `text-slate-500 text-xs`, children: t("personSeenInSorted") })
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]", ...isTv ? { "data-row": "" } : {}, children: seenCredits.map((credit) => /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    ...station,
+                    onClick: () => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
+                    className: `focus-poster-ring group shrink-0 text-left ${isTv ? "w-[104px] sm:w-[150px]" : "w-[104px] sm:w-[120px]"}`,
+                    children: [
+                      /* @__PURE__ */ jsx("div", { className: "focus-poster-surface relative aspect-[2/3] overflow-hidden rounded-[10px] bg-white/5 ring-1 ring-white/10 transition group-hover:ring-white/40", children: credit.posterUrl ? /* @__PURE__ */ jsx("img", { src: credit.posterUrl, alt: credit.title, loading: "lazy", className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx(InitialTile, { name: credit.title, textClass: "text-2xl" }) }),
+                      /* @__PURE__ */ jsx("p", { className: `mt-1.5 truncate text-slate-300 ${isTv ? "text-xs sm:text-base" : "text-xs"}`, children: credit.title })
+                    ]
+                  },
+                  `seen-${credit.mediaType}-${credit.id}`
+                )) })
               ] }) : null,
               person.topCredits.length > 0 ? /* @__PURE__ */ jsxs("div", { children: [
                 /* @__PURE__ */ jsxs("div", { className: "mb-2.5 flex items-baseline gap-3", children: [
@@ -39056,6 +41100,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_focus_shim();
       init_wiki_request_cache();
       init_api_json_cache();
+      init_cast_recognition();
       init_person_banner();
       init_tv_settings_rows();
       init_jsx_runtime_shim();
@@ -39100,8 +41145,8 @@ ${cue.text}`).join("\n\n")}
   });
 
   // components/series-lock/copy.ts
-  function fill(text, vars) {
-    return text.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
+  function fill(text2, vars) {
+    return text2.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
   }
   function joinNames(names, t) {
     if (names.length <= 1) return names[0] ?? "";
@@ -39343,11 +41388,11 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function LockedLine({ waitingFor, text }) {
+  function LockedLine({ waitingFor, text: text2 }) {
     const avatar = getProfiles().find((p) => p.id === waitingFor[0]);
     return /* @__PURE__ */ jsxs("p", { "data-series-lock-next": "", className: "mt-1 flex items-center gap-1.5 text-[0.6875rem] text-slate-300", children: [
       avatar ? /* @__PURE__ */ jsx(ProfileAvatar, { profile: avatar, className: "h-[1.125rem] w-[1.125rem] shrink-0 text-[0.5rem]" }) : null,
-      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text })
+      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text2 })
     ] });
   }
   var init_next_episode_card = __esm({
@@ -39931,6 +41976,7 @@ ${cue.text}`).join("\n\n")}
     sortLanguageOptions: () => sortLanguageOptions,
     spawnPluginDesktopCommand: () => spawnPluginDesktopCommand,
     stopLibretroGame: () => stopLibretroGame,
+    switchNativeSource: () => switchNativeSource,
     syncLocalDataToTrakt: () => syncLocalDataToTrakt,
     toggleMovieWatched: () => toggleMovieWatched,
     toggleWatchlist: () => toggleWatchlist,
@@ -40053,9 +42099,9 @@ ${cue.text}`).join("\n\n")}
     if (!cache7 || !cache7.isAndroid()) return null;
     return { isPhone: cache7.isPhone(), get: cache7.get, set: cache7.set };
   }
-  function resolvePluginText(text, lang) {
-    if (typeof text === "string") return text;
-    return text[lang] ?? text[baseLang(lang)] ?? text.en ?? text.sv ?? "";
+  function resolvePluginText(text2, lang) {
+    if (typeof text2 === "string") return text2;
+    return text2[lang] ?? text2[baseLang(lang)] ?? text2.en ?? text2.sv ?? "";
   }
   function hostOs() {
     return detectDesktopOs();
@@ -40098,10 +42144,10 @@ ${cue.text}`).join("\n\n")}
       directory,
       extensions: extensions ?? null
     });
-    return files?.map((file) => ({
-      path: file.path,
-      fileName: file.fileName ?? file.file_name ?? "",
-      sizeBytes: file.sizeBytes ?? file.size_bytes ?? null
+    return files?.map((file2) => ({
+      path: file2.path,
+      fileName: file2.fileName ?? file2.file_name ?? "",
+      sizeBytes: file2.sizeBytes ?? file2.size_bytes ?? null
     })) ?? null;
   }
   async function executePluginDesktopCommand(options) {
@@ -40417,14 +42463,14 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     ChannelsPlugin: () => ChannelsPlugin,
     default: () => runtime_default
   });
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/strings.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/strings.ts
   var S = {
     pluginName: { en: "LumioTV", sv: "LumioTV", de: "LumioTV", fr: "LumioTV", es: "LumioTV" },
     description: { en: "Personal linear TV channels", sv: "Personliga linj\xE4ra TV-kanaler", de: "Pers\xF6nliche lineare TV-Sender", fr: "Cha\xEEnes de t\xE9l\xE9vision lin\xE9aires personnelles", es: "Canales de televisi\xF3n lineal personales" },
@@ -40490,11 +42536,11 @@ ${cue.text}`).join("\n\n")}
     guideEmpty: { en: "Nothing to broadcast", sv: "Inget att s\xE4nda", de: "Nichts zu senden", fr: "Rien \xE0 diffuser", es: "Nada que emitir" },
     emptyTitle: { en: "No channels", sv: "Inga kanaler", de: "Keine Sender", fr: "Aucune cha\xEEne", es: "Sin canales" },
     emptyLead: {
-      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels.",
-      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna.",
-      de: "Ein Sender besteht aus ein paar Regeln. Lumio baut aus deiner Bibliothek, deiner Merkliste und Debrid ein endloses Programm. Hol dir die zehn Standardsender zur\xFCck.",
-      fr: "Une cha\xEEne, ce sont quelques r\xE8gles. Lumio construit une grille sans fin \xE0 partir de votre biblioth\xE8que, de votre liste et de Debrid. R\xE9cup\xE9rez les dix cha\xEEnes par d\xE9faut.",
-      es: "Un canal son unas pocas reglas. Lumio crea una programaci\xF3n sin fin con tu biblioteca, tu lista y Debrid. Recupera los diez canales predeterminados."
+      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and cloud accounts. Bring back the ten default channels.",
+      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och dina molnkonton. Ta tillbaka de tio standardkanalerna.",
+      de: "Ein Sender besteht aus ein paar Regeln. Lumio baut aus deiner Bibliothek, deiner Merkliste und deinen Cloud-Konten ein endloses Programm. Hol dir die zehn Standardsender zur\xFCck.",
+      fr: "Une cha\xEEne, ce sont quelques r\xE8gles. Lumio construit une grille sans fin \xE0 partir de votre biblioth\xE8que, de votre liste et de vos comptes cloud. R\xE9cup\xE9rez les dix cha\xEEnes par d\xE9faut.",
+      es: "Un canal son unas pocas reglas. Lumio crea una programaci\xF3n sin fin con tu biblioteca, tu lista y tus cuentas en la nube. Recupera los diez canales predeterminados."
     },
     emptySettingsHint: {
       en: "Create and edit your own channels under Settings \u2192 LumioTV.",
@@ -40535,7 +42581,7 @@ ${cue.text}`).join("\n\n")}
     fieldWindow: { en: "Airs", sv: "S\xE4nder", de: "Sendezeit", fr: "Diffusion", es: "Emisi\xF3n" },
     sourceLibrary: { en: "Library", sv: "Bibliotek", de: "Bibliothek", fr: "Biblioth\xE8que", es: "Biblioteca" },
     sourceWatchlist: { en: "Watchlist", sv: "Watchlist", de: "Merkliste", fr: "Ma liste", es: "Mi lista" },
-    sourceDebrid: { en: "Debrid", sv: "Debrid", de: "Debrid", fr: "Debrid", es: "Debrid" },
+    sourceCloud: { en: "Cloud", sv: "Molnet", de: "Cloud", fr: "Cloud", es: "Nube" },
     sourceVod: { en: "IPTV VOD", sv: "IPTV-VOD", de: "IPTV-VOD", fr: "VOD IPTV", es: "VOD IPTV" },
     sourceRefresh: { en: "Refresh", sv: "Uppdatera", de: "Aktualisieren", fr: "Actualiser", es: "Actualizar" },
     kindAny: { en: "All", sv: "Allt", de: "Alle", fr: "Tout", es: "Todo" },
@@ -40654,14 +42700,14 @@ ${cue.text}`).join("\n\n")}
     Politics: { en: "Politics", sv: "Politik", de: "Politik", fr: "Politique", es: "Pol\xEDtica" }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/bootstrap.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/state/store.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/genres.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/genres.ts
   var ALIAS = {
     "sci-fi": "science fiction",
     "sci fi": "science fiction",
@@ -40691,7 +42737,7 @@ ${cue.text}`).join("\n\n")}
     return [...set];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/model/channel.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/channel.ts
   var ERA_RANGES = {
     "70s": [1970, 1979],
     "80s": [1980, 1989],
@@ -40704,7 +42750,7 @@ ${cue.text}`).join("\n\n")}
   function emptyDraft() {
     return {
       name: "",
-      sources: ["library", "watchlist", "debrid"],
+      sources: ["library", "watchlist", "cloud"],
       genres: [],
       era: "any",
       length: "any",
@@ -40738,7 +42784,21 @@ ${cue.text}`).join("\n\n")}
     const warnings = matchingTitles != null && matchingTitles < 5 ? ["few-titles"] : [];
     return { errors, warnings };
   }
-  var ALL_SOURCES = ["library", "watchlist", "debrid"];
+  var ALL_SOURCES = ["library", "watchlist", "cloud"];
+  var PLAIN_SOURCES = ["library", "watchlist", "vod", "cloud"];
+  function sourcesFromStorage(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const value of raw) {
+      if (typeof value !== "string" || !value) continue;
+      const id = PLAIN_SOURCES.includes(value) ? value : "cloud";
+      if (!out.includes(id)) out.push(id);
+    }
+    return out;
+  }
+  function sourcesToStorage(sources, cloudStorageId) {
+    return sources.map((id) => id === "cloud" && cloudStorageId ? cloudStorageId : id);
+  }
   var preset = (over) => {
     const { name: _name, ...base } = emptyDraft();
     return { ...base, sources: [...ALL_SOURCES], showOnHome: true, ...over };
@@ -40813,7 +42873,7 @@ ${cue.text}`).join("\n\n")}
     return words.slice(0, 2).map((w) => w[0].toLocaleUpperCase()).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/model/lock.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/lock.ts
   var MIN = 6e4;
   var LOCK_SPAN_MS = 6 * 36e5;
   var LOCK_RENEW_MS = 3 * 36e5;
@@ -40888,7 +42948,7 @@ ${cue.text}`).join("\n\n")}
     return ok ? { sig, slots } : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/model/schedule.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
   var MIN2 = 6e4;
   var DAY_MIN = 24 * 60;
@@ -41073,7 +43133,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/pool.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/pool.ts
   var DEFAULT_RUNTIME = { movie: 100, episode: 45 };
   var LENGTH_TEST = {
     any: () => true,
@@ -41092,7 +43152,7 @@ ${cue.text}`).join("\n\n")}
       return LENGTH_TEST[channel.length](item.runtimeMin);
     });
   }
-  var RANK = { library: 0, debrid: 1, vod: 2, watchlist: 3 };
+  var RANK = { library: 0, cloud: 1, vod: 2, watchlist: 3 };
   function better(a, b) {
     if (RANK[a.source] !== RANK[b.source]) return RANK[a.source] < RANK[b.source];
     const ia = a.backdropUrl ? 0 : 1;
@@ -41113,7 +43173,7 @@ ${cue.text}`).join("\n\n")}
   }
   var versionOf = (play) => ({ provider: play.provider, fileRef: play.fileRef, ...play.size != null ? { size: play.size } : {}, ...play.name ? { name: play.name } : {} });
   function withVersions(winner, loser) {
-    if (winner.play.type !== "debrid" || loser.play.type !== "debrid") return winner;
+    if (winner.play.type !== "cloud" || loser.play.type !== "cloud") return winner;
     const known = new Set([winner.play, ...winner.play.alts ?? []].map((v) => `${v.provider}:${v.fileRef}`));
     const extra = [versionOf(loser.play), ...loser.play.alts ?? []].filter((v) => !known.has(`${v.provider}:${v.fileRef}`));
     if (extra.length === 0) return winner;
@@ -41177,10 +43237,10 @@ ${cue.text}`).join("\n\n")}
     return [...kept, ...add];
   }
   var MAX_POOL_ITEMS = 2e3;
-  function hash(text, seed) {
+  function hash(text2, seed) {
     let h = (2166136261 ^ seed) >>> 0;
-    for (let i = 0; i < text.length; i += 1) {
-      h ^= text.charCodeAt(i);
+    for (let i = 0; i < text2.length; i += 1) {
+      h ^= text2.charCodeAt(i);
       h = Math.imul(h, 16777619) >>> 0;
     }
     return h;
@@ -41212,8 +43272,8 @@ ${cue.text}`).join("\n\n")}
     return items2.filter((item) => kept.has(item.seriesKey ?? item.ref));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/pool-pack.ts
-  var POOL_PACK_VERSION = 2;
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/pool-pack.ts
+  var POOL_PACK_VERSION = 3;
   function packPlay(play, source) {
     if (play.type === "library") {
       const vod = source === "vod" ? { v: 1 } : {};
@@ -41226,9 +43286,9 @@ ${cue.text}`).join("\n\n")}
     const se = { ...season != null ? { season } : {}, ...episode != null ? { episode } : {} };
     if ("l" in p) return { type: "library", key: p.l, mediaType: p.tv ? "tv" : "movie", ...p.tv ? se : {} };
     if ("i" in p) return { type: "stream", imdbId: p.i, mediaType: p.tv ? "series" : "movie", ...p.tv ? se : {} };
-    return { type: "debrid", provider: p.d, fileRef: p.f };
+    return { type: "cloud", provider: p.d, fileRef: p.f };
   }
-  var SOURCE_OF = { l: "library", i: "watchlist", d: "debrid" };
+  var SOURCE_OF = { l: "library", i: "watchlist", d: "cloud" };
   function packPool(items2) {
     const groups = [];
     const groupIndex = /* @__PURE__ */ new Map();
@@ -41238,7 +43298,8 @@ ${cue.text}`).join("\n\n")}
         ...item.seriesKey ? { sk: item.seriesKey } : {},
         ...item.seriesTitle ? { st: item.seriesTitle } : {},
         ...item.posterUrl ? { p: item.posterUrl } : {},
-        ...item.backdropUrl ? { b: item.backdropUrl } : {}
+        ...item.backdropUrl ? { b: item.backdropUrl } : {},
+        ...item.tmdbId ? { i: item.tmdbId } : {}
       };
       let g;
       if (Object.keys(group).length > 0) {
@@ -41288,13 +43349,14 @@ ${cue.text}`).join("\n\n")}
         ...group.st ? { seriesTitle: group.st } : {},
         ...group.p ? { posterUrl: group.p } : {},
         ...group.b ? { backdropUrl: group.b } : {},
+        ...group.i ? { tmdbId: group.i } : {},
         ...play.type === "stream" ? { imdbId: play.imdbId } : {},
         play
       };
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/title-clean.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/title-clean.ts
   var JUNK_WORDS = /* @__PURE__ */ new Set(["com", "net", "org", "www", "mkv", "mp4", "avi", "rip", "dual", "multi", "latino", "castellano", "subs", "sub"]);
   var mixed = (w) => /[a-z]/i.test(w) && /\d/.test(w);
   function cleanTitle(raw) {
@@ -41314,7 +43376,7 @@ ${cue.text}`).join("\n\n")}
     return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/runtime-fix.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/runtime-fix.ts
   var MAX_FIXES = 600;
   function noteDuration(fixes, ref, seconds2) {
     if (!Number.isFinite(seconds2) || seconds2 < 60 || seconds2 > 12 * 3600) return null;
@@ -41338,7 +43400,7 @@ ${cue.text}`).join("\n\n")}
       list.push(s);
       bySeries.set(item.seriesKey, list);
     }
-    const seriesMin = new Map([...bySeries].map(([k, list]) => [k, toMin(median(list))]));
+    const seriesMin = new Map([...bySeries].map(([k, list]) => [k, toMin(median2(list))]));
     return items2.map((item) => {
       const s = fixes[item.ref];
       const runtimeMin = s != null ? toMin(s) : !item.runtimeKnown && item.seriesKey ? seriesMin.get(item.seriesKey) : void 0;
@@ -41346,13 +43408,13 @@ ${cue.text}`).join("\n\n")}
       return runtimeMin === item.runtimeMin && item.runtimeKnown ? item : { ...item, runtimeMin, runtimeKnown: true };
     });
   }
-  function median(values) {
+  function median2(values) {
     const sorted = [...values].sort((a, b) => a - b);
     const mid = sorted.length >> 1;
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/sources.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/sources.ts
   var isVodSourceId = (id) => id.startsWith("xtream-vod:");
   function librarySides(t) {
     const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : [];
@@ -41470,10 +43532,10 @@ ${cue.text}`).join("\n\n")}
     }
     return items2;
   }
-  var libraryStream = (side) => async (deps, emit3, opts = {}) => {
+  var libraryStream = (side) => async (deps, emit4, opts = {}) => {
     const all = await sharedLibraryTitles(deps, opts);
     const titles = all.filter((t) => librarySides(t)[side]);
-    const rebuild = () => emit3(buildLibraryItems(titles, deps, side));
+    const rebuild = () => emit4(buildLibraryItems(titles, deps, side));
     rebuild();
     const kindOf = (t) => t.kind === "movie" ? "movie" : "tv";
     const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(kindOf(t), t.title, t.year)));
@@ -41513,17 +43575,17 @@ ${cue.text}`).join("\n\n")}
     }
     return items2;
   }
-  var streamWatchlistItems = async (deps, emit3) => {
+  var streamWatchlistItems = async (deps, emit4) => {
     await idle(deps);
     const movies = deps.getMovieWatchlist();
     const shows = deps.getWatchlist();
     const perShow = shows.map(() => []);
     const build = () => [...buildWatchlistMovies(movies, deps), ...perShow.flat()];
-    emit3(build());
+    emit4(build());
     await enrich(deps, [
       ...movies.map((m) => ({ kind: "movie", tmdbId: m.tmdbId })),
       ...shows.map((s) => ({ kind: "tv", tmdbId: s.tmdbId }))
-    ], () => emit3(build()));
+    ], () => emit4(build()));
     if (shows.length === 0) return;
     await idle(deps);
     let cursor = 0;
@@ -41563,9 +43625,9 @@ ${cue.text}`).join("\n\n")}
       }
     };
     await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker));
-    emit3(build());
+    emit4(build());
   };
-  function buildDebridItems(titles, deps) {
+  function buildCloudItems(titles, deps) {
     const items2 = [];
     for (const t of titles) {
       const tv = t.kind === "tv";
@@ -41578,7 +43640,7 @@ ${cue.text}`).join("\n\n")}
           ref: `db:${f.provider}:${f.fileRef}`,
           title: name,
           kind: tv ? "episode" : "movie",
-          source: "debrid",
+          source: "cloud",
           genres: meta?.genres ?? [],
           year: t.year ?? meta?.year ?? null,
           ...tmdbId != null ? { tmdbId } : {},
@@ -41587,16 +43649,16 @@ ${cue.text}`).join("\n\n")}
           ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
           ...tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
           ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef, ...f.size ? { size: f.size } : {}, ...f.name ? { name: f.name } : {} }
+          play: { type: "cloud", provider: f.provider, fileRef: f.fileRef, ...f.size ? { size: f.size } : {}, ...f.name ? { name: f.name } : {} }
         });
       }
     }
     return items2;
   }
-  var streamDebridItems = async (deps, emit3) => {
+  var streamCloudItems = async (deps, emit4) => {
     await idle(deps);
-    const titles = await deps.listDebridCloud();
-    const rebuild = () => emit3(buildDebridItems(titles, deps));
+    const titles = await deps.listCloud();
+    const rebuild = () => emit4(buildCloudItems(titles, deps));
     rebuild();
     const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(t.kind, t.title, t.year)));
     const refs = [];
@@ -41607,7 +43669,7 @@ ${cue.text}`).join("\n\n")}
     const rebuilt = await enrich(deps, refs, rebuild);
     if (matched && !rebuilt) rebuild();
   };
-  async function loadTitleFallback(titles, deps, emit3, opts = {}) {
+  async function loadTitleFallback(titles, deps, emit4, opts = {}) {
     const wanted = titles.filter((t) => t.tmdbId != null);
     if (wanted.length === 0) return;
     const movies = wanted.filter((t) => t.kind === "movie");
@@ -41671,7 +43733,7 @@ ${cue.text}`).join("\n\n")}
     await idle(deps);
     await deps.meta.ensure(wanted.map((t) => ({ kind: t.kind, tmdbId: t.tmdbId }))).catch(() => {
     });
-    emit3(build());
+    emit4(build());
     if (shows.length === 0) return;
     let cursor = 0;
     const worker = async () => {
@@ -41679,7 +43741,7 @@ ${cue.text}`).join("\n\n")}
         const idx = cursor++;
         if (!deps.meta.get("tv", shows[idx].tmdbId)?.imdbId) continue;
         addSeasons(idx, await deps.fetchSeasons(shows[idx].tmdbId).catch(() => []));
-        emit3(build());
+        emit4(build());
       }
     };
     await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker));
@@ -41690,7 +43752,7 @@ ${cue.text}`).join("\n\n")}
       const rest = await deps.fetchRestSeasons(shows[idx].tmdbId).catch(() => []);
       if (rest.length === 0) continue;
       addSeasons(idx, rest);
-      emit3(build());
+      emit4(build());
     }
   }
   async function collect(stream, deps, opts) {
@@ -41706,16 +43768,16 @@ ${cue.text}`).join("\n\n")}
   }
   var loadLibraryItems = (deps, opts = {}) => collect(streamLibraryItems, deps, opts);
   var loadWatchlistItems = (deps, opts = {}) => collect(streamWatchlistItems, deps, opts);
-  var loadDebridItems = (deps, opts = {}) => collect(streamDebridItems, deps, opts);
+  var loadCloudItems = (deps, opts = {}) => collect(streamCloudItems, deps, opts);
   var loadVodItems = (deps, opts = {}) => collect(streamVodItems, deps, opts);
   var STREAMS = {
     library: streamLibraryItems,
     watchlist: streamWatchlistItems,
-    debrid: streamDebridItems,
+    cloud: streamCloudItems,
     vod: streamVodItems
   };
   var sharedRuns = /* @__PURE__ */ new WeakMap();
-  function runShared(source, deps, emit3) {
+  function runShared(source, deps, emit4) {
     let runs = sharedRuns.get(deps);
     if (!runs) {
       runs = /* @__PURE__ */ new Map();
@@ -41723,21 +43785,21 @@ ${cue.text}`).join("\n\n")}
     }
     const existing = runs.get(source);
     if (existing) {
-      existing.listeners.add(emit3);
-      if (existing.latest) emit3(existing.latest);
+      existing.listeners.add(emit4);
+      if (existing.latest) emit4(existing.latest);
       return existing.done.finally(() => {
-        existing.listeners.delete(emit3);
+        existing.listeners.delete(emit4);
       });
     }
     const map = runs;
-    const run = { latest: null, listeners: /* @__PURE__ */ new Set([emit3]), done: Promise.resolve() };
+    const run = { latest: null, listeners: /* @__PURE__ */ new Set([emit4]), done: Promise.resolve() };
     map.set(source, run);
     run.done = STREAMS[source](deps, (items2) => {
       run.latest = items2;
       for (const fn of [...run.listeners]) fn(items2);
     }).finally(() => {
       if (map.get(source) === run) map.delete(source);
-      run.listeners.delete(emit3);
+      run.listeners.delete(emit4);
     });
     return run.done;
   }
@@ -41746,7 +43808,7 @@ ${cue.text}`).join("\n\n")}
     const medians = /* @__PURE__ */ new Map();
     for (const [id, list] of seasons) {
       const all = list.flatMap((x) => x.episodes.map((e) => e.runtime)).filter((r) => r != null && r > 0);
-      if (all.length > 0) medians.set(id, Math.round(median(all)));
+      if (all.length > 0) medians.set(id, Math.round(median2(all)));
     }
     return items2.map((item) => {
       if (item.runtimeKnown || item.kind !== "episode" || item.tmdbId == null) return item;
@@ -41800,7 +43862,7 @@ ${cue.text}`).join("\n\n")}
     return timed;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/dead-files.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/dead-files.ts
   var DEAD_TTL_MS = 24 * 60 * 60 * 1e3;
   var MAX_DEAD = 300;
   var deadKey = (v) => `${v.provider}:${v.fileRef}`;
@@ -41811,8 +43873,8 @@ ${cue.text}`).join("\n\n")}
     if (status === 0 || status === 401 || status === 403 || status === 429 || status >= 500) return false;
     const b = body && typeof body === "object" ? body : {};
     if (typeof b.error_code === "number" && RD_DEAD_CODES.has(b.error_code)) return true;
-    const text = [b.error, b.detail, b.error?.code, b.error?.message].filter((x) => typeof x === "string").join(" ");
-    return DEAD_TEXT.test(text);
+    const text2 = [b.error, b.detail, b.error?.code, b.error?.message].filter((x) => typeof x === "string").join(" ");
+    return DEAD_TEXT.test(text2);
   }
   function pruneDead(dead, now2) {
     const live2 = Object.entries(dead).filter(([, at]) => now2 - at < DEAD_TTL_MS);
@@ -41824,7 +43886,7 @@ ${cue.text}`).join("\n\n")}
     let changed = false;
     const out = [];
     for (const item of items2) {
-      if (item.play.type !== "debrid") {
+      if (item.play.type !== "cloud") {
         out.push(item);
         continue;
       }
@@ -41838,22 +43900,22 @@ ${cue.text}`).join("\n\n")}
       changed = true;
       if (alive.length === 0) continue;
       const [first, ...rest] = alive;
-      out.push({ ...item, play: { type: "debrid", ...first, ...rest.length > 0 ? { alts: rest } : {} } });
+      out.push({ ...item, play: { type: "cloud", ...first, ...rest.length > 0 ? { alts: rest } : {} } });
     }
     return changed ? out : items2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/meta-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/meta-cache.ts
   var TTL_MS = 30 * 24 * 3600 * 1e3;
   var PARALLEL = 2;
   function metaKey(kind, tmdbId, season, episode) {
     return season != null && episode != null ? `${kind}:${tmdbId}:${season}:${episode}` : `${kind}:${tmdbId}`;
   }
   function createMetaCache(store2, fetcher, now2 = Date.now) {
-    const inflight8 = /* @__PURE__ */ new Map();
+    const inflight9 = /* @__PURE__ */ new Map();
     const pending5 = {};
     const fresh = (entry) => entry != null && now2() - entry.at < TTL_MS;
     let snapshot = null;
@@ -41879,7 +43941,7 @@ ${cue.text}`).join("\n\n")}
     };
     function fetchOne(kind, tmdbId) {
       const key = metaKey(kind, tmdbId);
-      const running2 = inflight8.get(key);
+      const running2 = inflight9.get(key);
       if (running2) return running2;
       const job = (async () => {
         await acquire();
@@ -41890,8 +43952,8 @@ ${cue.text}`).join("\n\n")}
         } finally {
           release();
         }
-      })().finally(() => inflight8.delete(key));
-      inflight8.set(key, job);
+      })().finally(() => inflight9.delete(key));
+      inflight9.set(key, job);
       return job;
     }
     function flush3() {
@@ -41922,7 +43984,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
   function createSeasonsCache(store2, fetcher, now2 = Date.now, prefix = "seasons") {
-    const inflight8 = /* @__PURE__ */ new Map();
+    const inflight9 = /* @__PURE__ */ new Map();
     const pending5 = {};
     let timer4;
     const fresh = (e) => e != null && now2() - e.at < TTL_MS;
@@ -41944,7 +44006,7 @@ ${cue.text}`).join("\n\n")}
       const key = `${prefix}:${tmdbId}`;
       const hit = pending5[key] ?? (snapshot ?? (snapshot = store2.read()))[key];
       if (fresh(hit)) return Promise.resolve(hit.seasons);
-      const running2 = inflight8.get(tmdbId);
+      const running2 = inflight9.get(tmdbId);
       if (running2) return running2;
       const job = fetcher(tmdbId).then((seasons) => {
         if (seasons.length > 0) {
@@ -41952,8 +44014,8 @@ ${cue.text}`).join("\n\n")}
           timer4 ?? (timer4 = setTimeout(flush3, 1e3));
         }
         return seasons;
-      }).finally(() => inflight8.delete(tmdbId));
-      inflight8.set(tmdbId, job);
+      }).finally(() => inflight9.delete(tmdbId));
+      inflight9.set(tmdbId, job);
       return job;
     }
     return Object.assign(load, { flush: flush3 });
@@ -41964,7 +44026,7 @@ ${cue.text}`).join("\n\n")}
   function createTitleMatchCache(store2, search, now2 = Date.now, perEnsure = 60) {
     let snapshot = null;
     const pending5 = {};
-    const inflight8 = /* @__PURE__ */ new Map();
+    const inflight9 = /* @__PURE__ */ new Map();
     const fresh = (e) => e != null && now2() - e.at < (e.id != null ? HIT_TTL_MS : MISS_TTL_MS2);
     function get(ref) {
       const key = matchKey(ref);
@@ -41994,13 +44056,13 @@ ${cue.text}`).join("\n\n")}
         while (cursor < todo.length) {
           const ref = todo[cursor++];
           const key = matchKey(ref);
-          let job = inflight8.get(key);
+          let job = inflight9.get(key);
           if (!job) {
             job = search(ref).then((id) => {
               if (id !== void 0) pending5[key] = { id, at: now2() };
             }).catch(() => {
-            }).finally(() => inflight8.delete(key));
-            inflight8.set(key, job);
+            }).finally(() => inflight9.delete(key));
+            inflight9.set(key, job);
           }
           await job;
         }
@@ -42014,7 +44076,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/debrid-versions.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/cloud-versions.ts
   function resolutionOf(name) {
     const n = (name ?? "").toLowerCase();
     if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
@@ -42031,30 +44093,30 @@ ${cue.text}`).join("\n\n")}
     if (caps.maxResolution != null && res != null && res > caps.maxResolution) return false;
     return true;
   }
-  function orderDebridVersions(versions, caps) {
+  function orderCloudVersions(versions, caps) {
     const quality = (v) => (resolutionOf(v.name) ?? 0) * 1e13 + (v.size ?? 0);
     const inside = versions.filter((v) => withinCaps(v, caps)).sort((a, b) => quality(b) - quality(a));
     const outside = versions.filter((v) => !withinCaps(v, caps)).sort((a, b) => quality(a) - quality(b));
     return [...inside, ...outside];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
     const pending5 = /* @__PURE__ */ new Map();
-    const debridTried = /* @__PURE__ */ new Map();
-    async function callDebrid(ref, play, fresh) {
-      const tried = !fresh && debridTried.get(ref) || /* @__PURE__ */ new Set();
-      debridTried.set(ref, tried);
-      const caps = deps.debridCaps?.() ?? { maxBytes: null, maxResolution: null };
+    const cloudTried = /* @__PURE__ */ new Map();
+    async function callCloud(ref, play, fresh) {
+      const tried = !fresh && cloudTried.get(ref) || /* @__PURE__ */ new Set();
+      cloudTried.set(ref, tried);
+      const caps = deps.cloudCaps?.() ?? { maxBytes: null, maxResolution: null };
       const { alts, type: _type, ...main } = play;
-      for (const version3 of orderDebridVersions([main, ...alts ?? []], caps)) {
+      for (const version3 of orderCloudVersions([main, ...alts ?? []], caps)) {
         const key = `${version3.provider}:${version3.fileRef}`;
         if (tried.has(key)) continue;
         tried.add(key);
         if (deps.isDead?.(version3)) continue;
-        const playable = await deps.debrid({ provider: version3.provider, fileRef: version3.fileRef }).catch(() => null);
+        const playable = await deps.cloud({ provider: version3.provider, fileRef: version3.fileRef }).catch(() => null);
         if (playable) return playable;
       }
       return null;
@@ -42062,7 +44124,7 @@ ${cue.text}`).join("\n\n")}
     function call(ref, play, exclude, allowCatalog) {
       if (play.type === "library") return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude);
       if (play.type === "stream") return deps.stream(play, exclude);
-      return callDebrid(ref, play, !exclude || exclude.length === 0);
+      return callCloud(ref, play, !exclude || exclude.length === 0);
     }
     const keyOf2 = (ref, allowCatalog) => allowCatalog === false ? `${ref}|novod` : ref;
     async function resolveNext(item, exclude, allowCatalog) {
@@ -42104,12 +44166,11 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/data/cloud.ts
-  var DEBRID_PROVIDERS = ["realdebrid", "torbox", "alldebrid"];
-  function createDebridCloud(deps) {
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/cloud.ts
+  function createCloud(deps) {
     const pauseMs = deps.pauseMs ?? 1e3;
     let cache7 = null;
-    let inflight8 = null;
+    let inflight9 = null;
     function tokenFor(provider) {
       const value = deps.token(provider);
       return value && value.trim() ? value.trim() : null;
@@ -42120,18 +44181,29 @@ ${cue.text}`).join("\n\n")}
     const VIDEO = /\.(mkv|mp4|m4v|avi|mov|ts|m2ts|webm)$/i;
     const CACHE_TTL_MS = 6 * 60 * 60 * 1e3;
     const PARTIAL_TTL_MS = 15 * 60 * 1e3;
-    const FETCH_TIMEOUT_MS2 = 15e3;
-    const BASE = "/api/stream-providers";
-    const TOKEN_HEADERS = {
-      realdebrid: "x-stream-provider-token",
-      torbox: "x-tb-token",
-      alldebrid: "x-ad-token"
-    };
+    const FETCH_TIMEOUT_MS3 = 15e3;
+    const RELAY = "/api/plugin-relay";
+    const LEGACY_BASE = "/api/stream-providers";
+    let relayMissing = false;
+    function serviceOf(provider) {
+      return deps.services()?.services.find((service) => service.id === provider) ?? null;
+    }
+    function apiFor(service) {
+      return {
+        getJson: (path, init) => getJson2(service.id, path, init),
+        request: (path, init) => request(service.id, path, init),
+        token: tokenFor(service.id) ?? "",
+        pause,
+        pauseMs,
+        isVideo: (name) => VIDEO.test(name),
+        foldersOf
+      };
+    }
     function tokenSetKey(providers) {
       let hash2 = 2166136261;
-      const text = providers.map((p) => `${p}=${tokenFor(p) ?? ""}`).join("&");
-      for (let i = 0; i < text.length; i += 1) {
-        hash2 ^= text.charCodeAt(i);
+      const text2 = providers.map((p) => `${p}=${tokenFor(p) ?? ""}`).join("&");
+      for (let i = 0; i < text2.length; i += 1) {
+        hash2 ^= text2.charCodeAt(i);
         hash2 = Math.imul(hash2, 16777619) >>> 0;
       }
       return `${providers.join(",")}:${hash2.toString(36)}`;
@@ -42143,13 +44215,38 @@ ${cue.text}`).join("\n\n")}
       const token = tokenFor(provider);
       if (!token) return { data: null, failure: { status: 0, body: "ingen nyckel" } };
       const controller = new AbortController();
-      const timer4 = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS2);
+      const timer4 = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS3);
       try {
-        const response = await fetch(`${BASE}/${provider}${path}`, {
+        const service = serviceOf(provider);
+        if (!service) return { data: null, failure: { status: 0, body: "ingen tj\xE4nst" } };
+        const viaLegacy = () => fetch(`${LEGACY_BASE}/${provider}${path}`, {
           ...init,
-          headers: { ...init?.headers ?? {}, [TOKEN_HEADERS[provider]]: token },
+          headers: { ...init?.headers ?? {}, [service.legacyHeader]: token },
           signal: controller.signal
         });
+        let response;
+        if (relayMissing) {
+          response = await viaLegacy();
+        } else {
+          response = await fetch(`${RELAY}${path}`, {
+            ...init,
+            headers: {
+              ...init?.headers ?? {},
+              "x-relay-base": service.base,
+              "x-relay-token": token,
+              ...service.tokenParam ? { "x-relay-token-param": service.tokenParam } : {},
+              ...service.defaults ? { "x-relay-defaults": service.defaults } : {}
+            },
+            signal: controller.signal
+          });
+          if (response.status === 404) {
+            const body = await response.clone().json().catch(() => null);
+            if (body?.error === "route not found") {
+              relayMissing = true;
+              response = await viaLegacy();
+            }
+          }
+        }
         if (!response.ok) return { data: null, failure: { status: response.status, body: await response.json().catch(() => null) } };
         return { data: await response.json(), failure: null };
       } catch (e) {
@@ -42159,114 +44256,22 @@ ${cue.text}`).join("\n\n")}
       }
     }
     const pause = (ms2) => new Promise((resolve) => setTimeout(resolve, ms2));
-    function foldersOf(path, torrentName) {
+    function foldersOf(path, containerName) {
       const parts = path.split(/[\\/]/).filter(Boolean);
       parts.pop();
-      if (parts.length > 0 && (parts[0] === torrentName || !torrentName)) parts.shift();
+      if (parts.length > 0 && (parts[0] === containerName || !containerName)) parts.shift();
       return parts;
-    }
-    async function listRealDebrid() {
-      const torrents = await getJson2("realdebrid", "/torrents?limit=100");
-      if (!Array.isArray(torrents)) return { files: [], failed: true };
-      const files = [];
-      let partial = false;
-      for (const torrent of torrents) {
-        if (torrent?.status !== "downloaded") continue;
-        await pause(pauseMs);
-        const info = await getJson2("realdebrid", `/torrents/info/${encodeURIComponent(torrent.id)}`);
-        if (!info) {
-          partial = true;
-          continue;
-        }
-        const selected = (info.files ?? []).filter((file) => file.selected === 1);
-        const links = info.links ?? [];
-        const torrentName = String(torrent.filename ?? info.filename ?? info.original_filename ?? "");
-        selected.forEach((file, index) => {
-          const path = String(file.path ?? "");
-          const name = path.split("/").pop() ?? "";
-          const link = links[index];
-          if (!link || !VIDEO.test(name)) return;
-          files.push({
-            file: { provider: "realdebrid", fileRef: `${torrent.id}|${link}`, name, size: Number(file.bytes) || 0 },
-            torrentKey: `realdebrid:${torrent.id}`,
-            torrentName,
-            folders: foldersOf(path, torrentName)
-          });
-        });
-      }
-      return { files, failed: false, partial };
-    }
-    async function listTorBox() {
-      const body = await getJson2("torbox", "/torrents/mylist?bypass_cache=true");
-      if (!body) return { files: [], failed: true };
-      const torrents = Array.isArray(body.data) ? body.data : [];
-      const files = [];
-      for (const torrent of torrents) {
-        const torrentName = String(torrent?.name ?? "");
-        for (const file of torrent?.files ?? []) {
-          const name = String(file.short_name ?? file.name ?? "").split("/").pop() ?? "";
-          if (!VIDEO.test(name)) continue;
-          files.push({
-            file: { provider: "torbox", fileRef: `${torrent.id}|${file.id}`, name, size: Number(file.size) || 0 },
-            torrentKey: `torbox:${torrent.id}`,
-            torrentName,
-            folders: foldersOf(String(file.name ?? name), torrentName)
-          });
-        }
-      }
-      return { files, failed: false };
-    }
-    function asList(value) {
-      if (Array.isArray(value)) return value;
-      return value && typeof value === "object" ? Object.values(value) : [];
-    }
-    function flattenAdFiles(nodes, parent = "") {
-      const out = [];
-      for (const node of nodes) {
-        const path = parent ? `${parent}/${node.n}` : node.n;
-        if (node.e?.length) out.push(...flattenAdFiles(node.e, path));
-        else if (node.l) out.push({ path, bytes: node.s ?? 0, link: node.l });
-      }
-      return out;
-    }
-    const AD_FORM = { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" };
-    async function listAllDebrid() {
-      const status = await getJson2("alldebrid", "/v4.1/magnet/status", { method: "POST", headers: AD_FORM, body: "" });
-      if (status?.status !== "success") return { files: [], failed: true };
-      const ready = asList(status.data?.magnets).filter((m) => Number(m?.statusCode) === 4 && m?.id != null);
-      if (ready.length === 0) return { files: [], failed: false };
-      const form = new URLSearchParams();
-      for (const magnet of ready) form.append("id[]", String(magnet.id));
-      const filesBody = await getJson2("alldebrid", "/v4.1/magnet/files", { method: "POST", headers: AD_FORM, body: form.toString() });
-      if (filesBody?.status !== "success") return { files: [], failed: true };
-      const files = [];
-      const namesById = new Map(ready.map((m) => [String(m.id), String(m.filename ?? "")]));
-      for (const magnet of asList(filesBody.data?.magnets)) {
-        if (magnet?.error) continue;
-        const torrentName = namesById.get(String(magnet?.id)) ?? "";
-        for (const file of flattenAdFiles(magnet?.files ?? [])) {
-          const name = file.path.split("/").pop() ?? "";
-          if (!VIDEO.test(name)) continue;
-          files.push({
-            file: { provider: "alldebrid", fileRef: file.link, name, size: file.bytes },
-            torrentKey: `alldebrid:${magnet?.id}`,
-            torrentName,
-            folders: foldersOf(file.path, torrentName)
-          });
-        }
-      }
-      return { files, failed: false };
     }
     const JUNK_WORDS2 = /(?:^|[\s._\-[(])(sample|trailers?|featurettes?|extras|bonus|behind[\s._-]the[\s._-]scenes|deleted[\s._-]scenes|interviews?|making[\s._-]of)(?=[\s._\-\])]|$)/gi;
     const TINY_SHARE = 0.15;
     const TINY_BYTES = 200 * 1024 * 1024;
-    function junkWords(text) {
-      return new Set(Array.from(text.matchAll(JUNK_WORDS2), (m) => m[1].toLowerCase().replace(/[\s._-]+/g, " ").replace(/s$/, "")));
+    function junkWords(text2) {
+      return new Set(Array.from(text2.matchAll(JUNK_WORDS2), (m) => m[1].toLowerCase().replace(/[\s._-]+/g, " ").replace(/s$/, "")));
     }
     function isJunk(entry, largest) {
       const { size } = entry.file;
       if (size > 0 && size < largest * TINY_SHARE && size < TINY_BYTES) return true;
-      const allowed = junkWords(entry.torrentName);
+      const allowed = junkWords(entry.containerName);
       const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, "");
       for (const word of [...junkWords(stem), ...entry.folders.flatMap((folder) => [...junkWords(folder)])]) {
         if (!allowed.has(word)) return true;
@@ -42310,8 +44315,8 @@ ${cue.text}`).join("\n\n")}
       return n >= 1 ? n : null;
     }
     function placeFile(entry) {
-      const parsed = parseLocalName2(entry.file.name, entry.folders[entry.folders.length - 1] ?? (entry.torrentName || void 0));
-      const series = parseSeriesContainer(entry.torrentName);
+      const parsed = parseLocalName2(entry.file.name, entry.folders[entry.folders.length - 1] ?? (entry.containerName || void 0));
+      const series = parseSeriesContainer(entry.containerName);
       if (series) {
         const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, "");
         const season = parsed.season ?? seasonFromFolders(entry.folders) ?? series.season;
@@ -42326,10 +44331,10 @@ ${cue.text}`).join("\n\n")}
     }
     function groupFiles(entries) {
       const largest = /* @__PURE__ */ new Map();
-      for (const entry of entries) largest.set(entry.torrentKey, Math.max(largest.get(entry.torrentKey) ?? 0, entry.file.size));
+      for (const entry of entries) largest.set(entry.containerKey, Math.max(largest.get(entry.containerKey) ?? 0, entry.file.size));
       const groups = /* @__PURE__ */ new Map();
       for (const entry of entries) {
-        if (isJunk(entry, largest.get(entry.torrentKey) ?? 0)) continue;
+        if (isJunk(entry, largest.get(entry.containerKey) ?? 0)) continue;
         const placed = placeFile(entry);
         if (!placed) continue;
         const norm = placed.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -42341,25 +44346,26 @@ ${cue.text}`).join("\n\n")}
       }
       return [...groups.values()];
     }
-    function listDebridCloud(options = {}) {
-      const providers = DEBRID_PROVIDERS.filter((p) => tokenFor(p));
-      if (providers.length === 0) return Promise.resolve([]);
+    async function listCloud(options = {}) {
+      if (!deps.services()) await deps.servicesReady?.().catch(() => null);
+      const providers = (deps.services()?.services ?? []).map((service) => service.id).filter((p) => tokenFor(p));
+      if (providers.length === 0) return [];
       const key = tokenSetKey(providers);
-      if (!options.force && cache7 && cache7.key === key && Date.now() - cache7.at < cache7.ttl) return Promise.resolve(cache7.titles);
-      if (inflight8 && inflight8.key === key) return inflight8.promise;
+      if (!options.force && cache7 && cache7.key === key && Date.now() - cache7.at < cache7.ttl) return cache7.titles;
+      if (inflight9 && inflight9.key === key) return inflight9.promise;
       const entry = { key, promise: sweep(providers, key) };
-      inflight8 = entry;
+      inflight9 = entry;
       void entry.promise.finally(() => {
-        if (inflight8 === entry) inflight8 = null;
+        if (inflight9 === entry) inflight9 = null;
       }).catch(() => {
       });
       return entry.promise;
     }
     async function sweep(providers, key) {
-      const listings = await Promise.all(providers.map((provider) => {
-        if (provider === "realdebrid") return listRealDebrid();
-        if (provider === "torbox") return listTorBox();
-        return listAllDebrid();
+      const listings = await Promise.all(providers.map(async (provider) => {
+        const service = serviceOf(provider);
+        if (!service) return { files: [], failed: true };
+        return service.list(apiFor(service)).catch(() => ({ files: [], failed: true }));
       }));
       const titles = groupFiles(listings.flatMap((l) => l.files));
       const hits = await deps.matchTitles(titles.map((t) => ({ title: t.title, year: t.year, kind: t.kind })));
@@ -42375,40 +44381,106 @@ ${cue.text}`).join("\n\n")}
     }
     async function unlock(input) {
       const { provider, fileRef } = input;
-      const pick2 = (r2, url) => typeof url === "string" ? { url } : { failure: r2.failure ?? { status: 200, body: r2.data } };
-      if (provider === "realdebrid") {
-        const link = fileRef.split("|").slice(1).join("|");
-        const r2 = await request("realdebrid", "/unrestrict/link", {
-          method: "POST",
-          headers: { "content-type": "application/x-www-form-urlencoded" },
-          body: `link=${encodeURIComponent(link)}`
-        });
-        return pick2(r2, r2.data?.download);
-      }
-      if (provider === "torbox") {
-        const [torrentId, fileId] = fileRef.split("|");
-        const token = tokenFor("torbox");
-        if (!token) return { failure: { status: 0, body: "ingen nyckel" } };
-        const r2 = await request("torbox", `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${encodeURIComponent(torrentId)}&file_id=${encodeURIComponent(fileId)}&redirect=false`);
-        return pick2(r2, r2.data?.data);
-      }
-      const r = await request("alldebrid", "/v4/link/unlock", {
-        method: "POST",
-        headers: AD_FORM,
-        body: new URLSearchParams({ link: fileRef }).toString()
-      });
-      return pick2(r, r.data?.data?.link);
+      const service = serviceOf(provider);
+      if (!service) return { failure: { status: 0, body: "ingen tj\xE4nst" } };
+      if (!tokenFor(provider)) return { failure: { status: 0, body: "ingen nyckel" } };
+      const { r, url } = await service.unlock(apiFor(service), fileRef);
+      return typeof url === "string" ? { url } : { failure: r.failure ?? { status: 200, body: r.data } };
     }
-    async function unrestrictDebridFile(input) {
+    async function unlockCloudFile(input) {
       const result = await unlock(input);
       if ("url" in result) return result;
       deps.onUnlockFailed?.(input.provider, input.fileRef, result.failure.status, result.failure.body);
       return null;
     }
-    return { listDebridCloud, unrestrictDebridFile };
+    return { listCloud, unlockCloudFile };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/trace.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/cloud-services.ts
+  var CLOUD_SERVICES_URL = "https://raw.githubusercontent.com/lumiomedia/lumio-official-plugins/main/connectors/channels-cloud.js";
+  var REFRESH_MS = 24 * 60 * 60 * 1e3;
+  var RETRY_MS2 = 10 * 60 * 1e3;
+  var READY_TIMEOUT_MS = 1e4;
+  function evaluateCloudServices(code) {
+    try {
+      const value = new Function(`return (${code}
+)`)();
+      if (!value || !Array.isArray(value.services)) return null;
+      const services = value.services.filter((s) => s && typeof s.id === "string" && typeof s.base === "string" && typeof s.list === "function" && typeof s.unlock === "function");
+      return { version: Number(value.version) || 0, ...typeof value.sourceId === "string" && value.sourceId ? { sourceId: value.sourceId } : {}, services };
+    } catch {
+      return null;
+    }
+  }
+  async function fetchCloudServicesCode(fetchImpl = fetch) {
+    try {
+      const response = await fetchImpl(`/api/plugins/runtime?url=${encodeURIComponent(CLOUD_SERVICES_URL)}`);
+      if (!response.ok) return null;
+      const body = await response.json();
+      return typeof body.code === "string" && body.code.trim() ? body.code : null;
+    } catch {
+      return null;
+    }
+  }
+  function createCloudServices(deps) {
+    const now2 = deps.now ?? Date.now;
+    let current2 = null;
+    let loadedAt = 0;
+    let nextFetchAt = 0;
+    let inflight9 = null;
+    let restored = false;
+    function restore2() {
+      if (restored) return;
+      restored = true;
+      const stored = deps.read();
+      if (!stored || typeof stored.code !== "string") return;
+      const file2 = evaluateCloudServices(stored.code);
+      if (!file2) return;
+      current2 = file2;
+      loadedAt = Number(stored.at) || 0;
+    }
+    function refresh() {
+      if (inflight9) return inflight9;
+      const run = (async () => {
+        const code = await deps.fetchCode();
+        const file2 = code ? evaluateCloudServices(code) : null;
+        if (code && file2 && file2.services.length > 0) {
+          current2 = file2;
+          loadedAt = now2();
+          nextFetchAt = loadedAt + REFRESH_MS;
+          try {
+            deps.write({ code, at: loadedAt });
+          } catch {
+          }
+        } else {
+          nextFetchAt = now2() + RETRY_MS2;
+        }
+        return current2;
+      })();
+      inflight9 = run;
+      void run.finally(() => {
+        if (inflight9 === run) inflight9 = null;
+      });
+      return run;
+    }
+    function get() {
+      restore2();
+      const t = now2();
+      if (t >= nextFetchAt && (!current2 || t - loadedAt >= REFRESH_MS)) {
+        nextFetchAt = t + RETRY_MS2;
+        void refresh();
+      }
+      return current2;
+    }
+    function ready() {
+      if (get()) return Promise.resolve(current2);
+      const waiting = inflight9 ?? refresh();
+      return Promise.race([waiting, new Promise((resolve) => setTimeout(() => resolve(null), READY_TIMEOUT_MS))]).then(() => current2);
+    }
+    return { get, ready, refresh };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/trace.ts
   function trace(msg) {
     console.info(`[channels] ${msg}`);
     try {
@@ -42418,15 +44490,31 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/host.ts
   var PLUGIN_ID = "com.lumio.channels";
   var object = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  var cloudServices = createCloudServices({
+    read: () => {
+      const raw = readPluginJson(PLUGIN_ID, "cloudServices", null);
+      return raw && typeof raw === "object" && typeof raw.code === "string" ? raw : null;
+    },
+    write: (value) => writePluginJson(PLUGIN_ID, "cloudServices", value, { emitChange: false }),
+    fetchCode: () => fetchCloudServicesCode()
+  });
+  function warmCloudServices() {
+    try {
+      cloudServices.get();
+    } catch {
+    }
+  }
   function readChannels() {
     const raw = readPluginJson(PLUGIN_ID, "channels", []);
-    return Array.isArray(raw) ? raw : [];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((channel) => channel && typeof channel === "object" && Array.isArray(channel.sources) ? { ...channel, sources: sourcesFromStorage(channel.sources) } : channel);
   }
   function writeChannels(next2) {
-    writePluginJson(PLUGIN_ID, "channels", next2);
+    const cloudId = cloudServices.get()?.sourceId ?? null;
+    writePluginJson(PLUGIN_ID, "channels", next2.map((channel) => ({ ...channel, sources: sourcesToStorage(channel.sources, cloudId) })));
   }
   function readDefaultsSeeded() {
     return readPluginJson(PLUGIN_ID, "defaultsSeeded", false) === true;
@@ -42567,7 +44655,9 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
-  var debridCloud = createDebridCloud({
+  var cloud = createCloud({
+    services: () => cloudServices.get(),
+    servicesReady: () => cloudServices.ready(),
     token: (provider) => channelSourceToken(provider),
     onUnlockFailed: (provider, fileRef, status, body) => {
       const dead = isDeadUnlock(status, body);
@@ -42599,21 +44689,24 @@ ${cue.text}`).join("\n\n")}
       deadListeners.delete(fn);
     };
   }
-  function markDeadFile(file) {
-    const next2 = { ...readDeadFiles(), [deadKey(file)]: Date.now() };
+  function markDeadFile(file2) {
+    const next2 = { ...readDeadFiles(), [deadKey(file2)]: Date.now() };
     try {
       writePluginJson(PLUGIN_ID, "deadFiles", pruneDead(next2, Date.now()), { emitChange: false });
     } catch {
     }
     for (const fn of [...deadListeners]) fn();
   }
-  function refreshDebridCloud() {
-    return debridCloud.listDebridCloud({ force: true });
+  function refreshCloud() {
+    return cloud.listCloud({ force: true });
   }
-  function debridAccounts() {
-    return DEBRID_PROVIDERS.filter((p) => !!channelSourceToken(p));
+  function cloudAccounts() {
+    return (cloudServices.get()?.services ?? []).map((service) => service.id).filter((p) => !!channelSourceToken(p));
   }
-  function forgetDebridAccount(provider) {
+  function cloudAccountName(provider) {
+    return cloudServices.get()?.services.find((service) => service.id === provider)?.name ?? provider;
+  }
+  function forgetCloudAccount(provider) {
     channelClearSourceToken(provider);
   }
   var sourceDeps = {
@@ -42622,7 +44715,7 @@ ${cue.text}`).join("\n\n")}
     getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
     fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, "seasonsRest"),
-    listDebridCloud: () => debridCloud.listDebridCloud(),
+    listCloud: () => cloud.listCloud(),
     meta: createMetaCache(metaStore, fetchMeta),
     waitForIdle: () => waitForStartIdle2(),
     titleMatch: createTitleMatchCache(matchStore, searchTitle)
@@ -42664,8 +44757,8 @@ ${cue.text}`).join("\n\n")}
       // VOD läser samma index som biblioteket.
       vod: `${status?.total ?? 0}:${fullSync}:${changed}`,
       watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
-      // Debridlistan cachas av värden i 6 h; samma fönster här.
-      debrid: String(Math.floor(Date.now() / (6 * 36e5)))
+      // Cloudlistan cachas av värden i 6 h; samma fönster här.
+      cloud: String(Math.floor(Date.now() / (6 * 36e5)))
     };
   }
   var resolver = createResolver({
@@ -42673,9 +44766,9 @@ ${cue.text}`).join("\n\n")}
     // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
     library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...exclude?.length ? { exclude } : {}, ...allowCatalog === false ? { allowCatalog: false } : {} }),
     stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-    debrid: (r) => debridCloud.unrestrictDebridFile(r),
-    debridCaps: () => autoplayCaps(),
-    isDead: (file) => deadKey(file) in readDeadFiles()
+    cloud: (r) => cloud.unlockCloudFile(r),
+    cloudCaps: () => autoplayCaps(),
+    isDead: (file2) => deadKey(file2) in readDeadFiles()
   });
   function autoplayCaps() {
     try {
@@ -42700,7 +44793,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/state/store.ts
   function saveChannel(def) {
     const all = readChannels();
     const before = all.find((c) => c.id === def.id);
@@ -42761,7 +44854,7 @@ ${cue.text}`).join("\n\n")}
           listeners9.delete(fn);
         };
       },
-      done: Promise.resolve(EMPTY4)
+      done: Promise.resolve(EMPTY5)
     };
     const publish = (view) => {
       job.view = view;
@@ -42783,7 +44876,7 @@ ${cue.text}`).join("\n\n")}
     };
     job.done.then(release, () => {
       release();
-      if (!job.view.complete) publish({ pool: job.view.pool ?? EMPTY4, complete: true });
+      if (!job.view.complete) publish({ pool: job.view.pool ?? EMPTY5, complete: true });
     });
     return job;
   }
@@ -42831,9 +44924,9 @@ ${cue.text}`).join("\n\n")}
     }, []);
     return channels;
   }
-  var EMPTY4 = [];
+  var EMPTY5 = [];
   function useChannelPool(channel) {
-    const [state2, setState] = useState(null);
+    const [state3, setState] = useState(null);
     const key = channel ? JSON.stringify([channel.id, channel.sources, channel.genres, channel.era, channel.length, channel.kind]) : "";
     const latest2 = useRef(channel);
     latest2.current = channel;
@@ -42854,20 +44947,20 @@ ${cue.text}`).join("\n\n")}
         if (!alive) return;
         if (job.view.pool) apply(job.view);
         unsubscribe = job.subscribe(apply);
-      }).catch(() => set({ pool: stale ?? EMPTY4, complete: true }));
+      }).catch(() => set({ pool: stale ?? EMPTY5, complete: true }));
       return () => {
         alive = false;
         unsubscribe();
       };
     }, [key]);
-    const view = channel ? state2?.key === key ? state2.view : stale ? { pool: stale, complete: false, stale: true } : null : null;
+    const view = channel ? state3?.key === key ? state3.view : stale ? { pool: stale, complete: false, stale: true } : null : null;
     const [deadVersion, setDeadVersion] = useState(0);
     useEffect(() => onDeadFilesChanged(() => setDeadVersion((n) => n + 1)), []);
-    const pool = useMemo(() => dropDeadFiles(view?.pool ?? EMPTY4, readDeadFiles()), [view?.pool, deadVersion]);
+    const pool = useMemo(() => dropDeadFiles(view?.pool ?? EMPTY5, readDeadFiles()), [view?.pool, deadVersion]);
     const [renew, setRenew] = useState(0);
     const lockSig = channel ? lockSignature(channel) : "";
     const rundown = useMemo(
-      () => channel ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : EMPTY4,
+      () => channel ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : EMPTY5,
       [pool, lockSig, renew]
       // eslint-disable-line react-hooks/exhaustive-deps
     );
@@ -42925,7 +45018,7 @@ ${cue.text}`).join("\n\n")}
     return now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/bootstrap.tsx
   function seedForActiveProfile() {
     try {
       seedDefaultChannels(readStoredLang() || "en");
@@ -42940,11 +45033,11 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/home-row-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row-logic.ts
   var HOME_DEFAULT_COUNT = 20;
   function homeChannels(channels, count = HOME_DEFAULT_COUNT) {
     return channels.filter((c) => c.showOnHome).sort((a, b) => a.number - b.number).slice(0, Math.max(0, count));
@@ -42972,11 +45065,12 @@ ${cue.text}`).join("\n\n")}
       resting: false,
       pct: slot.pct,
       nextTitle: next2 ? titleOf(next2) : null,
-      ...slot.item.backdropUrl ? { backdropUrl: slot.item.backdropUrl } : {}
+      ...slot.item.backdropUrl ? { backdropUrl: slot.item.backdropUrl } : {},
+      ...slot.item.tmdbId ? { mediaId: `${slot.item.kind === "episode" ? "tv" : "movie"}-${slot.item.tmdbId}` } : {}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/guide-layout.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/guide-layout.ts
   var MIN3 = 6e4;
   var HALF_HOUR = 30 * MIN3;
   var GUIDE_SPAN_MIN = 210;
@@ -43016,7 +45110,7 @@ ${cue.text}`).join("\n\n")}
     return Math.max(0, Math.min(Math.max(0, maxScroll), index * rowH));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/tv.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tv.ts
   init_react_shim();
   init_tv_focus_shim();
   var tvu = (n) => `calc(${n} * var(--tv-u, 1px))`;
@@ -43092,7 +45186,7 @@ ${cue.text}`).join("\n\n")}
   }
   var tvType = (role) => typeSize(0, true, role);
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tokens.ts
   var C = {
     /** Appens grund (--base-950, följer temat; svart som standard). */
     base: "rgb(var(--base-950, 5 5 7))",
@@ -43167,7 +45261,7 @@ ${cue.text}`).join("\n\n")}
   var RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 };
   var fontSize = (px, tv) => typeSize(px, tv);
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/use-text.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/use-text.ts
   init_react_shim();
   init_plugin_sdk();
   function useText() {
@@ -43182,7 +45276,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row.tsx
   init_jsx_runtime_shim();
   function ChannelsHomeRow({ onNavigate, layout = "slider", count, sliderCardWidth = "16rem" }) {
     const t = useText();
@@ -43198,11 +45292,12 @@ ${cue.text}`).join("\n\n")}
     const open2 = (channelId) => onNavigate({ pageId: CHANNELS_PAGE_ID, params: { channelId, play: "live" } });
     return /* @__PURE__ */ jsxs("section", { "data-channels-home-row": "", style: { color: C.text, fontFamily: FONT3.ui }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dim(12, isTv), marginBottom: dim(14, isTv) }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("h2", { "data-home-row-title": "", style: { margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: "-0.2px" }, children: t("homeRowTitle") }),
-          /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim }, children: t("homeRowSubtitle", { time: formatClock2(now2) }) })
+        /* @__PURE__ */ jsxs("div", { style: isTv ? { display: "flex", minWidth: 0, alignItems: "baseline", gap: dim(12, isTv) } : { minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("h2", { "data-home-row-title": "", style: { margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: "-0.2px", whiteSpace: isTv ? "nowrap" : void 0 }, children: t("homeRowTitle") }),
+          isTv ? /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: C.textDim }, children: "\u2022" }) : null,
+          /* @__PURE__ */ jsx("p", { style: { margin: isTv ? 0 : `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: t("homeRowSubtitle", { time: formatClock2(now2) }) })
         ] }),
-        /* @__PURE__ */ jsx(
+        isTv ? null : /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
@@ -43253,6 +45348,13 @@ ${cue.text}`).join("\n\n")}
     const title = m.resting ? t("playerRest", { time: formatClock2(m.restUntil ?? now2) }) : m.title ?? (loading2 ? t("guideLoading") : t("playerEmpty"));
     const hasTitle = m.title != null;
     const badge = m.resting ? t("homeCardRest") : m.minsLeft != null ? t("playerMinsLeft", { n: m.minsLeft }) : "";
+    const mirror = isTv && hasTitle ? JSON.stringify({
+      title: t("playerChannelN", { n: m.number }),
+      titleAside: m.title,
+      metaLine: [m.name, m.minsLeft != null ? t("playerMinsLeft", { n: m.minsLeft }) : null].filter(Boolean).join(" \xB7 "),
+      ...m.backdropUrl ? { backdropUrl: m.backdropUrl } : {},
+      ...m.mediaId ? { mediaId: m.mediaId, mediaType: m.mediaId.startsWith("tv-") ? "tv" : "movie" } : {}
+    }) : void 0;
     return /* @__PURE__ */ jsxs("div", { style: { width, flex: width ? "none" : void 0, minWidth: 0, opacity: m.resting ? 0.6 : 1 }, children: [
       /* @__PURE__ */ jsxs(
         "button",
@@ -43261,6 +45363,7 @@ ${cue.text}`).join("\n\n")}
           "data-f": "",
           "data-tv-card": "",
           "data-channel-card": channel.id,
+          "data-tv-mirror": mirror,
           className: "focus-card-ring",
           onClick: () => onOpen(channel.id),
           "aria-label": `${t("zapChannelLine", { n: m.number, name: m.name })} \xB7 ${title}`,
@@ -43314,8 +45417,9 @@ ${cue.text}`).join("\n\n")}
                   fontSize: fontSize(9.5, isTv),
                   fontWeight: 600,
                   letterSpacing: "0.06em",
+                  // Vit text på accentbubblan (Jerry 2026-10-26, "vit text på de blå bubblorna").
                   background: m.resting ? "rgba(0,0,0,0.7)" : C.accent,
-                  color: m.resting ? C.textDim : C.onAccent
+                  color: m.resting ? C.textDim : C.text
                 },
                 children: badge.toUpperCase()
               }
@@ -43355,11 +45459,11 @@ ${cue.text}`).join("\n\n")}
     }, [id, rundown, report]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channels-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/player-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/player-logic.ts
   function startSeconds(slot, mode) {
     if (mode === "start") return 0;
     return Math.max(0, slot.minsIn * 60);
@@ -43414,7 +45518,7 @@ ${cue.text}`).join("\n\n")}
       if (!rundown || rundown.length === 0) continue;
       const slot = programmeAt(rundown, c.airWindow, now2);
       if (slot.kind !== "programme") continue;
-      if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
+      if (slot.item.play.type === "library" || slot.item.play.type === "cloud") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
     }
     return out;
   }
@@ -43425,7 +45529,7 @@ ${cue.text}`).join("\n\n")}
     return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/warm.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/warm.ts
   var WEBDAV_STREAM = "/api/webdav-library/stream?";
   function isFileUrl(url) {
     if (!/^https?:\/\//i.test(url)) return false;
@@ -43486,7 +45590,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/start-channel.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/start-channel.ts
   function onAirNow(channel, rundown, now2) {
     if (rundown == null) return isOnAir(channel.airWindow, now2);
     return rundown.length > 0 && programmeAt(rundown, channel.airWindow, now2).kind === "programme";
@@ -43498,11 +45602,11 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
   function ChannelBadge({ channel, size = 44, isTv = false, style }) {
     return /* @__PURE__ */ jsx(
@@ -43534,7 +45638,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-guide.tsx
   init_jsx_runtime_shim();
   var ROW_H = 54;
   var TV_ROW_H = 72;
@@ -43927,17 +46031,17 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channel-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-hero.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
   var oneLine = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" };
   function useHostPlayerActive() {
-    const read11 = () => typeof document !== "undefined" && document.documentElement.classList.contains("mpv-playing");
-    const [active3, setActive3] = useState(read11);
+    const read12 = () => typeof document !== "undefined" && document.documentElement.classList.contains("mpv-playing");
+    const [active3, setActive3] = useState(read12);
     useEffect(() => {
-      const update = () => setActive3(read11());
+      const update = () => setActive3(read12());
       update();
       if (typeof MutationObserver === "undefined") return;
       const mo = new MutationObserver(update);
@@ -44255,12 +46359,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-player.tsx
   var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/zap-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/zap-logic.ts
   var NOISE_MS = 320;
   var OSD_IDLE_MS = 4e3;
   var MAX_DIGITS = 3;
@@ -44290,7 +46394,7 @@ ${cue.text}`).join("\n\n")}
     return channels.find((c) => c.number === n) ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/player-state.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/player-state.ts
   var POSITION_SLACK_S = 20;
   var TRUSTED_FIRST_PLAY_MS = 4800;
   var MAX_VERSIONS = 3;
@@ -44404,7 +46508,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/guide-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/guide-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var HALF_HOUR2 = 30 * 6e4;
@@ -44528,7 +46632,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/host-controls.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
@@ -44551,7 +46655,7 @@ ${cue.text}`).join("\n\n")}
   }
   var same = (a, b) => a === b || !!a && !!b && a.visible === b.visible && a.lift === b.lift;
   function useHostControls(anchorRef, session2) {
-    const [state2, setState] = useState(null);
+    const [state3, setState] = useState(null);
     useEffect(() => {
       if (!session2) {
         setState(null);
@@ -44560,7 +46664,7 @@ ${cue.text}`).join("\n\n")}
       let el = null;
       let observer = null;
       let resize = null;
-      const read11 = () => {
+      const read12 = () => {
         if (!el) return;
         const next2 = readHostControls(el);
         setState((prev) => same(prev, next2) ? prev : next2);
@@ -44580,11 +46684,11 @@ ${cue.text}`).join("\n\n")}
           setState(null);
           return;
         }
-        read11();
-        observer = new MutationObserver(read11);
+        read12();
+        observer = new MutationObserver(read12);
         observer.observe(el, { attributes: true, attributeFilter: ["style", "class"] });
         if (typeof ResizeObserver !== "undefined") {
-          resize = new ResizeObserver(read11);
+          resize = new ResizeObserver(read12);
           resize.observe(el);
         }
       };
@@ -44596,7 +46700,7 @@ ${cue.text}`).join("\n\n")}
         setState(null);
       };
     }, [anchorRef, session2]);
-    return state2;
+    return state3;
   }
   var HOST_TOPBAR_SELECTOR = ".vp-topbar";
   function hostTopbarBottom(anchor, bar) {
@@ -44632,7 +46736,7 @@ ${cue.text}`).join("\n\n")}
       }
       let bar = null;
       let resize = null;
-      const read11 = () => {
+      const read12 = () => {
         const anchor = anchorRef.current;
         if (!anchor || !bar) return;
         const next2 = hostTopbarBottom(anchor, bar);
@@ -44640,7 +46744,7 @@ ${cue.text}`).join("\n\n")}
       };
       const attach = () => {
         if (bar?.isConnected) {
-          read11();
+          read12();
           return;
         }
         resize?.disconnect();
@@ -44649,18 +46753,18 @@ ${cue.text}`).join("\n\n")}
         for (let node = anchorRef.current?.parentElement ?? null; node && !bar; node = node.parentElement) bar = node.querySelector(HOST_TOPBAR_SELECTOR);
         if (!bar && anchorRef.current) bar = findMobileTopbar(anchorRef.current);
         if (!bar) return;
-        read11();
+        read12();
         if (typeof ResizeObserver !== "undefined") {
-          resize = new ResizeObserver(read11);
+          resize = new ResizeObserver(read12);
           resize.observe(bar);
         }
       };
       attach();
       const timer4 = window.setInterval(attach, 500);
-      window.addEventListener("resize", read11);
+      window.addEventListener("resize", read12);
       return () => {
         window.clearInterval(timer4);
-        window.removeEventListener("resize", read11);
+        window.removeEventListener("resize", read12);
         resize?.disconnect();
         setBottom(null);
       };
@@ -44687,7 +46791,7 @@ ${cue.text}`).join("\n\n")}
         setSpot(null);
         return;
       }
-      const read11 = () => {
+      const read12 = () => {
         const anchor = anchorRef.current;
         if (!anchor) return;
         const menu = document.querySelector(HOST_MENU_SELECTOR);
@@ -44696,19 +46800,19 @@ ${cue.text}`).join("\n\n")}
         const next2 = menuClearSpot(a, menu ? menu.getBoundingClientRect() : null, scale);
         setSpot((prev) => prev?.left === next2?.left && prev?.top === next2?.top ? prev : next2);
       };
-      read11();
-      const timer4 = window.setInterval(read11, 500);
-      window.addEventListener("resize", read11);
+      read12();
+      const timer4 = window.setInterval(read12, 500);
+      window.addEventListener("resize", read12);
       return () => {
         window.clearInterval(timer4);
-        window.removeEventListener("resize", read11);
+        window.removeEventListener("resize", read12);
         setSpot(null);
       };
     }, [anchorRef, active3]);
     return spot;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/tuning-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tuning-card.tsx
   init_jsx_runtime_shim();
   var FADE_MS = 220;
   var KEYFRAMES = `
@@ -44777,7 +46881,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/zap-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/zap-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var NOISE_SVG = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")`;
@@ -45007,7 +47111,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-player.tsx
   init_jsx_runtime_shim();
   var PRELOAD_LEAD_MS = 3e4;
   var RAPID_ZAP_MS = 700;
@@ -45024,10 +47128,10 @@ ${cue.text}`).join("\n\n")}
   function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }) {
     const t = useText();
     const isTv = useTvMode();
-    const [state2, dispatch] = useReducer(playerReducer, void 0, () => initialPlayerState(initialChannelId, initialMode));
-    const { request, status, onScreen, pending: pending5, rest, noSignal, between } = state2;
-    const stateRef = useRef(state2);
-    stateRef.current = state2;
+    const [state3, dispatch] = useReducer(playerReducer, void 0, () => initialPlayerState(initialChannelId, initialMode));
+    const { request, status, onScreen, pending: pending5, rest, noSignal, between } = state3;
+    const stateRef = useRef(state3);
+    stateRef.current = state3;
     const channel = useMemo(
       () => channels.find((c) => c.id === request.channelId) ?? channels[0] ?? null,
       [channels, request.channelId]
@@ -45264,7 +47368,7 @@ ${cue.text}`).join("\n\n")}
       }, Math.max(0, waitUntil - Date.now()) + 1e3);
       return () => window.clearTimeout(id);
     }, [waitUntil]);
-    const framedNow = !!onScreen && state2.framedSeq === onScreen.seq && onScreen.seq === request.seq;
+    const framedNow = !!onScreen && state3.framedSeq === onScreen.seq && onScreen.seq === request.seq;
     useEffect(() => {
       if (!framedNow) return;
       const id = window.setTimeout(() => {
@@ -45289,20 +47393,20 @@ ${cue.text}`).join("\n\n")}
       progressAt.current = { seq, at: clockNow() };
     }, []);
     useEffect(() => {
-      const seq = state2.firstPlaySeq;
-      if (seq == null || state2.framedSeq === seq) return;
+      const seq = state3.firstPlaySeq;
+      if (seq == null || state3.framedSeq === seq) return;
       const id = window.setTimeout(() => dispatch({ type: "reveal", seq }), REVEAL_FALLBACK_MS);
       return () => window.clearTimeout(id);
-    }, [state2.firstPlaySeq, state2.framedSeq]);
+    }, [state3.firstPlaySeq, state3.framedSeq]);
     useEffect(() => {
-      const seq = state2.framedSeq;
+      const seq = state3.framedSeq;
       const tm = timing.current;
       if (seq == null || !tm || tm.seq !== seq) return;
       timing.current = null;
       const m = tm.marks;
       const ms2 = (v) => v == null ? "?" : `${v}`;
       trace(`switch ${tm.ch} resolve=${ms2(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms (pool=${ms2(m.pool)} resolveStart=${ms2(m.resolveStart)} type=${tm.type ?? "?"} mount=${ms2(m.mount)} hostFirstPlay=${ms2(m.hostFirstPlay)}${tm.rapid ? " rapid" : ""})`);
-    }, [state2.framedSeq]);
+    }, [state3.framedSeq]);
     const listRundowns = useMemo(
       () => listOpen ? new Map(channels.map((c) => [c.id, cachedRundown(c)])) : null,
       [listOpen, channels]
@@ -45312,9 +47416,9 @@ ${cue.text}`).join("\n\n")}
     const pokeRef = useRef(poke);
     pokeRef.current = poke;
     const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null;
-    const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
+    const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state3) ? null : playerKey);
     const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
-    const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
+    const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state3) ? null : playerKey);
     const menuSpot = useHostMenuClearSpot(osdRef, !(onScreen && Player));
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
@@ -45446,7 +47550,7 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("pointerdown", touch, true);
       };
     }, []);
-    const tuningShown = awaitingPicture(state2);
+    const tuningShown = awaitingPicture(state3);
     const layer = guideOpen ? "guide" : zapOn ? listOpen ? "zaplist" : "zap" : "osd";
     const lastLayer = useRef(null);
     useEffect(() => {
@@ -45491,7 +47595,7 @@ ${cue.text}`).join("\n\n")}
         notice: null,
         hasPrevious: !!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId),
         noise,
-        chromeHidden: awaitingPicture(state2),
+        chromeHidden: awaitingPicture(state3),
         listRundowns,
         isTv,
         t,
@@ -45537,7 +47641,7 @@ ${cue.text}`).join("\n\n")}
         onActivity: poke
       }
     );
-    const tuningNow = awaitingPicture(state2);
+    const tuningNow = awaitingPicture(state3);
     const osd = guideOpen ? null : zapOn ? zapOverlay : tuningNow ? null : normalOsd;
     const guide = guideOpen ? /* @__PURE__ */ jsx(GuideOverlay, { channels, currentId: channel.id, now: now2, isTv, t, onPlay: playFromGuide, onClose: closeGuide }) : null;
     const tuningItem = described?.slot.item ?? null;
@@ -45926,11 +48030,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/studio-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio-logic.ts
   var WINDOW_LABEL = {
     always: "windowAlways",
     evenings: "windowEvenings",
@@ -45939,7 +48043,7 @@ ${cue.text}`).join("\n\n")}
   var MIN5 = 6e4;
   var MAX_ROWS = 8;
   function sourceCounts(pools) {
-    return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length };
+    return { library: pools.library.length, watchlist: pools.watchlist.length, cloud: pools.cloud.length, vod: pools.vod.length };
   }
   function matchingPool(draft, pools, extra = []) {
     const picked = draft.sources.flatMap((s) => pools[s] ?? []);
@@ -45981,7 +48085,7 @@ ${cue.text}`).join("\n\n")}
     const q = normTitle(query);
     if (q.length < 2) return [];
     const byKey = /* @__PURE__ */ new Map();
-    for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid, ...pools.vod]) {
+    for (const item of [...pools.library, ...pools.watchlist, ...pools.cloud, ...pools.vod]) {
       const s = titleOfItem(item);
       const name = normTitle(s.title);
       const at = name.indexOf(q);
@@ -46067,7 +48171,7 @@ ${cue.text}`).join("\n\n")}
   }
   function genreOptions(pools) {
     const seen = /* @__PURE__ */ new Map();
-    for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid]) {
+    for (const item of [...pools.library, ...pools.watchlist, ...pools.cloud]) {
       for (const genre of item.genres) {
         const tokens = canonGenre(genre);
         for (const token of tokens) if (!seen.has(token)) seen.set(token, genreName(token, tokens.length === 1 ? genre.trim() : void 0));
@@ -46085,25 +48189,25 @@ ${cue.text}`).join("\n\n")}
     const cache7 = /* @__PURE__ */ new Map();
     let current2 = "";
     let timer4;
-    let inflight8 = false;
+    let inflight9 = false;
     let queued = null;
     let disposed = false;
-    const emit3 = (state2) => {
-      if (!disposed) onState(state2);
+    const emit4 = (state3) => {
+      if (!disposed) onState(state3);
     };
     const keyOf2 = (q) => q.toLowerCase();
     function run(q) {
-      inflight8 = true;
+      inflight9 = true;
       search(q).then(
         (results) => {
           cache7.set(keyOf2(q), results);
-          if (keyOf2(q) === current2) emit3({ query: q, results, status: "done" });
+          if (keyOf2(q) === current2) emit4({ query: q, results, status: "done" });
         },
         () => {
-          if (keyOf2(q) === current2) emit3({ query: q, results: [], status: "failed" });
+          if (keyOf2(q) === current2) emit4({ query: q, results: [], status: "failed" });
         }
       ).finally(() => {
-        inflight8 = false;
+        inflight9 = false;
         const next2 = queued;
         queued = null;
         if (!disposed && next2 != null && keyOf2(next2) === current2 && !cache7.has(current2)) run(next2);
@@ -46112,10 +48216,10 @@ ${cue.text}`).join("\n\n")}
     function fire(q) {
       const hit = cache7.get(keyOf2(q));
       if (hit) {
-        emit3({ query: q, results: hit, status: "done" });
+        emit4({ query: q, results: hit, status: "done" });
         return;
       }
-      if (inflight8) {
+      if (inflight9) {
         queued = q;
         return;
       }
@@ -46131,15 +48235,15 @@ ${cue.text}`).join("\n\n")}
         }
         if (q.length < minChars) {
           queued = null;
-          emit3({ query: q, results: [], status: "idle" });
+          emit4({ query: q, results: [], status: "idle" });
           return;
         }
         const hit = cache7.get(current2);
         if (hit) {
-          emit3({ query: q, results: hit, status: "done" });
+          emit4({ query: q, results: hit, status: "done" });
           return;
         }
-        emit3({ query: q, results: [], status: "searching" });
+        emit4({ query: q, results: [], status: "searching" });
         timer4 = setTimeout(() => {
           timer4 = void 0;
           fire(q);
@@ -46152,7 +48256,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/title-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/title-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -46179,7 +48283,7 @@ ${cue.text}`).join("\n\n")}
     const posterFor = (title) => {
       const remembered = posters.current.get(channelTitleKey(title));
       if (remembered) return remembered;
-      for (const item of [...extra, ...pools.library, ...pools.vod, ...pools.debrid, ...pools.watchlist]) {
+      for (const item of [...extra, ...pools.library, ...pools.vod, ...pools.cloud, ...pools.watchlist]) {
         if (item.posterUrl && itemMatchesTitle(item, title)) return item.posterUrl;
       }
       return void 0;
@@ -46377,18 +48481,18 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio.tsx
   init_jsx_runtime_shim();
   var LOADERS = {
     library: loadLibraryItems,
     watchlist: loadWatchlistItems,
-    debrid: loadDebridItems,
+    cloud: loadCloudItems,
     vod: loadVodItems
   };
   var SOURCES = [
     { id: "library", label: "sourceLibrary" },
     { id: "watchlist", label: "sourceWatchlist" },
-    { id: "debrid", label: "sourceDebrid" },
+    { id: "cloud", label: "sourceCloud" },
     // Av som standard; räknas ändå (lokalt index, billigt) så man ser vad som finns.
     { id: "vod", label: "sourceVod" }
   ];
@@ -46470,7 +48574,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, []);
     const started = useRef(/* @__PURE__ */ new Set());
-    const generation = useRef({ library: 0, watchlist: 0, debrid: 0, vod: 0 });
+    const generation = useRef({ library: 0, watchlist: 0, cloud: 0, vod: 0 });
     const load = useCallback((source, run) => {
       started.current.add(source);
       const gen = ++generation.current[source];
@@ -46488,13 +48592,13 @@ ${cue.text}`).join("\n\n")}
         if (!started.current.has(source)) void load(source, () => LOADERS[source](sourceDeps, { strict: true }));
       }
     }, [draft.sources, load]);
-    const refreshDebrid = useCallback(async () => {
+    const refreshCloudSource = useCallback(async () => {
       if (refreshing) return;
       setRefreshing(true);
       try {
-        await load("debrid", async () => {
-          await refreshDebridCloud().catch(() => []);
-          return loadDebridItems(sourceDeps, { strict: true });
+        await load("cloud", async () => {
+          await refreshCloud().catch(() => []);
+          return loadCloudItems(sourceDeps, { strict: true });
         });
       } finally {
         if (alive.current) setRefreshing(false);
@@ -46505,7 +48609,7 @@ ${cue.text}`).join("\n\n")}
       return () => clearInterval(timer4);
     }, []);
     const full = useMemo(
-      () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [], vod: pools.vod ?? [] }),
+      () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], cloud: pools.cloud ?? [], vod: pools.vod ?? [] }),
       [pools]
     );
     const loading2 = draft.sources.some((s) => pools[s] === void 0);
@@ -46666,7 +48770,7 @@ ${cue.text}`).join("\n\n")}
             "data-f": "",
             "data-studio-refresh": "",
             disabled: refreshing,
-            onClick: () => void refreshDebrid(),
+            onClick: () => void refreshCloudSource(),
             style: {
               background: "none",
               border: "none",
@@ -46678,7 +48782,7 @@ ${cue.text}`).join("\n\n")}
               opacity: refreshing ? 0.5 : 1,
               fontFamily: "inherit"
             },
-            children: `${t("sourceDebrid")}: ${t("sourceRefresh")}`
+            children: `${t("sourceCloud")}: ${t("sourceRefresh")}`
           }
         ),
         showError("sources") ? /* @__PURE__ */ jsx("p", { style: errorStyle, children: t("errorSources") }) : null
@@ -46912,7 +49016,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/empty-state.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/empty-state.tsx
   init_jsx_runtime_shim();
   function EmptyState({ isTv, isMobile, t, onRestore }) {
     const fs = (px) => fontSize(px, isTv);
@@ -46960,7 +49064,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/play/guide-warm.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/guide-warm.ts
   function guideWarmTargets(channels, rundowns, now2, done) {
     const out = [];
     for (const channel of channels) {
@@ -46977,7 +49081,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channels-page.tsx
   init_jsx_runtime_shim();
   var GUIDE_WARM_SETTLE_MS = 2e3;
   var GUIDE_WARM_GAP_MS = 1500;
@@ -47417,14 +49521,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/ui/settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var CONFIRM_MS2 = 3e3;
-  var fill2 = (text, vars) => {
+  var fill2 = (text2, vars) => {
     const one = (s) => Object.entries(vars).reduce((out, [k, v]) => out.split(`{${k}}`).join(String(v)), s);
-    return Object.fromEntries(Object.entries(text).map(([l, s]) => [l, one(s)]));
+    return Object.fromEntries(Object.entries(text2).map(([l, s]) => [l, one(s)]));
   };
   function openStudio(target2) {
     requestOpenBrowsePage({ pageId: CHANNELS_PAGE_ID, params: { studio: target2 } });
@@ -47450,15 +49554,15 @@ ${cue.text}`).join("\n\n")}
       });
     }
     rows.push({ t: "action", label: S.settingsNewRow, run: actions.create });
-    const accounts = debridAccounts();
+    const accounts = cloudAccounts();
     if (accounts.length > 0) {
       rows.push({ t: "eyebrow", label: S.settingsCloudTitle });
       for (const id of accounts) {
         rows.push({
           t: "action",
-          label: { en: CLOUD_NAMES[id], sv: CLOUD_NAMES[id], de: CLOUD_NAMES[id], fr: CLOUD_NAMES[id], es: CLOUD_NAMES[id] },
+          label: { en: cloudAccountName(id), sv: cloudAccountName(id), de: cloudAccountName(id), fr: cloudAccountName(id), es: cloudAccountName(id) },
           danger: true,
-          confirm: { title: fill2(S.settingsCloudRemoveTitle, { name: CLOUD_NAMES[id] }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
+          confirm: { title: fill2(S.settingsCloudRemoveTitle, { name: cloudAccountName(id) }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
           run: () => removeCloudAccount(id)
         });
       }
@@ -47498,14 +49602,13 @@ ${cue.text}`).join("\n\n")}
     };
     return { sorted, counts, confirmId, requestDelete: onDelete };
   }
-  var CLOUD_NAMES = { realdebrid: "Real-Debrid", torbox: "TorBox", alldebrid: "AllDebrid" };
   function removeCloudAccount(id) {
-    forgetDebridAccount(id);
-    void refreshDebridCloud().catch(() => []);
+    forgetCloudAccount(id);
+    void refreshCloud().catch(() => []);
   }
   function CloudAccountsCard() {
     const t = useText();
-    const [accounts, setAccounts] = useState(() => debridAccounts());
+    const [accounts, setAccounts] = useState(() => cloudAccounts());
     const [confirm, setConfirm] = useState(null);
     const timer4 = useRef(null);
     useEffect(() => () => {
@@ -47521,10 +49624,10 @@ ${cue.text}`).join("\n\n")}
       }
       setConfirm(null);
       removeCloudAccount(id);
-      setAccounts(debridAccounts());
+      setAccounts(cloudAccounts());
     };
     return /* @__PURE__ */ jsx(Section, { title: t("settingsCloudTitle"), hint: t("settingsCloudHint"), children: accounts.map((id) => /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }, children: [
-      /* @__PURE__ */ jsx("div", { "data-cloud-account": id, style: { color: TOKENS.text, fontWeight: 600 }, children: CLOUD_NAMES[id] }),
+      /* @__PURE__ */ jsx("div", { "data-cloud-account": id, style: { color: TOKENS.text, fontWeight: 600 }, children: cloudAccountName(id) }),
       /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => onRemove(id), children: t(confirm === id ? "settingsCloudRemoveConfirm" : "settingsCloudRemove") })
     ] }, id)) });
   }
@@ -47595,7 +49698,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/publish-lt0192/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/index.ts
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
@@ -47603,6 +49706,7 @@ ${cue.text}`).join("\n\n")}
     description: S.description,
     preinstalled: false,
     register(ctx) {
+      warmCloudServices();
       ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true, keepsTvTopChrome: true });
       ctx.registerMainMenuItem({ id: CHANNELS_PAGE_ID, label: S.menuLabel, target: { pageId: CHANNELS_PAGE_ID }, defaultEnabled: true });
       ctx.registerHomeRow({ id: "channels-now", title: S.homeRowTitle, showOnHome: true, Row: ChannelsHomeRow });
