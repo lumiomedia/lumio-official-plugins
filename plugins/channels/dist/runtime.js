@@ -7359,6 +7359,7 @@
         coreStreamsCached: "Cached",
         coreStreamsLoading: "Checking sources\u2026",
         streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+        streamWrongFileNoneLeft: "The streams found look like the wrong file: far shorter than the film. Pick another stream from the list.",
         libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
         libraryRowSuffix: "in your library",
         libraryModeTab: "Library",
@@ -9505,6 +9506,16 @@
   });
 
   // lib/library/local-folder-provider.ts
+  function absoluteEpisode(work, parentFolder) {
+    if (!parentFolder) return null;
+    const match = work.match(/^(?:\[[^\]]*\]\s*)?(.+?)\s+[-–]\s+(\d{1,4})(?=\s|\[|\(|$)/);
+    if (!match) return null;
+    const episode = Number.parseInt(match[2], 10);
+    if (!(episode >= 1) || match[2].length === 4 && /^(19|20)/.test(match[2])) return null;
+    const title = match[1].trim();
+    const folder = parseLocalName(`${parentFolder}.mkv`).title;
+    return normalizeKey(title) && normalizeKey(title) === normalizeKey(folder) ? { title, episode } : null;
+  }
   function parseLocalName(filename, parentFolder) {
     const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
     const se = parseSeasonEpisode(stem);
@@ -9526,6 +9537,13 @@
     if (quality?.index != null) cuts.push(quality.index);
     if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
     let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (!se) {
+      const absolute = absoluteEpisode(stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim(), parentFolder);
+      if (absolute) {
+        const qualityLabel = qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase();
+        return { title: absolute.title, year: null, season: 1, episode: absolute.episode, qualityLabel };
+      }
+    }
     if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
       const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
       title = parsedFolder.title;
@@ -42463,14 +42481,14 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     ChannelsPlugin: () => ChannelsPlugin,
     default: () => runtime_default
   });
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/strings.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/strings.ts
   var S = {
     pluginName: { en: "LumioTV", sv: "LumioTV", de: "LumioTV", fr: "LumioTV", es: "LumioTV" },
     description: { en: "Personal linear TV channels", sv: "Personliga linj\xE4ra TV-kanaler", de: "Pers\xF6nliche lineare TV-Sender", fr: "Cha\xEEnes de t\xE9l\xE9vision lin\xE9aires personnelles", es: "Canales de televisi\xF3n lineal personales" },
@@ -42700,14 +42718,14 @@ ${cue.text}`).join("\n\n")}
     Politics: { en: "Politics", sv: "Politik", de: "Politik", fr: "Politique", es: "Pol\xEDtica" }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/bootstrap.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/state/store.ts
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/genres.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/genres.ts
   var ALIAS = {
     "sci-fi": "science fiction",
     "sci fi": "science fiction",
@@ -42737,7 +42755,7 @@ ${cue.text}`).join("\n\n")}
     return [...set];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/channel.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/model/channel.ts
   var ERA_RANGES = {
     "70s": [1970, 1979],
     "80s": [1980, 1989],
@@ -42873,7 +42891,7 @@ ${cue.text}`).join("\n\n")}
     return words.slice(0, 2).map((w) => w[0].toLocaleUpperCase()).join("");
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/lock.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/model/lock.ts
   var MIN = 6e4;
   var LOCK_SPAN_MS = 6 * 36e5;
   var LOCK_RENEW_MS = 3 * 36e5;
@@ -42948,7 +42966,7 @@ ${cue.text}`).join("\n\n")}
     return ok ? { sig, slots } : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/model/schedule.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
   var MIN2 = 6e4;
   var DAY_MIN = 24 * 60;
@@ -43133,7 +43151,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/pool.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/pool.ts
   var DEFAULT_RUNTIME = { movie: 100, episode: 45 };
   var LENGTH_TEST = {
     any: () => true,
@@ -43272,7 +43290,7 @@ ${cue.text}`).join("\n\n")}
     return items2.filter((item) => kept.has(item.seriesKey ?? item.ref));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/pool-pack.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/pool-pack.ts
   var POOL_PACK_VERSION = 3;
   function packPlay(play, source) {
     if (play.type === "library") {
@@ -43356,7 +43374,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/title-clean.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/title-clean.ts
   var JUNK_WORDS = /* @__PURE__ */ new Set(["com", "net", "org", "www", "mkv", "mp4", "avi", "rip", "dual", "multi", "latino", "castellano", "subs", "sub"]);
   var mixed = (w) => /[a-z]/i.test(w) && /\d/.test(w);
   function cleanTitle(raw) {
@@ -43376,7 +43394,7 @@ ${cue.text}`).join("\n\n")}
     return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/runtime-fix.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/runtime-fix.ts
   var MAX_FIXES = 600;
   function noteDuration(fixes, ref, seconds2) {
     if (!Number.isFinite(seconds2) || seconds2 < 60 || seconds2 > 12 * 3600) return null;
@@ -43414,7 +43432,7 @@ ${cue.text}`).join("\n\n")}
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/sources.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/sources.ts
   var isVodSourceId = (id) => id.startsWith("xtream-vod:");
   function librarySides(t) {
     const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : [];
@@ -43862,7 +43880,7 @@ ${cue.text}`).join("\n\n")}
     return timed;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/dead-files.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/dead-files.ts
   var DEAD_TTL_MS = 24 * 60 * 60 * 1e3;
   var MAX_DEAD = 300;
   var deadKey = (v) => `${v.provider}:${v.fileRef}`;
@@ -43905,10 +43923,10 @@ ${cue.text}`).join("\n\n")}
     return changed ? out : items2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/meta-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/meta-cache.ts
   var TTL_MS = 30 * 24 * 3600 * 1e3;
   var PARALLEL = 2;
   function metaKey(kind, tmdbId, season, episode) {
@@ -44076,7 +44094,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ensure };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/cloud-versions.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/cloud-versions.ts
   function resolutionOf(name) {
     const n = (name ?? "").toLowerCase();
     if (/\b(2160p|4k|uhd)\b/.test(n)) return 2160;
@@ -44100,7 +44118,7 @@ ${cue.text}`).join("\n\n")}
     return [...inside, ...outside];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/resolve.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
@@ -44166,7 +44184,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/cloud.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/cloud.ts
   function createCloud(deps) {
     const pauseMs = deps.pauseMs ?? 1e3;
     let cache7 = null;
@@ -44396,7 +44414,7 @@ ${cue.text}`).join("\n\n")}
     return { listCloud, unlockCloudFile };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/data/cloud-services.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/data/cloud-services.ts
   var CLOUD_SERVICES_URL = "https://raw.githubusercontent.com/lumiomedia/lumio-official-plugins/main/connectors/channels-cloud.js";
   var REFRESH_MS = 24 * 60 * 60 * 1e3;
   var RETRY_MS2 = 10 * 60 * 1e3;
@@ -44480,7 +44498,7 @@ ${cue.text}`).join("\n\n")}
     return { get, ready, refresh };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/trace.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/trace.ts
   function trace(msg) {
     console.info(`[channels] ${msg}`);
     try {
@@ -44490,7 +44508,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/host.ts
   var PLUGIN_ID = "com.lumio.channels";
   var object = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
   var cloudServices = createCloudServices({
@@ -44793,7 +44811,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/state/store.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/state/store.ts
   function saveChannel(def) {
     const all = readChannels();
     const before = all.find((c) => c.id === def.id);
@@ -45018,7 +45036,7 @@ ${cue.text}`).join("\n\n")}
     return now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/bootstrap.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/bootstrap.tsx
   function seedForActiveProfile() {
     try {
       seedDefaultChannels(readStoredLang() || "en");
@@ -45033,11 +45051,11 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/home-row.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/home-row-logic.ts
   var HOME_DEFAULT_COUNT = 20;
   function homeChannels(channels, count = HOME_DEFAULT_COUNT) {
     return channels.filter((c) => c.showOnHome).sort((a, b) => a.number - b.number).slice(0, Math.max(0, count));
@@ -45070,7 +45088,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/guide-layout.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/guide-layout.ts
   var MIN3 = 6e4;
   var HALF_HOUR = 30 * MIN3;
   var GUIDE_SPAN_MIN = 210;
@@ -45110,7 +45128,7 @@ ${cue.text}`).join("\n\n")}
     return Math.max(0, Math.min(Math.max(0, maxScroll), index * rowH));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tv.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/tv.ts
   init_react_shim();
   init_tv_focus_shim();
   var tvu = (n) => `calc(${n} * var(--tv-u, 1px))`;
@@ -45186,7 +45204,7 @@ ${cue.text}`).join("\n\n")}
   }
   var tvType = (role) => typeSize(0, true, role);
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/tokens.ts
   var C = {
     /** Appens grund (--base-950, följer temat; svart som standard). */
     base: "rgb(var(--base-950, 5 5 7))",
@@ -45261,7 +45279,7 @@ ${cue.text}`).join("\n\n")}
   var RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 };
   var fontSize = (px, tv) => typeSize(px, tv);
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/use-text.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/use-text.ts
   init_react_shim();
   init_plugin_sdk();
   function useText() {
@@ -45276,7 +45294,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/home-row.tsx
   init_jsx_runtime_shim();
   function ChannelsHomeRow({ onNavigate, layout = "slider", count, sliderCardWidth = "16rem" }) {
     const t = useText();
@@ -45459,11 +45477,11 @@ ${cue.text}`).join("\n\n")}
     }, [id, rundown, report]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channels-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/player-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/player-logic.ts
   function startSeconds(slot, mode) {
     if (mode === "start") return 0;
     return Math.max(0, slot.minsIn * 60);
@@ -45529,7 +45547,7 @@ ${cue.text}`).join("\n\n")}
     return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/warm.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/warm.ts
   var WEBDAV_STREAM = "/api/webdav-library/stream?";
   function isFileUrl(url) {
     if (!/^https?:\/\//i.test(url)) return false;
@@ -45590,7 +45608,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/start-channel.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/start-channel.ts
   function onAirNow(channel, rundown, now2) {
     if (rundown == null) return isOnAir(channel.airWindow, now2);
     return rundown.length > 0 && programmeAt(rundown, channel.airWindow, now2).kind === "programme";
@@ -45602,11 +45620,11 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
   function ChannelBadge({ channel, size = 44, isTv = false, style }) {
     return /* @__PURE__ */ jsx(
@@ -45638,7 +45656,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channel-guide.tsx
   init_jsx_runtime_shim();
   var ROW_H = 54;
   var TV_ROW_H = 72;
@@ -46031,7 +46049,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-hero.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channel-hero.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
@@ -46359,12 +46377,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channel-player.tsx
   var import_react_dom4 = __toESM(require_react_dom(), 1);
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/zap-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/zap-logic.ts
   var NOISE_MS = 320;
   var OSD_IDLE_MS = 4e3;
   var MAX_DIGITS = 3;
@@ -46394,7 +46412,7 @@ ${cue.text}`).join("\n\n")}
     return channels.find((c) => c.number === n) ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/player-state.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/player-state.ts
   var POSITION_SLACK_S = 20;
   var TRUSTED_FIRST_PLAY_MS = 4800;
   var MAX_VERSIONS = 3;
@@ -46505,10 +46523,22 @@ ${cue.text}`).join("\n\n")}
       case "reveal":
         if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s;
         return { ...s, framedSeq: a.seq };
+      case "extend":
+        if (!s.onScreen || s.onScreen.seq !== a.seq || a.deadline <= s.onScreen.deadline) return s;
+        return { ...s, onScreen: { ...s.onScreen, deadline: a.deadline } };
     }
   }
+  var MAX_OVERRUN_MS = 30 * 6e4;
+  function overrunDeadline(input) {
+    const { now: now2, position, duration: duration2, deadline, slotStart } = input;
+    if (!Number.isFinite(duration2) || duration2 <= 0 || !Number.isFinite(position)) return null;
+    const fileEnd = now2 + Math.max(0, duration2 - position) * 1e3 + 1e3;
+    if (fileEnd <= deadline) return null;
+    const cap = deadline + Math.min(MAX_OVERRUN_MS, Math.max(0, deadline - slotStart));
+    return Math.min(fileEnd, cap);
+  }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/guide-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/guide-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var HALF_HOUR2 = 30 * 6e4;
@@ -46632,7 +46662,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/host-controls.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
@@ -46812,7 +46842,7 @@ ${cue.text}`).join("\n\n")}
     return spot;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/tuning-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/tuning-card.tsx
   init_jsx_runtime_shim();
   var FADE_MS = 220;
   var KEYFRAMES = `
@@ -46881,7 +46911,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/zap-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/zap-overlay.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var NOISE_SVG = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")`;
@@ -47111,7 +47141,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channel-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channel-player.tsx
   init_jsx_runtime_shim();
   var PRELOAD_LEAD_MS = 3e4;
   var RAPID_ZAP_MS = 700;
@@ -47702,6 +47732,13 @@ ${cue.text}`).join("\n\n")}
               noteProgress(seq);
               noteFileDuration(seq, slot.item.ref, duration2);
               const cur = stateRef.current;
+              if (cur.onScreen?.seq === seq && cur.framedSeq === seq) {
+                const extended = overrunDeadline({ now: Date.now(), position, duration: duration2, deadline: cur.onScreen.deadline, slotStart: slot.start });
+                if (extended != null && extended - cur.onScreen.deadline > 5e3) {
+                  trace(`programmet spelar klart: gr\xE4nsen ${new Date(cur.onScreen.deadline).toLocaleTimeString()} \u2192 ${new Date(extended).toLocaleTimeString()} (${slot.item.title})`);
+                  dispatch({ type: "extend", seq, deadline: extended });
+                }
+              }
               if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
               if (endHandledFor.current === seq) return;
               if (cur.framedSeq === seq && onScreen.initialTime > 60 && position < 5) {
@@ -48030,11 +48067,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/studio.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/studio-logic.ts
   var WINDOW_LABEL = {
     always: "windowAlways",
     evenings: "windowEvenings",
@@ -48256,7 +48293,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/title-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/title-picker.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -48481,7 +48518,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/studio.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/studio.tsx
   init_jsx_runtime_shim();
   var LOADERS = {
     library: loadLibraryItems,
@@ -49016,7 +49053,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/empty-state.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/empty-state.tsx
   init_jsx_runtime_shim();
   function EmptyState({ isTv, isMobile, t, onRestore }) {
     const fs = (px) => fontSize(px, isTv);
@@ -49064,7 +49101,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/play/guide-warm.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/play/guide-warm.ts
   function guideWarmTargets(channels, rundowns, now2, done) {
     const out = [];
     for (const channel of channels) {
@@ -49081,7 +49118,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/channels-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/channels-page.tsx
   init_jsx_runtime_shim();
   var GUIDE_WARM_SETTLE_MS = 2e3;
   var GUIDE_WARM_GAP_MS = 1500;
@@ -49521,7 +49558,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/ui/settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/ui/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -49698,7 +49735,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/channels-neutral/plugins/channels/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/channels/runtime/index.ts
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,

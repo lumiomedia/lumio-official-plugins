@@ -475,20 +475,26 @@
   });
 
   // lib/android-source-cache.ts
+  function noteTightDevice(tight) {
+    tightDevice = tight;
+  }
+  var tightDevice;
   var init_android_source_cache = __esm({
     "lib/android-source-cache.ts"() {
       init_app_storage();
+      tightDevice = null;
     }
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, onProfileChanged;
+  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
   var init_profile_storage_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
       getActiveProfileId = () => sdk.getActiveProfileId();
       getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
       setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
       onProfileChanged = (listener) => sdk.onProfileChanged(listener);
     }
   });
@@ -1222,14 +1228,6 @@
         streamProviderCustomUrl: "Custom URL",
         streamProviderNoUrl: "No URL set",
         streamProviderAddComet: "+ Comet",
-        streamProviderAddJackettio: "+ Jackettio",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        streamProviderAddAiostreams: "+ AIOStreams",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsOpenConfig: "Open the configurator",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsManifestLabel: "Manifest URL",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
         streamProviderAddCustom: "+ Custom URL",
         useGlobal: "Use global",
         clearFilters: "Clear filters",
@@ -1429,6 +1427,8 @@
         appUpdateDownloading: "Downloading update",
         appUpdateInstallingStep: "Installing the update \u2013 Lumio will restart",
         appUpdatePromptLater: "Not now",
+        appAnnouncementClose: "Close",
+        appAnnouncementOpen: "Open",
         appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
         appUpdateInstallerStarted: "Installing the update \u2014 Lumio closes and opens again on the new version\u2026",
         appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -1551,6 +1551,7 @@
         subtitleLoadFile: "Open subtitle file\u2026",
         subtitleExternalGroup: "Own file",
         subtitleEmbeddedTrack: "Embedded track",
+        subtitleLibraryTrack: "From your server",
         subtitleFileUnsupported: "This format can only be shown by the built-in player on Mac (mpv). Use .srt or .vtt here.",
         subtitleFileUnsupportedWindows: "This format can only be shown by the built-in player (mpv). Use .srt or .vtt here.",
         subtitleFileLoadFailed: "Could not load the subtitle file. {message}",
@@ -1568,6 +1569,13 @@
         vpSecondarySubMissing: "No {lang} subtitle found",
         learningModeTitle: "Learning mode",
         learningModeHint: "Show a second subtitle language under the main one",
+        spokenSubtitlesGroup: "Spoken subtitles",
+        spokenSubtitles: "Read subtitles aloud",
+        spokenSubtitlesDesc: "Reads the current subtitle line aloud with the device's voice and lowers the film's sound while it speaks. Uses a voice for the subtitle's language when one is installed.",
+        spokenSubtitlesRate: "Reading speed",
+        spokenSubtitlesRateDesc: "How fast the voice reads the lines.",
+        spokenSubtitlesRateNormal: "Normal",
+        spokenSubtitlesRateFast: "Fast",
         subtitleSlotPrimary: "Main",
         subtitleSlotSecondary: "Second",
         subtitleSecondaryEmbeddedUnsupported: "Not supported on Android yet",
@@ -1911,9 +1919,15 @@
         plSleepShort: "Sleep",
         plSleepOff: "Off",
         plSleepMinutes: "{n} min",
+        plSleepRemaining: "{n} min left",
         plSleepEnd: "End of episode or film",
         plSleepStillThere: "Are you still there?",
         plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+        plSleepFade: "Fade out over the last 2 min",
+        incognitoBadge: "Incognito",
+        incognitoToggle: "Watch without it showing",
+        incognitoTurnOff: "Turn off incognito",
+        incognitoPlay: "Play incognito",
         plCompanions: "Who's watching",
         plWhoWatches: "Who's watching with you?",
         plCompanionsJustMe: "Just me",
@@ -2030,6 +2044,11 @@
         rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
         allowSoftwareDecoding: "Allow software decoding",
         allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+        blockMobileData: "Ask before streaming on mobile data",
+        blockMobileDataDesc: "When the phone is not on Wi-Fi, Lumio asks before playback starts. Play anyway applies for the rest of the session.",
+        mobileDataPromptTitle: "You are on mobile data",
+        mobileDataPromptBody: "Streaming uses a lot of data. Do you want to play anyway?",
+        mobileDataPromptPlay: "Play anyway",
         dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
         dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
         dv7AsHdr10Auto: "Auto",
@@ -2076,6 +2095,7 @@
         deviceNoAudioDecoder: "This device cannot decode the lossless audio track (TrueHD/DTS-HD) \u2014 playing with another track, or without sound. Pick an AC3/EAC3/AAC version for audio.",
         deviceFormatUnsupported: "This device cannot decode that video format \u2014 try another version.",
         plTabNextEp: "Next episode",
+        plTabEnds: "When it ends",
         plNextEpHint: "Autoplay, the popup and outro behavior between episodes.",
         langAudioSubTab: "Audio & subtitles",
         langAudioSubTitle: "Audio & subtitle defaults",
@@ -2246,6 +2266,29 @@
         dsLayoutInline: "Below the content",
         heroCast: "Cast",
         newSeasonBadge: "New season",
+        episodesLeftInSeason: "{n} episodes left in the season",
+        watchedThreshold: "Counts as watched",
+        watchedThresholdDesc: "When a movie or episode is marked as watched. Automatic: episodes at 92 % or 90 s left, movies at 97 % or 30 s left.",
+        watchedThresholdAuto: "Automatic",
+        snoozeSeries: "Snooze series",
+        snoozeWeek: "For a week",
+        snoozeMonth: "For a month",
+        snoozeNextSeason: "Until the next season",
+        snoozedSeriesCount: "{n} snoozed series",
+        snoozedUntil: "until {date}",
+        snoozeWake: "Show again",
+        snoozeWakeSeries: "Wake series",
+        snoozedChip: "Snoozed ({n})",
+        snoozedSeriesHeading: "Snoozed series",
+        episodesLeftShort: "{n} left",
+        lastEpisodeShort: "Last ep.",
+        catchUpOne: "Catch up: 1 episode a night until {date}",
+        catchUpMany: "Catch up: {n} episodes a night until {date}",
+        catchUpChip: "Catch up \xB7 {n}/night",
+        catchUpMeta: "Catch up: {n} a night until {date}",
+        catchUpDetail: "{remaining} episodes left before season {season} on {date}. That is {evenings} evenings.",
+        catchUpTitle: "Catch up before the premiere",
+        lastEpisodeOfSeason: "Last episode of the season",
         homeCardShape: "Card shape",
         homeCardShapeDesc: "Poster cards or wide backdrop cards on the home rows.",
         homeRowTitle: "Row name",
@@ -2309,6 +2352,8 @@
         performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
         heroActionsExpanded: "Always show action labels",
         heroActionsExpandedDesc: "On the hero and on a title\u2019s details page, the icon buttons next to Play keep their names visible instead of revealing them on hover.",
+        tvHeroFull: "Hide the first row",
+        tvHeroFullDesc: "The hero fills the screen and its text sits lower; press down to bring up the rows in their usual place.",
         settingsPagePluginManage: "Manage plugins",
         settingsTabStatus: "Status",
         settingsTabQuick: "Quick settings",
@@ -2994,6 +3039,8 @@
         tvHeroFeatured: "Featured",
         tvHeroMyList: "My list",
         tvHeroPagerDot: "Featured title {n} of {total}",
+        tvHeroPrev: "Previous title",
+        tvHeroNext: "Next title",
         tvHeroRuntimeHm: "{h} h {m} min",
         tvHeroRuntimeM: "{m} min",
         tvHeroStreamsN: "{n} streams",
@@ -3168,6 +3215,10 @@
         homeTopPicksSeriesSubtitle: "Curated top series",
         homeSourceFilmCollections: "Film collections",
         collectionsBackLabel: "Collections",
+        collectionRowSubtitle: "{n} collections",
+        homeStudiosSubtitle: "Films by studio",
+        homeStreamingServicesSubtitle: "Browse by service",
+        homeFilmCollectionsSubtitle: "Franchises and film series",
         collectionEmptyItems: "No titles right now",
         collectionRowsTitle: "Collection rows",
         collectionRowsDesc: "Rows of cards that unfold into their own titles, like Film collections \u2014 but yours.",
@@ -3201,6 +3252,7 @@
         collectionRowRemoveBody: "The row and all its collections are removed. Home rows that use it show a placeholder.",
         collectionCoverSuggestedEmpty: "No suggestions yet \u2014 the collection has no titles with images.",
         collectionHeroSummary: "{count} titles \xB7 {years} \xB7 {titles}",
+        collectionMetaFilms: "{count} films",
         collectionHeroHint: "Collection \u2014 press OK to see its titles.",
         collectionHeroBackdrop: "Background on TV",
         collectionHeroBackdropHint: "Animated covers are often low resolution \u2014 the titles give a sharp background.",
@@ -3281,9 +3333,15 @@
         appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
         exitOnCloseTitle: "Quit fully on close",
         exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+        launcherModeTitle: "Use Lumio as home screen",
+        launcherModeHint: "The device starts in Lumio and your other apps sit in a row at the bottom of the home page. Android asks which home screen to use.",
+        launcherModeNotChosen: "Lumio is not the chosen home screen yet. Turn this off and on again to choose it.",
+        launcherModeBlocked: "This device doesn't let another app be the home screen (Google TV keeps its own). The apps row on the start page still works.",
+        launcherAppsRow: "Apps",
         exitAppAction: "Quit Lumio",
         exitAppTitle: "Quit Lumio?",
         exitAppConfirm: "Quit",
+        exitAppHoldHint: "Tip: hold Back anywhere to get here.",
         quizMenuLabel: "Film quiz",
         couchMenuLabel: "Couch mode",
         couchOpenButton: "Open Couch mode",
@@ -3458,6 +3516,9 @@
         creditsThresholdTvDesc: "Only when the season has ended and no next season exists.",
         advanceAtOutro: "Skip the credits and go straight to the next episode",
         advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
+        nextEpAfterLastSub: "Next episode after the last subtitle line",
+        nextEpAfterLastSubDesc: "For episodes without a detected outro, the next-episode card appears this long after the subtitle file's last line. Waiting a little leaves room for a closing scene without dialogue; the card can always be dismissed.",
+        nextEpAfterLastSubOff: "Off",
         stayFullscreenOnClose: "Stay fullscreen when the player closes",
         stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
         showTitleOnStart: "Show title when playback starts",
@@ -3499,8 +3560,11 @@
         autoplayMaxResolution: "Max resolution for auto-play",
         autoplayMaxResolutionDesc: "Skip sources above this resolution when auto-playing. Sources with an unknown resolution are still allowed.",
         autoplayMaxResolutionUnlimited: "Unlimited",
-        preferEmbeddedSubtitles: "Prefer embedded subtitles",
-        preferEmbeddedSubtitlesDesc: "When picking subtitles automatically, try tracks embedded in the video first \u2014 they are always in sync.",
+        subtitleOrder: "Subtitle order",
+        subtitleOrderDesc: "Which subtitles are picked first automatically. Best: your language comes first, and within a language the file's own full track goes before downloads \u2014 it is made for that file and always in sync.",
+        subtitleOrderBest: "Best",
+        subtitleOrderEmbedded: "File's own first",
+        subtitleOrderDownloads: "Downloads first",
         peekSeasonWord: "season",
         peekSeasonsWord: "seasons",
         peekOpenDetails: "More info",
@@ -3521,6 +3585,18 @@
         advMpvConfTitle: "Raw mpv.conf",
         advMpvConfHint: "One property=value per line, applied to the player after all managed settings. For power users.",
         advMpvConfNote: "Applies on the next playback start. Invalid lines are ignored.",
+        advCustomShadersTitle: "Custom shaders",
+        advCustomShadersHint: "Put .glsl or .hook files in the folder and choose which ones run. They run in the order you tick them, after Anime4K.",
+        advCustomShadersEmpty: "The folder is empty.",
+        advCustomShadersOpen: "Open folder",
+        advCustomShadersRefresh: "Refresh",
+        advCustomShadersNote: "Applies right away, also during playback. A glsl-shaders line in mpv.conf above replaces this list.",
+        advCustomShadersNoneOn: "No file is switched on yet \u2014 tick the ones that should run.",
+        rtShadersEmpty: "No files in the folder yet \u2014 drop .glsl files there.",
+        rtShadersActive: "Active in player: {list}",
+        rtShadersCustomCount: "{n} custom",
+        rtShadersNone: "No shaders active",
+        rtShadersMpvConf: "mpv.conf controls shaders",
         extraSubtitleLanguages: "More subtitle languages",
         extraSubtitleLanguagesDesc: "Ordered list of language codes tried after the default and fallback, comma-separated.",
         forcedSubtitlesWhenAudioMatches: "Forced subtitles when audio matches",
@@ -3663,7 +3739,7 @@
         advTransferCode: "Code shown on the other device",
         advTransferSend: "Send settings",
         advTransferSending: "Sending\u2026",
-        advTransferSent: "Sent. The other device is restarting with your settings.",
+        advTransferSent: "Sent. The other device takes the settings in and restarts \u2013 if it is in the setup guide, the guide continues first and the restart comes when it finishes.",
         advTransferFailed: "Could not send",
         advTransferWrongCode: "Wrong code. Attempts left: {n}.",
         syncWebdavTitle: "Cloud sync (WebDAV)",
@@ -3729,15 +3805,17 @@
         audioModeBest: "Best possible",
         audioModeBestDesc: "Keeps multichannel audio in the proxy when possible. Tauri/mpv continues to use the original track directly.",
         nightMode: "Night mode / DRC",
-        nightModeDesc: "Reduces loud peaks and makes dialogue easier to hear at lower volume.",
+        nightModeDesc: "Lifts dialogue and quiet passages without making loud scenes louder. For watching at low volume.",
         nightModeOff: "Off",
         nightModeMild: "Mild night mode",
+        nightModeMedium: "Medium night mode",
         nightModeStrong: "Strong night mode",
         dvColorLabel: "Dolby Vision",
         dvColorAuto: "Vivid (auto)",
         dvColorOff: "Off",
         nightModeMenuLabel: "Night mode",
         nightModeMenuMild: "Mild",
+        nightModeMenuMedium: "Medium",
         nightModeMenuStrong: "Strong",
         onboardingIntegrationsEyebrow: "Integrations",
         onboardingIntegrationsTitle: "Make Lumio even better",
@@ -3770,6 +3848,8 @@
         subtitleAutoSyncGroup: "Auto-sync",
         subtitleSyncFastReadAhead: "Faster sync (uses more data)",
         subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
+        styledAssSubtitles: "Styled ASS subtitles",
+        styledAssSubtitlesHint: "Draws ASS/SSA subtitles (anime and fansubs) with their own fonts, colours and positions. Turn off if heavy typesetting stutters on a slow box; they then show as plain text. Applies from the next playback.",
         subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
         subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
         subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
@@ -3778,6 +3858,7 @@
         subtitleAutoSyncOtherEditKeep: "Keep",
         playerStarvedLighter: "The connection can\u2019t keep up with this version. Lighter: {stream}",
         playerStarvedSwitch: "Switch",
+        playerStreamLost: "The stream stopped at {time}. Pick a source to continue from there.",
         subtitleLanguageDetected: "language detected",
         subtitleForced: "Forced",
         subtitleSdh: "SDH",
@@ -3821,6 +3902,9 @@
         subtitleBold: "Bold text",
         subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
         skipIntro: "Skip intro",
+        skipLearned: "Skip (learned)",
+        plLearnSkips: "Learn my skips",
+        plForgetLearnedSkips: "Forget learned skips for this series",
         originalFirst: "Original / first",
         noFallback: "No fallback",
         autoplayNextEpisode: "Auto-play next episode",
@@ -4163,6 +4247,7 @@
         coreStreamsCached: "Cached",
         coreStreamsLoading: "Checking sources\u2026",
         streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+        streamWrongFileNoneLeft: "The streams found look like the wrong file: far shorter than the film. Pick another stream from the list.",
         libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
         libraryRowSuffix: "in your library",
         libraryModeTab: "Library",
@@ -4233,6 +4318,7 @@
         libraryEpisodeNotInLibrary: "This episode is not in your library",
         libraryRowNotLoaded: "not loaded yet",
         libraryRowRecent: "Recently added to your library",
+        libraryRowRecentShort: "Recently added",
         libraryRowMovies: "Movies in your library",
         tvLibraryTabRowsLabel: "Library tab",
         tvLibraryTabRowsDesc: "Edit the rows of a library in the menu instead of a page above.",
@@ -4331,6 +4417,8 @@
         ipSectionHint: "Click a service to view or change its settings.",
         // Home panel (Hem)
         hpTabHero: "Hero & background",
+        hpTabNavigation: "Navigation",
+        clearCacheHint: "Clears the app\u2019s response caches",
         hpTabDisplay: "Display",
         hpGenreAll: "All categories",
         hpGenreAction: "Action",
@@ -5422,7 +5510,20 @@
         tvEdTitlesRowStation: "Titles in the row \xB7 pin or hide",
         tvEdTitlesRowTitle: "Titles in the row",
         tvEdTitlesRefNote: "The titles come from the row this one points to \u2014 pin or hide them there.",
-        tvEdTemplateEyebrow: "Template for the theme"
+        tvEdTemplateEyebrow: "Template for the theme",
+        ratingRate: "Rate",
+        ratingRateEpisode: "Rate episode",
+        ratingRated: "Rated {n}/10",
+        ratingEyebrow: "Your rating \xB7 Trakt",
+        ratingNone: "Not rated yet",
+        ratingValue: "{stars} stars \xB7 {n}/10",
+        ratingRemove: "Remove rating",
+        ratingSaveFailed: "Couldn't save to Trakt. Try again.",
+        ratingExpired: "Your Trakt sign-in has expired. Connect Trakt again in Settings.",
+        ratingHint: "Pick a star \u2014 each half is one point on Trakt's 1\u201310 scale.",
+        castSeenIn: "You've seen them in {titles}",
+        personSeenIn: "You've seen them in",
+        personSeenInSorted: "Most recently watched first"
       };
     }
   });
@@ -5450,11 +5551,15 @@
     if (typeof window === "undefined") return null;
     return window.__lumioLang ?? null;
   }
+  function windowsDesktop() {
+    if (windowsDesktopCache === null) windowsDesktopCache = isWindowsDesktop();
+    return windowsDesktopCache;
+  }
   function lookup(lang, key) {
     const current2 = loaded();
     const pack = lang !== "en" && current2?.lang === lang ? current2.pack : null;
     const base = en;
-    if (isWindowsDesktop()) {
+    if (windowsDesktop()) {
       const variant = pack?.[`${key}Windows`] ?? base[`${key}Windows`];
       if (variant) return variant;
     }
@@ -5505,7 +5610,7 @@
     if (!detached) return ctx;
     return detachedValue;
   }
-  var BUILTIN_LANGS, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG, LANG_PACK_EVENT;
+  var BUILTIN_LANGS, windowsDesktopCache, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG, LANG_PACK_EVENT;
   var init_i18n = __esm({
     "lib/i18n.tsx"() {
       "use strict";
@@ -5517,6 +5622,7 @@
       init_en();
       init_jsx_runtime_shim();
       BUILTIN_LANGS = ["en", "sv", "de", "fr", "es"];
+      windowsDesktopCache = null;
       detachedLangContextValue = {
         lang: "en",
         setLang: () => {
@@ -5544,10 +5650,18 @@
     }
   });
 
+  // lib/source-hints.ts
+  var init_source_hints = __esm({
+    "lib/source-hints.ts"() {
+      init_app_storage();
+    }
+  });
+
   // lib/parallel-ranges.ts
   var init_parallel_ranges = __esm({
     "lib/parallel-ranges.ts"() {
       init_app_storage();
+      init_source_hints();
     }
   });
 
@@ -5582,12 +5696,558 @@
     }
   });
 
+  // lib/custom-themes.ts
+  function getCustomThemes() {
+    try {
+      const raw = getScopedStorageItem(LIST_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((t) => Boolean(t && typeof t === "object" && typeof t.id === "string" && t.colors));
+    } catch {
+      return [];
+    }
+  }
+  function getActiveCustomThemeId() {
+    return getScopedStorageItem(ACTIVE_KEY) ?? "";
+  }
+  function hexToTriplet(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return `${n >> 16 & 255} ${n >> 8 & 255} ${n & 255}`;
+  }
+  function shade(hex, pct2) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const target = pct2 >= 0 ? 255 : 0;
+    const p = Math.abs(pct2);
+    const ch = (v) => Math.round(v + (target - v) * p);
+    return `${ch(n >> 16 & 255)} ${ch(n >> 8 & 255)} ${ch(n & 255)}`;
+  }
+  function applyCustomThemeVars(theme) {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    let styleTag = document.getElementById(STYLE_TAG_ID);
+    if (!theme) {
+      for (const name of ALL_VAR_NAMES) root.style.removeProperty(name);
+      styleTag?.remove();
+      return;
+    }
+    for (const [name, value] of TRIPLET_VARS(theme.colors)) {
+      if (value) root.style.setProperty(name, value);
+    }
+    for (const [name, value] of HEX_VARS(theme.colors)) {
+      root.style.setProperty(name, value);
+    }
+    if (theme.css.trim()) {
+      if (!styleTag) {
+        styleTag = document.createElement("style");
+        styleTag.id = STYLE_TAG_ID;
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = theme.css;
+    } else {
+      styleTag?.remove();
+    }
+  }
+  var LIST_KEY, ACTIVE_KEY, STYLE_TAG_ID, TRIPLET_VARS, HEX_VARS, ALL_VAR_NAMES;
+  var init_custom_themes = __esm({
+    "lib/custom-themes.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      LIST_KEY = "custom_themes";
+      ACTIVE_KEY = "custom_theme_active";
+      STYLE_TAG_ID = "lumio-custom-theme-css";
+      TRIPLET_VARS = (c) => [
+        ["--mesh-0", hexToTriplet(c.bg)],
+        ["--mesh-1", shade(c.bg, 0.06)],
+        ["--mesh-2", shade(c.bg, -0.3)],
+        ["--base-950", hexToTriplet(c.bg)],
+        ["--base-900", hexToTriplet(c.surface)],
+        ["--base-850", shade(c.surface, 0.05)],
+        ["--base-800", hexToTriplet(c.elevated)],
+        ["--tone-950", hexToTriplet(c.bg)],
+        ["--tone-900", hexToTriplet(c.surface)],
+        ["--tone-800", hexToTriplet(c.elevated)],
+        ["--accent-400", shade(c.accent, 0.18)],
+        ["--accent-500", hexToTriplet(c.accent)],
+        ["--accent-600", shade(c.accent, -0.15)]
+      ];
+      HEX_VARS = (c) => [
+        ["--tk-bg", c.bg],
+        ["--tk-surface0", c.surface],
+        ["--tk-surface1", c.surface],
+        ["--tk-surface2", c.elevated],
+        ["--tk-surface3", c.elevated],
+        ["--tk-border", c.border],
+        ["--tk-border-strong", c.border]
+      ];
+      ALL_VAR_NAMES = [
+        "--mesh-0",
+        "--mesh-1",
+        "--mesh-2",
+        "--base-950",
+        "--base-900",
+        "--base-850",
+        "--base-800",
+        "--tone-950",
+        "--tone-900",
+        "--tone-800",
+        "--accent-400",
+        "--accent-500",
+        "--accent-600",
+        "--tk-bg",
+        "--tk-surface0",
+        "--tk-surface1",
+        "--tk-surface2",
+        "--tk-surface3",
+        "--tk-border",
+        "--tk-border-strong"
+      ];
+    }
+  });
+
+  // lib/appearance-settings.ts
+  var appearance_settings_exports = {};
+  __export(appearance_settings_exports, {
+    ACCENT_PRESETS: () => ACCENT_PRESETS,
+    CARD_RADIUS_OPTIONS: () => CARD_RADIUS_OPTIONS,
+    CORNER_SCALE_OPTIONS: () => CORNER_SCALE_OPTIONS,
+    FONT_PAIRS: () => FONT_PAIRS,
+    MENU_SCALE_OPTIONS: () => MENU_SCALE_OPTIONS,
+    TRAILER_OVERRIDE_KEYS: () => TRAILER_OVERRIDE_KEYS,
+    TV_BUTTON_SCALE_OPTIONS: () => TV_BUTTON_SCALE_OPTIONS,
+    TV_FONT_SCALE_OPTIONS: () => TV_FONT_SCALE_OPTIONS,
+    TV_MENU_SCALE_OPTIONS: () => TV_MENU_SCALE_OPTIONS,
+    UI_SCALE_OPTIONS: () => UI_SCALE_OPTIONS,
+    applyAppearance: () => applyAppearance,
+    getAccent: () => getAccent,
+    getAppTheme: () => getAppTheme,
+    getCardRadius: () => getCardRadius,
+    getCardSheen: () => getCardSheen,
+    getCornerScale: () => getCornerScale,
+    getFontPair: () => getFontPair,
+    getHeroActionsExpanded: () => getHeroActionsExpanded,
+    getMenuScale: () => getMenuScale,
+    getPerformanceMode: () => getPerformanceMode,
+    getReduceMotion: () => getReduceMotion,
+    getTvButtonScale: () => getTvButtonScale,
+    getTvFontScale: () => getTvFontScale,
+    getTvHeroFull: () => getTvHeroFull,
+    getTvMenuScale: () => getTvMenuScale,
+    getTvMenuVariant: () => getTvMenuVariant,
+    getUiScale: () => getUiScale,
+    getVhsCardsMode: () => getVhsCardsMode,
+    isPerformanceModeExplicit: () => isPerformanceModeExplicit,
+    notePerformanceModeDefault: () => notePerformanceModeDefault,
+    onAppearanceChanged: () => onAppearanceChanged,
+    setAccent: () => setAccent,
+    setAppTheme: () => setAppTheme,
+    setCardRadius: () => setCardRadius,
+    setCardSheen: () => setCardSheen,
+    setCornerScale: () => setCornerScale,
+    setFontPair: () => setFontPair,
+    setHeroActionsExpanded: () => setHeroActionsExpanded,
+    setMenuScale: () => setMenuScale,
+    setPerformanceMode: () => setPerformanceMode,
+    setReduceMotion: () => setReduceMotion,
+    setTvButtonScale: () => setTvButtonScale,
+    setTvFontScale: () => setTvFontScale,
+    setTvHeroFull: () => setTvHeroFull,
+    setTvMenuScale: () => setTvMenuScale,
+    setTvMenuVariant: () => setTvMenuVariant,
+    setUiScale: () => setUiScale,
+    setVhsCardsMode: () => setVhsCardsMode,
+    startAppearance: () => startAppearance
+  });
+  function getAppTheme() {
+    if (typeof window === "undefined") return "pitch";
+    const raw = getScopedStorageItem(THEME_KEY);
+    return raw === "midnight" || raw === "system" || raw === "custom" ? raw : "pitch";
+  }
+  function setAppTheme(value) {
+    setScopedStorageItem(THEME_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getMenuScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(MENU_SCALE_KEY));
+    return MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setMenuScale(value) {
+    setScopedStorageItem(MENU_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvFontScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_FONT_SCALE_KEY));
+    return TV_FONT_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvFontScale(value) {
+    setScopedStorageItem(TV_FONT_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvMenuScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_MENU_SCALE_KEY));
+    return TV_MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvMenuScale(value) {
+    setScopedStorageItem(TV_MENU_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvButtonScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_BUTTON_SCALE_KEY));
+    return TV_BUTTON_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvButtonScale(value) {
+    setScopedStorageItem(TV_BUTTON_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvMenuVariant() {
+    if (typeof window === "undefined") return "pill";
+    return getScopedStorageItem(TV_MENU_VARIANT_KEY) === "rail" ? "rail" : "pill";
+  }
+  function setTvMenuVariant(value) {
+    setScopedStorageItem(TV_MENU_VARIANT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getCornerScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(CORNER_SCALE_KEY));
+    return CORNER_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setCornerScale(value) {
+    setScopedStorageItem(CORNER_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getUiScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(SCALE_KEY));
+    return UI_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setUiScale(value) {
+    setScopedStorageItem(SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getReduceMotion() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(MOTION_KEY) === "1";
+  }
+  function getPerformanceMode() {
+    if (typeof window === "undefined") return false;
+    const stored = getScopedStorageItem(PERF_KEY);
+    if (stored === "1") return true;
+    if (stored === "0") return false;
+    return perfDefault && document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function isPerformanceModeExplicit() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(PERF_KEY) === "1";
+  }
+  function notePerformanceModeDefault(tight) {
+    if (perfDefault === tight) return;
+    perfDefault = tight;
+    if (getScopedStorageItem(PERF_KEY) == null) {
+      applyAppearance();
+      emitChanged();
+    }
+  }
+  function clearTrailerOverrides() {
+    for (const key of Object.values(TRAILER_OVERRIDE_KEYS)) removeScopedStorageItem(key);
+  }
+  function setPerformanceMode(value) {
+    if (value && !getPerformanceMode()) clearTrailerOverrides();
+    setScopedStorageItem(PERF_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getCardSheen() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(SHEEN_KEY) !== "0";
+  }
+  function setCardSheen(value) {
+    setScopedStorageItem(SHEEN_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getVhsCardsMode() {
+    if (typeof window === "undefined") return "off";
+    const value = getScopedStorageItem(VHS_KEY);
+    if (value === "1" || value === "focus") return "focus";
+    return value === "shelf" ? "shelf" : "off";
+  }
+  function setVhsCardsMode(value) {
+    setScopedStorageItem(VHS_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function setReduceMotion(value) {
+    if (value && !getReduceMotion()) clearTrailerOverrides();
+    setScopedStorageItem(MOTION_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getHeroActionsExpanded() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(HERO_ACTIONS_KEY) === "1";
+  }
+  function setHeroActionsExpanded(value) {
+    setScopedStorageItem(HERO_ACTIONS_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvHeroFull() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(TV_HERO_FULL_KEY) === "1";
+  }
+  function setTvHeroFull(value) {
+    setScopedStorageItem(TV_HERO_FULL_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getAccent() {
+    if (typeof window === "undefined") return "sunset";
+    const raw = getScopedStorageItem(ACCENT_KEY);
+    return raw && raw in ACCENT_PRESETS ? raw : "sunset";
+  }
+  function setAccent(value) {
+    setScopedStorageItem(ACCENT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getFontPair() {
+    if (typeof window === "undefined") return "lumio";
+    const raw = getScopedStorageItem(FONT_KEY);
+    return raw && raw in FONT_PAIRS ? raw : "lumio";
+  }
+  function setFontPair(value) {
+    setScopedStorageItem(FONT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getCardRadius() {
+    if (typeof window === "undefined") return 8;
+    const storedV2 = getScopedStorageItem(RADIUS_KEY_V2);
+    const stored = storedV2 ?? (() => {
+      const legacy = getScopedStorageItem(RADIUS_KEY);
+      return legacy && legacy !== "0" ? legacy : null;
+    })();
+    if (stored == null || stored === "") return 8;
+    const raw = Number(stored);
+    return CARD_RADIUS_OPTIONS.includes(raw) ? raw : 8;
+  }
+  function setCardRadius(value) {
+    setScopedStorageItem(RADIUS_KEY_V2, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function emitChanged() {
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+  }
+  function onAppearanceChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT, listener);
+    return () => window.removeEventListener(EVENT, listener);
+  }
+  function resolveTheme(theme) {
+    if (theme === "custom") return "midnight";
+    if (theme !== "system") return theme;
+    if (typeof window === "undefined" || !window.matchMedia) return "midnight";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "pitch" : "midnight";
+  }
+  function applyAppearance() {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const resolved = resolveTheme(getAppTheme());
+    if (resolved === "pitch") root.dataset.theme = "pitch";
+    else delete root.dataset.theme;
+    const scale = getUiScale();
+    root.style.fontSize = "";
+    if (scale === 100) root.style.removeProperty("--ui-scale");
+    else root.style.setProperty("--ui-scale", String(scale / 100));
+    const menuScale = getMenuScale();
+    if (menuScale === 100) root.style.removeProperty("--menu-scale");
+    else root.style.setProperty("--menu-scale", String(menuScale / 100));
+    const tvFontScale = getTvFontScale();
+    if (tvFontScale === 100) root.style.removeProperty("--tv-font-scale");
+    else root.style.setProperty("--tv-font-scale", String(tvFontScale / 100));
+    const tvMenuScale = getTvMenuScale();
+    if (tvMenuScale === 100) root.style.removeProperty("--tv-menu-scale");
+    else root.style.setProperty("--tv-menu-scale", String(tvMenuScale / 100));
+    const tvButtonScale = getTvButtonScale();
+    if (tvButtonScale === 100) {
+      root.style.removeProperty("--tv-button-scale");
+      delete root.dataset.tvButtonScale;
+    } else {
+      root.style.setProperty("--tv-button-scale", String(tvButtonScale / 100));
+      root.dataset.tvButtonScale = String(tvButtonScale);
+    }
+    const cornerScale = getCornerScale();
+    if (cornerScale === 100) root.style.removeProperty("--corner-scale");
+    else root.style.setProperty("--corner-scale", String(cornerScale / 100));
+    if (getReduceMotion()) root.dataset.reduceMotion = "1";
+    else delete root.dataset.reduceMotion;
+    if (getPerformanceMode()) root.dataset.perf = "1";
+    else delete root.dataset.perf;
+    if (getCardSheen()) delete root.dataset.cardSheen;
+    else root.dataset.cardSheen = "0";
+    const vhs = getVhsCardsMode();
+    if (vhs === "off") delete root.dataset.vhs;
+    else root.dataset.vhs = vhs;
+    if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
+    else delete root.dataset.heroActionLabels;
+    if (getTvHeroFull()) root.dataset.tvHeroFull = "1";
+    else delete root.dataset.tvHeroFull;
+    if (getAppTheme() === "custom") {
+      const active3 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
+      applyCustomThemeVars(active3 ?? null);
+    } else {
+      applyCustomThemeVars(null);
+    }
+    const pair = FONT_PAIRS[getFontPair()];
+    if (getFontPair() === "lumio") {
+      root.style.removeProperty("--font-sans");
+      root.style.removeProperty("--font-display");
+    } else {
+      root.style.setProperty("--font-sans", pair.sans);
+      root.style.setProperty("--font-display", pair.display);
+    }
+    const radius = getCardRadius();
+    if (radius === 8) root.style.removeProperty("--card-radius");
+    else root.style.setProperty("--card-radius", `${radius}px`);
+    const accent = ACCENT_PRESETS[getAccent()];
+    const [a400, a500, a600] = accent.shades;
+    if (getAccent() === "sunset") {
+      root.style.removeProperty("--accent-400");
+      root.style.removeProperty("--accent-500");
+      root.style.removeProperty("--accent-600");
+    } else {
+      root.style.setProperty("--accent-400", a400);
+      root.style.setProperty("--accent-500", a500);
+      root.style.setProperty("--accent-600", a600);
+    }
+  }
+  function startAppearance() {
+    if (typeof window === "undefined") return;
+    applyAppearance();
+    if (systemWatcherStarted || !window.matchMedia) return;
+    systemWatcherStarted = true;
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (getAppTheme() === "system") applyAppearance();
+    });
+  }
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, SHEEN_KEY, VHS_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, TV_MENU_VARIANT_KEY, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, perfDefault, TRAILER_OVERRIDE_KEYS, HERO_ACTIONS_KEY, TV_HERO_FULL_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS, systemWatcherStarted;
+  var init_appearance_settings = __esm({
+    "lib/appearance-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      init_custom_themes();
+      THEME_KEY = "appearance_theme_v2";
+      SCALE_KEY = "appearance_ui_scale";
+      MOTION_KEY = "appearance_reduce_motion";
+      PERF_KEY = "appearance_performance_mode";
+      SHEEN_KEY = "appearance_card_sheen";
+      VHS_KEY = "appearance_vhs_cards";
+      ACCENT_KEY = "appearance_accent";
+      FONT_KEY = "appearance_font_pair";
+      RADIUS_KEY = "appearance_card_radius";
+      RADIUS_KEY_V2 = "appearance_card_radius_v2";
+      EVENT = "lumio-appearance-changed";
+      UI_SCALE_OPTIONS = [75, 85, 90, 100, 110, 125, 140, 150];
+      MENU_SCALE_KEY = "appearance_menu_scale";
+      MENU_SCALE_OPTIONS = [70, 80, 90, 100];
+      TV_FONT_SCALE_KEY = "appearance_tv_font_scale";
+      TV_FONT_SCALE_OPTIONS = [90, 100, 110, 120, 135];
+      TV_MENU_SCALE_KEY = "appearance_tv_menu_scale";
+      TV_MENU_SCALE_OPTIONS = [100, 115, 130, 150];
+      TV_BUTTON_SCALE_KEY = "appearance_tv_button_scale";
+      TV_BUTTON_SCALE_OPTIONS = [80, 90, 100, 115, 130, 150];
+      TV_MENU_VARIANT_KEY = "appearance_tv_menu_variant";
+      CORNER_SCALE_KEY = "appearance_corner_scale";
+      CORNER_SCALE_OPTIONS = [100, 115, 130, 150];
+      perfDefault = false;
+      TRAILER_OVERRIDE_KEYS = {
+        hero: "hero_trailer_over_appearance",
+        details: "details_trailer_over_appearance"
+      };
+      HERO_ACTIONS_KEY = "appearance_hero_actions_expanded";
+      TV_HERO_FULL_KEY = "appearance_tv_hero_full";
+      ACCENT_PRESETS = {
+        sunset: { label: "Sunset", shades: ["247 178 103", "244 132 95", "231 111 81"] },
+        ocean: { label: "Ocean", shades: ["96 165 250", "59 130 246", "37 99 235"] },
+        aurora: { label: "Aurora", shades: ["167 139 250", "139 92 246", "124 58 237"] },
+        mint: { label: "Mint", shades: ["52 211 153", "16 185 129", "5 150 105"] },
+        ruby: { label: "Ruby", shades: ["248 113 113", "239 68 68", "220 38 38"] },
+        gold: { label: "Gold", shades: ["251 191 36", "245 158 11", "217 119 6"] }
+      };
+      FONT_PAIRS = {
+        lumio: { label: "Lumio", sans: "'Avenir Next', 'Segoe UI Variable', 'Segoe UI', 'Trebuchet MS', sans-serif", display: "Georgia, 'Times New Roman', serif" },
+        system: { label: "System", sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+        classic: { label: "Klassisk", sans: "'Helvetica Neue', Helvetica, Arial, sans-serif", display: "Didot, 'Bodoni 72', 'Bodoni MT', Georgia, serif" },
+        editorial: { label: "Editorial", sans: "Palatino, 'Palatino Linotype', Georgia, serif", display: "Palatino, 'Palatino Linotype', Georgia, serif" },
+        mono: { label: "Terminal", sans: "'SF Mono', Menlo, Monaco, Consolas, monospace", display: "'SF Mono', Menlo, Monaco, Consolas, monospace" }
+      };
+      CARD_RADIUS_OPTIONS = [0, 8, 12, 18];
+      systemWatcherStarted = false;
+    }
+  });
+
   // lib/tauri-native-player.ts
-  var isAndroidTauriEnv;
+  async function np(cmd, timeoutMs) {
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer2 = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : void 0;
+    try {
+      const res = await fetch("/api/native-player", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cmd),
+        signal: controller?.signal
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    } finally {
+      if (timer2 !== void 0) window.clearTimeout(timer2);
+    }
+  }
+  async function getDeviceCapabilities() {
+    if (!isAndroidTauriEnv) return null;
+    if (deviceCapsCache) return deviceCapsCache;
+    if (!deviceCapsPromise) {
+      deviceCapsPromise = np({ cmd: "getCapabilities" }).then((value) => {
+        const caps = value;
+        if (caps && typeof caps.dolbyVision === "boolean") deviceCapsCache = caps;
+        if (deviceCapsCache && typeof deviceCapsCache.tightMemory === "boolean") {
+          const tight = deviceCapsCache.tightMemory;
+          noteTightDevice(tight);
+          void Promise.resolve().then(() => (init_appearance_settings(), appearance_settings_exports)).then((m) => m.notePerformanceModeDefault(tight)).catch(() => {
+          });
+        }
+        return deviceCapsCache;
+      });
+    }
+    return deviceCapsPromise;
+  }
+  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_parallel_ranges();
+      init_source_hints();
       init_timing();
       init_react_shim();
       init_tauri_mpv();
@@ -5595,6 +6255,9 @@
       init_android_source_cache();
       init_android_direct_stream();
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+      deviceCapsCache = null;
+      deviceCapsPromise = null;
+      if (isAndroidTauriEnv) void getDeviceCapabilities();
     }
   });
 
@@ -5708,22 +6371,22 @@
   function setLibraryMode(mode) {
     const ids = mode ? normalizeIds(mode.sourceIds) : [];
     setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT2));
   }
   function onLibraryModeChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT, listener);
-    return () => window.removeEventListener(EVENT, listener);
+    window.addEventListener(EVENT2, listener);
+    return () => window.removeEventListener(EVENT2, listener);
   }
-  var KEY, EVENT;
+  var KEY, EVENT2;
   var init_mode = __esm({
     "lib/library/mode.ts"() {
       "use client";
       init_react_shim();
       init_profile_storage_shim();
       KEY = "library_mode_v1";
-      EVENT = "lumio-library-mode";
+      EVENT2 = "lumio-library-mode";
     }
   });
 
@@ -5846,6 +6509,16 @@
   });
 
   // lib/library/local-folder-provider.ts
+  function absoluteEpisode(work, parentFolder) {
+    if (!parentFolder) return null;
+    const match = work.match(/^(?:\[[^\]]*\]\s*)?(.+?)\s+[-–]\s+(\d{1,4})(?=\s|\[|\(|$)/);
+    if (!match) return null;
+    const episode = Number.parseInt(match[2], 10);
+    if (!(episode >= 1) || match[2].length === 4 && /^(19|20)/.test(match[2])) return null;
+    const title = match[1].trim();
+    const folder = parseLocalName(`${parentFolder}.mkv`).title;
+    return normalizeKey(title) && normalizeKey(title) === normalizeKey(folder) ? { title, episode } : null;
+  }
   function parseLocalName(filename, parentFolder) {
     const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
     const se = parseSeasonEpisode(stem);
@@ -5867,6 +6540,13 @@
     if (quality?.index != null) cuts.push(quality.index);
     if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
     let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (!se) {
+      const absolute = absoluteEpisode(stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim(), parentFolder);
+      if (absolute) {
+        const qualityLabel = qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase();
+        return { title: absolute.title, year: null, season: 1, episode: absolute.episode, qualityLabel };
+      }
+    }
     if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
       const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
       title = parsedFolder.title;
@@ -6146,24 +6826,6 @@
     }
   });
 
-  // lib/custom-themes.ts
-  var init_custom_themes = __esm({
-    "lib/custom-themes.ts"() {
-      "use client";
-      init_profile_storage_shim();
-    }
-  });
-
-  // lib/appearance-settings.ts
-  var init_appearance_settings = __esm({
-    "lib/appearance-settings.ts"() {
-      "use strict";
-      "use client";
-      init_profile_storage_shim();
-      init_custom_themes();
-    }
-  });
-
   // lib/plugin-storage.ts
   var init_plugin_storage = __esm({
     "lib/plugin-storage.ts"() {
@@ -6233,11 +6895,36 @@
     }
   });
 
+  // lib/watched-threshold.ts
+  var init_watched_threshold = __esm({
+    "lib/watched-threshold.ts"() {
+      init_app_storage();
+    }
+  });
+
+  // lib/progress-finished.ts
+  var init_progress_finished = __esm({
+    "lib/progress-finished.ts"() {
+      init_watched_threshold();
+    }
+  });
+
+  // lib/tracker-watched-echo.ts
+  var TRACKER_ECHO_SLACK_MS;
+  var init_tracker_watched_echo = __esm({
+    "lib/tracker-watched-echo.ts"() {
+      init_profile_storage_shim();
+      init_progress_finished();
+      TRACKER_ECHO_SLACK_MS = 15 * 6e4;
+    }
+  });
+
   // lib/watched-episodes.ts
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
+      init_tracker_watched_echo();
     }
   });
 
@@ -6246,6 +6933,7 @@
     "lib/watched-movies.ts"() {
       "use strict";
       "use client";
+      init_tracker_watched_echo();
       init_profile_storage_shim();
     }
   });
@@ -7487,48 +8175,12 @@
     }
   });
 
-  // lib/media-stream/config.ts
-  var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
-  var init_config = __esm({
-    "lib/media-stream/config.ts"() {
-      init_addon_url();
+  // lib/media-stream/source-list.ts
+  var init_source_list = __esm({
+    "lib/media-stream/source-list.ts"() {
       init_app_storage();
+      init_addon_url();
       init_profile_storage_shim();
-      SCRAPER_PRESETS = [
-        {
-          id: "torrentio",
-          name: "Torrentio",
-          url: "https://torrentio.strem.fun",
-          type: "torrentio",
-          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-          configUrl: "https://torrentio.strem.fun/configure"
-        },
-        {
-          id: "comet",
-          name: "Comet",
-          url: "",
-          type: "preconfigured",
-          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-          configUrl: "https://comet.elfhosted.com"
-        },
-        {
-          id: "jackettio",
-          name: "Jackettio",
-          url: "",
-          type: "preconfigured",
-          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-          configUrl: "https://jackettio.elfhosted.com/configure"
-        },
-        {
-          id: "aiostreams",
-          name: "AIOStreams",
-          url: "",
-          type: "preconfigured",
-          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-        }
-      ];
-      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
     }
   });
 
@@ -7538,7 +8190,57 @@
       "use client";
       init_addon_url();
       init_profile_storage_shim();
-      init_config();
+      init_source_list();
+    }
+  });
+
+  // lib/core-streams/stream-utils.ts
+  var SIZE_UNITS;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+    }
+  });
+
+  // lib/core-streams/addon-episode-numbering.ts
+  var SAME_TTL_MS, NO_DATA_TTL_MS, EPISODE_TTL_MS, SERIES_MEMO_MS, FAILURE_MEMO_MS;
+  var init_addon_episode_numbering = __esm({
+    "lib/core-streams/addon-episode-numbering.ts"() {
+      "use strict";
+      "use client";
+      SAME_TTL_MS = 7 * 24 * 36e5;
+      NO_DATA_TTL_MS = 24 * 36e5;
+      EPISODE_TTL_MS = 7 * 24 * 36e5;
+      SERIES_MEMO_MS = 6 * 36e5;
+      FAILURE_MEMO_MS = 5 * 6e4;
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var FRESH_SOURCE_MS;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      init_addon_episode_numbering();
+      FRESH_SOURCE_MS = 10 * 6e4;
     }
   });
 
@@ -7563,6 +8265,7 @@
       init_plugin_sdk();
       init_availability_throttle();
       init_core_addons();
+      init_lookup();
       init_source_request();
       init_watched_episodes();
       STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
@@ -7772,6 +8475,51 @@
     }
   });
 
+  // lib/native-alerts.ts
+  var init_native_alerts = __esm({
+    "lib/native-alerts.ts"() {
+      "use client";
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/plugins/bootstrap-signal.ts
+  var init_bootstrap_signal = __esm({
+    "lib/plugins/bootstrap-signal.ts"() {
+      "use client";
+    }
+  });
+
+  // lib/system-notification.ts
+  var init_system_notification = __esm({
+    "lib/system-notification.ts"() {
+      "use strict";
+      "use client";
+      init_open_item_runtime();
+      init_native_alerts();
+      init_bootstrap_signal();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+    }
+  });
+
+  // lib/mobile-data-guard.ts
+  var init_mobile_data_guard = __esm({
+    "lib/mobile-data-guard.ts"() {
+      "use client";
+      init_app_storage();
+      init_start_watchdog();
+    }
+  });
+
   // components/player/player-control-icons.tsx
   var init_player_control_icons = __esm({
     "components/player/player-control-icons.tsx"() {
@@ -7795,6 +8543,14 @@
   // lib/playback-speed-store.ts
   var init_playback_speed_store = __esm({
     "lib/playback-speed-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/series-track-store.ts
+  var init_series_track_store = __esm({
+    "lib/series-track-store.ts"() {
       "use client";
       init_profile_storage_shim();
     }
@@ -10095,6 +10851,12 @@
     }
   });
 
+  // lib/incognito.ts
+  var init_incognito = __esm({
+    "lib/incognito.ts"() {
+    }
+  });
+
   // lib/library/progress.ts
   var TITLE_TTL_MS;
   var init_progress = __esm({
@@ -10103,6 +10865,8 @@
       init_client();
       init_mode();
       init_source_provider();
+      init_watched_threshold();
+      init_incognito();
       TITLE_TTL_MS = 5 * 6e4;
     }
   });
@@ -10143,7 +10907,8 @@
   function read() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY2) ?? "[]");
+      const parsed = JSON.parse(getScopedStorageItem(KEY2) ?? "[]");
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -10159,7 +10924,8 @@
     if (typeof window === "undefined") return [];
     try {
       const raw = getScopedStorageItem(HISTORY_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
+      const decoded = raw ? JSON.parse(raw) : [];
+      const parsed = Array.isArray(decoded) ? decoded : [];
       if (parsed.length > 0) return parsed;
       const seed = read();
       if (seed.length > 0) {
@@ -10211,7 +10977,7 @@
     mirror.at = Date.now();
     appendHistoryEntry(entry);
   }
-  var EVENT2, KEY2, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, historyMirror;
+  var EVENT3, KEY2, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
@@ -10219,11 +10985,13 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
-      EVENT2 = "lumio-stream-progress-changed";
+      init_incognito();
+      init_progress_finished();
+      EVENT3 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT2));
+            window.dispatchEvent(new CustomEvent(EVENT3));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
@@ -10558,6 +11326,7 @@
       init_recorder_core();
       init_store();
       init_weather();
+      init_incognito();
       LAST_COMPANIONS_KEY = "journal_last_companions_v1";
       last = null;
       if (typeof window !== "undefined") {
@@ -10624,6 +11393,27 @@
   // lib/sleep-timer.ts
   var init_sleep_timer = __esm({
     "lib/sleep-timer.ts"() {
+    }
+  });
+
+  // lib/spoken-subtitles.ts
+  var init_spoken_subtitles = __esm({
+    "lib/spoken-subtitles.ts"() {
+    }
+  });
+
+  // lib/spoken-subtitles-engine.ts
+  var init_spoken_subtitles_engine = __esm({
+    "lib/spoken-subtitles-engine.ts"() {
+      init_spoken_subtitles();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/spoken-subtitles-settings.ts
+  var init_spoken_subtitles_settings = __esm({
+    "lib/spoken-subtitles-settings.ts"() {
+      init_profile_storage_shim();
     }
   });
 
@@ -10823,6 +11613,7 @@
       "use strict";
       init_profile_storage_shim();
       init_barcode_model();
+      init_incognito();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       items = /* @__PURE__ */ new Map();
       loadedFor2 = null;
@@ -11104,25 +11895,6 @@
     }
   });
 
-  // lib/core-streams/stream-utils.ts
-  var SIZE_UNITS;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
-    }
-  });
-
   // lib/player-title-block.ts
   var init_player_title_block = __esm({
     "lib/player-title-block.ts"() {
@@ -11172,21 +11944,6 @@
     }
   });
 
-  // lib/core-streams/lookup.ts
-  var FRESH_SOURCE_MS;
-  var init_lookup = __esm({
-    "lib/core-streams/lookup.ts"() {
-      "use client";
-      init_core_addons();
-      init_addon_url();
-      init_plugin_sdk();
-      init_async_utils();
-      init_stream_utils();
-      init_mode();
-      FRESH_SOURCE_MS = 10 * 6e4;
-    }
-  });
-
   // lib/core-streams/prepare.ts
   var init_prepare = __esm({
     "lib/core-streams/prepare.ts"() {
@@ -11205,6 +11962,7 @@
       init_session_host();
       init_lookup();
       init_prepare();
+      init_incognito();
       init_stream_utils();
       SLATE_MIN_BYTES = 256 * 1024;
       DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
@@ -11230,6 +11988,26 @@
     }
   });
 
+  // lib/playback-watched.ts
+  var init_playback_watched = __esm({
+    "lib/playback-watched.ts"() {
+      "use client";
+      init_incognito();
+      init_watched_episodes();
+      init_watched_movies();
+      init_video_progress();
+    }
+  });
+
+  // lib/use-incognito.ts
+  var init_use_incognito = __esm({
+    "lib/use-incognito.ts"() {
+      "use client";
+      init_react_shim();
+      init_incognito();
+    }
+  });
+
   // lib/trakt-scrobble.ts
   var init_trakt_scrobble = __esm({
     "lib/trakt-scrobble.ts"() {
@@ -11245,6 +12023,22 @@
       init_plugin_registry();
       init_plugin_state();
       init_trakt_scrobble();
+      init_incognito();
+    }
+  });
+
+  // lib/learned-skip.ts
+  var init_learned_skip = __esm({
+    "lib/learned-skip.ts"() {
+    }
+  });
+
+  // lib/learned-skip-store.ts
+  var init_learned_skip_store = __esm({
+    "lib/learned-skip-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_learned_skip();
     }
   });
 
@@ -11274,6 +12068,7 @@
       init_video_tuning();
       init_audio_tuning();
       init_tauri_native_player();
+      init_playback_settings();
       init_jsx_runtime_shim();
     }
   });
@@ -11293,9 +12088,16 @@
     }
   });
 
+  // lib/night-mode.ts
+  var init_night_mode = __esm({
+    "lib/night-mode.ts"() {
+    }
+  });
+
   // lib/core-streams/source-groups.ts
   var init_source_groups = __esm({
     "lib/core-streams/source-groups.ts"() {
+      init_source_hints();
       init_stream_utils();
     }
   });
@@ -11469,11 +12271,30 @@
     }
   });
 
+  // lib/couch/remote-nav.ts
+  var init_remote_nav = __esm({
+    "lib/couch/remote-nav.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/quick-open.ts
+  var init_quick_open = __esm({
+    "lib/quick-open.ts"() {
+      "use client";
+      init_video_progress();
+      init_open_item_runtime();
+    }
+  });
+
   // lib/couch/host-bridge.ts
   var init_host_bridge = __esm({
     "lib/couch/host-bridge.ts"() {
       init_host_trakt();
       init_sport_protocol();
+      init_remote_nav();
+      init_quick_open();
+      init_video_progress();
     }
   });
 
@@ -11499,6 +12320,7 @@
       init_continue_frames();
       init_tauri_mpv();
       init_tauri_native_player();
+      init_incognito();
     }
   });
 
@@ -11546,20 +12368,18 @@
     }
   });
 
+  // lib/credits-from-subs.ts
+  var init_credits_from_subs = __esm({
+    "lib/credits-from-subs.ts"() {
+      init_source_hints();
+    }
+  });
+
   // lib/player-reveal-hold.ts
   var CINEMA_REVEAL_HOLD_MAX_MS;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-    }
-  });
-
-  // lib/core-streams/start-watchdog.ts
-  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
-  var init_start_watchdog = __esm({
-    "lib/core-streams/start-watchdog.ts"() {
-      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
-      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
     }
   });
 
@@ -11822,6 +12642,16 @@
     }
   });
 
+  // lib/season-lengths.ts
+  var SEASON_CACHE_TTL_MS;
+  var init_season_lengths = __esm({
+    "lib/season-lengths.ts"() {
+      "use client";
+      init_app_storage();
+      SEASON_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1e3;
+    }
+  });
+
   // lib/series-lock-gate.ts
   var init_series_lock_gate = __esm({
     "lib/series-lock-gate.ts"() {
@@ -11837,6 +12667,7 @@
       init_profile_storage_shim();
       init_watched_episodes();
       init_series_locks();
+      init_season_lengths();
       init_series_lock_gate();
     }
   });
@@ -11979,6 +12810,8 @@
     "components/player/video-player-modal.tsx"() {
       "use strict";
       "use client";
+      init_watched_threshold();
+      init_mobile_data_guard();
       init_player_control_icons();
       init_trickplay_identity();
       init_playback_settings();
@@ -11987,6 +12820,7 @@
       init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
+      init_series_track_store();
       init_react_shim();
       init_timing();
       import_react_dom2 = __toESM(require_react_dom());
@@ -12000,6 +12834,10 @@
       init_profile_storage_shim();
       init_profile_avatar();
       init_sleep_timer();
+      init_playback_settings();
+      init_spoken_subtitles();
+      init_spoken_subtitles_engine();
+      init_spoken_subtitles_settings();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -12011,9 +12849,12 @@
       init_android_media_keys();
       init_resume_playback();
       init_subtitle_autopick();
-      init_watched_episodes();
-      init_watched_movies();
+      init_playback_watched();
+      init_incognito();
+      init_use_incognito();
       init_scrobble_fanout();
+      init_learned_skip();
+      init_learned_skip_store();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -12021,6 +12862,7 @@
       init_haptics_filter();
       init_haptics_host();
       init_playback_settings();
+      init_night_mode();
       init_scroll_lock();
       init_i18n();
       init_lighter_stream();
@@ -12050,6 +12892,7 @@
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
+      init_credits_from_subs();
       init_player_reveal_hold();
       init_player_silent_start();
       init_credits_recommendations();
@@ -12099,6 +12942,30 @@
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
+    }
+  });
+
+  // lib/cast-recognition-core.ts
+  var CREDITS_TTL_MS;
+  var init_cast_recognition_core = __esm({
+    "lib/cast-recognition-core.ts"() {
+      CREDITS_TTL_MS = 7 * 864e5;
+    }
+  });
+
+  // lib/cast-recognition.ts
+  var FAILURE_BACKOFF_MS;
+  var init_cast_recognition = __esm({
+    "lib/cast-recognition.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_api_json_cache();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      init_cast_recognition_core();
+      FAILURE_BACKOFF_MS = 10 * 6e4;
     }
   });
 
@@ -12643,6 +13510,7 @@
       init_tv_focus_shim();
       init_wiki_request_cache();
       init_api_json_cache();
+      init_cast_recognition();
       init_person_banner();
       init_tv_settings_rows();
       init_jsx_runtime_shim();
@@ -12776,6 +13644,7 @@
       init_zapp_settings();
       init_zapp_runtime();
       init_open_item_runtime();
+      init_system_notification();
       init_video_player_modal_shim();
       init_full_cast_page_shim();
       init_next_episode_card_shim();
@@ -12787,7 +13656,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     EmbyPlugin: () => EmbyPlugin,
@@ -12795,11 +13664,11 @@
   });
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-storage.ts
   init_plugin_sdk();
   var SETTINGS_KEY = "emby_settings";
   var DEVICE_KEY = "emby_device_id";
-  var EVENT3 = "lumio-emby-settings-changed";
+  var EVENT4 = "lumio-emby-settings-changed";
   var DEFAULTS2 = {
     serverUrl: null,
     apiBase: null,
@@ -12842,7 +13711,7 @@
   }
   function setEmbySettings(next) {
     setScopedStorageItem(SETTINGS_KEY, JSON.stringify(next));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT3));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
   }
   function clearEmbySettings() {
     setEmbySettings(DEFAULTS2);
@@ -12850,8 +13719,8 @@
   function onEmbySettingsChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT3, listener);
-    return () => window.removeEventListener(EVENT3, listener);
+    window.addEventListener(EVENT4, listener);
+    return () => window.removeEventListener(EVENT4, listener);
   }
   function isEmbyConnected(settings = getEmbySettings()) {
     return Boolean(settings.apiBase && settings.userId && settings.accessToken);
@@ -12867,7 +13736,7 @@
     return settings.serverId && settings.userId ? `emby-${settings.serverId}-${settings.userId.slice(0, 8)}` : null;
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-log.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-log.ts
   function logEmby(message) {
     try {
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[emby-scan] ${message}`)}`).catch(() => {
@@ -12887,7 +13756,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-api.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-api.ts
   function authParams(token) {
     const params = new URLSearchParams({
       "X-Emby-Client": "Lumio",
@@ -13076,6 +13945,19 @@
     const file = ext && /^[a-z0-9]{2,5}$/.test(ext) ? `stream.${ext}` : "stream";
     return `${settings.apiBase}/Videos/${itemId}/${file}?Static=true&MediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`;
   }
+  async function fetchExternalSubtitles(settings, itemId, mediaSourceId) {
+    if (!settings.apiBase || !settings.accessToken || !settings.userId) return [];
+    const query = new URLSearchParams({ Ids: itemId, Fields: "MediaSources,MediaStreams" });
+    const page = await request(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 6e3, noRetry: true });
+    const source = (page.Items?.[0]?.MediaSources ?? []).find((candidate) => candidate.Id === mediaSourceId) ?? null;
+    return (source?.MediaStreams ?? []).filter((stream) => stream.Type === "Subtitle" && stream.IsExternal && stream.IsTextSubtitleStream !== false && typeof stream.Index === "number").map((stream) => ({
+      url: `${settings.apiBase}/Videos/${itemId}/${encodeURIComponent(mediaSourceId)}/Subtitles/${stream.Index}/Stream.srt?api_key=${encodeURIComponent(settings.accessToken ?? "")}`,
+      language: stream.Language ?? "",
+      label: stream.Title || stream.DisplayTitle || void 0,
+      ...stream.IsForced ? { forced: true } : {},
+      ...stream.IsHearingImpaired ? { sdh: true } : {}
+    }));
+  }
   async function reportPlaybackProgress(settings, itemId, mediaSourceId, playSessionId, positionMs) {
     await request(settings, "/Sessions/Playing/Progress", {
       form: {
@@ -13094,7 +13976,7 @@
     await request(settings, `/Users/${settings.userId}/PlayedItems/${itemId}`, { form: {}, timeoutMs: 8e3 });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-library-provider.ts
   var EMBY_LIBRARY_PROVIDER_ID = "emby";
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
@@ -13406,7 +14288,9 @@
       const settings = getEmbySettings();
       const [itemId, mediaSourceId, container] = media.playRef.split("|");
       const url = itemId && mediaSourceId ? streamUrl(settings, itemId, mediaSourceId, container || null) : null;
-      return url ? { url } : null;
+      if (!url) return null;
+      const subtitles = await fetchExternalSubtitles(settings, itemId, mediaSourceId).catch(() => []);
+      return subtitles.length > 0 ? { url, subtitles } : { url };
     },
     async reportProgress(_source, ref, state) {
       const settings = getEmbySettings();
@@ -13422,7 +14306,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -13785,7 +14669,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/emby-fallback-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/emby-fallback-page.tsx
   init_plugin_sdk();
   // Luft under rutan: på mobilen låg den kant i kant med skärmens nederkant
   // (Jerry 2026-09-07). Inline, inte Tailwind — pluginets klasser genereras
@@ -13806,7 +14690,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/emby/runtime/index.ts
   var EmbyPlugin = {
     id: "com.lumio.emby",
     name: { en: "Emby", sv: "Emby", de: "Emby", fr: "Emby", es: "Emby" },

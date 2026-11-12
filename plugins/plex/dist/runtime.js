@@ -89,16 +89,16 @@
   var require_tslib_es6 = __commonJS({
     "../../node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
       "use strict";
-      function __classPrivateFieldGet(receiver, state2, kind, f) {
+      function __classPrivateFieldGet(receiver, state3, kind, f) {
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state2.get(receiver);
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state3.get(receiver);
       }
-      function __classPrivateFieldSet(receiver, state2, value, kind, f) {
+      function __classPrivateFieldSet(receiver, state3, value, kind, f) {
         if (kind === "m") throw new TypeError("Private method is not writable");
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state2.set(receiver, value), value;
+        if (typeof state3 === "function" ? receiver !== state3 || !f : !state3.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state3.set(receiver, value), value;
       }
       exports.__classPrivateFieldGet = __classPrivateFieldGet;
       exports.__classPrivateFieldSet = __classPrivateFieldSet;
@@ -291,7 +291,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit4(event, payload) {
+      async function emit5(event, payload) {
         await core.invoke("plugin:event|emit", {
           event,
           payload
@@ -305,7 +305,7 @@
           payload
         });
       }
-      exports.emit = emit4;
+      exports.emit = emit5;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -531,16 +531,20 @@
     const stored = getItem(KEY_ANDROID_SOURCE_CACHE);
     if (stored === "1") return true;
     if (stored === "0") return false;
-    return isAndroidPhone();
+    return isAndroidPhone() || tightDevice === true;
+  }
+  function noteTightDevice(tight) {
+    tightDevice = tight;
   }
   function androidStreamsDirect() {
     return isAndroidUserAgent() && !getAndroidSourceCache();
   }
-  var KEY_ANDROID_SOURCE_CACHE;
+  var KEY_ANDROID_SOURCE_CACHE, tightDevice;
   var init_android_source_cache = __esm({
     "lib/android-source-cache.ts"() {
       init_app_storage();
       KEY_ANDROID_SOURCE_CACHE = "playback_android_source_cache";
+      tightDevice = null;
     }
   });
 
@@ -563,15 +567,15 @@
   });
 
   // lib/plugin-state.ts
-  function normalizeState(state2, fallback) {
+  function normalizeState(state3, fallback) {
     return {
       ...fallback,
-      ...state2,
-      installed: state2?.installed ?? fallback.installed,
-      active: state2?.active ?? fallback.active,
-      order: state2?.order ?? fallback.order,
-      sourceType: state2?.sourceType ?? fallback.sourceType,
-      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
+      ...state3,
+      installed: state3?.installed ?? fallback.installed,
+      active: state3?.active ?? fallback.active,
+      order: state3?.order ?? fallback.order,
+      sourceType: state3?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state3?.runtimeAvailable ?? fallback.runtimeAvailable
     };
   }
   function readAll() {
@@ -595,8 +599,8 @@
     });
   }
   function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
-    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
-    return Boolean(state2.installed && state2.active);
+    const state3 = getPluginPersistedState(pluginId, defaultOrder, defaults);
+    return Boolean(state3.installed && state3.active);
   }
   var STORAGE_KEY;
   var init_plugin_state = __esm({
@@ -971,13 +975,85 @@
     }
   });
 
+  // lib/source-hints.ts
+  function connectors(value) {
+    if (!Array.isArray(value)) return [];
+    const out = [];
+    for (const entry of value) {
+      const id = text(entry?.id);
+      if (!id) continue;
+      const keys2 = (Array.isArray(entry.keys) ? entry.keys : []).map((k) => ({ storage: text(k?.storage), cookies: Array.isArray(k?.cookies) ? k.cookies.map(text).filter(Boolean) : [] })).filter((k) => k.storage || k.cookies.length > 0);
+      out.push({ id, ...text(entry.legacyId) ? { legacyId: text(entry.legacyId) } : {}, keys: keys2 });
+    }
+    return out;
+  }
+  function mirrorRules(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((r) => ({ cookiePrefix: text(r?.cookiePrefix), storagePrefix: text(r?.storagePrefix), cookie: text(r?.cookie), storage: text(r?.storage) })).filter((r) => r.cookiePrefix && r.storagePrefix || r.cookie && r.storage);
+  }
+  function strings(value) {
+    return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim() !== "").map((v) => v.trim().toLowerCase()) : [];
+  }
+  function normalize(value) {
+    const record = value && typeof value === "object" ? value : {};
+    const list = connectors(record.connectors);
+    const mirror = mirrorRules(record.cookieMirror);
+    const aliases = {};
+    if (record.groupAliases && typeof record.groupAliases === "object") {
+      for (const [from, to] of Object.entries(record.groupAliases)) {
+        if (from && text(to)) aliases[from] = text(to);
+      }
+    }
+    return {
+      parallelHosts: strings(record.parallelHosts),
+      resolverSegments: strings(record.resolverSegments),
+      ...list.length > 0 ? { connectors: list } : {},
+      ...mirror.length > 0 ? { cookieMirror: mirror } : {},
+      ...Object.keys(aliases).length > 0 ? { groupAliases: aliases } : {},
+      ...strings(record.creditWords).length > 0 ? { creditWords: strings(record.creditWords) } : {}
+    };
+  }
+  function getSourceHints() {
+    let raw = null;
+    try {
+      raw = getItem(SOURCE_HINTS_KEY);
+    } catch {
+      return memo2.value;
+    }
+    if (raw === memo2.raw) return memo2.value;
+    let value = EMPTY;
+    if (raw) {
+      try {
+        value = normalize(JSON.parse(raw));
+      } catch {
+        value = EMPTY;
+      }
+    }
+    memo2 = { raw, value };
+    return value;
+  }
+  function hostHasSuffix(host, suffixes) {
+    const h = host.toLowerCase();
+    return suffixes.some((suffix) => h === suffix || h.endsWith(`.${suffix}`));
+  }
+  var SOURCE_HINTS_KEY, EMPTY, text, memo2;
+  var init_source_hints = __esm({
+    "lib/source-hints.ts"() {
+      init_app_storage();
+      SOURCE_HINTS_KEY = "source_hints_v1";
+      EMPTY = { parallelHosts: [], resolverSegments: [] };
+      text = (value) => typeof value === "string" ? value.trim() : "";
+      memo2 = { raw: null, value: EMPTY };
+    }
+  });
+
   // lib/parallel-ranges.ts
   function parallelDirectEnabled() {
     if (typeof window === "undefined") return false;
     try {
-      return getItem(KEY_PARALLEL_DIRECT) === "1";
+      return getItem(KEY_PARALLEL_DIRECT) !== "0";
     } catch {
-      return false;
+      return true;
     }
   }
   function allowsParallelRanges(url) {
@@ -989,15 +1065,17 @@
       return false;
     }
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
-    return HOST.test(parsed.hostname) || RESOLVER.test(parsed.pathname);
+    const hints = getSourceHints();
+    if (hostHasSuffix(parsed.hostname, hints.parallelHosts)) return true;
+    const resolved = /\/resolve\/([^/]+)\//i.exec(parsed.pathname);
+    return !!resolved && hints.resolverSegments.includes(resolved[1].toLowerCase());
   }
-  var KEY_PARALLEL_DIRECT, RESOLVER, HOST;
+  var KEY_PARALLEL_DIRECT;
   var init_parallel_ranges = __esm({
     "lib/parallel-ranges.ts"() {
       init_app_storage();
+      init_source_hints();
       KEY_PARALLEL_DIRECT = "playback_parallel_direct";
-      RESOLVER = /\/resolve\/(torbox|realdebrid|real-debrid|premiumize|alldebrid|debridlink|debrid-link|easydebrid|offcloud)\//i;
-      HOST = /(^|\.)(tb-cdn\.st|torbox\.app|real-debrid\.com|rdeb\.io|premiumize\.me|alldebrid\.com|debrid-link\.(fr|com)|offcloud\.com)$/i;
     }
   });
 
@@ -1017,14 +1095,14 @@
   function assSubtitleTypography(prefs, fontSize, nativeFontSize) {
     const factor = ASS_SIZE_FACTOR[prefs.font];
     const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
-    const round1 = (value) => Math.round(value * 10) / 10;
+    const round12 = (value) => Math.round(value * 10) / 10;
     return {
       fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
       bold: prefs.bold,
-      assFontSize: round1(fontSize * factor),
+      assFontSize: round12(fontSize * factor),
       nativeFontSize: Math.round(nativeFontSize * factor),
-      assSpacing: round1(fontSize * em),
-      nativeSpacing: round1(nativeFontSize * em)
+      assSpacing: round12(fontSize * em),
+      nativeSpacing: round12(nativeFontSize * em)
     };
   }
   var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
@@ -1156,6 +1234,14 @@
     setScopedStorageItem(KEY_MATCH_RESOLUTION, value ? "1" : "0");
     emitPlaybackSettingsChanged();
   }
+  function getSleepFade() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_SLEEP_FADE) !== "0";
+  }
+  function setSleepFade(value) {
+    setScopedStorageItem(KEY_SLEEP_FADE, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
+  }
   function getScrubPreviews() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_SCRUB_PREVIEWS) === "1";
@@ -1179,6 +1265,10 @@
   function getAllowSoftwareVideoDecoding() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(KEY_ALLOW_SOFTWARE_VIDEO_DECODING) === "1";
+  }
+  function getStyledAssSubtitles() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_STYLED_ASS_SUBTITLES) !== "0";
   }
   function getDv7AsHdr10() {
     if (typeof window === "undefined") return DEFAULT_DV7_AS_HDR10;
@@ -1271,6 +1361,43 @@
     if (typeof window === "undefined") return "";
     return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
   }
+  function getCustomShaders() {
+    if (typeof window === "undefined") return [];
+    try {
+      const parsed = JSON.parse(getScopedStorageItem(KEY_CUSTOM_SHADERS) ?? "[]");
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  function setCustomShaders(names) {
+    setScopedStorageItem(KEY_CUSTOM_SHADERS, JSON.stringify(names));
+    emitPlaybackSettingsChanged();
+  }
+  function resolveCustomShaderPaths(selected, available) {
+    const byName = new Map(available.map((f) => [f.name, f.path]));
+    return selected.flatMap((name) => {
+      const path = byName.get(name);
+      return path ? [path] : [];
+    });
+  }
+  function toggleCustomShaderSelection(selected, name) {
+    return selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name];
+  }
+  function readActiveShaders(readback, anime4k, custom) {
+    if (typeof readback !== "string") return { anime4k: anime4k.length > 0, custom: custom.length };
+    return {
+      anime4k: anime4k.length > 0 && anime4k.some((path) => readback.includes(path)),
+      custom: custom.filter((path) => readback.includes(path)).length
+    };
+  }
+  function formatShaderStatus(status, t) {
+    if (status.mpvConf) return t("rtShadersMpvConf");
+    const parts = [];
+    if (status.anime4k) parts.push("Anime4K");
+    if (status.custom > 0) parts.push(t("rtShadersCustomCount").replace("{n}", String(status.custom)));
+    return parts.length > 0 ? t("rtShadersActive").replace("{list}", parts.join(" + ")) : t("rtShadersNone");
+  }
   function parseRawMpvConf(raw) {
     return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
       const eq = line.indexOf("=");
@@ -1280,9 +1407,11 @@
       return name ? [name, value] : null;
     }).filter((entry) => entry != null);
   }
-  function getPreferEmbeddedSubtitles() {
-    if (typeof window === "undefined") return false;
-    return (getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) ?? "0") === "1";
+  function getSubtitleOrder() {
+    if (typeof window === "undefined") return "best";
+    const raw = getScopedStorageItem(KEY_SUBTITLE_ORDER);
+    if (raw === "best" || raw === "embedded" || raw === "downloads") return raw;
+    return getScopedStorageItem(KEY_PREFER_EMBEDDED_SUBTITLES) === "1" ? "embedded" : "best";
   }
   function getExternalPlayerApp() {
     if (typeof window === "undefined") return "VLC";
@@ -1385,7 +1514,7 @@
       bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
     };
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_SUBTITLE_SYNC_FAST_READ_AHEAD, KEY_MATCH_FRAME_RATE, KEY_MATCH_RESOLUTION, KEY_ALLOW_SOFTWARE_VIDEO_DECODING, KEY_DV7_AS_HDR10, KEY_STYLED_ASS_SUBTITLES, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_SLEEP_FADE, KEY_SCRUB_PREVIEWS, KEY_SCRUB_PREVIEWS_PREPARE, KEY_SCRUB_PREVIEWS_FAST, DEFAULT_DV7_AS_HDR10, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_CUSTOM_SHADERS, KEY_SUBTITLE_ORDER, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -1411,6 +1540,7 @@
       KEY_MATCH_RESOLUTION = "playback_matchResolution";
       KEY_ALLOW_SOFTWARE_VIDEO_DECODING = "playback_allowSoftwareVideoDecoding";
       KEY_DV7_AS_HDR10 = "playback_dv7AsHdr10";
+      KEY_STYLED_ASS_SUBTITLES = "playback_styledAssSubtitles";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
       KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
       KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
@@ -1465,7 +1595,7 @@
         th: "\u0E44\u0E17\u0E22",
         id: "Bahasa Indonesia"
       };
-      NIGHT_MODE_OPTIONS = ["off", "mild", "strong"];
+      NIGHT_MODE_OPTIONS = ["off", "mild", "medium", "strong"];
       ASPECT_RATIO_MODES = ["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"];
       LANG3_TO_2 = {
         eng: "en",
@@ -1527,6 +1657,7 @@
       DEFAULT_CREDITS_RECOMMENDATIONS_TV = true;
       DEFAULT_CREDITS_THRESHOLD_MINUTES_TV = 1;
       DEFAULT_NIGHT_MODE = "off";
+      KEY_SLEEP_FADE = "playback_sleepFade";
       KEY_SCRUB_PREVIEWS = "playback_scrubPreviews";
       KEY_SCRUB_PREVIEWS_PREPARE = "playback_scrubPreviewsPrepare";
       KEY_SCRUB_PREVIEWS_FAST = "playback_scrubPreviewsFast";
@@ -1535,6 +1666,8 @@
       KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES = "playback_forcedSubtitlesWhenAudioMatches";
       KEY_EXTRA_SUBTITLE_LANGUAGES = "playback_extraSubtitleLanguages";
       KEY_RAW_MPV_CONF = "playback_rawMpvConf";
+      KEY_CUSTOM_SHADERS = "playback_customShaders";
+      KEY_SUBTITLE_ORDER = "playback_subtitleOrder";
       KEY_PREFER_EMBEDDED_SUBTITLES = "playback_preferEmbeddedSubtitles";
       KEY_EXTERNAL_PLAYER_APP = "playback_externalPlayerApp";
       AUDIO_DELAY_STEP_MS = 50;
@@ -1592,6 +1725,515 @@
     }
   });
 
+  // lib/custom-themes.ts
+  function getCustomThemes() {
+    try {
+      const raw = getScopedStorageItem(LIST_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((t) => Boolean(t && typeof t === "object" && typeof t.id === "string" && t.colors));
+    } catch {
+      return [];
+    }
+  }
+  function getActiveCustomThemeId() {
+    return getScopedStorageItem(ACTIVE_KEY) ?? "";
+  }
+  function hexToTriplet(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return `${n >> 16 & 255} ${n >> 8 & 255} ${n & 255}`;
+  }
+  function shade(hex, pct2) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    const target2 = pct2 >= 0 ? 255 : 0;
+    const p = Math.abs(pct2);
+    const ch = (v) => Math.round(v + (target2 - v) * p);
+    return `${ch(n >> 16 & 255)} ${ch(n >> 8 & 255)} ${ch(n & 255)}`;
+  }
+  function applyCustomThemeVars(theme) {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    let styleTag = document.getElementById(STYLE_TAG_ID);
+    if (!theme) {
+      for (const name of ALL_VAR_NAMES) root.style.removeProperty(name);
+      styleTag?.remove();
+      return;
+    }
+    for (const [name, value] of TRIPLET_VARS(theme.colors)) {
+      if (value) root.style.setProperty(name, value);
+    }
+    for (const [name, value] of HEX_VARS(theme.colors)) {
+      root.style.setProperty(name, value);
+    }
+    if (theme.css.trim()) {
+      if (!styleTag) {
+        styleTag = document.createElement("style");
+        styleTag.id = STYLE_TAG_ID;
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = theme.css;
+    } else {
+      styleTag?.remove();
+    }
+  }
+  var LIST_KEY, ACTIVE_KEY, STYLE_TAG_ID, TRIPLET_VARS, HEX_VARS, ALL_VAR_NAMES;
+  var init_custom_themes = __esm({
+    "lib/custom-themes.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      LIST_KEY = "custom_themes";
+      ACTIVE_KEY = "custom_theme_active";
+      STYLE_TAG_ID = "lumio-custom-theme-css";
+      TRIPLET_VARS = (c) => [
+        ["--mesh-0", hexToTriplet(c.bg)],
+        ["--mesh-1", shade(c.bg, 0.06)],
+        ["--mesh-2", shade(c.bg, -0.3)],
+        ["--base-950", hexToTriplet(c.bg)],
+        ["--base-900", hexToTriplet(c.surface)],
+        ["--base-850", shade(c.surface, 0.05)],
+        ["--base-800", hexToTriplet(c.elevated)],
+        ["--tone-950", hexToTriplet(c.bg)],
+        ["--tone-900", hexToTriplet(c.surface)],
+        ["--tone-800", hexToTriplet(c.elevated)],
+        ["--accent-400", shade(c.accent, 0.18)],
+        ["--accent-500", hexToTriplet(c.accent)],
+        ["--accent-600", shade(c.accent, -0.15)]
+      ];
+      HEX_VARS = (c) => [
+        ["--tk-bg", c.bg],
+        ["--tk-surface0", c.surface],
+        ["--tk-surface1", c.surface],
+        ["--tk-surface2", c.elevated],
+        ["--tk-surface3", c.elevated],
+        ["--tk-border", c.border],
+        ["--tk-border-strong", c.border]
+      ];
+      ALL_VAR_NAMES = [
+        "--mesh-0",
+        "--mesh-1",
+        "--mesh-2",
+        "--base-950",
+        "--base-900",
+        "--base-850",
+        "--base-800",
+        "--tone-950",
+        "--tone-900",
+        "--tone-800",
+        "--accent-400",
+        "--accent-500",
+        "--accent-600",
+        "--tk-bg",
+        "--tk-surface0",
+        "--tk-surface1",
+        "--tk-surface2",
+        "--tk-surface3",
+        "--tk-border",
+        "--tk-border-strong"
+      ];
+    }
+  });
+
+  // lib/appearance-settings.ts
+  var appearance_settings_exports = {};
+  __export(appearance_settings_exports, {
+    ACCENT_PRESETS: () => ACCENT_PRESETS,
+    CARD_RADIUS_OPTIONS: () => CARD_RADIUS_OPTIONS,
+    CORNER_SCALE_OPTIONS: () => CORNER_SCALE_OPTIONS,
+    FONT_PAIRS: () => FONT_PAIRS,
+    MENU_SCALE_OPTIONS: () => MENU_SCALE_OPTIONS,
+    TRAILER_OVERRIDE_KEYS: () => TRAILER_OVERRIDE_KEYS,
+    TV_BUTTON_SCALE_OPTIONS: () => TV_BUTTON_SCALE_OPTIONS,
+    TV_FONT_SCALE_OPTIONS: () => TV_FONT_SCALE_OPTIONS,
+    TV_MENU_SCALE_OPTIONS: () => TV_MENU_SCALE_OPTIONS,
+    UI_SCALE_OPTIONS: () => UI_SCALE_OPTIONS,
+    applyAppearance: () => applyAppearance,
+    getAccent: () => getAccent,
+    getAppTheme: () => getAppTheme,
+    getCardRadius: () => getCardRadius,
+    getCardSheen: () => getCardSheen,
+    getCornerScale: () => getCornerScale,
+    getFontPair: () => getFontPair,
+    getHeroActionsExpanded: () => getHeroActionsExpanded,
+    getMenuScale: () => getMenuScale,
+    getPerformanceMode: () => getPerformanceMode,
+    getReduceMotion: () => getReduceMotion,
+    getTvButtonScale: () => getTvButtonScale,
+    getTvFontScale: () => getTvFontScale,
+    getTvHeroFull: () => getTvHeroFull,
+    getTvMenuScale: () => getTvMenuScale,
+    getTvMenuVariant: () => getTvMenuVariant,
+    getUiScale: () => getUiScale,
+    getVhsCardsMode: () => getVhsCardsMode,
+    isPerformanceModeExplicit: () => isPerformanceModeExplicit,
+    notePerformanceModeDefault: () => notePerformanceModeDefault,
+    onAppearanceChanged: () => onAppearanceChanged,
+    setAccent: () => setAccent,
+    setAppTheme: () => setAppTheme,
+    setCardRadius: () => setCardRadius,
+    setCardSheen: () => setCardSheen,
+    setCornerScale: () => setCornerScale,
+    setFontPair: () => setFontPair,
+    setHeroActionsExpanded: () => setHeroActionsExpanded,
+    setMenuScale: () => setMenuScale,
+    setPerformanceMode: () => setPerformanceMode,
+    setReduceMotion: () => setReduceMotion,
+    setTvButtonScale: () => setTvButtonScale,
+    setTvFontScale: () => setTvFontScale,
+    setTvHeroFull: () => setTvHeroFull,
+    setTvMenuScale: () => setTvMenuScale,
+    setTvMenuVariant: () => setTvMenuVariant,
+    setUiScale: () => setUiScale,
+    setVhsCardsMode: () => setVhsCardsMode,
+    startAppearance: () => startAppearance
+  });
+  function getAppTheme() {
+    if (typeof window === "undefined") return "pitch";
+    const raw = getScopedStorageItem(THEME_KEY);
+    return raw === "midnight" || raw === "system" || raw === "custom" ? raw : "pitch";
+  }
+  function setAppTheme(value) {
+    setScopedStorageItem(THEME_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getMenuScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(MENU_SCALE_KEY));
+    return MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setMenuScale(value) {
+    setScopedStorageItem(MENU_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvFontScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_FONT_SCALE_KEY));
+    return TV_FONT_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvFontScale(value) {
+    setScopedStorageItem(TV_FONT_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvMenuScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_MENU_SCALE_KEY));
+    return TV_MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvMenuScale(value) {
+    setScopedStorageItem(TV_MENU_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvButtonScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_BUTTON_SCALE_KEY));
+    return TV_BUTTON_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setTvButtonScale(value) {
+    setScopedStorageItem(TV_BUTTON_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvMenuVariant() {
+    if (typeof window === "undefined") return "pill";
+    return getScopedStorageItem(TV_MENU_VARIANT_KEY) === "rail" ? "rail" : "pill";
+  }
+  function setTvMenuVariant(value) {
+    setScopedStorageItem(TV_MENU_VARIANT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getCornerScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(CORNER_SCALE_KEY));
+    return CORNER_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setCornerScale(value) {
+    setScopedStorageItem(CORNER_SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getUiScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(SCALE_KEY));
+    return UI_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
+  function setUiScale(value) {
+    setScopedStorageItem(SCALE_KEY, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function getReduceMotion() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(MOTION_KEY) === "1";
+  }
+  function getPerformanceMode() {
+    if (typeof window === "undefined") return false;
+    const stored = getScopedStorageItem(PERF_KEY);
+    if (stored === "1") return true;
+    if (stored === "0") return false;
+    return perfDefault && document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function isPerformanceModeExplicit() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(PERF_KEY) === "1";
+  }
+  function notePerformanceModeDefault(tight) {
+    if (perfDefault === tight) return;
+    perfDefault = tight;
+    if (getScopedStorageItem(PERF_KEY) == null) {
+      applyAppearance();
+      emitChanged();
+    }
+  }
+  function clearTrailerOverrides() {
+    for (const key of Object.values(TRAILER_OVERRIDE_KEYS)) removeScopedStorageItem(key);
+  }
+  function setPerformanceMode(value) {
+    if (value && !getPerformanceMode()) clearTrailerOverrides();
+    setScopedStorageItem(PERF_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getCardSheen() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(SHEEN_KEY) !== "0";
+  }
+  function setCardSheen(value) {
+    setScopedStorageItem(SHEEN_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getVhsCardsMode() {
+    if (typeof window === "undefined") return "off";
+    const value = getScopedStorageItem(VHS_KEY);
+    if (value === "1" || value === "focus") return "focus";
+    return value === "shelf" ? "shelf" : "off";
+  }
+  function setVhsCardsMode(value) {
+    setScopedStorageItem(VHS_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function setReduceMotion(value) {
+    if (value && !getReduceMotion()) clearTrailerOverrides();
+    setScopedStorageItem(MOTION_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getHeroActionsExpanded() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(HERO_ACTIONS_KEY) === "1";
+  }
+  function setHeroActionsExpanded(value) {
+    setScopedStorageItem(HERO_ACTIONS_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getTvHeroFull() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(TV_HERO_FULL_KEY) === "1";
+  }
+  function setTvHeroFull(value) {
+    setScopedStorageItem(TV_HERO_FULL_KEY, value ? "1" : "0");
+    applyAppearance();
+    emitChanged();
+  }
+  function getAccent() {
+    if (typeof window === "undefined") return "sunset";
+    const raw = getScopedStorageItem(ACCENT_KEY);
+    return raw && raw in ACCENT_PRESETS ? raw : "sunset";
+  }
+  function setAccent(value) {
+    setScopedStorageItem(ACCENT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getFontPair() {
+    if (typeof window === "undefined") return "lumio";
+    const raw = getScopedStorageItem(FONT_KEY);
+    return raw && raw in FONT_PAIRS ? raw : "lumio";
+  }
+  function setFontPair(value) {
+    setScopedStorageItem(FONT_KEY, value);
+    applyAppearance();
+    emitChanged();
+  }
+  function getCardRadius() {
+    if (typeof window === "undefined") return 8;
+    const storedV2 = getScopedStorageItem(RADIUS_KEY_V2);
+    const stored = storedV2 ?? (() => {
+      const legacy = getScopedStorageItem(RADIUS_KEY);
+      return legacy && legacy !== "0" ? legacy : null;
+    })();
+    if (stored == null || stored === "") return 8;
+    const raw = Number(stored);
+    return CARD_RADIUS_OPTIONS.includes(raw) ? raw : 8;
+  }
+  function setCardRadius(value) {
+    setScopedStorageItem(RADIUS_KEY_V2, String(value));
+    applyAppearance();
+    emitChanged();
+  }
+  function emitChanged() {
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+  }
+  function onAppearanceChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT, listener);
+    return () => window.removeEventListener(EVENT, listener);
+  }
+  function resolveTheme(theme) {
+    if (theme === "custom") return "midnight";
+    if (theme !== "system") return theme;
+    if (typeof window === "undefined" || !window.matchMedia) return "midnight";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "pitch" : "midnight";
+  }
+  function applyAppearance() {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const resolved = resolveTheme(getAppTheme());
+    if (resolved === "pitch") root.dataset.theme = "pitch";
+    else delete root.dataset.theme;
+    const scale = getUiScale();
+    root.style.fontSize = "";
+    if (scale === 100) root.style.removeProperty("--ui-scale");
+    else root.style.setProperty("--ui-scale", String(scale / 100));
+    const menuScale = getMenuScale();
+    if (menuScale === 100) root.style.removeProperty("--menu-scale");
+    else root.style.setProperty("--menu-scale", String(menuScale / 100));
+    const tvFontScale = getTvFontScale();
+    if (tvFontScale === 100) root.style.removeProperty("--tv-font-scale");
+    else root.style.setProperty("--tv-font-scale", String(tvFontScale / 100));
+    const tvMenuScale = getTvMenuScale();
+    if (tvMenuScale === 100) root.style.removeProperty("--tv-menu-scale");
+    else root.style.setProperty("--tv-menu-scale", String(tvMenuScale / 100));
+    const tvButtonScale = getTvButtonScale();
+    if (tvButtonScale === 100) {
+      root.style.removeProperty("--tv-button-scale");
+      delete root.dataset.tvButtonScale;
+    } else {
+      root.style.setProperty("--tv-button-scale", String(tvButtonScale / 100));
+      root.dataset.tvButtonScale = String(tvButtonScale);
+    }
+    const cornerScale = getCornerScale();
+    if (cornerScale === 100) root.style.removeProperty("--corner-scale");
+    else root.style.setProperty("--corner-scale", String(cornerScale / 100));
+    if (getReduceMotion()) root.dataset.reduceMotion = "1";
+    else delete root.dataset.reduceMotion;
+    if (getPerformanceMode()) root.dataset.perf = "1";
+    else delete root.dataset.perf;
+    if (getCardSheen()) delete root.dataset.cardSheen;
+    else root.dataset.cardSheen = "0";
+    const vhs = getVhsCardsMode();
+    if (vhs === "off") delete root.dataset.vhs;
+    else root.dataset.vhs = vhs;
+    if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
+    else delete root.dataset.heroActionLabels;
+    if (getTvHeroFull()) root.dataset.tvHeroFull = "1";
+    else delete root.dataset.tvHeroFull;
+    if (getAppTheme() === "custom") {
+      const active3 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
+      applyCustomThemeVars(active3 ?? null);
+    } else {
+      applyCustomThemeVars(null);
+    }
+    const pair = FONT_PAIRS[getFontPair()];
+    if (getFontPair() === "lumio") {
+      root.style.removeProperty("--font-sans");
+      root.style.removeProperty("--font-display");
+    } else {
+      root.style.setProperty("--font-sans", pair.sans);
+      root.style.setProperty("--font-display", pair.display);
+    }
+    const radius = getCardRadius();
+    if (radius === 8) root.style.removeProperty("--card-radius");
+    else root.style.setProperty("--card-radius", `${radius}px`);
+    const accent = ACCENT_PRESETS[getAccent()];
+    const [a400, a500, a600] = accent.shades;
+    if (getAccent() === "sunset") {
+      root.style.removeProperty("--accent-400");
+      root.style.removeProperty("--accent-500");
+      root.style.removeProperty("--accent-600");
+    } else {
+      root.style.setProperty("--accent-400", a400);
+      root.style.setProperty("--accent-500", a500);
+      root.style.setProperty("--accent-600", a600);
+    }
+  }
+  function startAppearance() {
+    if (typeof window === "undefined") return;
+    applyAppearance();
+    if (systemWatcherStarted || !window.matchMedia) return;
+    systemWatcherStarted = true;
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (getAppTheme() === "system") applyAppearance();
+    });
+  }
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, SHEEN_KEY, VHS_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, TV_MENU_VARIANT_KEY, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, perfDefault, TRAILER_OVERRIDE_KEYS, HERO_ACTIONS_KEY, TV_HERO_FULL_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS, systemWatcherStarted;
+  var init_appearance_settings = __esm({
+    "lib/appearance-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      init_custom_themes();
+      THEME_KEY = "appearance_theme_v2";
+      SCALE_KEY = "appearance_ui_scale";
+      MOTION_KEY = "appearance_reduce_motion";
+      PERF_KEY = "appearance_performance_mode";
+      SHEEN_KEY = "appearance_card_sheen";
+      VHS_KEY = "appearance_vhs_cards";
+      ACCENT_KEY = "appearance_accent";
+      FONT_KEY = "appearance_font_pair";
+      RADIUS_KEY = "appearance_card_radius";
+      RADIUS_KEY_V2 = "appearance_card_radius_v2";
+      EVENT = "lumio-appearance-changed";
+      UI_SCALE_OPTIONS = [75, 85, 90, 100, 110, 125, 140, 150];
+      MENU_SCALE_KEY = "appearance_menu_scale";
+      MENU_SCALE_OPTIONS = [70, 80, 90, 100];
+      TV_FONT_SCALE_KEY = "appearance_tv_font_scale";
+      TV_FONT_SCALE_OPTIONS = [90, 100, 110, 120, 135];
+      TV_MENU_SCALE_KEY = "appearance_tv_menu_scale";
+      TV_MENU_SCALE_OPTIONS = [100, 115, 130, 150];
+      TV_BUTTON_SCALE_KEY = "appearance_tv_button_scale";
+      TV_BUTTON_SCALE_OPTIONS = [80, 90, 100, 115, 130, 150];
+      TV_MENU_VARIANT_KEY = "appearance_tv_menu_variant";
+      CORNER_SCALE_KEY = "appearance_corner_scale";
+      CORNER_SCALE_OPTIONS = [100, 115, 130, 150];
+      perfDefault = false;
+      TRAILER_OVERRIDE_KEYS = {
+        hero: "hero_trailer_over_appearance",
+        details: "details_trailer_over_appearance"
+      };
+      HERO_ACTIONS_KEY = "appearance_hero_actions_expanded";
+      TV_HERO_FULL_KEY = "appearance_tv_hero_full";
+      ACCENT_PRESETS = {
+        sunset: { label: "Sunset", shades: ["247 178 103", "244 132 95", "231 111 81"] },
+        ocean: { label: "Ocean", shades: ["96 165 250", "59 130 246", "37 99 235"] },
+        aurora: { label: "Aurora", shades: ["167 139 250", "139 92 246", "124 58 237"] },
+        mint: { label: "Mint", shades: ["52 211 153", "16 185 129", "5 150 105"] },
+        ruby: { label: "Ruby", shades: ["248 113 113", "239 68 68", "220 38 38"] },
+        gold: { label: "Gold", shades: ["251 191 36", "245 158 11", "217 119 6"] }
+      };
+      FONT_PAIRS = {
+        lumio: { label: "Lumio", sans: "'Avenir Next', 'Segoe UI Variable', 'Segoe UI', 'Trebuchet MS', sans-serif", display: "Georgia, 'Times New Roman', serif" },
+        system: { label: "System", sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+        classic: { label: "Klassisk", sans: "'Helvetica Neue', Helvetica, Arial, sans-serif", display: "Didot, 'Bodoni 72', 'Bodoni MT', Georgia, serif" },
+        editorial: { label: "Editorial", sans: "Palatino, 'Palatino Linotype', Georgia, serif", display: "Palatino, 'Palatino Linotype', Georgia, serif" },
+        mono: { label: "Terminal", sans: "'SF Mono', Menlo, Monaco, Consolas, monospace", display: "'SF Mono', Menlo, Monaco, Consolas, monospace" }
+      };
+      CARD_RADIUS_OPTIONS = [0, 8, 12, 18];
+      systemWatcherStarted = false;
+    }
+  });
+
   // lib/tauri-native-player.ts
   function sameNativeTracks(a, b) {
     if (a.length !== b.length) return false;
@@ -1625,6 +2267,12 @@
       deviceCapsPromise = np({ cmd: "getCapabilities" }).then((value) => {
         const caps = value;
         if (caps && typeof caps.dolbyVision === "boolean") deviceCapsCache = caps;
+        if (deviceCapsCache && typeof deviceCapsCache.tightMemory === "boolean") {
+          const tight = deviceCapsCache.tightMemory;
+          noteTightDevice(tight);
+          void Promise.resolve().then(() => (init_appearance_settings(), appearance_settings_exports)).then((m) => m.notePerformanceModeDefault(tight)).catch(() => {
+          });
+        }
         return deviceCapsCache;
       });
     }
@@ -1643,13 +2291,25 @@
     }
     return { ok: true };
   }
+  async function reopenNativeDirectAfterCacheFailure(atSec) {
+    const last2 = lastNativeOpen;
+    if (!last2?.viaCache) return false;
+    directAfterCacheFailure.add(last2.opts.url);
+    console.warn("[source-cache] gav upp mitt i filmen \u2014 \xF6ppnar direkt", { at: Math.round(atSec) });
+    await openNativePlayer({ ...last2.opts, start: Math.max(0, atSec) });
+    return true;
+  }
   async function openNativePlayer(opts) {
     const { closeAllAuxSurfaces: closeAllAuxSurfaces3 } = await Promise.resolve().then(() => (init_video_surfaces(), video_surfaces_exports));
     await closeAllAuxSurfaces3("primary-open");
-    const heavyOnTight = parallelDirectEnabled() && !!opts.heavy && (await getDeviceCapabilities())?.tightMemory === true;
-    const direct = androidStreamsDirect() && !heavyOnTight;
+    const knownFinal = knownFinalUrl(opts.url);
+    const parallelOk = parallelDirectEnabled() && (opts.kind ?? "live") === "vod" && (allowsParallelRanges(opts.url) || allowsParallelRanges(knownFinal));
+    const parallelIfFileHost = !parallelOk && parallelDirectEnabled() && !!opts.heavy && (opts.kind ?? "live") === "vod";
+    const heavyOnTight = parallelDirectEnabled() && !!opts.heavy && !parallelOk && !parallelIfFileHost && (await getDeviceCapabilities())?.tightMemory === true;
+    const direct = androidStreamsDirect() && !heavyOnTight || directAfterCacheFailure.has(opts.url);
     const cacheable = sourceCacheUrl(opts.url, opts.requestHeaders);
     const wrapped = direct ? null : cacheable;
+    lastNativeOpen = { opts, viaCache: !!wrapped };
     const finalUrl = direct && cacheable ? knownFinalUrl(opts.url) : null;
     const teeDir = direct && cacheable ? await registerPlayerTee(opts.url) : null;
     markStreamPhase("mpv-open", { via: wrapped ? "source-cache" : finalUrl ? "direct-final" : "direct", fastStart: (opts.start ?? 0) > 0 });
@@ -1669,12 +2329,29 @@
       allowSoftwareVideo: getAllowSoftwareVideoDecoding(),
       // Dolby Vision profil 7 som HDR10-bas: auto/on/off, spelaren avgör auto.
       dv7AsHdr10: getDv7AsHdr10(),
-      ...opts.bitrateBps && opts.bitrateBps > 0 ? { bitrateHint: Math.round(opts.bitrateBps) } : {},
-      // Debrid-ström direkt från källan: flera anslutningar (lib/parallel-ranges).
-      ...!wrapped && (opts.kind ?? "live") === "vod" && allowsParallelRanges(opts.url) && parallelDirectEnabled() ? { parallel: true } : {},
+      // ASS/SSA med libass (stil, position, typsnitt) eller som text. Gäller när
+      // spelaren byggs, alltså från den här starten.
+      styledAss: getStyledAssSubtitles(),
+      // Tung ström utan känd storlek (Fortsätt titta har ingen): räkna med en
+      // remux, annars fick spelaren 64 MB och ~2 s framåt (2026-11-01).
+      ...opts.bitrateBps && opts.bitrateBps > 0 ? { bitrateHint: Math.round(opts.bitrateBps) } : opts.heavy ? { bitrateHint: HEAVY_UNKNOWN_BITRATE_BPS } : {},
+      // Filvärdsström direkt från källan: flera anslutningar (lib/parallel-ranges).
+      ...!wrapped && parallelOk ? { parallel: true } : {},
+      // Tung film bakom en resolver vars slutadress inte är känd än:
+      // spelaren avgör efter första omdirigeringen.
+      ...!wrapped && parallelIfFileHost ? { parallelIfFileHost: true, parallelHosts: getSourceHints().parallelHosts } : {},
       // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
       ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
+  }
+  async function setNativeExternalAss(url) {
+    const res = await np({ cmd: "setExternalAss", url });
+    return res?.ok === true;
+  }
+  function looksLikeAssSubtitle(urlOrPath, content) {
+    const path = urlOrPath.split(/[?#]/)[0].toLowerCase();
+    if (/\.(ass|ssa)$/.test(path)) return true;
+    return typeof content === "string" && /^\s*(WEBVTT\s*)?\[Script Info\]/i.test(content.replace(/^\uFEFF/, ""));
   }
   function setNativeMatchResolution(on) {
     if (!isAndroidTauriEnv) return;
@@ -1704,8 +2381,19 @@
   async function nativeSetAudioDelay(ms2) {
     await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms2))) });
   }
+  async function nativeSetNightMode(mode) {
+    if (!isAndroidTauriEnv) return;
+    await np({ cmd: "setNightMode", mode });
+  }
   async function nativeSetVideoTuning(t) {
+    const key = `${t.brightness}|${t.contrast}|${t.saturation}`;
+    if (key === lastSentVideoTuning) return;
+    if (lastSentVideoTuning === null && key === "0|0|0") {
+      lastSentVideoTuning = key;
+      return;
+    }
     await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
+    lastSentVideoTuning = key;
   }
   async function nativeSetVideoGeometry(opts) {
     await np({
@@ -1734,6 +2422,8 @@
   function useNativePlayer(enabled = true) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [isLive, setIsLive] = useState(false);
+    const [behindWindow, setBehindWindow] = useState(false);
     const [paused, setPaused] = useState(false);
     const pendingPauseRef = useRef(null);
     const [ended, setEnded] = useState(false);
@@ -1772,6 +2462,8 @@
         }
         prev.timePos = s.timePos;
         setDuration(s.duration);
+        setIsLive(s.isLive === true);
+        setBehindWindow(s.behindWindow === true);
         const pending4 = pendingPauseRef.current;
         if (pending4 && (s.paused === pending4.value || Date.now() > pending4.until)) pendingPauseRef.current = null;
         if (!pendingPauseRef.current) setPaused(s.paused);
@@ -1902,6 +2594,11 @@
       sid,
       fileLoaded,
       fileLoadedToken,
+      // Inget demuxercache-intervall i media3: Live TV:s timeshift på Android
+      // räknar fönstret ur `isLive` + `duration` (lokal HLS-buffert) i stället.
+      cacheRange: null,
+      isLive,
+      behindWindow,
       // ExoPlayer har inget andraspår; texten bärs av cueText. Inlärningsläget
       // ritar andraspråket ur VTT här.
       subText: "",
@@ -1938,11 +2635,12 @@
       stats
     };
   }
-  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
+  var isAndroidTauriEnv, deviceCapsCache, deviceCapsPromise, directAfterCacheFailure, HEAVY_UNKNOWN_BITRATE_BPS, lastNativeOpen, lastSentVideoTuning, fineTimeWanted, timeGate, STATUS_POLL_MS, STATUS_TIMEOUT_MS;
   var init_tauri_native_player = __esm({
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_parallel_ranges();
+      init_source_hints();
       init_timing();
       init_react_shim();
       init_tauri_mpv();
@@ -1952,10 +2650,15 @@
       isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
       deviceCapsCache = null;
       deviceCapsPromise = null;
+      directAfterCacheFailure = /* @__PURE__ */ new Set();
+      HEAVY_UNKNOWN_BITRATE_BPS = 6e7;
+      lastNativeOpen = null;
+      lastSentVideoTuning = null;
       fineTimeWanted = true;
       timeGate = null;
       STATUS_POLL_MS = 250;
       STATUS_TIMEOUT_MS = 2e3;
+      if (isAndroidTauriEnv) void getDeviceCapabilities();
     }
   });
 
@@ -2016,10 +2719,10 @@
         let video = null;
         let hls = null;
         let pendingRect = null;
-        let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit4 = (patch) => {
-          state2 = { ...state2, ...patch };
-          for (const l of [...listeners8]) l(state2);
+        let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+        const emit5 = (patch) => {
+          state3 = { ...state3, ...patch };
+          for (const l of [...listeners8]) l(state3);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -2042,10 +2745,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit4({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit4({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit4({ paused: true }));
-            v.addEventListener("error", () => emit4({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit5({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit5({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit5({ paused: true }));
+            v.addEventListener("error", () => emit5({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -2099,7 +2802,7 @@
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit4({ loadFailed: true });
+            if (reason) emit5({ loadFailed: true });
             listeners8.clear();
           }
         };
@@ -2122,8 +2825,8 @@
     closingSharedListener = false;
     if (sharedUnlisten) return;
     sharedUnlisten = (0, import_event.listen)("mpv-surface-state", (event) => {
-      const { surface, ...state2 } = event.payload;
-      dispatchersByRustId.get(surface)?.(state2);
+      const { surface, ...state3 } = event.payload;
+      dispatchersByRustId.get(surface)?.(state3);
     });
   }
   function teardownSharedListenerIfIdle() {
@@ -2157,18 +2860,18 @@
     const listeners8 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit4 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners8]) listener(state2);
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit5 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners8]) listener(state3);
     };
     const dispatch = (next) => {
-      state2 = next;
+      state3 = next;
       for (const listener of [...listeners8]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit4({ loadFailed: true });
+        if (!destroyed) emit5({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -2190,7 +2893,7 @@
             }
           });
         } catch {
-          emit4({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit5({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -2247,7 +2950,7 @@
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit4({ loadFailed: true });
+        if (reason) emit5({ loadFailed: true });
         listeners8.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
@@ -2312,10 +3015,10 @@
   }
   function createDroidSurfaceBackend() {
     const listeners8 = /* @__PURE__ */ new Set();
-    let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit4 = (patch) => {
-      state2 = { ...state2, ...patch };
-      for (const listener of [...listeners8]) listener(state2);
+    let state3 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
+    const emit5 = (patch) => {
+      state3 = { ...state3, ...patch };
+      for (const listener of [...listeners8]) listener(state3);
     };
     let nativeId = null;
     let destroyed = false;
@@ -2354,7 +3057,7 @@
           if (myGeneration !== generation) return;
           const next = toSurfaceState(value);
           if (!next) return;
-          state2 = next;
+          state3 = next;
           for (const listener of [...listeners8]) listener(next);
         });
       }, 250);
@@ -2376,7 +3079,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit4({ loadFailed: true });
+            if (!destroyed) emit5({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -2440,7 +3143,7 @@
         destroyed = true;
         generation++;
         stopPolling();
-        if (reason) emit4({ loadFailed: true });
+        if (reason) emit5({ loadFailed: true });
         listeners8.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
@@ -2868,6 +3571,7 @@
     const [playbackRestarted, setPlaybackRestarted] = useState(false);
     const [playbackRestartedToken, setPlaybackRestartedToken] = useState(0);
     const [pausedForCache, setPausedForCache] = useState(false);
+    const [cacheRange, setCacheRange] = useState(null);
     const [coreIdle, setCoreIdle] = useState(true);
     const [firstFrameRendered, setFirstFrameRendered] = useState(false);
     const [loadFailed, setLoadFailed] = useState(false);
@@ -2884,6 +3588,7 @@
       void (0, import_event2.listen)("mpv://sub-text", (e) => setSubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://secondary-sub-text", (e) => setSecondarySubText(e.payload ?? "")).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://file-loaded", () => {
+        setCacheRange(null);
         setFileLoaded(true);
         setFileLoadedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
@@ -2892,6 +3597,10 @@
         setPlaybackRestartedToken((t) => t + 1);
       }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://paused-for-cache", (e) => setPausedForCache(e.payload)).then((u) => cleanups.push(u));
+      void (0, import_event2.listen)("mpv://cache-state", (e) => {
+        const p = e.payload;
+        setCacheRange(p && typeof p.start === "number" && typeof p.end === "number" && p.end > p.start ? { start: p.start, end: p.end } : null);
+      }).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://core-idle", (e) => setCoreIdle(e.payload)).then((u) => cleanups.push(u));
       void (0, import_event2.listen)("mpv://first-frame-rendered", () => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(`${performance.now().toFixed(0)} first-frame-rendered received`)}`);
@@ -2964,6 +3673,7 @@
       playbackRestartedToken,
       pausedForCache,
       coreIdle,
+      cacheRange,
       firstFrameRendered,
       loadFailed,
       loadFailedToken,
@@ -3288,14 +3998,6 @@
         streamProviderCustomUrl: "Custom URL",
         streamProviderNoUrl: "No URL set",
         streamProviderAddComet: "+ Comet",
-        streamProviderAddJackettio: "+ Jackettio",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        streamProviderAddAiostreams: "+ AIOStreams",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsOpenConfig: "Open the configurator",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsManifestLabel: "Manifest URL",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
         streamProviderAddCustom: "+ Custom URL",
         useGlobal: "Use global",
         clearFilters: "Clear filters",
@@ -3495,6 +4197,8 @@
         appUpdateDownloading: "Downloading update",
         appUpdateInstallingStep: "Installing the update \u2013 Lumio will restart",
         appUpdatePromptLater: "Not now",
+        appAnnouncementClose: "Close",
+        appAnnouncementOpen: "Open",
         appUpdateRestarting: "Update installed \u2014 Lumio is restarting\u2026",
         appUpdateInstallerStarted: "Installing the update \u2014 Lumio closes and opens again on the new version\u2026",
         appUpdateDmgOpened: "The installer was downloaded and opened \u2014 drag Lumio to Applications.",
@@ -3617,6 +4321,7 @@
         subtitleLoadFile: "Open subtitle file\u2026",
         subtitleExternalGroup: "Own file",
         subtitleEmbeddedTrack: "Embedded track",
+        subtitleLibraryTrack: "From your server",
         subtitleFileUnsupported: "This format can only be shown by the built-in player on Mac (mpv). Use .srt or .vtt here.",
         subtitleFileUnsupportedWindows: "This format can only be shown by the built-in player (mpv). Use .srt or .vtt here.",
         subtitleFileLoadFailed: "Could not load the subtitle file. {message}",
@@ -3634,6 +4339,13 @@
         vpSecondarySubMissing: "No {lang} subtitle found",
         learningModeTitle: "Learning mode",
         learningModeHint: "Show a second subtitle language under the main one",
+        spokenSubtitlesGroup: "Spoken subtitles",
+        spokenSubtitles: "Read subtitles aloud",
+        spokenSubtitlesDesc: "Reads the current subtitle line aloud with the device's voice and lowers the film's sound while it speaks. Uses a voice for the subtitle's language when one is installed.",
+        spokenSubtitlesRate: "Reading speed",
+        spokenSubtitlesRateDesc: "How fast the voice reads the lines.",
+        spokenSubtitlesRateNormal: "Normal",
+        spokenSubtitlesRateFast: "Fast",
         subtitleSlotPrimary: "Main",
         subtitleSlotSecondary: "Second",
         subtitleSecondaryEmbeddedUnsupported: "Not supported on Android yet",
@@ -3977,9 +4689,15 @@
         plSleepShort: "Sleep",
         plSleepOff: "Off",
         plSleepMinutes: "{n} min",
+        plSleepRemaining: "{n} min left",
         plSleepEnd: "End of episode or film",
         plSleepStillThere: "Are you still there?",
         plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+        plSleepFade: "Fade out over the last 2 min",
+        incognitoBadge: "Incognito",
+        incognitoToggle: "Watch without it showing",
+        incognitoTurnOff: "Turn off incognito",
+        incognitoPlay: "Play incognito",
         plCompanions: "Who's watching",
         plWhoWatches: "Who's watching with you?",
         plCompanionsJustMe: "Just me",
@@ -4096,6 +4814,11 @@
         rtHwdecDesc: "GPU decoding \u2014 easier on the battery and CPU. Turn off only when troubleshooting.",
         allowSoftwareDecoding: "Allow software decoding",
         allowSoftwareDecodingDesc: "Lets the phone or TV box decode video in software when its hardware can't. Can play files the hardware can't, but may stutter on weak devices.",
+        blockMobileData: "Ask before streaming on mobile data",
+        blockMobileDataDesc: "When the phone is not on Wi-Fi, Lumio asks before playback starts. Play anyway applies for the rest of the session.",
+        mobileDataPromptTitle: "You are on mobile data",
+        mobileDataPromptBody: "Streaming uses a lot of data. Do you want to play anyway?",
+        mobileDataPromptPlay: "Play anyway",
         dv7AsHdr10: "Play Dolby Vision profile 7 as HDR10",
         dv7AsHdr10Desc: "Plays the HDR10 base layer of Dolby Vision profile 7 (UHD Blu-ray remuxes) instead of Dolby Vision. Avoids wrong colours (green or purple tints, oversaturated skin) on devices that decode profile 7 poorly. Auto turns it on for Nvidia Shield.",
         dv7AsHdr10Auto: "Auto",
@@ -4142,6 +4865,7 @@
         deviceNoAudioDecoder: "This device cannot decode the lossless audio track (TrueHD/DTS-HD) \u2014 playing with another track, or without sound. Pick an AC3/EAC3/AAC version for audio.",
         deviceFormatUnsupported: "This device cannot decode that video format \u2014 try another version.",
         plTabNextEp: "Next episode",
+        plTabEnds: "When it ends",
         plNextEpHint: "Autoplay, the popup and outro behavior between episodes.",
         langAudioSubTab: "Audio & subtitles",
         langAudioSubTitle: "Audio & subtitle defaults",
@@ -4312,6 +5036,29 @@
         dsLayoutInline: "Below the content",
         heroCast: "Cast",
         newSeasonBadge: "New season",
+        episodesLeftInSeason: "{n} episodes left in the season",
+        watchedThreshold: "Counts as watched",
+        watchedThresholdDesc: "When a movie or episode is marked as watched. Automatic: episodes at 92 % or 90 s left, movies at 97 % or 30 s left.",
+        watchedThresholdAuto: "Automatic",
+        snoozeSeries: "Snooze series",
+        snoozeWeek: "For a week",
+        snoozeMonth: "For a month",
+        snoozeNextSeason: "Until the next season",
+        snoozedSeriesCount: "{n} snoozed series",
+        snoozedUntil: "until {date}",
+        snoozeWake: "Show again",
+        snoozeWakeSeries: "Wake series",
+        snoozedChip: "Snoozed ({n})",
+        snoozedSeriesHeading: "Snoozed series",
+        episodesLeftShort: "{n} left",
+        lastEpisodeShort: "Last ep.",
+        catchUpOne: "Catch up: 1 episode a night until {date}",
+        catchUpMany: "Catch up: {n} episodes a night until {date}",
+        catchUpChip: "Catch up \xB7 {n}/night",
+        catchUpMeta: "Catch up: {n} a night until {date}",
+        catchUpDetail: "{remaining} episodes left before season {season} on {date}. That is {evenings} evenings.",
+        catchUpTitle: "Catch up before the premiere",
+        lastEpisodeOfSeason: "Last episode of the season",
         homeCardShape: "Card shape",
         homeCardShapeDesc: "Poster cards or wide backdrop cards on the home rows.",
         homeRowTitle: "Row name",
@@ -4375,6 +5122,8 @@
         performanceModeDesc: "For weaker TV boxes: removes blur and shadows behind menus and cards, and stops the hero trailer from playing by itself. Nothing disappears from the interface.",
         heroActionsExpanded: "Always show action labels",
         heroActionsExpandedDesc: "On the hero and on a title\u2019s details page, the icon buttons next to Play keep their names visible instead of revealing them on hover.",
+        tvHeroFull: "Hide the first row",
+        tvHeroFullDesc: "The hero fills the screen and its text sits lower; press down to bring up the rows in their usual place.",
         settingsPagePluginManage: "Manage plugins",
         settingsTabStatus: "Status",
         settingsTabQuick: "Quick settings",
@@ -5060,6 +5809,8 @@
         tvHeroFeatured: "Featured",
         tvHeroMyList: "My list",
         tvHeroPagerDot: "Featured title {n} of {total}",
+        tvHeroPrev: "Previous title",
+        tvHeroNext: "Next title",
         tvHeroRuntimeHm: "{h} h {m} min",
         tvHeroRuntimeM: "{m} min",
         tvHeroStreamsN: "{n} streams",
@@ -5234,6 +5985,10 @@
         homeTopPicksSeriesSubtitle: "Curated top series",
         homeSourceFilmCollections: "Film collections",
         collectionsBackLabel: "Collections",
+        collectionRowSubtitle: "{n} collections",
+        homeStudiosSubtitle: "Films by studio",
+        homeStreamingServicesSubtitle: "Browse by service",
+        homeFilmCollectionsSubtitle: "Franchises and film series",
         collectionEmptyItems: "No titles right now",
         collectionRowsTitle: "Collection rows",
         collectionRowsDesc: "Rows of cards that unfold into their own titles, like Film collections \u2014 but yours.",
@@ -5267,6 +6022,7 @@
         collectionRowRemoveBody: "The row and all its collections are removed. Home rows that use it show a placeholder.",
         collectionCoverSuggestedEmpty: "No suggestions yet \u2014 the collection has no titles with images.",
         collectionHeroSummary: "{count} titles \xB7 {years} \xB7 {titles}",
+        collectionMetaFilms: "{count} films",
         collectionHeroHint: "Collection \u2014 press OK to see its titles.",
         collectionHeroBackdrop: "Background on TV",
         collectionHeroBackdropHint: "Animated covers are often low resolution \u2014 the titles give a sharp background.",
@@ -5347,9 +6103,15 @@
         appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
         exitOnCloseTitle: "Quit fully on close",
         exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+        launcherModeTitle: "Use Lumio as home screen",
+        launcherModeHint: "The device starts in Lumio and your other apps sit in a row at the bottom of the home page. Android asks which home screen to use.",
+        launcherModeNotChosen: "Lumio is not the chosen home screen yet. Turn this off and on again to choose it.",
+        launcherModeBlocked: "This device doesn't let another app be the home screen (Google TV keeps its own). The apps row on the start page still works.",
+        launcherAppsRow: "Apps",
         exitAppAction: "Quit Lumio",
         exitAppTitle: "Quit Lumio?",
         exitAppConfirm: "Quit",
+        exitAppHoldHint: "Tip: hold Back anywhere to get here.",
         quizMenuLabel: "Film quiz",
         couchMenuLabel: "Couch mode",
         couchOpenButton: "Open Couch mode",
@@ -5524,6 +6286,9 @@
         creditsThresholdTvDesc: "Only when the season has ended and no next season exists.",
         advanceAtOutro: "Skip the credits and go straight to the next episode",
         advanceAtOutroDesc: "When an outro is detected, the next episode starts immediately instead of showing the next-episode card. Episodes without a detected outro still show the card.",
+        nextEpAfterLastSub: "Next episode after the last subtitle line",
+        nextEpAfterLastSubDesc: "For episodes without a detected outro, the next-episode card appears this long after the subtitle file's last line. Waiting a little leaves room for a closing scene without dialogue; the card can always be dismissed.",
+        nextEpAfterLastSubOff: "Off",
         stayFullscreenOnClose: "Stay fullscreen when the player closes",
         stayFullscreenOnCloseDesc: "The window keeps fullscreen instead of dropping back to windowed mode.",
         showTitleOnStart: "Show title when playback starts",
@@ -5565,8 +6330,11 @@
         autoplayMaxResolution: "Max resolution for auto-play",
         autoplayMaxResolutionDesc: "Skip sources above this resolution when auto-playing. Sources with an unknown resolution are still allowed.",
         autoplayMaxResolutionUnlimited: "Unlimited",
-        preferEmbeddedSubtitles: "Prefer embedded subtitles",
-        preferEmbeddedSubtitlesDesc: "When picking subtitles automatically, try tracks embedded in the video first \u2014 they are always in sync.",
+        subtitleOrder: "Subtitle order",
+        subtitleOrderDesc: "Which subtitles are picked first automatically. Best: your language comes first, and within a language the file's own full track goes before downloads \u2014 it is made for that file and always in sync.",
+        subtitleOrderBest: "Best",
+        subtitleOrderEmbedded: "File's own first",
+        subtitleOrderDownloads: "Downloads first",
         peekSeasonWord: "season",
         peekSeasonsWord: "seasons",
         peekOpenDetails: "More info",
@@ -5587,6 +6355,18 @@
         advMpvConfTitle: "Raw mpv.conf",
         advMpvConfHint: "One property=value per line, applied to the player after all managed settings. For power users.",
         advMpvConfNote: "Applies on the next playback start. Invalid lines are ignored.",
+        advCustomShadersTitle: "Custom shaders",
+        advCustomShadersHint: "Put .glsl or .hook files in the folder and choose which ones run. They run in the order you tick them, after Anime4K.",
+        advCustomShadersEmpty: "The folder is empty.",
+        advCustomShadersOpen: "Open folder",
+        advCustomShadersRefresh: "Refresh",
+        advCustomShadersNote: "Applies right away, also during playback. A glsl-shaders line in mpv.conf above replaces this list.",
+        advCustomShadersNoneOn: "No file is switched on yet \u2014 tick the ones that should run.",
+        rtShadersEmpty: "No files in the folder yet \u2014 drop .glsl files there.",
+        rtShadersActive: "Active in player: {list}",
+        rtShadersCustomCount: "{n} custom",
+        rtShadersNone: "No shaders active",
+        rtShadersMpvConf: "mpv.conf controls shaders",
         extraSubtitleLanguages: "More subtitle languages",
         extraSubtitleLanguagesDesc: "Ordered list of language codes tried after the default and fallback, comma-separated.",
         forcedSubtitlesWhenAudioMatches: "Forced subtitles when audio matches",
@@ -5729,7 +6509,7 @@
         advTransferCode: "Code shown on the other device",
         advTransferSend: "Send settings",
         advTransferSending: "Sending\u2026",
-        advTransferSent: "Sent. The other device is restarting with your settings.",
+        advTransferSent: "Sent. The other device takes the settings in and restarts \u2013 if it is in the setup guide, the guide continues first and the restart comes when it finishes.",
         advTransferFailed: "Could not send",
         advTransferWrongCode: "Wrong code. Attempts left: {n}.",
         syncWebdavTitle: "Cloud sync (WebDAV)",
@@ -5795,15 +6575,17 @@
         audioModeBest: "Best possible",
         audioModeBestDesc: "Keeps multichannel audio in the proxy when possible. Tauri/mpv continues to use the original track directly.",
         nightMode: "Night mode / DRC",
-        nightModeDesc: "Reduces loud peaks and makes dialogue easier to hear at lower volume.",
+        nightModeDesc: "Lifts dialogue and quiet passages without making loud scenes louder. For watching at low volume.",
         nightModeOff: "Off",
         nightModeMild: "Mild night mode",
+        nightModeMedium: "Medium night mode",
         nightModeStrong: "Strong night mode",
         dvColorLabel: "Dolby Vision",
         dvColorAuto: "Vivid (auto)",
         dvColorOff: "Off",
         nightModeMenuLabel: "Night mode",
         nightModeMenuMild: "Mild",
+        nightModeMenuMedium: "Medium",
         nightModeMenuStrong: "Strong",
         onboardingIntegrationsEyebrow: "Integrations",
         onboardingIntegrationsTitle: "Make Lumio even better",
@@ -5836,6 +6618,8 @@
         subtitleAutoSyncGroup: "Auto-sync",
         subtitleSyncFastReadAhead: "Faster sync (uses more data)",
         subtitleSyncFastReadAheadHint: "Reads up to 6 minutes of audio ahead instead of 3, so subtitles sync sooner in hard scenes like songs and music. Uses more mobile data. Never affects playback.",
+        styledAssSubtitles: "Styled ASS subtitles",
+        styledAssSubtitlesHint: "Draws ASS/SSA subtitles (anime and fansubs) with their own fonts, colours and positions. Turn off if heavy typesetting stutters on a slow box; they then show as plain text. Applies from the next playback.",
         subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
         subtitleAutoSyncSwapped: "Switched to a better-synced version of the same subtitles",
         subtitleAutoSyncSwappedEmbedded: "Switched to the subtitles built into this file",
@@ -5844,6 +6628,7 @@
         subtitleAutoSyncOtherEditKeep: "Keep",
         playerStarvedLighter: "The connection can\u2019t keep up with this version. Lighter: {stream}",
         playerStarvedSwitch: "Switch",
+        playerStreamLost: "The stream stopped at {time}. Pick a source to continue from there.",
         subtitleLanguageDetected: "language detected",
         subtitleForced: "Forced",
         subtitleSdh: "SDH",
@@ -5887,6 +6672,9 @@
         subtitleBold: "Bold text",
         subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
         skipIntro: "Skip intro",
+        skipLearned: "Skip (learned)",
+        plLearnSkips: "Learn my skips",
+        plForgetLearnedSkips: "Forget learned skips for this series",
         originalFirst: "Original / first",
         noFallback: "No fallback",
         autoplayNextEpisode: "Auto-play next episode",
@@ -6229,6 +7017,7 @@
         coreStreamsCached: "Cached",
         coreStreamsLoading: "Checking sources\u2026",
         streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+        streamWrongFileNoneLeft: "The streams found look like the wrong file: far shorter than the film. Pick another stream from the list.",
         libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
         libraryRowSuffix: "in your library",
         libraryModeTab: "Library",
@@ -6299,6 +7088,7 @@
         libraryEpisodeNotInLibrary: "This episode is not in your library",
         libraryRowNotLoaded: "not loaded yet",
         libraryRowRecent: "Recently added to your library",
+        libraryRowRecentShort: "Recently added",
         libraryRowMovies: "Movies in your library",
         tvLibraryTabRowsLabel: "Library tab",
         tvLibraryTabRowsDesc: "Edit the rows of a library in the menu instead of a page above.",
@@ -6397,6 +7187,8 @@
         ipSectionHint: "Click a service to view or change its settings.",
         // Home panel (Hem)
         hpTabHero: "Hero & background",
+        hpTabNavigation: "Navigation",
+        clearCacheHint: "Clears the app\u2019s response caches",
         hpTabDisplay: "Display",
         hpGenreAll: "All categories",
         hpGenreAction: "Action",
@@ -7488,7 +8280,20 @@
         tvEdTitlesRowStation: "Titles in the row \xB7 pin or hide",
         tvEdTitlesRowTitle: "Titles in the row",
         tvEdTitlesRefNote: "The titles come from the row this one points to \u2014 pin or hide them there.",
-        tvEdTemplateEyebrow: "Template for the theme"
+        tvEdTemplateEyebrow: "Template for the theme",
+        ratingRate: "Rate",
+        ratingRateEpisode: "Rate episode",
+        ratingRated: "Rated {n}/10",
+        ratingEyebrow: "Your rating \xB7 Trakt",
+        ratingNone: "Not rated yet",
+        ratingValue: "{stars} stars \xB7 {n}/10",
+        ratingRemove: "Remove rating",
+        ratingSaveFailed: "Couldn't save to Trakt. Try again.",
+        ratingExpired: "Your Trakt sign-in has expired. Connect Trakt again in Settings.",
+        ratingHint: "Pick a star \u2014 each half is one point on Trakt's 1\u201310 scale.",
+        castSeenIn: "You've seen them in {titles}",
+        personSeenIn: "You've seen them in",
+        personSeenInSorted: "Most recently watched first"
       };
     }
   });
@@ -7526,19 +8331,23 @@
     const current2 = loaded();
     return current2?.lang === lang && current2.base ? current2.base : "en";
   }
+  function windowsDesktop() {
+    if (windowsDesktopCache === null) windowsDesktopCache = isWindowsDesktop();
+    return windowsDesktopCache;
+  }
   function lookup(lang, key) {
     const current2 = loaded();
     const pack = lang !== "en" && current2?.lang === lang ? current2.pack : null;
     const base = en;
-    if (isWindowsDesktop()) {
+    if (windowsDesktop()) {
       const variant = pack?.[`${key}Windows`] ?? base[`${key}Windows`];
       if (variant) return variant;
     }
     return pack?.[key] ?? en[key];
   }
-  function pickLangText(text, lang) {
-    const own = text[baseLang(lang)];
-    return own ?? text.en;
+  function pickLangText(text2, lang) {
+    const own = text2[baseLang(lang)];
+    return own ?? text2.en;
   }
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
@@ -7585,7 +8394,7 @@
     if (!detached) return ctx;
     return detachedValue;
   }
-  var BUILTIN_LANGS, LANG_INFO, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG, LANG_PACK_EVENT;
+  var BUILTIN_LANGS, LANG_INFO, windowsDesktopCache, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG, LANG_PACK_EVENT;
   var init_i18n = __esm({
     "lib/i18n.tsx"() {
       "use strict";
@@ -7604,6 +8413,7 @@
         fr: { name: "Fran\xE7ais", locale: "fr-FR" },
         es: { name: "Espa\xF1ol", locale: "es-ES" }
       };
+      windowsDesktopCache = null;
       detachedLangContextValue = {
         lang: "en",
         setLang: () => {
@@ -7699,8 +8509,8 @@
   function onPlayerLayoutChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT, listener);
-    return () => window.removeEventListener(EVENT, listener);
+    window.addEventListener(EVENT2, listener);
+    return () => window.removeEventListener(EVENT2, listener);
   }
   function seekBarAppearance(layout) {
     return {
@@ -7728,7 +8538,7 @@
     if (typeof document === "undefined") return "244 132 95";
     return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
   }
-  var PLAYER_CONTROL_IDS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, DESKTOP_CONTROL_ZONES, PHONE_ROW_ORDER, LANDSCAPE_ROW_BUDGET, PHONE_DEDICATED_IDS, LAYOUT_KEY, EVENT;
+  var PLAYER_CONTROL_IDS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, DESKTOP_CONTROL_ZONES, PHONE_ROW_ORDER, LANDSCAPE_ROW_BUDGET, PHONE_DEDICATED_IDS, LAYOUT_KEY, EVENT2;
   var init_player_layout = __esm({
     "lib/player-layout.ts"() {
       "use client";
@@ -7789,7 +8599,7 @@
         portrait: ["pip", "cast", "fullscreen"]
       };
       LAYOUT_KEY = "player_layout";
-      EVENT = "lumio-player-layout-changed";
+      EVENT2 = "lumio-player-layout-changed";
     }
   });
 
@@ -8025,22 +8835,22 @@
   function setLibraryMode(mode) {
     const ids = mode ? normalizeIds(mode.sourceIds) : [];
     setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT2));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT3));
   }
   function onLibraryModeChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT2, listener);
-    return () => window.removeEventListener(EVENT2, listener);
+    window.addEventListener(EVENT3, listener);
+    return () => window.removeEventListener(EVENT3, listener);
   }
-  var KEY, EVENT2, libraryScope;
+  var KEY, EVENT3, libraryScope;
   var init_mode = __esm({
     "lib/library/mode.ts"() {
       "use client";
       init_react_shim();
       init_profile_storage_shim();
       KEY = "library_mode_v1";
-      EVENT2 = "lumio-library-mode";
+      EVENT3 = "lumio-library-mode";
       libraryScope = null;
     }
   });
@@ -8060,7 +8870,7 @@
       try {
         const sourceParam = key || void 0;
         const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
-        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY;
+        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY2;
         const payload = await response.json();
         const next = {
           movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
@@ -8075,7 +8885,7 @@
         }
         return next;
       } catch {
-        return cache2 && cacheKey === key ? cache2 : EMPTY;
+        return cache2 && cacheKey === key ? cache2 : EMPTY2;
       } finally {
         if (inflight === run) {
           inflight = null;
@@ -8105,7 +8915,7 @@
   function useLibraryIdSets() {
     const [mode, setMode] = useState(() => getLibraryMode());
     const key = modeKey(mode);
-    const [state2, setState] = useState(() => {
+    const [state3, setState] = useState(() => {
       const cached = key != null ? cachedLibraryIdSetsFor(key) : null;
       return key != null && cached ? { key, sets: cached } : null;
     });
@@ -8132,9 +8942,9 @@
       };
     }, [key]);
     if (key == null) return null;
-    return state2 && state2.key === key ? state2.sets : LIBRARY_ID_SETS_LOADING;
+    return state3 && state3.key === key ? state3.sets : LIBRARY_ID_SETS_LOADING;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY2, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -8142,7 +8952,7 @@
       init_react_shim();
       init_mode();
       LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
-      EMPTY = {
+      EMPTY2 = {
         movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         total: 0,
@@ -8227,30 +9037,37 @@
   // lib/tv-scene.ts
   function tvSceneScale() {
     if (typeof document === "undefined") return 1;
-    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale");
-    const value = parseFloat(raw);
+    if (applied) return applied.scale;
+    const value = parseFloat(readSceneVar("--tv-scene-scale"));
     return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+  function readSceneVar(name) {
+    const root = document.documentElement;
+    const inline = root.style.getPropertyValue(name);
+    if (inline) return inline;
+    return getComputedStyle(root).getPropertyValue(name);
   }
   function tvSceneHeight() {
     if (typeof document === "undefined") return TV_SCENE_HEIGHT_PX;
-    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-h");
-    const value = parseFloat(raw);
+    if (applied) return applied.height;
+    const value = parseFloat(readSceneVar("--tv-scene-h"));
     return Number.isFinite(value) && value > 0 ? value : TV_SCENE_HEIGHT_PX;
   }
   function tvSceneWidth() {
     if (typeof document === "undefined") return TV_SCENE_MIN_WIDTH_PX;
-    const raw = getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-w");
-    const value = parseFloat(raw);
+    if (applied) return applied.width;
+    const value = parseFloat(readSceneVar("--tv-scene-w"));
     if (Number.isFinite(value) && value > 0) return value;
     return typeof window === "undefined" ? TV_SCENE_MIN_WIDTH_PX : window.innerWidth;
   }
-  var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX;
+  var TV_SCENE_HEIGHT_PX, TV_SCENE_MIN_WIDTH_PX, applied;
   var init_tv_scene = __esm({
     "lib/tv-scene.ts"() {
       "use strict";
       "use client";
       TV_SCENE_HEIGHT_PX = 1080;
       TV_SCENE_MIN_WIDTH_PX = 1280;
+      applied = null;
     }
   });
 
@@ -8300,6 +9117,16 @@
   });
 
   // lib/library/local-folder-provider.ts
+  function absoluteEpisode(work, parentFolder) {
+    if (!parentFolder) return null;
+    const match = work.match(/^(?:\[[^\]]*\]\s*)?(.+?)\s+[-–]\s+(\d{1,4})(?=\s|\[|\(|$)/);
+    if (!match) return null;
+    const episode = Number.parseInt(match[2], 10);
+    if (!(episode >= 1) || match[2].length === 4 && /^(19|20)/.test(match[2])) return null;
+    const title = match[1].trim();
+    const folder = parseLocalName(`${parentFolder}.mkv`).title;
+    return normalizeKey(title) && normalizeKey(title) === normalizeKey(folder) ? { title, episode } : null;
+  }
   function parseLocalName(filename, parentFolder) {
     const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
     const se = parseSeasonEpisode(stem);
@@ -8321,6 +9148,13 @@
     if (quality?.index != null) cuts.push(quality.index);
     if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
     let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (!se) {
+      const absolute = absoluteEpisode(stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim(), parentFolder);
+      if (absolute) {
+        const qualityLabel = qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase();
+        return { title: absolute.title, year: null, season: 1, episode: absolute.episode, qualityLabel };
+      }
+    }
     if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
       const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
       title = parsedFolder.title;
@@ -8523,7 +9357,7 @@
     let titles = 0;
     let unmatched = 0;
     const report = (progress) => options.onProgress?.(progress);
-    const emit4 = async (incoming) => {
+    const emit5 = async (incoming) => {
       if (options.signal?.aborted) return;
       const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
@@ -8536,7 +9370,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit4, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit4, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit5, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit5, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -8615,22 +9449,22 @@
       held = held.filter((candidate) => candidate !== entry);
       entry = void 0;
     }
-    let state2;
+    let state3;
     if (entry) {
       entry.last = now2;
-      state2 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
+      state3 = { repeat: true, synthetic: !event.repeat, heldMs: now2 - entry.since };
     } else {
       held.push({ key: event.key, keyCode, since: now2, last: now2 });
-      state2 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
+      state3 = { repeat: event.repeat, synthetic: false, heldMs: 0 };
     }
-    answered.set(identity, state2);
-    return state2;
+    answered.set(identity, state3);
+    return state3;
   }
-  function heldLongerThan(state2, ms2) {
-    return state2.repeat && state2.heldMs > ms2;
+  function heldLongerThan(state3, ms2) {
+    return state3.repeat && state3.heldMs > ms2;
   }
-  function tvSeekStepSeconds(state2) {
-    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  function tvSeekStepSeconds(state3) {
+    return heldLongerThan(state3, 1e3) ? 60 : 10;
   }
   var KEY_HOLD_STALE_MS, held, installed, answered;
   var init_key_hold = __esm({
@@ -8648,24 +9482,6 @@
     "lib/tv-hold.ts"() {
       "use strict";
       init_key_hold();
-    }
-  });
-
-  // lib/custom-themes.ts
-  var init_custom_themes = __esm({
-    "lib/custom-themes.ts"() {
-      "use client";
-      init_profile_storage_shim();
-    }
-  });
-
-  // lib/appearance-settings.ts
-  var init_appearance_settings = __esm({
-    "lib/appearance-settings.ts"() {
-      "use strict";
-      "use client";
-      init_profile_storage_shim();
-      init_custom_themes();
     }
   });
 
@@ -8697,9 +9513,9 @@
   });
 
   // lib/home-override-settings.ts
-  function emitChanged() {
+  function emitChanged2() {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(EVENT3));
+    window.dispatchEvent(new CustomEvent(EVENT4));
   }
   function getHomeOverridePluginId() {
     if (typeof window === "undefined") return null;
@@ -8710,11 +9526,11 @@
     const normalized = pluginId.trim();
     if (!normalized) return;
     setScopedStorageItem(KEY2, normalized);
-    emitChanged();
+    emitChanged2();
   }
   function clearHomeOverridePluginId() {
     removeScopedStorageItem(KEY2);
-    emitChanged();
+    emitChanged2();
   }
   function disableHomeOverridePlugin(pluginId) {
     if (getHomeOverridePluginId() !== pluginId) return;
@@ -8734,21 +9550,21 @@
     if (typeof window === "undefined") return () => {
     };
     const wrapped = () => listener();
-    window.addEventListener(EVENT3, wrapped);
+    window.addEventListener(EVENT4, wrapped);
     const offProfile = onProfileChanged(wrapped);
     return () => {
-      window.removeEventListener(EVENT3, wrapped);
+      window.removeEventListener(EVENT4, wrapped);
       offProfile();
     };
   }
-  var KEY2, EVENT3;
+  var KEY2, EVENT4;
   var init_home_override_settings = __esm({
     "lib/home-override-settings.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
       KEY2 = "custom_home_override_plugin";
-      EVENT3 = "lumio-home-override-changed";
+      EVENT4 = "lumio-home-override-changed";
     }
   });
 
@@ -8824,20 +9640,20 @@
       return null;
     }
   }
-  function emitChanged2() {
+  function emitChanged3() {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT4));
+      window.dispatchEvent(new CustomEvent(EVENT5));
     }
   }
   function setTraktAuth(auth) {
     if (typeof window === "undefined") return;
     if (!auth) {
       removeScopedStorageItem(AUTH_KEY);
-      emitChanged2();
+      emitChanged3();
       return;
     }
     setScopedStorageItem(AUTH_KEY, JSON.stringify(auth));
-    emitChanged2();
+    emitChanged3();
   }
   function clearTraktAuth() {
     setTraktAuth(null);
@@ -8846,7 +9662,7 @@
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(SCROBBLE_KEY) !== "0";
   }
-  var AUTH_KEY, EVENT4, SCROBBLE_KEY;
+  var AUTH_KEY, EVENT5, SCROBBLE_KEY;
   var init_trakt_storage = __esm({
     "lib/trakt-storage.ts"() {
       "use strict";
@@ -8854,7 +9670,7 @@
       init_profile_storage_shim();
       init_spoiler_settings();
       AUTH_KEY = "trakt_auth";
-      EVENT4 = "lumio-trakt-auth-changed";
+      EVENT5 = "lumio-trakt-auth-changed";
       SCROBBLE_KEY = "trakt_scrobble_enabled";
     }
   });
@@ -8875,9 +9691,107 @@
     }
   });
 
+  // lib/watched-threshold.ts
+  function clampWatchedThreshold(pct2) {
+    return Math.round(Math.min(WATCHED_THRESHOLD_MAX, Math.max(WATCHED_THRESHOLD_MIN, pct2)));
+  }
+  function watchedRuleFor(kind, customPct) {
+    if (customPct != null && Number.isFinite(customPct)) {
+      return { ratio: clampWatchedThreshold(customPct) / 100, tailSeconds: null };
+    }
+    return kind === "movie" ? { ratio: 0.97, tailSeconds: 30 } : { ratio: 0.92, tailSeconds: 90 };
+  }
+  function reachedWatchedRule(rule, currentTime, duration) {
+    if (!Number.isFinite(currentTime) || !Number.isFinite(duration) || duration <= 0) return false;
+    if (currentTime / duration >= rule.ratio) return true;
+    return rule.tailSeconds != null && duration - currentTime <= rule.tailSeconds;
+  }
+  function getWatchedThresholdPct() {
+    const raw = getItem(STORAGE_KEY3);
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? clampWatchedThreshold(n) : null;
+  }
+  function watchedRule(kind) {
+    return watchedRuleFor(kind, getWatchedThresholdPct());
+  }
+  function isWatchedPosition(kind, currentTime, duration) {
+    return reachedWatchedRule(watchedRule(kind), currentTime, duration);
+  }
+  var STORAGE_KEY3, WATCHED_THRESHOLD_MIN, WATCHED_THRESHOLD_MAX;
+  var init_watched_threshold = __esm({
+    "lib/watched-threshold.ts"() {
+      init_app_storage();
+      STORAGE_KEY3 = "watched_threshold_pct";
+      WATCHED_THRESHOLD_MIN = 80;
+      WATCHED_THRESHOLD_MAX = 98;
+    }
+  });
+
+  // lib/progress-finished.ts
+  function isFinishedProgress(entry) {
+    if (entry.type === "audiobook") return false;
+    if (!Number.isFinite(entry.duration) || entry.duration <= 0) return false;
+    if (!Number.isFinite(entry.currentTime)) return false;
+    return isWatchedPosition(entry.type === "movie" ? "movie" : "episode", entry.currentTime, entry.duration);
+  }
+  var init_progress_finished = __esm({
+    "lib/progress-finished.ts"() {
+      init_watched_threshold();
+    }
+  });
+
+  // lib/tracker-watched-echo.ts
+  function readProgress() {
+    if (typeof window === "undefined") return [];
+    const raw = getScopedStorageItem(PROGRESS_KEY) ?? "[]";
+    if (parsedCache && parsedCache.raw === raw) return parsedCache.list;
+    let list = [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        list = parsed.filter((entry) => Boolean(entry) && typeof entry === "object" && typeof entry.id === "string");
+      }
+    } catch {
+      list = [];
+    }
+    parsedCache = { raw, list };
+    return list;
+  }
+  function isTrackerWatchedEcho(target2, remoteWatchedAt) {
+    const remoteMs = Date.parse(remoteWatchedAt ?? "");
+    if (!Number.isFinite(remoteMs)) return false;
+    return readProgress().some((entry) => {
+      if (entry.id !== target2.id) return false;
+      if (target2.season != null && (entry.season !== target2.season || entry.episode !== target2.episode)) return false;
+      if (!(entry.currentTime > 0) || !(entry.duration > 0)) return false;
+      if (isFinishedProgress(entry)) return false;
+      const localMs = Date.parse(entry.watchedAt ?? "");
+      return Number.isFinite(localMs) && localMs >= remoteMs - TRACKER_ECHO_SLACK_MS;
+    });
+  }
+  function logTrackerWatchedEcho(label, remoteWatchedAt) {
+    console.info(`[sett-eko] hoppar \xF6ver ${label}: tj\xE4nstens sett ${remoteWatchedAt ?? "?"} \xE4r ekot av en of\xE4rdig uppspelning h\xE4r`);
+  }
+  var PROGRESS_KEY, TRACKER_ECHO_SLACK_MS, parsedCache;
+  var init_tracker_watched_echo = __esm({
+    "lib/tracker-watched-echo.ts"() {
+      init_profile_storage_shim();
+      init_progress_finished();
+      PROGRESS_KEY = "stream_progress_list";
+      TRACKER_ECHO_SLACK_MS = 15 * 6e4;
+      parsedCache = null;
+    }
+  });
+
   // lib/watched-episodes.ts
   function epKey(tmdbId, season, episode) {
     return `${tmdbId}-S${season}E${episode}`;
+  }
+  function isRemoteEcho(tmdbId, season, episode, watchedAt) {
+    if (!isTrackerWatchedEcho({ id: `tv-${tmdbId}`, season, episode }, watchedAt)) return false;
+    logTrackerWatchedEcho(`tv-${tmdbId} S${season}E${episode}`, watchedAt);
+    return true;
   }
   function parseStored(raw) {
     try {
@@ -8895,9 +9809,9 @@
   function readShared() {
     if (typeof window === "undefined") return {};
     const raw = getScopedStorageItem(KEY3) ?? "{}";
-    if (parsedCache && parsedCache.raw === raw) return parsedCache.data;
+    if (parsedCache2 && parsedCache2.raw === raw) return parsedCache2.data;
     const data = parseStored(raw);
-    parsedCache = { raw, data };
+    parsedCache2 = { raw, data };
     return data;
   }
   function read() {
@@ -8906,9 +9820,9 @@
   function write(data) {
     const raw = JSON.stringify(data);
     setScopedStorageItem(KEY3, raw);
-    parsedCache = { raw, data };
+    parsedCache2 = { raw, data };
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT5));
+      window.dispatchEvent(new CustomEvent(EVENT6));
     }
   }
   function timestampOf(value) {
@@ -8919,6 +9833,7 @@
     const key = epKey(tmdbId, season, episode);
     const previous = data[key];
     const source = options?.source ?? "local";
+    if (watched && source !== "local" && !previous && isRemoteEcho(tmdbId, season, episode, options?.watchedAt)) return;
     let next;
     if (watched) {
       next = options?.watchedAt ?? (source !== "local" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
@@ -8949,18 +9864,19 @@
   function onWatchedEpisodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT5, listener);
-    return () => window.removeEventListener(EVENT5, listener);
+    window.addEventListener(EVENT6, listener);
+    return () => window.removeEventListener(EVENT6, listener);
   }
-  var KEY3, EVENT5, DETAIL_EVENT, parsedCache;
+  var KEY3, EVENT6, DETAIL_EVENT, parsedCache2;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
+      init_tracker_watched_echo();
       KEY3 = "watched_episodes";
-      EVENT5 = "lumio-watched-episodes-changed";
+      EVENT6 = "lumio-watched-episodes-changed";
       DETAIL_EVENT = "lumio-watched-episode-mutated";
-      parsedCache = null;
+      parsedCache2 = null;
     }
   });
 
@@ -9036,6 +9952,11 @@
   function getWatchedMovies() {
     return readEntries();
   }
+  function isRemoteMovieEcho(tmdbId, watchedAt) {
+    if (!tmdbId || !isTrackerWatchedEcho({ id: `movie-${tmdbId}` }, watchedAt)) return false;
+    logTrackerWatchedEcho(`movie-${tmdbId}`, watchedAt);
+    return true;
+  }
   function setMovieWatched(entry, watched, options) {
     const tmdbId = normalizeId(entry.tmdbId);
     const imdbId = normalizeId(entry.imdbId);
@@ -9043,6 +9964,7 @@
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
     const current2 = readEntries();
+    if (watched && (options?.source ?? "local") !== "local" && !current2.some((currentEntry) => sameMovie(currentEntry, { tmdbId, imdbId, title, year })) && isRemoteMovieEcho(tmdbId, options?.watchedAt ?? entry.watchedAt)) return;
     const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
@@ -9077,6 +9999,7 @@
     "lib/watched-movies.ts"() {
       "use strict";
       "use client";
+      init_tracker_watched_echo();
       init_profile_storage_shim();
       KEY_WATCHED_MOVIES = "watched_movies";
       EVENT_WATCHED_MOVIES_CHANGED = "lumio-watched-movies-changed";
@@ -9462,8 +10385,8 @@
           // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
           // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
           // ecl argument if it can be done without increasing the version.
-          static encodeText(text, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text);
+          static encodeText(text2, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text2);
             return _QrCode2.encodeSegments(segs, ecl);
           }
           // Returns a QR Code representing the given binary data at the given error correction level.
@@ -9976,31 +10899,31 @@
           // Returns a segment representing the given text string encoded in alphanumeric mode.
           // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
           // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text) {
-            if (!_QrSegment2.isAlphanumeric(text))
+          static makeAlphanumeric(text2) {
+            if (!_QrSegment2.isAlphanumeric(text2))
               throw new RangeError("String contains unencodable characters in alphanumeric mode");
             let bb = [];
             let i;
-            for (i = 0; i + 2 <= text.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
+            for (i = 0; i + 2 <= text2.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i + 1));
               appendBits(temp, 11, bb);
             }
-            if (i < text.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
+            if (i < text2.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text2.length, bb);
           }
           // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
           // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text) {
-            if (text == "")
+          static makeSegments(text2) {
+            if (text2 == "")
               return [];
-            else if (_QrSegment2.isNumeric(text))
-              return [_QrSegment2.makeNumeric(text)];
-            else if (_QrSegment2.isAlphanumeric(text))
-              return [_QrSegment2.makeAlphanumeric(text)];
+            else if (_QrSegment2.isNumeric(text2))
+              return [_QrSegment2.makeNumeric(text2)];
+            else if (_QrSegment2.isAlphanumeric(text2))
+              return [_QrSegment2.makeAlphanumeric(text2)];
             else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text2))];
           }
           // Returns a segment representing an Extended Channel Interpretation
           // (ECI) designator with the given assignment value.
@@ -10022,14 +10945,14 @@
           }
           // Tests whether the given string can be encoded as a segment in numeric mode.
           // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text) {
-            return _QrSegment2.NUMERIC_REGEX.test(text);
+          static isNumeric(text2) {
+            return _QrSegment2.NUMERIC_REGEX.test(text2);
           }
           // Tests whether the given string can be encoded as a segment in alphanumeric mode.
           // A string is encodable iff each character is in the following set: 0 to 9, A to Z
           // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
+          static isAlphanumeric(text2) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text2);
           }
           /*-- Methods --*/
           // Returns a new copy of the data bits of this segment.
@@ -10442,48 +11365,12 @@
     }
   });
 
-  // lib/media-stream/config.ts
-  var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
-  var init_config = __esm({
-    "lib/media-stream/config.ts"() {
-      init_addon_url();
+  // lib/media-stream/source-list.ts
+  var init_source_list = __esm({
+    "lib/media-stream/source-list.ts"() {
       init_app_storage();
+      init_addon_url();
       init_profile_storage_shim();
-      SCRAPER_PRESETS = [
-        {
-          id: "torrentio",
-          name: "Torrentio",
-          url: "https://torrentio.strem.fun",
-          type: "torrentio",
-          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-          configUrl: "https://torrentio.strem.fun/configure"
-        },
-        {
-          id: "comet",
-          name: "Comet",
-          url: "",
-          type: "preconfigured",
-          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-          configUrl: "https://comet.elfhosted.com"
-        },
-        {
-          id: "jackettio",
-          name: "Jackettio",
-          url: "",
-          type: "preconfigured",
-          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-          configUrl: "https://jackettio.elfhosted.com/configure"
-        },
-        {
-          id: "aiostreams",
-          name: "AIOStreams",
-          url: "",
-          type: "preconfigured",
-          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-        }
-      ];
-      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
     }
   });
 
@@ -10509,8 +11396,638 @@
       "use client";
       init_addon_url();
       init_profile_storage_shim();
-      init_config();
+      init_source_list();
       KEY5 = "core_stream_addons_v1";
+    }
+  });
+
+  // lib/core-streams/stream-utils.ts
+  function streamResolution(name) {
+    const normalized = name.toLowerCase();
+    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
+    if (normalized.includes("1440p")) return 1440;
+    if (normalized.includes("1080p")) return 1080;
+    if (normalized.includes("720p")) return 720;
+    if (normalized.includes("480p")) return 480;
+    return null;
+  }
+  function parseSizeBytes(text2) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text2);
+    if (!match) return null;
+    const value = Number.parseFloat(match[1].replace(",", "."));
+    const unit = SIZE_UNITS[match[2].toLowerCase()];
+    if (!Number.isFinite(value) || !unit) return null;
+    return Math.round(value * unit);
+  }
+  function getStreamSizeBytes(stream) {
+    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
+    if (cachedFileBytes > 0) return cachedFileBytes;
+    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
+    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
+  }
+  function formatSize(bytes) {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
+    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
+    return `${Math.round(bytes / 1024)} kB`;
+  }
+  function langFlag(code) {
+    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
+  }
+  function getStreamAudioLanguages(stream) {
+    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
+    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
+  }
+  function isInformationalStream(stream) {
+    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
+    if (stream.infoHash && !stream.directUrl) return false;
+    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
+  }
+  function streamLooksDolbyVision(stream) {
+    const text2 = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text2) || /dolby[.\s_-]?vision/i.test(text2);
+  }
+  function streamLooksLosslessAudio(stream) {
+    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
+  }
+  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
+  var init_stream_utils = __esm({
+    "lib/core-streams/stream-utils.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      SIZE_UNITS = {
+        kb: 1e3,
+        mb: 1e3 ** 2,
+        gb: 1e3 ** 3,
+        tb: 1e3 ** 4,
+        kib: 1024,
+        mib: 1024 ** 2,
+        gib: 1024 ** 3,
+        tib: 1024 ** 4
+      };
+      STREAM_LANGUAGE_PATTERNS = [
+        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
+        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
+        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
+        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
+        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
+        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
+        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
+        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
+        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
+        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
+        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
+        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
+        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
+        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
+        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
+        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
+      ];
+      LANG_FLAGS = {
+        en: "\u{1F1EC}\u{1F1E7}",
+        sv: "\u{1F1F8}\u{1F1EA}",
+        no: "\u{1F1F3}\u{1F1F4}",
+        da: "\u{1F1E9}\u{1F1F0}",
+        fi: "\u{1F1EB}\u{1F1EE}",
+        de: "\u{1F1E9}\u{1F1EA}",
+        fr: "\u{1F1EB}\u{1F1F7}",
+        es: "\u{1F1EA}\u{1F1F8}",
+        it: "\u{1F1EE}\u{1F1F9}",
+        pt: "\u{1F1F5}\u{1F1F9}",
+        nl: "\u{1F1F3}\u{1F1F1}",
+        pl: "\u{1F1F5}\u{1F1F1}",
+        ru: "\u{1F1F7}\u{1F1FA}",
+        tr: "\u{1F1F9}\u{1F1F7}",
+        ja: "\u{1F1EF}\u{1F1F5}",
+        ko: "\u{1F1F0}\u{1F1F7}",
+        zh: "\u{1F1E8}\u{1F1F3}",
+        hi: "\u{1F1EE}\u{1F1F3}",
+        ar: "\u{1F1F8}\u{1F1E6}",
+        cs: "\u{1F1E8}\u{1F1FF}",
+        hu: "\u{1F1ED}\u{1F1FA}",
+        ro: "\u{1F1F7}\u{1F1F4}",
+        uk: "\u{1F1FA}\u{1F1E6}",
+        el: "\u{1F1EC}\u{1F1F7}",
+        he: "\u{1F1EE}\u{1F1F1}",
+        th: "\u{1F1F9}\u{1F1ED}",
+        vi: "\u{1F1FB}\u{1F1F3}",
+        id: "\u{1F1EE}\u{1F1E9}"
+      };
+      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
+      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
+    }
+  });
+
+  // lib/core-streams/addon-episode-numbering.ts
+  function regularVideos(videos) {
+    return videos.filter((v) => Number.isInteger(v.season) && Number.isInteger(v.episode) && v.season > 0 && v.episode > 0).sort((a, b) => a.season - b.season || a.episode - b.episode);
+  }
+  function regularSeasons(seasons) {
+    return seasons.filter((s) => s.season > 0 && s.count > 0).sort((a, b) => a.season - b.season);
+  }
+  function seasonStructuresMatch(tmdbSeasons, videos) {
+    const tmdb = regularSeasons(tmdbSeasons);
+    const addon = /* @__PURE__ */ new Map();
+    for (const v of regularVideos(videos)) addon.set(v.season, (addon.get(v.season) ?? 0) + 1);
+    if (tmdb.length === 0 || tmdb.length !== addon.size) return false;
+    return tmdb.every((s) => addon.get(s.season) === s.count);
+  }
+  function dayNumber(raw) {
+    if (!raw) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (!m) return null;
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / 864e5;
+  }
+  function datesClose(a, b) {
+    const da = dayNumber(a);
+    const db = dayNumber(b);
+    return da !== null && db !== null && Math.abs(da - db) <= 1;
+  }
+  function normalizeName(raw) {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed || GENERIC_NAME.test(trimmed)) return null;
+    const norm = trimmed.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "");
+    return norm.length >= 3 ? norm : null;
+  }
+  function namesMatch(a, b) {
+    const na = normalizeName(a);
+    const nb = normalizeName(b);
+    return na !== null && na === nb;
+  }
+  function absoluteEpisodeIndex(tmdbSeasons, season, episode) {
+    const seasons = regularSeasons(tmdbSeasons);
+    const own = seasons.find((s) => s.season === season);
+    if (!own || episode < 1) return null;
+    const before = seasons.filter((s) => s.season < season).reduce((sum, s) => sum + s.count, 0);
+    if (episode <= own.count) return before + episode;
+    if (episode > before && episode <= before + own.count) return episode;
+    return null;
+  }
+  function mapTmdbEpisodeToAddon(tmdbSeasons, target2, videos) {
+    const list = regularVideos(videos);
+    if (list.length === 0) return null;
+    const ref = (v) => ({ season: v.season, episode: v.episode });
+    const hasName = normalizeName(target2.name) !== null;
+    const hasEvidence = Boolean(dayNumber(target2.airDate) !== null || hasName);
+    const exact = list.find((v) => v.season === target2.season && v.episode === target2.episode) ?? null;
+    if (exact && (!hasEvidence || datesClose(exact.released, target2.airDate) || namesMatch(exact.name, target2.name))) {
+      return ref(exact);
+    }
+    const abs = absoluteEpisodeIndex(tmdbSeasons, target2.season, target2.episode);
+    const indexed = list.map((v, i) => ({ v, i }));
+    if (dayNumber(target2.airDate) !== null) {
+      let candidates = indexed.filter(({ v }) => datesClose(v.released, target2.airDate));
+      if (candidates.length > 1 && hasName) {
+        const named = candidates.filter(({ v }) => namesMatch(v.name, target2.name));
+        if (named.length >= 1) candidates = named;
+      }
+      if (candidates.length === 1) return ref(candidates[0].v);
+      if (candidates.length > 1) {
+        if (abs === null) return null;
+        const ranked = candidates.map((c) => ({ ...c, dist: Math.abs(c.i - (abs - 1)) })).sort((a, b) => a.dist - b.dist);
+        if (ranked.length > 1 && ranked[0].dist === ranked[1].dist) return null;
+        return ref(ranked[0].v);
+      }
+    }
+    if (hasName) {
+      const named = list.filter((v) => namesMatch(v.name, target2.name));
+      if (named.length === 1) return ref(named[0]);
+    }
+    return null;
+  }
+  async function defaultFetchJson(url, timeoutMs) {
+    const controller = new AbortController();
+    const timer4 = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } finally {
+      clearTimeout(timer4);
+    }
+  }
+  function defaultStorage() {
+    try {
+      return typeof window !== "undefined" ? window.localStorage : null;
+    } catch {
+      return null;
+    }
+  }
+  function defaultLog(line) {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+    });
+  }
+  function defaultDeps() {
+    return { fetchJson: defaultFetchJson, now: () => Date.now(), storage: defaultStorage(), log: defaultLog };
+  }
+  function readStore(deps) {
+    try {
+      const raw = deps.storage?.getItem(STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function writeStore(deps, store2) {
+    try {
+      const entries = Object.entries(store2).sort((a, b) => b[1].at - a[1].at).slice(0, MAX_SERIES);
+      deps.storage?.setItem(STORE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+    }
+  }
+  function updateSeries(deps, imdbId, change) {
+    const store2 = readStore(deps);
+    store2[imdbId] = change(store2[imdbId]);
+    writeStore(deps, store2);
+  }
+  function asNumber(value) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+  function parseVideos(payload) {
+    const meta = payload?.meta;
+    const videos = Array.isArray(meta?.videos) ? meta.videos : [];
+    const out = [];
+    for (const v of videos) {
+      const season = asNumber(v.season);
+      const episode = asNumber(v.episode) ?? asNumber(v.number);
+      if (season === null || episode === null) continue;
+      const released = typeof v.released === "string" ? v.released : typeof v.firstAired === "string" ? v.firstAired : null;
+      const name = typeof v.name === "string" ? v.name : typeof v.title === "string" ? v.title : null;
+      out.push({ season, episode, released, name });
+    }
+    return out;
+  }
+  function parseSeasons(payload) {
+    const seasons = payload?.seasons;
+    if (!Array.isArray(seasons)) return [];
+    return seasons.flatMap((s) => {
+      const season = asNumber(s.season_number);
+      const count = asNumber(s.episode_count);
+      return season === null || count === null ? [] : [{ season, count }];
+    });
+  }
+  function loadSeries(imdbId, deps) {
+    const cached = seriesMemo.get(imdbId);
+    if (cached && deps.now() - cached.at < cached.ttl) return cached.promise;
+    const promise = (async () => {
+      const tmdbPart = (async () => {
+        const found = await deps.fetchJson(`/api/tmdb/find?imdb=${encodeURIComponent(imdbId)}&type=tv`, FETCH_TIMEOUT_MS);
+        const tmdbId = found && (typeof found.tmdbId === "string" || typeof found.tmdbId === "number") ? String(found.tmdbId) : null;
+        if (!tmdbId) return null;
+        const info = await deps.fetchJson(`/api/tv-info?tmdbId=${encodeURIComponent(tmdbId)}`, FETCH_TIMEOUT_MS);
+        return { tmdbId, seasons: parseSeasons(info) };
+      })();
+      const [tmdb, meta] = await Promise.all([
+        tmdbPart,
+        deps.fetchJson(`${CINEMETA_META}${encodeURIComponent(imdbId)}.json`, FETCH_TIMEOUT_MS)
+      ]);
+      if (!tmdb) return null;
+      return { ...tmdb, videos: parseVideos(meta) };
+    })();
+    const entry = { at: deps.now(), ttl: SERIES_MEMO_MS, promise };
+    seriesMemo.set(imdbId, entry);
+    promise.catch(() => {
+      entry.ttl = FAILURE_MEMO_MS;
+    });
+    return promise;
+  }
+  async function resolveUncached(imdbId, season, episode, deps) {
+    const original = { season, episode };
+    const data = await loadSeries(imdbId, deps);
+    if (!data) return original;
+    if (data.videos.length === 0) {
+      updateSeries(deps, imdbId, () => ({ at: deps.now(), same: true, ttl: NO_DATA_TTL_MS }));
+      return original;
+    }
+    if (seasonStructuresMatch(data.seasons, data.videos)) {
+      updateSeries(deps, imdbId, () => ({ at: deps.now(), same: true, ttl: SAME_TTL_MS }));
+      return original;
+    }
+    const seasonPayload = await deps.fetchJson(
+      `/api/tv-info?tmdbId=${encodeURIComponent(data.tmdbId)}&season=${season}`,
+      FETCH_TIMEOUT_MS
+    );
+    const row = (seasonPayload?.episodes ?? []).find((e) => asNumber(e.episode_number) === episode);
+    const info = {
+      season,
+      episode,
+      airDate: typeof row?.air_date === "string" ? row.air_date : null,
+      name: typeof row?.name === "string" ? row.name : null
+    };
+    const mapped = mapTmdbEpisodeToAddon(data.seasons, info, data.videos) ?? original;
+    if (mapped.season !== season || mapped.episode !== episode) {
+      deps.log(`[episode-remap] ${imdbId} tmdb=${season}:${episode} addon=${mapped.season}:${mapped.episode}`);
+    }
+    updateSeries(deps, imdbId, (prev) => {
+      const eps = { ...prev && !prev.same ? prev.eps : {}, [`${season}:${episode}`]: [mapped.season, mapped.episode] };
+      const trimmed = Object.entries(eps).slice(-MAX_EPISODES_PER_SERIES);
+      return { at: deps.now(), eps: Object.fromEntries(trimmed) };
+    });
+    return mapped;
+  }
+  async function addonEpisodeFor(imdbId, season, episode, options = {}) {
+    const deps = { ...defaultDeps(), ...options.deps };
+    const original = { season, episode };
+    if (!/^tt\d+$/.test(imdbId) || season < 1 || episode < 1) return original;
+    const stored = readStore(deps)[imdbId];
+    if (stored) {
+      const age = deps.now() - stored.at;
+      if (stored.same && age < (stored.ttl ?? SAME_TTL_MS)) return original;
+      const hit = stored.eps?.[`${season}:${episode}`];
+      if (hit && age < EPISODE_TTL_MS) return { season: hit[0], episode: hit[1] };
+    }
+    const key = `${imdbId}:${season}:${episode}`;
+    let pending4 = pendingEpisodes.get(key);
+    if (!pending4) {
+      pending4 = resolveUncached(imdbId, season, episode, deps).catch(() => original);
+      pendingEpisodes.set(key, pending4);
+      void pending4.finally(() => pendingEpisodes.delete(key));
+    }
+    const budgetMs = options.budgetMs ?? ADDON_NUMBERING_BUDGET_MS;
+    let timer4;
+    const timeout = new Promise((resolve) => {
+      timer4 = setTimeout(() => resolve(original), budgetMs);
+    });
+    try {
+      return await Promise.race([pending4, timeout]);
+    } finally {
+      if (timer4) clearTimeout(timer4);
+    }
+  }
+  var GENERIC_NAME, CINEMETA_META, STORE_KEY, SAME_TTL_MS, NO_DATA_TTL_MS, EPISODE_TTL_MS, MAX_SERIES, MAX_EPISODES_PER_SERIES, SERIES_MEMO_MS, FAILURE_MEMO_MS, FETCH_TIMEOUT_MS, ADDON_NUMBERING_BUDGET_MS, seriesMemo, pendingEpisodes;
+  var init_addon_episode_numbering = __esm({
+    "lib/core-streams/addon-episode-numbering.ts"() {
+      "use strict";
+      "use client";
+      GENERIC_NAME = /^(episode|episodio|épisode|epizod|folge|avsnitt|afsnit|jakso|aflevering|odcinek|ep)\s*\d+$/i;
+      CINEMETA_META = "https://v3-cinemeta.strem.io/meta/series/";
+      STORE_KEY = "__addon_episode_numbering_v1";
+      SAME_TTL_MS = 7 * 24 * 36e5;
+      NO_DATA_TTL_MS = 24 * 36e5;
+      EPISODE_TTL_MS = 7 * 24 * 36e5;
+      MAX_SERIES = 150;
+      MAX_EPISODES_PER_SERIES = 80;
+      SERIES_MEMO_MS = 6 * 36e5;
+      FAILURE_MEMO_MS = 5 * 6e4;
+      FETCH_TIMEOUT_MS = 1e4;
+      ADDON_NUMBERING_BUDGET_MS = 4e3;
+      seriesMemo = /* @__PURE__ */ new Map();
+      pendingEpisodes = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/core-streams/lookup.ts
+  var lookup_exports = {};
+  __export(lookup_exports, {
+    coreLookupAnsweredEmpty: () => coreLookupAnsweredEmpty,
+    isFreshSource: () => isFreshSource,
+    lookupCoreStreams: () => lookupCoreStreams,
+    lookupSource: () => lookupSource,
+    markSourceCooldown: () => markSourceCooldown,
+    rememberFreshSources: () => rememberFreshSources,
+    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
+    retryFailedCoreSources: () => retryFailedCoreSources,
+    sourceInCooldown: () => sourceInCooldown,
+    sourceStreamUrl: () => sourceStreamUrl,
+    streamTargetKey: () => streamTargetKey
+  });
+  function streamTargetKey(target2) {
+    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
+  }
+  function sourceStreamUrl(addon, target2) {
+    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
+  }
+  function sourceInCooldown(addon, now2 = Date.now()) {
+    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
+    if (!until) return false;
+    if (now2 >= until) {
+      cooldownUntil.delete(canonicalAddonUrl(addon.url));
+      return false;
+    }
+    return true;
+  }
+  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
+    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
+  }
+  function looksRateLimited(message) {
+    return /\b429\b|rate.?limit|too many requests/i.test(message);
+  }
+  function tagSource(streams, addon) {
+    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
+  }
+  function keepPlayable(streams) {
+    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
+  }
+  function rememberFreshSources(streams, now2 = Date.now()) {
+    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
+    if (freshSources.size > 2e3) {
+      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
+    }
+  }
+  function isFreshSource(url, now2 = Date.now()) {
+    const at = freshSources.get(url);
+    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
+  }
+  async function fetchViaApi(addon, target2, timeoutMs, signal) {
+    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
+    if (target2.type === "series" && target2.season != null && target2.episode != null) {
+      params.set("season", String(target2.season));
+      params.set("episode", String(target2.episode));
+    }
+    const controller = new AbortController();
+    const onAbort = () => controller.abort();
+    signal?.addEventListener("abort", onAbort);
+    const timer4 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    try {
+      const response = await fetch(`/api/streams?${params}`, {
+        headers: {
+          "x-source-manifest-url": addon.url,
+          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
+        },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      if (payload.error) throw new Error(payload.error);
+      return payload.streams ?? [];
+    } finally {
+      clearTimeout(timer4);
+      signal?.removeEventListener("abort", onAbort);
+    }
+  }
+  async function fetchViaDesktop(addon, target2, timeoutMs) {
+    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
+    if (!streams) return null;
+    return streams.map((stream) => ({
+      ...stream,
+      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
+      cachedFiles: stream.cachedFiles ?? []
+    }));
+  }
+  async function lookupSource(addon, target2, options = {}) {
+    const timeoutMs = options.timeoutMs ?? 12e3;
+    const startedAt = Date.now();
+    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
+    const attempt = async () => {
+      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
+      try {
+        let raw = null;
+        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
+        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
+        const streams = keepPlayable(tagSource(raw, addon));
+        rememberFreshSources(streams);
+        const ms2 = Date.now() - startedAt;
+        return {
+          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
+          streams
+        };
+      } catch (error) {
+        const ms2 = Date.now() - startedAt;
+        const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof DOMException && error.name === "AbortError" || /operation timed out/i.test(message)) {
+          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
+        }
+        if (looksRateLimited(message)) markSourceCooldown(addon);
+        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
+      }
+    };
+    const first = await attempt();
+    const kind = first.report.outcome.kind;
+    if (kind === "error" && !sourceInCooldown(addon)) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      const second = await attempt();
+      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
+    }
+    return first;
+  }
+  function memoKey(target2) {
+    return `${target2.type}:${streamTargetKey(target2)}`;
+  }
+  function replayLookup(result, options) {
+    if (options.onSource) {
+      const bySource = /* @__PURE__ */ new Map();
+      for (const stream of result.streams) {
+        const name = stream.source ?? "";
+        bySource.set(name, [...bySource.get(name) ?? [], stream]);
+      }
+      for (const report of result.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
+    }
+    return result;
+  }
+  function isAnswered(report) {
+    return report.outcome.kind === "ok" || report.outcome.kind === "empty";
+  }
+  function memoTtl(result) {
+    return result.streams.length > 0 && result.reports.every(isAnswered) ? COMPLETE_MEMO_TTL_MS : MEMO_TTL_MS;
+  }
+  function freshMemo(target2) {
+    const cached = memo3.get(memoKey(target2));
+    return cached && Date.now() - cached.at < cached.ttl ? cached.result : null;
+  }
+  function resetCoreStreamLookupMemo() {
+    inflight2.clear();
+    memo3.clear();
+  }
+  function coreLookupAnsweredEmpty(target2) {
+    const result = freshMemo(target2);
+    return Boolean(result && result.streams.length === 0 && result.reports.length > 0 && result.reports.every(isAnswered));
+  }
+  async function retryFailedCoreSources(target2, options = {}) {
+    const key = memoKey(target2);
+    const previous = memo3.get(key)?.result;
+    if (!previous) {
+      memo3.delete(key);
+      return lookupCoreStreams(target2, options);
+    }
+    const failed = previous.reports.filter((report) => !isAnswered(report)).map((report) => report.addon);
+    if (failed.length === 0) return replayLookup(previous, options);
+    const retried = await lookupCoreStreamsUncached(target2, { ...options, addons: failed, onSource: void 0 });
+    const seen = new Set(previous.streams.map((stream) => stream.directUrl ?? `hash:${stream.infoHash}`));
+    const streams = [...previous.streams];
+    for (const stream of retried.streams) {
+      const id = stream.directUrl ?? `hash:${stream.infoHash}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      streams.push(stream);
+    }
+    const retriedNames = new Set(retried.reports.map((report) => report.addon.name));
+    const reports = [...previous.reports.filter((report) => !retriedNames.has(report.addon.name)), ...retried.reports];
+    const result = { streams, reports };
+    memo3.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
+    if (options.signal?.aborted) return result;
+    return replayLookup(result, options);
+  }
+  async function lookupCoreStreams(target2, options = {}) {
+    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
+    const key = memoKey(target2);
+    const replay = (result) => replayLookup(result, options);
+    const cached = freshMemo(target2);
+    if (cached) return replay(cached);
+    const pending4 = inflight2.get(key);
+    if (pending4) return pending4.then(replay);
+    const run = lookupCoreStreamsUncached(target2, options).then((result) => {
+      const answered2 = result.reports.some(isAnswered);
+      const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
+      if (answered2 && !framedSkip) {
+        memo3.set(key, { at: Date.now(), result, ttl: memoTtl(result) });
+      }
+      return result;
+    }).finally(() => inflight2.delete(key));
+    inflight2.set(key, run);
+    return run;
+  }
+  async function toAddonNumbering(target2) {
+    if (target2.type !== "series" || target2.season == null || target2.episode == null) return target2;
+    const mapped = await addonEpisodeFor(target2.imdbId, target2.season, target2.episode);
+    return mapped.season === target2.season && mapped.episode === target2.episode ? target2 : { ...target2, ...mapped };
+  }
+  async function lookupCoreStreamsUncached(tmdbTarget, options = {}) {
+    const addons = options.addons ?? getEnabledCoreStreamAddons();
+    if (addons.length === 0) return { streams: [], reports: [] };
+    const target2 = await toAddonNumbering(tmdbTarget);
+    const seen = /* @__PURE__ */ new Set();
+    const merged = [];
+    const reports = [];
+    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
+      const { report, streams } = await lookupSource(addon, target2, options);
+      reports.push(report);
+      const fresh = [];
+      for (const stream of streams) {
+        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(stream);
+        fresh.push(stream);
+      }
+      if (options.signal?.aborted) return;
+      options.onSource?.(report, fresh);
+    });
+    return { streams: merged, reports };
+  }
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo3;
+  var init_lookup = __esm({
+    "lib/core-streams/lookup.ts"() {
+      "use client";
+      init_core_addons();
+      init_addon_url();
+      init_plugin_sdk();
+      init_async_utils();
+      init_stream_utils();
+      init_mode();
+      init_addon_episode_numbering();
+      cooldownUntil = /* @__PURE__ */ new Map();
+      COOLDOWN_MS = 9e4;
+      FRESH_SOURCE_MS = 10 * 6e4;
+      freshSources = /* @__PURE__ */ new Map();
+      RETRY_DELAY_MS = 700;
+      MEMO_TTL_MS = 45e3;
+      COMPLETE_MEMO_TTL_MS = FRESH_SOURCE_MS;
+      inflight2 = /* @__PURE__ */ new Map();
+      memo3 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -10535,6 +12052,7 @@
       init_plugin_sdk();
       init_availability_throttle();
       init_core_addons();
+      init_lookup();
       init_source_request();
       init_watched_episodes();
       STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
@@ -11135,7 +12653,12 @@
   function getNextEpPreloadLeadSeconds() {
     return FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
   }
-  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS;
+  function getNextEpAfterLastSubSeconds() {
+    if (typeof window === "undefined") return DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+    const v = parseInt(getScopedStorageItem(KEY_AFTER_LAST_SUB) ?? "");
+    return NEXT_EP_AFTER_LAST_SUB_OPTIONS.includes(v) ? v : DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
+  }
+  var KEY_AUTOPLAY, KEY_POPUP_SECONDS, DEFAULT_POPUP_SECONDS, KEY_POPUP_AUTO, KEY_ADVANCE_AT_OUTRO, OUTRO_FIRED_KEY, FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS, KEY_AFTER_LAST_SUB, NEXT_EP_AFTER_LAST_SUB_OPTIONS, DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS;
   var init_autoplay_settings = __esm({
     "lib/autoplay-settings.ts"() {
       "use strict";
@@ -11147,6 +12670,9 @@
       KEY_ADVANCE_AT_OUTRO = "autoplay_advanceAtOutro";
       OUTRO_FIRED_KEY = "__lumioOutroFired";
       FIXED_NEXT_EP_PRELOAD_LEAD_SECONDS = 300;
+      KEY_AFTER_LAST_SUB = "nextEpAfterLastSubSeconds";
+      NEXT_EP_AFTER_LAST_SUB_OPTIONS = [0, 10, 20, 45, 90];
+      DEFAULT_NEXT_EP_AFTER_LAST_SUB_SECONDS = 20;
     }
   });
 
@@ -11177,6 +12703,92 @@
       "use strict";
       "use client";
       OPEN_ITEM_EVENT = "lumio-open-media-item";
+    }
+  });
+
+  // lib/native-alerts.ts
+  var init_native_alerts = __esm({
+    "lib/native-alerts.ts"() {
+      "use client";
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/plugins/bootstrap-signal.ts
+  var init_bootstrap_signal = __esm({
+    "lib/plugins/bootstrap-signal.ts"() {
+      "use client";
+    }
+  });
+
+  // lib/system-notification.ts
+  var init_system_notification = __esm({
+    "lib/system-notification.ts"() {
+      "use strict";
+      "use client";
+      init_open_item_runtime();
+      init_native_alerts();
+      init_bootstrap_signal();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  function pauseStartWatchdogs() {
+    pauseCount += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      pauseCount = Math.max(0, pauseCount - 1);
+    };
+  }
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS, pauseCount;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+      pauseCount = 0;
+    }
+  });
+
+  // lib/mobile-data-guard.ts
+  function getBlockMobileData() {
+    return getItem(STORAGE_KEY4) === "1";
+  }
+  function needsMobileDataConsent(blockOn, allowed, network) {
+    return blockOn && !allowed && network === "cellular";
+  }
+  function parseNetworkKind(raw) {
+    const type = raw?.type;
+    return type === "wifi" || type === "ethernet" || type === "cellular" || type === "none" || type === "other" ? type : "unknown";
+  }
+  async function confirmPlaybackNetwork(query) {
+    if (!getBlockMobileData() || allowedThisSession) return true;
+    const network = parseNetworkKind(await query(NETWORK_QUERY_TIMEOUT_MS).catch(() => null));
+    if (!needsMobileDataConsent(true, allowedThisSession, network)) return true;
+    if (typeof window === "undefined") return true;
+    const release = pauseStartWatchdogs();
+    try {
+      const play = await new Promise((resolve) => {
+        window.dispatchEvent(new CustomEvent(MOBILE_DATA_PROMPT_EVENT, { detail: { resolve } }));
+      });
+      if (play) allowedThisSession = true;
+      return play;
+    } finally {
+      release();
+    }
+  }
+  var STORAGE_KEY4, MOBILE_DATA_PROMPT_EVENT, NETWORK_QUERY_TIMEOUT_MS, allowedThisSession;
+  var init_mobile_data_guard = __esm({
+    "lib/mobile-data-guard.ts"() {
+      "use client";
+      init_app_storage();
+      init_start_watchdog();
+      STORAGE_KEY4 = "playback_block_mobile_data";
+      MOBILE_DATA_PROMPT_EVENT = "lumio-mobile-data-prompt";
+      NETWORK_QUERY_TIMEOUT_MS = 800;
+      allowedThisSession = false;
     }
   });
 
@@ -11300,6 +12912,14 @@
           /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z" }),
           /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
         ] });
+      case "incognito":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11h18" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 11l1.6-5.2A1.5 1.5 0 0 1 8 4.8h8a1.5 1.5 0 0 1 1.4 1L19 11" }),
+          /* @__PURE__ */ jsx("circle", { cx: "7.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("circle", { cx: "16.5", cy: "16", r: "2.8" }),
+          /* @__PURE__ */ jsx("path", { d: "M10.3 16c1.1-.8 2.3-.8 3.4 0" })
+        ] });
       case "previews":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "8", height: "6", rx: "1" }),
@@ -11328,6 +12948,11 @@
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
           /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
         ] });
+      case "speak":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke, children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 10v4h3l4 3.5v-11L7 10z" }),
+          /* @__PURE__ */ jsx("path", { d: "M15 9.5a3.5 3.5 0 0 1 0 5M17.8 7a7 7 0 0 1 0 10" })
+        ] });
     }
   }
   function clipUploadIcon(cls) {
@@ -11338,8 +12963,8 @@
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
-      playerIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-      playerLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerIconButtonClass = (state3 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerLabelButtonClass = (state3 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     }
   });
 
@@ -11385,8 +13010,8 @@
     return ordered.find((option) => matchesLanguage(option, language)) ?? null;
   }
   function buildDualSubtitleLines(primary, secondary, stripSdh, strip) {
-    const clean = (text) => {
-      const trimmed = text?.trim() ?? "";
+    const clean = (text2) => {
+      const trimmed = text2?.trim() ?? "";
       if (!trimmed) return null;
       const result = stripSdh ? strip(trimmed).trim() : trimmed;
       return result || null;
@@ -11445,6 +13070,57 @@
       PLAYBACK_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
       KEY6 = "playback_speed_by_title_v1";
       MAX_ENTRIES = 200;
+    }
+  });
+
+  // lib/series-track-store.ts
+  function read4(key = KEY7) {
+    try {
+      const raw = getScopedStorageItem(key);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function getSeriesAudioLanguage(tmdbId) {
+    if (!tmdbId) return null;
+    const value = read4()[tmdbId];
+    return typeof value === "string" && value ? value : null;
+  }
+  function write2(key, tmdbId, value) {
+    const store2 = read4(key);
+    delete store2[tmdbId];
+    store2[tmdbId] = value;
+    const keys2 = Object.keys(store2);
+    for (let index = 0; index < keys2.length - MAX_ENTRIES2; index += 1) delete store2[keys2[index]];
+    try {
+      setScopedStorageItem(key, JSON.stringify(store2));
+    } catch {
+    }
+  }
+  function saveSeriesAudioLanguage(tmdbId, language) {
+    if (!tmdbId || !language) return;
+    write2(KEY7, tmdbId, language);
+  }
+  function getSeriesSubtitlePreference(tmdbId) {
+    if (!tmdbId) return null;
+    const value = read4(SUBTITLE_KEY)[tmdbId];
+    if (value === "off") return { mode: "off" };
+    return typeof value === "string" && value ? { mode: "language", language: value } : null;
+  }
+  function saveSeriesSubtitlePreference(tmdbId, preference) {
+    if (!tmdbId || preference.mode === "default") return;
+    write2(SUBTITLE_KEY, tmdbId, preference.mode === "off" ? "off" : preference.language);
+  }
+  var KEY7, SUBTITLE_KEY, MAX_ENTRIES2;
+  var init_series_track_store = __esm({
+    "lib/series-track-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      KEY7 = "series_audio_lang_v1";
+      SUBTITLE_KEY = "series_subtitle_pref_v1";
+      MAX_ENTRIES2 = 200;
     }
   });
 
@@ -13334,10 +15010,10 @@
          *
          * @return A promise indicating the success or failure of the operation.
          */
-        async setProgressBar(state2) {
+        async setProgressBar(state3) {
           return core.invoke("plugin:window|set_progress_bar", {
             label: this.label,
-            value: state2
+            value: state3
           });
         }
         /**
@@ -13768,6 +15444,50 @@
     }
   });
 
+  // lib/incognito.ts
+  function state() {
+    const g = globalThis;
+    let s = g[GLOBAL_KEY];
+    if (!s) {
+      s = { on: false, since: null };
+      g[GLOBAL_KEY] = s;
+    }
+    return s;
+  }
+  function isIncognito() {
+    return state().on === true;
+  }
+  function incognitoBlocks(path) {
+    void path;
+    return isIncognito();
+  }
+  function setIncognito(on) {
+    const s = state();
+    if (s.on === on) return;
+    s.on = on;
+    s.since = on ? Date.now() : null;
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new CustomEvent(INCOGNITO_EVENT, { detail: { on } }));
+      } catch {
+      }
+    }
+  }
+  function onIncognitoChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = () => listener(isIncognito());
+    window.addEventListener(INCOGNITO_EVENT, handler);
+    return () => window.removeEventListener(INCOGNITO_EVENT, handler);
+  }
+  var INCOGNITO_EVENT, GLOBAL_KEY;
+  var init_incognito = __esm({
+    "lib/incognito.ts"() {
+      INCOGNITO_EVENT = "lumio-incognito-changed";
+      GLOBAL_KEY = "__lumioIncognitoSession";
+    }
+  });
+
   // lib/library/progress.ts
   function isLibraryStreamUrl(url) {
     return Boolean(url && /X-Plex-Token=|[?&]api_key=|MediaBrowser Token/i.test(url));
@@ -13783,9 +15503,11 @@
   }
   function reportLibraryProgress(entry) {
     if (!getLibraryMode() || !isLibraryStreamUrl(entry.url)) return;
+    if (incognitoBlocks("library-progress")) return;
     if (entry.type !== "movie" && entry.type !== "tv") return;
     const scopeKey = `${entry.id}:${entry.season ?? ""}:${entry.episode ?? ""}`;
-    const finished = entry.duration > 0 && entry.currentTime / entry.duration >= FINISHED_RATIO;
+    const customPct = getWatchedThresholdPct();
+    const finished = customPct == null ? entry.duration > 0 && entry.currentTime / entry.duration >= 0.92 : reachedWatchedRule(watchedRuleFor(entry.type === "movie" ? "movie" : "episode", customPct), entry.currentTime, entry.duration);
     if (finished && finishedSent.has(scopeKey)) return;
     const now2 = Date.now();
     if (!finished && now2 - (lastReport.get(scopeKey) ?? 0) < REPORT_EVERY_MS) return;
@@ -13809,15 +15531,16 @@
       });
     })();
   }
-  var REPORT_EVERY_MS, FINISHED_RATIO, TITLE_TTL_MS, lastReport, finishedSent, titleCache;
+  var REPORT_EVERY_MS, TITLE_TTL_MS, lastReport, finishedSent, titleCache;
   var init_progress = __esm({
     "lib/library/progress.ts"() {
       "use client";
       init_client();
       init_mode();
       init_source_provider();
+      init_watched_threshold();
+      init_incognito();
       REPORT_EVERY_MS = 15e3;
-      FINISHED_RATIO = 0.92;
       TITLE_TTL_MS = 5 * 6e4;
       lastReport = /* @__PURE__ */ new Map();
       finishedSent = /* @__PURE__ */ new Set();
@@ -13849,7 +15572,7 @@
   // lib/continue-frames.ts
   function getContinueFramesEnabled() {
     if (typeof window === "undefined") return true;
-    return getScopedStorageItem(KEY7) !== "0";
+    return getScopedStorageItem(KEY8) !== "0";
   }
   function continueFrameKey(ref) {
     const profile = getActiveProfileId() ?? "";
@@ -13887,14 +15610,14 @@
       return false;
     }
   }
-  var KEY7, ENDPOINT;
+  var KEY8, ENDPOINT;
   var init_continue_frames = __esm({
     "lib/continue-frames.ts"() {
       "use client";
       init_profile_storage_shim();
       init_player_frame_id();
       init_webdav_credentials();
-      KEY7 = "continue_watching_frames_v1";
+      KEY8 = "continue_watching_frames_v1";
       ENDPOINT = "/api/player-frame";
     }
   });
@@ -13919,10 +15642,11 @@
       imdbId: typeof entry.imdbId === "string" && entry.imdbId.trim().length > 0 ? entry.imdbId.trim() : null
     };
   }
-  function read4() {
+  function read5() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY8) ?? "[]");
+      const parsed = JSON.parse(getScopedStorageItem(KEY9) ?? "[]");
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -13963,9 +15687,10 @@
     if (typeof window === "undefined") return [];
     try {
       const raw = getScopedStorageItem(HISTORY_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
+      const decoded = raw ? JSON.parse(raw) : [];
+      const parsed = Array.isArray(decoded) ? decoded : [];
       if (parsed.length > 0) return parsed;
-      const seed = read4();
+      const seed = read5();
       if (seed.length > 0) {
         const seenKeys = /* @__PURE__ */ new Set();
         const dedupedSeed = [];
@@ -14037,13 +15762,14 @@
       if (!kept.has(entryKey(entry.id, entry.season, entry.episode))) deleteContinueFrame(entry);
     }
   }
-  function saveStreamProgress(entry) {
+  function saveStreamProgress(entry, opts) {
+    if (!opts?.bypassIncognito && incognitoBlocks("progress")) return;
     const sanitizedEntry = sanitizeEntry(entry);
-    const before = read4();
+    const before = read5();
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
-    setScopedStorageItem(KEY8, JSON.stringify(list));
+    setScopedStorageItem(KEY9, JSON.stringify(list));
     deleteFramesForDropped(before, list);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT7));
     mirrorToHistory(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
   }
@@ -14051,16 +15777,16 @@
     const key = entryKey(id, season, episode);
     const prefixedMovieKey = entryKey(id.startsWith("movie-") ? id : `movie-${id}`, season, episode);
     const prefixedTvKey = entryKey(id.startsWith("tv-") ? id : `tv-${id}`, season, episode);
-    const before = read4();
+    const before = read5();
     const list = before.filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY8, JSON.stringify(list));
+    setScopedStorageItem(KEY9, JSON.stringify(list));
     deleteFramesForDropped(before, list);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT6));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT7));
   }
-  var EVENT6, KEY8, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
+  var EVENT7, KEY9, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX, HISTORY_MIRROR_MIN_GAP_MS, historyMirror;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
@@ -14068,17 +15794,19 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
-      EVENT6 = "lumio-stream-progress-changed";
+      init_incognito();
+      init_progress_finished();
+      EVENT7 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT6));
+            window.dispatchEvent(new CustomEvent(EVENT7));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
         });
       }
-      KEY8 = "stream_progress_list";
+      KEY9 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
@@ -14128,20 +15856,20 @@
       chosen = null;
       return deps.defaultCoViewers?.() ?? [];
     }
-    function close() {
+    function close2() {
       if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
       open2 = null;
       openKey = "";
     }
     function finish() {
-      close();
+      close2();
       chosen = null;
     }
     function tick2(input, final = false) {
       if (input.type === "audiobook" || !(input.duration > 0)) return;
       const nowMs = deps.now();
       const key = viewingKey(input);
-      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close2();
       const iso = new Date(nowMs).toISOString();
       if (!open2) {
         open2 = {
@@ -14409,6 +16137,7 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
   function journalTick(input, final = false) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.tick(input, final);
     } catch (error) {
@@ -14430,6 +16159,7 @@
     }
   }
   function journalMarkAsleep(pos, atMs) {
+    if (incognitoBlocks("journal")) return;
     try {
       recorder.markAsleep(pos, atMs);
     } catch (error) {
@@ -14443,6 +16173,7 @@
       init_recorder_core();
       init_store();
       init_weather();
+      init_incognito();
       LAST_COMPANIONS_KEY = "journal_last_companions_v1";
       last = null;
       if (typeof window !== "undefined") {
@@ -14529,22 +16260,350 @@
   function armSleepTimer(mode, nowMs) {
     return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
   }
-  function sleepTimerRemainingMs(state2, nowMs) {
-    if (typeof state2.mode !== "number" || state2.armedAtMs == null) return null;
-    return Math.max(0, state2.armedAtMs + state2.mode * 6e4 - nowMs);
+  function sleepTimerRemainingMs(state3, nowMs) {
+    if (typeof state3.mode !== "number" || state3.armedAtMs == null) return null;
+    return Math.max(0, state3.armedAtMs + state3.mode * 6e4 - nowMs);
   }
-  function sleepTimerDue(state2, c) {
-    if (state2.mode === "off" || state2.armedAtMs == null) return false;
-    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
-    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  function sleepTimerDue(state3, c) {
+    if (state3.mode === "off" || state3.armedAtMs == null) return false;
+    if (state3.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state3.armedAtMs >= state3.mode * 6e4;
   }
-  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  function sleepFadeLevel(state3, c, fadeMs = SLEEP_FADE_MS) {
+    if (state3.mode === "off" || state3.armedAtMs == null || fadeMs <= 0) return 1;
+    let remainingMs;
+    if (state3.mode === "end") {
+      if (c.ended) return 0;
+      if (!(c.duration > 0)) return 1;
+      remainingMs = (c.duration - SLEEP_END_MARGIN_S - c.position) * 1e3;
+    } else {
+      remainingMs = state3.armedAtMs + state3.mode * 6e4 - c.nowMs;
+    }
+    if (remainingMs >= fadeMs) return 1;
+    return Math.max(0, Math.min(1, remainingMs / fadeMs));
+  }
+  function sleepFadedVolume(userVolume, level) {
+    const l = Math.max(0, Math.min(1, level));
+    return Math.max(0, userVolume) * l * l;
+  }
+  function sleepDimOpacity(level) {
+    return (1 - Math.max(0, Math.min(1, level))) * SLEEP_DIM_MAX;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED, SLEEP_FADE_MS, SLEEP_DIM_MAX;
   var init_sleep_timer = __esm({
     "lib/sleep-timer.ts"() {
       SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
       SLEEP_PROMPT_SECONDS = 60;
       SLEEP_END_MARGIN_S = 20;
       DISARMED = { mode: "off", armedAtMs: null };
+      SLEEP_FADE_MS = 12e4;
+      SLEEP_DIM_MAX = 0.85;
+    }
+  });
+
+  // lib/spoken-subtitles.ts
+  function speechRateFor(rate) {
+    return rate === "fast" ? 1.35 : 1;
+  }
+  function cleanSpokenText(raw) {
+    if (!raw) return "";
+    const text2 = raw.replace(/\r\n?/g, "\n").replace(/\{\\[^}]*\}/g, "").replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'");
+    const lines2 = text2.split("\n").map((line) => {
+      if (/[♪♫♬♩]/.test(line) || /^\s*#.*#\s*$/.test(line)) return "";
+      return line.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^\s*[-–—]+\s*/, "").replace(/^\s*[A-ZÅÄÖÜÉÈÑ][A-ZÅÄÖÜÉÈÑ0-9 .'’-]{1,24}:\s*/u, "").replace(/\s{2,}/g, " ").trim();
+    });
+    const spoken = lines2.filter((line) => /[\p{L}\p{N}]/u.test(line)).map((line) => /[.!?…:;,]$/.test(line) ? line : `${line}.`).join(" ").trim();
+    return spoken;
+  }
+  function pickVoice(voices, language, uiLanguage) {
+    if (voices.length === 0) return null;
+    const base = (code) => (code ?? "").toLowerCase().replace("_", "-").split("-")[0];
+    const want = base(language) || base(uiLanguage);
+    if (!want) return voices.find((v) => v.default) ?? null;
+    const matching = voices.filter((v) => base(v.lang) === want);
+    if (matching.length === 0) return null;
+    const ui = (uiLanguage ?? "").toLowerCase().replace("_", "-");
+    return matching.find((v) => ui && v.lang.toLowerCase().replace("_", "-") === ui) ?? matching.find((v) => v.default) ?? matching.find((v) => v.localService) ?? matching[0];
+  }
+  function rampLevel(from, to, elapsedMs, durationMs) {
+    if (durationMs <= 0 || elapsedMs >= durationMs) return to;
+    if (elapsedMs <= 0) return from;
+    return from + (to - from) * (elapsedMs / durationMs);
+  }
+  var DUCK_LEVEL, DUCK_ATTACK_MS, DUCK_RELEASE_MS, DUCK_HOLD_MS, SpokenSubtitleQueue;
+  var init_spoken_subtitles = __esm({
+    "lib/spoken-subtitles.ts"() {
+      DUCK_LEVEL = 0.35;
+      DUCK_ATTACK_MS = 180;
+      DUCK_RELEASE_MS = 600;
+      DUCK_HOLD_MS = 350;
+      SpokenSubtitleQueue = class {
+        constructor(engine, options = {}) {
+          __publicField(this, "engine");
+          __publicField(this, "now");
+          __publicField(this, "staleMs");
+          __publicField(this, "maxLagMs");
+          __publicField(this, "onSpeakingChange");
+          __publicField(this, "speaking", false);
+          __publicField(this, "startedAt", 0);
+          /** Bumped on every speak/cancel so a late onEnd from a cut line is ignored. */
+          __publicField(this, "generation", 0);
+          __publicField(this, "pending", null);
+          __publicField(this, "lastLine", "");
+          __publicField(this, "lang", null);
+          __publicField(this, "rate", 1);
+          this.engine = engine;
+          this.now = options.now ?? (() => Date.now());
+          this.staleMs = options.staleMs ?? 3e3;
+          this.maxLagMs = options.maxLagMs ?? 4500;
+          this.onSpeakingChange = options.onSpeakingChange;
+        }
+        configure(options) {
+          if (options.lang !== void 0) this.lang = options.lang;
+          if (options.rate !== void 0) this.rate = options.rate;
+        }
+        get isSpeaking() {
+          return this.speaking;
+        }
+        get pendingText() {
+          return this.pending?.text ?? null;
+        }
+        /** The subtitle on screen changed (raw text; '' or null = nothing on screen). */
+        line(raw) {
+          const text2 = cleanSpokenText(raw);
+          if (!text2) {
+            if (!(raw ?? "").trim()) this.lastLine = "";
+            return;
+          }
+          if (text2 === this.lastLine) return;
+          this.lastLine = text2;
+          const at = this.now();
+          if (!this.speaking) {
+            this.start(text2);
+            return;
+          }
+          if (at - this.startedAt >= this.maxLagMs) {
+            this.pending = null;
+            this.cut();
+            this.start(text2);
+            return;
+          }
+          this.pending = { text: text2, at };
+        }
+        /** Playback paused: stop talking, forget what was waiting. */
+        pause() {
+          this.pending = null;
+          if (this.speaking) this.cut();
+          this.setSpeaking(false);
+        }
+        /** Seek, track change or close: as pause, and the current line counts as new. */
+        reset() {
+          this.pause();
+          this.lastLine = "";
+        }
+        start(text2) {
+          const gen = ++this.generation;
+          this.startedAt = this.now();
+          this.setSpeaking(true);
+          this.engine.speak(text2, { lang: this.lang, rate: this.rate }, () => this.ended(gen));
+        }
+        cut() {
+          this.generation++;
+          this.engine.cancel();
+        }
+        ended(gen) {
+          if (gen !== this.generation) return;
+          const next = this.pending;
+          this.pending = null;
+          if (next && this.now() - next.at <= this.staleMs) {
+            this.start(next.text);
+            return;
+          }
+          this.setSpeaking(false);
+        }
+        setSpeaking(value) {
+          if (this.speaking === value) return;
+          this.speaking = value;
+          this.onSpeakingChange?.(value);
+        }
+      };
+    }
+  });
+
+  // lib/spoken-subtitles-engine.ts
+  function estimatedSpeechMs(text2, rate) {
+    const words = text2.split(/\s+/).filter(Boolean).length;
+    return Math.round(words / 2.7 * 1e3 / Math.max(0.5, rate)) + 1500;
+  }
+  function hasWebSpeech() {
+    return typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
+  }
+  function spokenSubtitlesSupported() {
+    return isAndroidTauriEnv || hasWebSpeech();
+  }
+  function createWebSpeechEngine(uiLanguage) {
+    const synth = window.speechSynthesis;
+    let voices = [];
+    const loadVoices = () => {
+      try {
+        voices = synth.getVoices();
+      } catch {
+        voices = [];
+      }
+    };
+    loadVoices();
+    try {
+      synth.addEventListener?.("voiceschanged", loadVoices);
+    } catch {
+    }
+    let current2 = null;
+    let finish = null;
+    let guard;
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        let done = false;
+        const end = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(guard);
+          if (finish === end) {
+            finish = null;
+            current2 = null;
+          }
+          onEnd();
+        };
+        if (voices.length === 0) loadVoices();
+        const utterance = new SpeechSynthesisUtterance(text2);
+        const voice = pickVoice(voices, lang, uiLanguage());
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
+        } else if (lang) utterance.lang = lang;
+        utterance.rate = rate;
+        utterance.onend = end;
+        utterance.onerror = end;
+        current2 = utterance;
+        finish = end;
+        guard = window.setTimeout(end, estimatedSpeechMs(text2, rate) + 4e3);
+        try {
+          synth.speak(utterance);
+        } catch {
+          end();
+        }
+      },
+      cancel() {
+        const pendingEnd = finish;
+        try {
+          synth.cancel();
+        } catch {
+        }
+        pendingEnd?.();
+      }
+    };
+  }
+  function createAndroidEngine() {
+    let seq = 0;
+    let poll;
+    let finish = null;
+    let currentId = null;
+    const stopPolling = () => {
+      if (poll !== void 0) {
+        window.clearInterval(poll);
+        poll = void 0;
+      }
+    };
+    return {
+      speak(text2, { lang, rate }, onEnd) {
+        const id = `s${++seq}`;
+        let done = false;
+        const startedAt = Date.now();
+        const limit = estimatedSpeechMs(text2, rate) + 4e3;
+        const end = () => {
+          if (done) return;
+          done = true;
+          if (finish === end) {
+            finish = null;
+            stopPolling();
+          }
+          onEnd();
+        };
+        stopPolling();
+        finish = end;
+        currentId = id;
+        void np({ cmd: "ttsSpeak", id, text: text2, lang: lang ?? "", rate }, 3e3).then((res) => {
+          const ok = Boolean(res && typeof res === "object" && res.ok);
+          if (!ok) {
+            end();
+            return;
+          }
+          poll = window.setInterval(() => {
+            if (done) {
+              stopPolling();
+              return;
+            }
+            if (Date.now() - startedAt > limit) {
+              end();
+              return;
+            }
+            void np({ cmd: "ttsStatus" }, 1500).then((status) => {
+              const s = status;
+              if (!s || !s.speaking || s.id !== id) end();
+            });
+          }, 250);
+        });
+      },
+      cancel() {
+        const pendingEnd = finish;
+        stopPolling();
+        if (currentId) void np({ cmd: "ttsStop", id: currentId }, 1500);
+        currentId = null;
+        pendingEnd?.();
+      }
+    };
+  }
+  function createSpeechEngine(uiLanguage) {
+    if (typeof window === "undefined") return null;
+    if (isAndroidTauriEnv) return createAndroidEngine();
+    if (hasWebSpeech()) return createWebSpeechEngine(uiLanguage);
+    return null;
+  }
+  var init_spoken_subtitles_engine = __esm({
+    "lib/spoken-subtitles-engine.ts"() {
+      init_spoken_subtitles();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/spoken-subtitles-settings.ts
+  function emit2() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(SPOKEN_SUBTITLES_CHANGED_EVENT));
+  }
+  function getSpokenSubtitles() {
+    if (typeof window === "undefined") return false;
+    return getScopedStorageItem(KEY_ENABLED2) === "1";
+  }
+  function setSpokenSubtitles(value) {
+    setScopedStorageItem(KEY_ENABLED2, value ? "1" : "0");
+    emit2();
+  }
+  function getSpokenSubtitlesRate() {
+    if (typeof window === "undefined") return "normal";
+    return getScopedStorageItem(KEY_RATE) === "fast" ? "fast" : "normal";
+  }
+  function onSpokenSubtitlesChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+    return () => window.removeEventListener(SPOKEN_SUBTITLES_CHANGED_EVENT, listener);
+  }
+  var KEY_ENABLED2, KEY_RATE, SPOKEN_SUBTITLES_CHANGED_EVENT;
+  var init_spoken_subtitles_settings = __esm({
+    "lib/spoken-subtitles-settings.ts"() {
+      init_profile_storage_shim();
+      KEY_ENABLED2 = "spokenSubtitles";
+      KEY_RATE = "spokenSubtitlesRate";
+      SPOKEN_SUBTITLES_CHANGED_EVENT = "lumio:spoken-subtitles-changed";
     }
   });
 
@@ -14622,7 +16681,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY9);
+      const stored = getScopedStorageItem(KEY10);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -14644,7 +16703,7 @@
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY9, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
+    setScopedStorageItem(KEY10, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -14657,11 +16716,11 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY9, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY10, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY9 = "barcode_settings_v1";
+      KEY10 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
         enabled: false,
@@ -14769,29 +16828,29 @@
   function createSamplerState() {
     return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0, pauseUntil: 0 };
   }
-  function recordSampleResult(state2, ok, now2 = Date.now()) {
-    state2.inFlight = false;
+  function recordSampleResult(state3, ok, now2 = Date.now()) {
+    state3.inFlight = false;
     if (ok) {
-      state2.failures = 0;
+      state3.failures = 0;
       return false;
     }
-    state2.failures += 1;
-    if (state2.failures < MAX_FAILED_SAMPLES) return false;
-    state2.failures = 0;
-    state2.pauseUntil = now2 + FAILURE_PAUSE_MS;
+    state3.failures += 1;
+    if (state3.failures < MAX_FAILED_SAMPLES) return false;
+    state3.failures = 0;
+    state3.pauseUntil = now2 + FAILURE_PAUSE_MS;
     return true;
   }
-  function decideSample(input, state2) {
+  function decideSample(input, state3) {
     const { now: now2, time, duration, columns, colors } = input;
-    const prev = state2.lastTime;
+    const prev = state3.lastTime;
     const jumped = !Number.isFinite(prev) || Math.abs(time - prev) > SEEK_JUMP_S;
     const advancing = Number.isFinite(prev) && time - prev > MIN_ADVANCE_S;
-    state2.lastTime = time;
+    state3.lastTime = time;
     if (jumped) {
-      state2.settleUntil = now2 + SETTLE_MS;
+      state3.settleUntil = now2 + SETTLE_MS;
       return -1;
     }
-    if (!advancing || state2.inFlight || now2 < state2.pauseUntil || now2 < state2.settleUntil) return -1;
+    if (!advancing || state3.inFlight || now2 < state3.pauseUntil || now2 < state3.settleUntil) return -1;
     const i = columnIndex(time, duration, columns);
     if (i < 0) return -1;
     if (colors && colors[i]) return -1;
@@ -14815,7 +16874,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit2() {
+  function emit3() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -14848,7 +16907,7 @@
       }
       loadedFor2 = profile;
       loading = null;
-      emit2();
+      emit3();
       return listBarcodes();
     })();
     return loading;
@@ -14884,6 +16943,7 @@
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
+    if (incognitoBlocks("barcode")) return;
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
     const current2 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
     const next = withColumn(current2, i, color, now2);
@@ -14891,7 +16951,7 @@
     items.set(meta.id, next);
     dirty.add(meta.id);
     schedule2(meta.id);
-    emit2();
+    emit3();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -14902,11 +16962,12 @@
     if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
+    if (incognitoBlocks("barcode")) return;
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit2();
+    emit3();
     await flushBarcode(id);
     emitSyncWorthy();
   }
@@ -14914,7 +16975,7 @@
     const b = items.get(id);
     if (!b) return;
     items.set(id, { ...b, meta });
-    emit2();
+    emit3();
     await put2(id);
   }
   function onBarcodesChanged(listener) {
@@ -14938,6 +16999,7 @@
       "use strict";
       init_profile_storage_shim();
       init_barcode_model();
+      init_incognito();
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
@@ -15215,7 +17277,7 @@
         return cached.data;
       }
     }
-    const existing = inflight2.get(key);
+    const existing = inflight3.get(key);
     if (existing) return withAbortSignal(existing, options.signal);
     const request = (async () => {
       const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
@@ -15260,12 +17322,12 @@
       }
       throw error;
     }).finally(() => {
-      inflight2.delete(key);
+      inflight3.delete(key);
     });
-    inflight2.set(key, request);
+    inflight3.set(key, request);
     return withAbortSignal(request, options.signal);
   }
-  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
+  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight3, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
   var init_api_json_cache = __esm({
     "lib/services/api-json-cache.ts"() {
       init_tv_focus_shim();
@@ -15276,7 +17338,7 @@
       cache3 = /* @__PURE__ */ new Map();
       CACHE_MAX_ENTRIES = 400;
       errorCache = /* @__PURE__ */ new Map();
-      inflight2 = /* @__PURE__ */ new Map();
+      inflight3 = /* @__PURE__ */ new Map();
       queue = [];
       activeRequests = 0;
       queueSeq = 0;
@@ -15306,7 +17368,7 @@
         return cached.data;
       }
     }
-    const existing = inflight3.get(key);
+    const existing = inflight4.get(key);
     if (existing) return withAbortSignal2(existing, options.signal);
     const request = fetchApiJsonCached(`/api/wiki?${key}`, {
       timeoutMs: options.timeoutMs ?? 5200,
@@ -15323,18 +17385,18 @@
       });
       return data;
     }).finally(() => {
-      inflight3.delete(key);
+      inflight4.delete(key);
     });
-    inflight3.set(key, request);
+    inflight4.set(key, request);
     return withAbortSignal2(request, options.signal);
   }
-  var WIKI_TTL_MS, cache4, inflight3;
+  var WIKI_TTL_MS, cache4, inflight4;
   var init_wiki_request_cache = __esm({
     "lib/services/wiki-request-cache.ts"() {
       init_api_json_cache();
       WIKI_TTL_MS = 5 * 6e4;
       cache4 = /* @__PURE__ */ new Map();
-      inflight3 = /* @__PURE__ */ new Map();
+      inflight4 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -15347,8 +17409,8 @@
     }
     return out;
   }
-  function cutSynopsis(text, max = SYNOPSIS_MAX) {
-    const clean = text.replace(/\s+/g, " ").trim();
+  function cutSynopsis(text2, max = SYNOPSIS_MAX) {
+    const clean = text2.replace(/\s+/g, " ").trim();
     if (clean.length <= max) return clean;
     const cut = clean.slice(0, max);
     const space = cut.lastIndexOf(" ");
@@ -15413,7 +17475,7 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending4 = inflight4.get(b.id);
+    const pending4 = inflight5.get(b.id);
     if (pending4) return pending4;
     const task = chain.then(async () => {
       const current2 = getBarcode(b.id);
@@ -15422,8 +17484,8 @@
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
       return meta;
-    }).finally(() => inflight4.delete(b.id));
-    inflight4.set(b.id, task);
+    }).finally(() => inflight5.delete(b.id));
+    inflight5.set(b.id, task);
     chain = task.catch(() => void 0);
     return task;
   }
@@ -15432,13 +17494,13 @@
     if (b) void ensureBarcodeMeta(b).catch(() => {
     });
   }
-  var GAP_MS, inflight4, chain;
+  var GAP_MS, inflight5, chain;
   var init_barcode_meta = __esm({
     "lib/barcode/barcode-meta.ts"() {
       init_barcode_poster();
       init_barcode_store();
       GAP_MS = 250;
-      inflight4 = /* @__PURE__ */ new Map();
+      inflight5 = /* @__PURE__ */ new Map();
       chain = Promise.resolve();
     }
   });
@@ -15495,7 +17557,7 @@
     useEffect(() => {
       if (!applies || !id) return;
       void loadBarcodes();
-      const state2 = createSamplerState();
+      const state3 = createSamplerState();
       const columns = settings.columns;
       const timer4 = setInterval(() => {
         const snap = args.snapshotRef.current;
@@ -15507,12 +17569,12 @@
           duration: snap.totalDuration,
           columns: n,
           colors: existing?.colors ?? null
-        }, state2);
+        }, state3);
         if (i < 0) return;
-        state2.inFlight = true;
+        state3.inFlight = true;
         const now2 = metaRef.current;
         void sampleColor(now2.engine, now2.videoRef?.current ?? null).then((color) => {
-          const pausing = recordSampleResult(state2, color != null);
+          const pausing = recordSampleResult(state3, color != null);
           if (!color) {
             if (pausing) {
               logDisabled(`${id}: ${MAX_FAILED_SAMPLES} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 paus ${FAILURE_PAUSE_MS / 1e3} s, sedan nytt f\xF6rs\xF6k`);
@@ -15572,13 +17634,13 @@
   }
   function unseenColor(unseen, shape, i) {
     if (unseen === "dim") return DIM;
-    if (unseen === "empty") return EMPTY2;
+    if (unseen === "empty") return EMPTY3;
     return shape === "ring" ? RING_HATCH[i % 2] : "transparent";
   }
   function barcodeBackground(colors, unseen, shape, tailFrom2 = null) {
     const n = colors.length;
     const underlay = unseen === "hatch" && shape !== "ring" ? HATCH_UNDERLAY : null;
-    if (n === 0) return { background: EMPTY2, underlay };
+    if (n === 0) return { background: EMPTY3, underlay };
     const stops = [];
     let runColor = "";
     let runStart = 0;
@@ -15601,12 +17663,12 @@
     cache5.set(key, value);
     return value;
   }
-  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache5, CACHE_MAX;
+  var HATCH_UNDERLAY, DIM, EMPTY3, TAIL, RING_HATCH, cache5, CACHE_MAX;
   var init_barcode_gradient = __esm({
     "lib/barcode/barcode-gradient.ts"() {
       HATCH_UNDERLAY = "repeating-linear-gradient(135deg,#1c1d23 0 3px,#111216 3px 7px)";
       DIM = "#1a1b22";
-      EMPTY2 = "#141519";
+      EMPTY3 = "#141519";
       TAIL = "#0b0b0d";
       RING_HATCH = ["#1b1c22", "#111216"];
       cache5 = /* @__PURE__ */ new Map();
@@ -15690,36 +17752,36 @@
       init_barcode_strip();
       init_jsx_runtime_shim();
       CHIP_MS = 5e3;
-      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state2, duration, tv, hoverable }) {
+      PlayerBarcodeStrip = memo(function PlayerBarcodeStrip2({ state: state3, duration, tv, hoverable }) {
         const { t } = useLang();
-        const [barcode, setBarcode] = useState(() => state2.id ? getBarcode(state2.id) : null);
+        const [barcode, setBarcode] = useState(() => state3.id ? getBarcode(state3.id) : null);
         const [unseen, setUnseen] = useState(() => getBarcodeSettings().unseenStyle);
         const [hover, setHover] = useState(null);
         const [chipUntil, setChipUntil] = useState(0);
         useEffect(() => {
-          if (!state2.id) return;
-          const id = state2.id;
-          const read8 = () => setBarcode(getBarcode(id));
-          read8();
-          return onBarcodesChanged(read8);
-        }, [state2.id]);
+          if (!state3.id) return;
+          const id = state3.id;
+          const read10 = () => setBarcode(getBarcode(id));
+          read10();
+          return onBarcodesChanged(read10);
+        }, [state3.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
-          if (!state2.status) return;
+          if (!state3.status) return;
           setChipUntil(Date.now() + CHIP_MS);
           const timer4 = setTimeout(() => setChipUntil(0), CHIP_MS);
           return () => clearTimeout(timer4);
-        }, [state2.status]);
+        }, [state3.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
-          if (!state2.id || !state2.recording) return null;
+          if (!state3.id || !state3.recording) return null;
           const columns = getBarcodeSettings().columns;
-          return { id: state2.id, tmdbId: null, title: "", year: null, posterUrl: null, duration, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
-        }, [barcode, state2.id, state2.recording, duration]);
-        if (!state2.showStrip || !shown) return null;
+          return { id: state3.id, tmdbId: null, title: "", year: null, posterUrl: null, duration, columns, colors: new Array(columns).fill(null), updatedAt: "empty" };
+        }, [barcode, state3.id, state3.recording, duration]);
+        if (!state3.showStrip || !shown) return null;
         const d = shown.duration > 0 ? shown.duration : duration;
         const hoverColor = hover != null ? shown.colors[columnIndex(hover * d, d, shown.columns)] : null;
-        const chipText = state2.status === "recording" ? t("barcodeRecording") : state2.status === "paused" ? t("barcodePaused") : state2.status === "off" ? t("barcodeOff") : null;
+        const chipText = state3.status === "recording" ? t("barcodeRecording") : state3.status === "paused" ? t("barcodePaused") : state3.status === "off" ? t("barcodeOff") : null;
         const onMove = (e) => {
           if (!hoverable) return;
           const r = e.currentTarget.getBoundingClientRect();
@@ -15831,122 +17893,6 @@
     }
   });
 
-  // lib/core-streams/stream-utils.ts
-  function streamResolution(name) {
-    const normalized = name.toLowerCase();
-    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
-    if (normalized.includes("1440p")) return 1440;
-    if (normalized.includes("1080p")) return 1080;
-    if (normalized.includes("720p")) return 720;
-    if (normalized.includes("480p")) return 480;
-    return null;
-  }
-  function parseSizeBytes(text) {
-    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
-    if (!match) return null;
-    const value = Number.parseFloat(match[1].replace(",", "."));
-    const unit = SIZE_UNITS[match[2].toLowerCase()];
-    if (!Number.isFinite(value) || !unit) return null;
-    return Math.round(value * unit);
-  }
-  function getStreamSizeBytes(stream) {
-    const cachedFileBytes = (stream.cachedFiles ?? []).flatMap((entry) => Object.values(entry)).reduce((sum, file) => sum + (Number.isFinite(file.filesize) ? file.filesize : 0), 0);
-    if (cachedFileBytes > 0) return cachedFileBytes;
-    if (typeof stream.sizeBytes === "number" && stream.sizeBytes > 0) return stream.sizeBytes;
-    return parseSizeBytes(`${stream.name} ${stream.title} ${stream.description ?? ""}`);
-  }
-  function formatSize(bytes) {
-    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(bytes >= 10 * 1024 ** 3 ? 1 : 2)} GB`;
-    if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
-    return `${Math.round(bytes / 1024)} kB`;
-  }
-  function langFlag(code) {
-    return LANG_FLAGS[code.toLowerCase().split(/[-_]/)[0]] ?? null;
-  }
-  function getStreamAudioLanguages(stream) {
-    const source = `${stream.name} ${stream.title} ${stream.description ?? ""}`.toLowerCase();
-    return STREAM_LANGUAGE_PATTERNS.filter(({ pattern }) => pattern.test(source)).map(({ code }) => code);
-  }
-  function isInformationalStream(stream) {
-    if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
-    if (stream.infoHash && !stream.directUrl) return false;
-    return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
-  }
-  function streamLooksDolbyVision(stream) {
-    const text = `${stream.name} ${stream.title}`;
-    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text) || /dolby[.\s_-]?vision/i.test(text);
-  }
-  function streamLooksLosslessAudio(stream) {
-    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
-  }
-  var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
-  var init_stream_utils = __esm({
-    "lib/core-streams/stream-utils.ts"() {
-      "use client";
-      init_profile_storage_shim();
-      SIZE_UNITS = {
-        kb: 1e3,
-        mb: 1e3 ** 2,
-        gb: 1e3 ** 3,
-        tb: 1e3 ** 4,
-        kib: 1024,
-        mib: 1024 ** 2,
-        gib: 1024 ** 3,
-        tib: 1024 ** 4
-      };
-      STREAM_LANGUAGE_PATTERNS = [
-        { code: "en", pattern: /\b(?:en|eng|english)\b/i },
-        { code: "sv", pattern: /\b(?:sv|swe|swedish|svenska)\b/i },
-        { code: "no", pattern: /\b(?:no|nor|norwegian|norsk)\b/i },
-        { code: "da", pattern: /\b(?:da|dan|danish)\b/i },
-        { code: "fi", pattern: /\b(?:fi|fin|finnish|suomi)\b/i },
-        { code: "de", pattern: /\b(?:de|ger|deu|german|deutsch)\b/i },
-        { code: "fr", pattern: /\b(?:fr|fra|fre|french|fran[cç]ais)\b/i },
-        { code: "es", pattern: /\b(?:es|spa|spanish|espa[ñn]ol)\b/i },
-        { code: "it", pattern: /\b(?:it|ita|italian|italiano)\b/i },
-        { code: "pt", pattern: /\b(?:pt|por|portuguese|portugu[eê]s)\b/i },
-        { code: "nl", pattern: /\b(?:nl|nld|dut|dutch|nederlands)\b/i },
-        { code: "pl", pattern: /\b(?:pl|pol|polish)\b/i },
-        { code: "ru", pattern: /\b(?:ru|rus|russian)\b/i },
-        { code: "tr", pattern: /\b(?:tr|tur|turkish|t[üu]rk[çc]e)\b/i },
-        { code: "ja", pattern: /\b(?:ja|jpn|japanese)\b/i },
-        { code: "ko", pattern: /\b(?:ko|kor|korean)\b/i }
-      ];
-      LANG_FLAGS = {
-        en: "\u{1F1EC}\u{1F1E7}",
-        sv: "\u{1F1F8}\u{1F1EA}",
-        no: "\u{1F1F3}\u{1F1F4}",
-        da: "\u{1F1E9}\u{1F1F0}",
-        fi: "\u{1F1EB}\u{1F1EE}",
-        de: "\u{1F1E9}\u{1F1EA}",
-        fr: "\u{1F1EB}\u{1F1F7}",
-        es: "\u{1F1EA}\u{1F1F8}",
-        it: "\u{1F1EE}\u{1F1F9}",
-        pt: "\u{1F1F5}\u{1F1F9}",
-        nl: "\u{1F1F3}\u{1F1F1}",
-        pl: "\u{1F1F5}\u{1F1F1}",
-        ru: "\u{1F1F7}\u{1F1FA}",
-        tr: "\u{1F1F9}\u{1F1F7}",
-        ja: "\u{1F1EF}\u{1F1F5}",
-        ko: "\u{1F1F0}\u{1F1F7}",
-        zh: "\u{1F1E8}\u{1F1F3}",
-        hi: "\u{1F1EE}\u{1F1F3}",
-        ar: "\u{1F1F8}\u{1F1E6}",
-        cs: "\u{1F1E8}\u{1F1FF}",
-        hu: "\u{1F1ED}\u{1F1FA}",
-        ro: "\u{1F1F7}\u{1F1F4}",
-        uk: "\u{1F1FA}\u{1F1E6}",
-        el: "\u{1F1EC}\u{1F1F7}",
-        he: "\u{1F1EE}\u{1F1F1}",
-        th: "\u{1F1F9}\u{1F1ED}",
-        vi: "\u{1F1FB}\u{1F1F3}",
-        id: "\u{1F1EE}\u{1F1E9}"
-      };
-      INFORMATIONAL_STREAM_URL = /\/status\/video\/|elfhosted\.com\/assets\/|^https?:\/\/(www\.)?github\.com\//i;
-      INFORMATIONAL_STREAM_TEXT = /rate.?limit exceeded|searches disabled|release (is )?not (yet )?out|not (yet )?released|invalid (config|credentials|token)|configure (the )?addon/i;
-    }
-  });
-
   // lib/player-title-block.ts
   function resolutionLabelFromSize(width, height) {
     const w = typeof width === "number" && Number.isFinite(width) && width > 0 ? width : 0;
@@ -15995,18 +17941,18 @@
     if (c.includes("vorbis")) return { family: "vorbis", atmos: false, dtsHd: false };
     return null;
   }
-  function releaseAudioFamily(text) {
-    if (TRUEHD.test(text)) return "truehd";
-    if (DTS_X.test(text) || DTS_HD.test(text) || DTS.test(text)) return "dts";
-    if (DDP.test(text)) return "ddp";
-    if (DD.test(text)) return "dd";
-    if (AAC.test(text)) return "aac";
-    if (FLAC.test(text)) return "flac";
-    if (OPUS.test(text)) return "opus";
+  function releaseAudioFamily(text2) {
+    if (TRUEHD.test(text2)) return "truehd";
+    if (DTS_X.test(text2) || DTS_HD.test(text2) || DTS.test(text2)) return "dts";
+    if (DDP.test(text2)) return "ddp";
+    if (DD.test(text2)) return "dd";
+    if (AAC.test(text2)) return "aac";
+    if (FLAC.test(text2)) return "flac";
+    if (OPUS.test(text2)) return "opus";
     return null;
   }
-  function releaseChannels(text) {
-    const match = CHANNELS.exec(text.replace(/h\.?26[45]|x26[45]/gi, " "));
+  function releaseChannels(text2) {
+    const match = CHANNELS.exec(text2.replace(/h\.?26[45]|x26[45]/gi, " "));
     if (!match) return null;
     return Number(match[1]) + Number(match[2]);
   }
@@ -16058,29 +18004,29 @@
     const channels = engineChannels ?? (releaseApplies ? releaseChannels(releaseText) : null);
     return { family, codec, channels, atmos };
   }
-  function releaseSourceLabel(text) {
-    if (/\bremux\b/i.test(text)) return "REMUX";
-    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text)) return "BluRay";
-    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text)) return "WEB-DL";
-    if (/\bweb[.\s_-]?rip\b/i.test(text)) return "WEBRip";
-    if (/\bhdtv\b/i.test(text)) return "HDTV";
-    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text)) return "DVD";
+  function releaseSourceLabel(text2) {
+    if (/\bremux\b/i.test(text2)) return "REMUX";
+    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text2)) return "BluRay";
+    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text2)) return "WEB-DL";
+    if (/\bweb[.\s_-]?rip\b/i.test(text2)) return "WEBRip";
+    if (/\bhdtv\b/i.test(text2)) return "HDTV";
+    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text2)) return "DVD";
     return null;
   }
   function titleChipText(chip) {
     return chip.parts.map((part) => part.text).join(" \xB7 ");
   }
   function playerTitleChips(input) {
-    const text = input.releaseText ?? "";
+    const text2 = input.releaseText ?? "";
     const chips = [];
     const push = (kind, parts) => {
       if (parts.length > 0) chips.push({ kind, parts, priority: CHIP_PRIORITY[kind] });
     };
-    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text));
+    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text2));
     if (resolution) push("resolution", [{ text: resolution }]);
-    const hdr = hdrFormatLabel(text, input.engineVideo);
+    const hdr = hdrFormatLabel(text2, input.engineVideo);
     if (hdr) push("hdr", [hdr === "Dolby Vision" ? { text: hdr, icon: "dolby" } : { text: hdr }]);
-    const audio = audioFormatParts(text, input.audioTrack);
+    const audio = audioFormatParts(text2, input.audioTrack);
     const track = input.audioTrack;
     const languageName2 = track ? track.title && COMMENTARY.test(track.title) ? input.commentaryLabel : audioLanguageLabel(track.language, input.uiLang) : null;
     const layout = channelLayoutLabel(audio.channels);
@@ -16094,7 +18040,7 @@
       push("audio", parts);
     }
     if (input.includeSource !== false) {
-      const source = releaseSourceLabel(text);
+      const source = releaseSourceLabel(text2);
       if (source) push("source", [{ text: source }]);
     }
     const languageText = languageName2 ? [languageName2, layout].filter(Boolean).join(" ") : !(audio.codec || audio.atmos) ? layout : null;
@@ -16232,7 +18178,7 @@
       tmdbRating: next.tmdbRating ?? prev?.tmdbRating ?? null,
       imdbId: next.imdbId ?? prev?.imdbId ?? null
     });
-    while (registry.size > MAX_ENTRIES2) {
+    while (registry.size > MAX_ENTRIES3) {
       const oldest = registry.keys().next().value;
       if (oldest === void 0) break;
       registry.delete(oldest);
@@ -16279,7 +18225,7 @@
     return !entry || entry.genres.length === 0 || entry.imdbRating == null && entry.tmdbRating == null || entry.runtimeMinutes == null;
   }
   function schedulePlayerTitleMetaFetch(input, onUpdate, overrides = {}) {
-    const deps = { ...defaultDeps, ...overrides };
+    const deps = { ...defaultDeps2, ...overrides };
     const { kind, playbackStarted } = input;
     if (!playbackStarted || kind !== "movie" && kind !== "tv") return () => {
     };
@@ -16358,7 +18304,7 @@
       cancelIdle?.();
     };
   }
-  var registry, MAX_ENTRIES2, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps, attempted, listeners4;
+  var registry, MAX_ENTRIES3, imdbToTmdb, PLAYER_META_FETCH_DELAY_MS, PLAYER_META_RETRY_DELAY_MS, defaultDeps2, attempted, listeners4;
   var init_player_title_meta = __esm({
     "lib/player-title-meta.ts"() {
       init_api_json_cache();
@@ -16366,11 +18312,11 @@
       init_hero_text();
       init_watchlist_item_cache();
       registry = /* @__PURE__ */ new Map();
-      MAX_ENTRIES2 = 200;
+      MAX_ENTRIES3 = 200;
       imdbToTmdb = /* @__PURE__ */ new Map();
       PLAYER_META_FETCH_DELAY_MS = 5e3;
       PLAYER_META_RETRY_DELAY_MS = 6e4;
-      defaultDeps = {
+      defaultDeps2 = {
         fetchItem: async (kind, tmdbId) => {
           const data = await fetchApiJsonCached(
             `/api/item?tmdbId=${encodeURIComponent(tmdbId)}&type=${kind}`,
@@ -16558,220 +18504,19 @@
       if (detail?.action) listener(detail.action);
     };
     listeners5 += 1;
-    window.addEventListener(EVENT7, handler);
+    window.addEventListener(EVENT8, handler);
     return () => {
       listeners5 -= 1;
-      window.removeEventListener(EVENT7, handler);
+      window.removeEventListener(EVENT8, handler);
     };
   }
-  var EVENT7, listeners5;
+  var EVENT8, listeners5;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
       init_key_hold();
-      EVENT7 = "lumio-media-key";
+      EVENT8 = "lumio-media-key";
       listeners5 = 0;
-    }
-  });
-
-  // lib/core-streams/lookup.ts
-  var lookup_exports = {};
-  __export(lookup_exports, {
-    isFreshSource: () => isFreshSource,
-    lookupCoreStreams: () => lookupCoreStreams,
-    lookupSource: () => lookupSource,
-    markSourceCooldown: () => markSourceCooldown,
-    rememberFreshSources: () => rememberFreshSources,
-    resetCoreStreamLookupMemo: () => resetCoreStreamLookupMemo,
-    sourceInCooldown: () => sourceInCooldown,
-    sourceStreamUrl: () => sourceStreamUrl,
-    streamTargetKey: () => streamTargetKey
-  });
-  function streamTargetKey(target2) {
-    return target2.type === "series" && target2.season != null && target2.episode != null ? `${target2.imdbId}:${target2.season}:${target2.episode}` : target2.imdbId;
-  }
-  function sourceStreamUrl(addon, target2) {
-    return `${canonicalAddonUrl(addon.url)}/stream/${target2.type}/${streamTargetKey(target2)}.json`;
-  }
-  function sourceInCooldown(addon, now2 = Date.now()) {
-    const until = cooldownUntil.get(canonicalAddonUrl(addon.url));
-    if (!until) return false;
-    if (now2 >= until) {
-      cooldownUntil.delete(canonicalAddonUrl(addon.url));
-      return false;
-    }
-    return true;
-  }
-  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
-    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
-  }
-  function looksRateLimited(message) {
-    return /\b429\b|rate.?limit|too many requests/i.test(message);
-  }
-  function tagSource(streams, addon) {
-    return streams.map((stream) => stream.source ? stream : { ...stream, source: addon.name });
-  }
-  function keepPlayable(streams) {
-    return streams.filter((stream) => Boolean(stream.directUrl) && !isInformationalStream(stream));
-  }
-  function rememberFreshSources(streams, now2 = Date.now()) {
-    for (const stream of streams) if (stream.directUrl) freshSources.set(stream.directUrl, now2);
-    if (freshSources.size > 2e3) {
-      for (const [url, at] of freshSources) if (now2 - at > FRESH_SOURCE_MS) freshSources.delete(url);
-    }
-  }
-  function isFreshSource(url, now2 = Date.now()) {
-    const at = freshSources.get(url);
-    return at !== void 0 && now2 - at < FRESH_SOURCE_MS;
-  }
-  async function fetchViaApi(addon, target2, timeoutMs, signal) {
-    const params = new URLSearchParams({ imdbId: target2.imdbId, type: target2.type });
-    if (target2.type === "series" && target2.season != null && target2.episode != null) {
-      params.set("season", String(target2.season));
-      params.set("episode", String(target2.episode));
-    }
-    const controller = new AbortController();
-    const onAbort = () => controller.abort();
-    signal?.addEventListener("abort", onAbort);
-    const timer4 = setTimeout(() => controller.abort(), timeoutMs + 500);
-    try {
-      const response = await fetch(`/api/streams?${params}`, {
-        headers: {
-          "x-source-manifest-url": addon.url,
-          "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
-        },
-        signal: controller.signal
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      if (payload.error) throw new Error(payload.error);
-      return payload.streams ?? [];
-    } finally {
-      clearTimeout(timer4);
-      signal?.removeEventListener("abort", onAbort);
-    }
-  }
-  async function fetchViaDesktop(addon, target2, timeoutMs) {
-    const streams = await lookupPluginStreams(sourceStreamUrl(addon, target2), addon.name, timeoutMs);
-    if (!streams) return null;
-    return streams.map((stream) => ({
-      ...stream,
-      fileIdx: typeof stream.fileIdx === "number" ? stream.fileIdx : null,
-      cachedFiles: stream.cachedFiles ?? []
-    }));
-  }
-  async function lookupSource(addon, target2, options = {}) {
-    const timeoutMs = options.timeoutMs ?? 12e3;
-    const startedAt = Date.now();
-    if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
-    const attempt = async () => {
-      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
-      try {
-        let raw = null;
-        if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
-        if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
-        const streams = keepPlayable(tagSource(raw, addon));
-        rememberFreshSources(streams);
-        const ms2 = Date.now() - startedAt;
-        return {
-          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
-          streams
-        };
-      } catch (error) {
-        const ms2 = Date.now() - startedAt;
-        const message = error instanceof Error ? error.message : String(error);
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
-        }
-        if (looksRateLimited(message)) markSourceCooldown(addon);
-        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
-      }
-    };
-    const first = await attempt();
-    const kind = first.report.outcome.kind;
-    if ((kind === "error" || kind === "timeout") && !sourceInCooldown(addon)) {
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-      const second = await attempt();
-      return second.report.outcome.kind === "ok" || second.report.outcome.kind === "empty" ? second : first;
-    }
-    return first;
-  }
-  function memoKey(target2) {
-    return `${target2.type}:${streamTargetKey(target2)}`;
-  }
-  function resetCoreStreamLookupMemo() {
-    inflight5.clear();
-    memo2.clear();
-  }
-  async function lookupCoreStreams(target2, options = {}) {
-    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
-    const key = memoKey(target2);
-    const replay = (result) => {
-      if (options.onSource) {
-        const bySource = /* @__PURE__ */ new Map();
-        for (const stream of result.streams) {
-          const name = stream.source ?? "";
-          bySource.set(name, [...bySource.get(name) ?? [], stream]);
-        }
-        for (const report of result.reports) options.onSource(report, bySource.get(report.addon.name) ?? []);
-      }
-      return result;
-    };
-    const cached = memo2.get(key);
-    if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending4 = inflight5.get(key);
-    if (pending4) return pending4.then(replay);
-    const run = lookupCoreStreamsUncached(target2, options).then((result) => {
-      const answered2 = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
-      const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
-      if (answered2 && !framedSkip) {
-        memo2.set(key, { at: Date.now(), result });
-      }
-      return result;
-    }).finally(() => inflight5.delete(key));
-    inflight5.set(key, run);
-    return run;
-  }
-  async function lookupCoreStreamsUncached(target2, options = {}) {
-    const addons = options.addons ?? getEnabledCoreStreamAddons();
-    if (addons.length === 0) return { streams: [], reports: [] };
-    const seen = /* @__PURE__ */ new Set();
-    const merged = [];
-    const reports = [];
-    await mapWithConcurrency(addons, options.concurrency ?? 4, async (addon) => {
-      const { report, streams } = await lookupSource(addon, target2, options);
-      reports.push(report);
-      const fresh = [];
-      for (const stream of streams) {
-        const key = stream.directUrl ?? `hash:${stream.infoHash}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(stream);
-        fresh.push(stream);
-      }
-      if (options.signal?.aborted) return;
-      options.onSource?.(report, fresh);
-    });
-    return { streams: merged, reports };
-  }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
-  var init_lookup = __esm({
-    "lib/core-streams/lookup.ts"() {
-      "use client";
-      init_core_addons();
-      init_addon_url();
-      init_plugin_sdk();
-      init_async_utils();
-      init_stream_utils();
-      init_mode();
-      cooldownUntil = /* @__PURE__ */ new Map();
-      COOLDOWN_MS = 9e4;
-      FRESH_SOURCE_MS = 10 * 6e4;
-      freshSources = /* @__PURE__ */ new Map();
-      RETRY_DELAY_MS = 700;
-      MEMO_TTL_MS = 45e3;
-      inflight5 = /* @__PURE__ */ new Map();
-      memo2 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -16793,6 +18538,7 @@
       init_session_host();
       init_lookup();
       init_prepare();
+      init_incognito();
       init_stream_utils();
       SLATE_MIN_BYTES = 256 * 1024;
       DIRECT_START_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1e3;
@@ -16832,17 +18578,32 @@
   }
   function pickAutoSubtitle(args) {
     const current2 = args.currentId ? args.options.find((option) => option.id === args.currentId) ?? null : null;
+    const hitIn = (pool, lang) => {
+      const hit2 = pool.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
+      if (!hit2) return null;
+      if (current2 && current2 !== hit2 && args.isEmbedded(hit2) && args.isEmbedded(current2) && !args.isBlocked(current2) && args.matchesLanguage(current2, lang)) return current2;
+      return hit2;
+    };
     const firstHit = (pool) => {
       for (const lang of args.languages) {
-        const hit2 = pool.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
-        if (!hit2) continue;
-        if (current2 && current2 !== hit2 && args.isEmbedded(hit2) && args.isEmbedded(current2) && !args.isBlocked(current2) && args.matchesLanguage(current2, lang)) return current2;
-        return hit2;
+        const hit2 = hitIn(pool, lang);
+        if (hit2) return hit2;
       }
       return null;
     };
     const untaggedEmbedded = () => args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
-    if (args.preferEmbedded) {
+    if (args.order === "best") {
+      const fullEmbedded = args.options.filter((option) => args.isEmbedded(option) && !option.forced);
+      const downloads = args.options.filter((option) => !args.isEmbedded(option));
+      const forcedEmbedded = args.options.filter((option) => args.isEmbedded(option) && option.forced);
+      for (const lang of args.languages) {
+        const hit2 = hitIn(fullEmbedded, lang) ?? hitIn(downloads, lang) ?? hitIn(forcedEmbedded, lang);
+        if (hit2) return hit2;
+      }
+      if (args.addonCount > 0) return null;
+      return untaggedEmbedded();
+    }
+    if (args.order === "embedded") {
       const embedded = firstHit(args.options.filter(args.isEmbedded)) ?? untaggedEmbedded();
       if (embedded) return embedded;
       return firstHit(args.options);
@@ -16874,6 +18635,42 @@
   }
   var init_subtitle_autopick = __esm({
     "lib/subtitle-autopick.ts"() {
+    }
+  });
+
+  // lib/playback-watched.ts
+  function markPlaybackEpisodeWatched(input) {
+    if (incognitoBlocks("watched")) return false;
+    setWatched(input.tmdbId, input.season, input.episode, true, { imdbId: input.imdbId ?? null });
+    removeStreamProgress(`tv-${input.tmdbId}`, input.season, input.episode);
+    return true;
+  }
+  function markPlaybackMovieWatched(entry) {
+    if (incognitoBlocks("watched")) return false;
+    setMovieWatched(entry, true);
+    return true;
+  }
+  var init_playback_watched = __esm({
+    "lib/playback-watched.ts"() {
+      "use client";
+      init_incognito();
+      init_watched_episodes();
+      init_watched_movies();
+      init_video_progress();
+    }
+  });
+
+  // lib/use-incognito.ts
+  function useIncognito() {
+    return useSyncExternalStore(subscribe2, isIncognito, () => false);
+  }
+  var subscribe2;
+  var init_use_incognito = __esm({
+    "lib/use-incognito.ts"() {
+      "use client";
+      init_react_shim();
+      init_incognito();
+      subscribe2 = (listener) => onIncognitoChanged(() => listener());
     }
   });
 
@@ -16970,6 +18767,7 @@
     return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
   }
   async function scrobbleAll(action, identity, progressPercent, opts) {
+    if (incognitoBlocks("scrobble")) return;
     const event = buildTrackerEvent(action, identity, progressPercent, opts);
     const key = trackerEventKey(event);
     const now2 = Date.now();
@@ -16997,9 +18795,203 @@
       init_plugin_registry();
       init_plugin_state();
       init_trakt_scrobble();
+      init_incognito();
       DUPLICATE_WINDOW_MS2 = 5e3;
       lastTrackerKey = "";
       lastTrackerAt = -Infinity;
+    }
+  });
+
+  // lib/learned-skip.ts
+  function classifySkip(start2, end, duration) {
+    if (!(duration > 0) || !Number.isFinite(start2) || !Number.isFinite(end)) return null;
+    if (end - start2 < MIN_SKIP_S) return null;
+    if (start2 < 0 || start2 > duration) return null;
+    if (start2 <= duration * START_REGION_FRACTION) return "start";
+    if (start2 >= duration * (1 - END_REGION_FRACTION)) return "end";
+    return null;
+  }
+  function round1(n) {
+    return Math.round(n * 10) / 10;
+  }
+  function recordSkip(store2, seriesId, obs, now2) {
+    if (!seriesId) return store2;
+    const prev = store2[seriesId]?.obs ?? [];
+    const kept = prev.filter((o) => !(o.season === obs.season && o.episode === obs.episode && o.region === obs.region));
+    const nextObs = [...kept, { ...obs, start: round1(obs.start), end: round1(obs.end), at: now2 }].slice(-MAX_OBS_PER_SERIES);
+    const next = { ...store2, [seriesId]: { obs: nextObs, at: now2 } };
+    return capSeries(next);
+  }
+  function forgetSeries(store2, seriesId) {
+    if (!(seriesId in store2)) return store2;
+    const next = { ...store2 };
+    delete next[seriesId];
+    return next;
+  }
+  function capSeries(store2) {
+    const ids = Object.keys(store2);
+    if (ids.length <= MAX_SERIES2) return store2;
+    const keep = ids.sort((a, b) => (store2[b].at ?? 0) - (store2[a].at ?? 0)).slice(0, MAX_SERIES2);
+    const next = {};
+    for (const id of keep) next[id] = store2[id];
+    return next;
+  }
+  function isNextEpisode(a, b) {
+    if (b.season === a.season) return b.episode === a.episode + 1;
+    return b.season === a.season + 1 && b.episode === 1;
+  }
+  function close(a, b) {
+    return Math.abs(a.start - b.start) <= MATCH_TOLERANCE_S && Math.abs(a.end - b.end) <= MATCH_TOLERANCE_S;
+  }
+  function median(values) {
+    const s = [...values].sort((x, y) => x - y);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+  function learnedInterval(series, region) {
+    if (!series) return null;
+    const inRegion = series.obs.filter((o) => o.region === region).sort((a, b) => a.season - b.season || a.episode - b.episode);
+    if (inRegion.length < LEARN_STREAK) return null;
+    const run = inRegion.slice(-LEARN_STREAK);
+    for (let i = 1; i < run.length; i++) {
+      if (!isNextEpisode(run[i - 1], run[i])) return null;
+    }
+    for (let i = 0; i < run.length; i++) {
+      for (let j = i + 1; j < run.length; j++) {
+        if (!close(run[i], run[j])) return null;
+      }
+    }
+    return { start: median(run.map((o) => o.start)), end: median(run.map((o) => o.end)) };
+  }
+  function usableLearnedSkip(learned, region, ctx) {
+    if (!learned) return null;
+    if (region === "start" && ctx.intro) return null;
+    if (region === "end" && ctx.outro) return null;
+    for (const seg of [ctx.intro, ctx.outro]) {
+      if (seg && learned.start < seg.end && seg.start < learned.end) return null;
+    }
+    if (ctx.duration > 0) {
+      if (learned.start >= ctx.duration - 1) return null;
+      const end = Math.min(learned.end, ctx.duration - 0.5);
+      if (end - learned.start < MIN_SKIP_S / 2) return null;
+      return { start: learned.start, end };
+    }
+    return learned;
+  }
+  function trackSeekSample(state3, pos, wall, playing) {
+    if (!Number.isFinite(pos)) return { state: state3, done: null };
+    if (state3.lastPos == null || state3.lastWall == null) {
+      return { state: { ...state3, lastPos: pos, lastWall: wall, steadySince: wall }, done: null };
+    }
+    const elapsedS = Math.max(0, (wall - state3.lastWall) / 1e3);
+    const expected = playing ? elapsedS * 2 : 0;
+    const delta = pos - state3.lastPos;
+    let pending4 = state3.pending;
+    let steadySince = state3.steadySince;
+    let done = null;
+    const inWindow = pending4 != null && wall - pending4.lastJumpWall <= MERGE_WINDOW_MS;
+    if (delta > expected + JUMP_SLACK_S) {
+      if (pending4 && inWindow) {
+        pending4 = { ...pending4, end: pos, lastJumpWall: wall };
+      } else {
+        if (pending4) done = { start: pending4.start, end: pending4.end };
+        const steady = steadySince != null && wall - steadySince >= STEADY_MS;
+        pending4 = steady ? { start: state3.lastPos, end: pos, lastJumpWall: wall } : null;
+      }
+      steadySince = wall;
+    } else if (delta < -JUMP_SLACK_S) {
+      if (pending4 && inWindow) {
+        pending4 = pos <= pending4.start + 1 ? null : { ...pending4, end: pos, lastJumpWall: wall };
+      } else if (pending4) {
+        done = { start: pending4.start, end: pending4.end };
+        pending4 = null;
+      }
+      steadySince = wall;
+    } else if (pending4 && !inWindow) {
+      done = { start: pending4.start, end: pending4.end };
+      pending4 = null;
+    }
+    return { state: { lastPos: pos, lastWall: wall, steadySince, pending: pending4 }, done };
+  }
+  function flushSeekTracker(state3) {
+    return state3.pending ? { start: state3.pending.start, end: state3.pending.end } : null;
+  }
+  var START_REGION_FRACTION, END_REGION_FRACTION, MIN_SKIP_S, MATCH_TOLERANCE_S, LEARN_STREAK, MAX_OBS_PER_SERIES, MAX_SERIES2, MERGE_WINDOW_MS, STEADY_MS, JUMP_SLACK_S, SEEK_TRACKER_INITIAL;
+  var init_learned_skip = __esm({
+    "lib/learned-skip.ts"() {
+      START_REGION_FRACTION = 0.25;
+      END_REGION_FRACTION = 0.15;
+      MIN_SKIP_S = 15;
+      MATCH_TOLERANCE_S = 5;
+      LEARN_STREAK = 3;
+      MAX_OBS_PER_SERIES = 8;
+      MAX_SERIES2 = 60;
+      MERGE_WINDOW_MS = 4e3;
+      STEADY_MS = 2e3;
+      JUMP_SLACK_S = 4;
+      SEEK_TRACKER_INITIAL = { lastPos: null, lastWall: null, steadySince: null, pending: null };
+    }
+  });
+
+  // lib/learned-skip-store.ts
+  function read6() {
+    try {
+      const raw = getScopedStorageItem(KEY11);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function write3(store2) {
+    try {
+      if (Object.keys(store2).length === 0) setScopedStorageItem(KEY11, "{}");
+      else setScopedStorageItem(KEY11, JSON.stringify(store2));
+    } catch {
+    }
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function getLearnSkipsEnabled() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY_ENABLED3) !== "0";
+  }
+  function setLearnSkipsEnabled(on) {
+    setScopedStorageItem(KEY_ENABLED3, on ? "1" : "0");
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNED_SKIPS_EVENT));
+  }
+  function recordLearnedSkip(seriesId, obs) {
+    if (!seriesId || !getLearnSkipsEnabled()) return;
+    write3(recordSkip(read6(), seriesId, obs, Date.now()));
+  }
+  function getLearnedSkips(seriesId) {
+    if (!seriesId || !getLearnSkipsEnabled()) return { start: null, end: null };
+    const series = read6()[seriesId];
+    return { start: learnedInterval(series, "start"), end: learnedInterval(series, "end") };
+  }
+  function hasLearnedSkipData(seriesId) {
+    return Boolean(seriesId && (read6()[seriesId]?.obs.length ?? 0) > 0);
+  }
+  function forgetLearnedSkips(seriesId) {
+    if (!seriesId) return;
+    const store2 = read6();
+    if (!(seriesId in store2)) return;
+    write3(forgetSeries(store2, seriesId));
+  }
+  function onLearnedSkipsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(LEARNED_SKIPS_EVENT, listener);
+    return () => window.removeEventListener(LEARNED_SKIPS_EVENT, listener);
+  }
+  var KEY11, KEY_ENABLED3, LEARNED_SKIPS_EVENT;
+  var init_learned_skip_store = __esm({
+    "lib/learned-skip-store.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_learned_skip();
+      KEY11 = "learned_skips_v1";
+      KEY_ENABLED3 = "playback_learnSkips";
+      LEARNED_SKIPS_EVENT = "lumio-learned-skips-changed";
     }
   });
 
@@ -17009,12 +19001,12 @@
   }
   function setFilmVideoTuning(tuning) {
     filmTuning = { ...tuning };
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function clearFilmVideoTuning() {
     if (!filmTuning) return;
     filmTuning = null;
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function isVideoTuningActive(tuning) {
     return Object.keys(DEFAULT_TUNING).some((key) => tuning[key] !== DEFAULT_TUNING[key]);
@@ -17026,7 +19018,7 @@
   function getStoredVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY10);
+      const raw = getScopedStorageItem(KEY12);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp2 = (v, lo, hi, dflt) => {
@@ -17045,14 +19037,14 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY10, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    setScopedStorageItem(KEY12, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function onVideoTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT8, listener);
-    return () => window.removeEventListener(EVENT8, listener);
+    window.addEventListener(EVENT9, listener);
+    return () => window.removeEventListener(EVENT9, listener);
   }
   function getRenderTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_RENDER_TUNING };
@@ -17075,7 +19067,7 @@
   }
   function setRenderTuning(tuning) {
     setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
   }
   function renderTuningProperties(t, isNetworkStream = false) {
     const props = [
@@ -17111,7 +19103,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY10, EVENT8, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY12, EVENT9, filmTuning, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -17124,8 +19116,8 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY10 = "video_tuning";
-      EVENT8 = "lumio-video-tuning-changed";
+      KEY12 = "video_tuning";
+      EVENT9 = "lumio-video-tuning-changed";
       filmTuning = null;
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
@@ -17145,7 +19137,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY11);
+      const raw = getScopedStorageItem(KEY13);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -17159,14 +19151,14 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY11, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
+    setScopedStorageItem(KEY13, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
   }
   function onAudioTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT9, listener);
-    return () => window.removeEventListener(EVENT9, listener);
+    window.addEventListener(EVENT10, listener);
+    return () => window.removeEventListener(EVENT10, listener);
   }
   function audioTuningFilters(t) {
     const filters = [];
@@ -17175,7 +19167,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY11, EVENT9;
+  var DEFAULT_AUDIO_TUNING, KEY13, EVENT10;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -17186,12 +19178,43 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY11 = "audio_tuning";
-      EVENT9 = "lumio-audio-tuning-changed";
+      KEY13 = "audio_tuning";
+      EVENT10 = "lumio-audio-tuning-changed";
     }
   });
 
   // components/player/player-tuning-panel.tsx
+  function useCustomShaderFiles(enabled) {
+    const [files, setFiles] = useState(null);
+    const [selected, setSelected] = useState(() => getCustomShaders());
+    useEffect(() => onPlaybackSettingsChanged(() => setSelected(getCustomShaders())), []);
+    useEffect(() => {
+      if (!enabled) return;
+      let cancelled = false;
+      const refresh = () => {
+        void fetch("/api/custom-shaders").then((r) => r.json()).then((data) => {
+          if (!cancelled) setFiles(data.files ?? []);
+        }).catch(() => {
+          if (!cancelled) setFiles([]);
+        });
+      };
+      refresh();
+      window.addEventListener("focus", refresh);
+      return () => {
+        cancelled = true;
+        window.removeEventListener("focus", refresh);
+      };
+    }, [enabled]);
+    const toggle = (name) => {
+      const next = toggleCustomShaderSelection(selected, name);
+      setSelected(next);
+      setCustomShaders(next);
+    };
+    const openFolder = () => {
+      void fetch("/api/custom-shaders/open", { method: "POST" });
+    };
+    return { files, selected, toggle, openFolder };
+  }
   function MiniHeader({ children }) {
     return /* @__PURE__ */ jsx("p", { className: "mb-2 mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 first:mt-0", children });
   }
@@ -17209,7 +19232,7 @@
       }
     );
   }
-  function PlayerTuningPanel({ onClose, surface }) {
+  function PlayerTuningPanel({ onClose, surface, shaders }) {
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
@@ -17223,6 +19246,9 @@
       setRenderState(getRenderTuning());
     }), []);
     useEffect(() => onAudioTuningChanged(() => setAudioState(getAudioTuning())), []);
+    const showShaders = Boolean(shaders) && !droid;
+    const customShaders = useCustomShaderFiles(showShaders);
+    const shaderStatusText = shaders?.status ? formatShaderStatus(shaders.status, t) : null;
     const [scope, setScope] = useState(() => getVideoTuningScope() === "film" || !isVideoTuningActive(getStoredVideoTuning()) ? "film" : "all");
     function apply(next) {
       setTuningState(next);
@@ -17303,7 +19329,7 @@
           onStep(e.key === "ArrowRight" ? 1 : -1);
         }
       });
-      const value = (text) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text });
+      const value = (text2) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text2 });
       const toggle = (key, label, on, flip) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, "data-f": "1", onClick: flip, className: TV_ROW, children: [
         /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: label }),
         /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
@@ -17353,7 +19379,14 @@
             ["interpolation", "rtInterpolation"],
             ["anime4k", "rtAnime4k"],
             ["largeBuffer", "rtBuffer"]
-          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] })))
+          ].map(([key, labelKey]) => toggle(key, t(labelKey), Boolean(render[key]), () => applyRender({ ...render, [key]: !render[key] }))),
+          showShaders ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] px-3 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("advCustomShadersTitle") }),
+            shaderStatusText ? /* @__PURE__ */ jsx("div", { "data-shader-status": "", className: "px-3 pb-1.5 text-[12px] text-slate-400", children: shaderStatusText }) : null,
+            customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("div", { className: "px-3 pb-1.5 text-[12px] text-slate-500", children: t("rtShadersEmpty") }) : null,
+            (customShaders.files ?? []).map((file) => toggle(`shader:${file.name}`, file.name, customShaders.selected.includes(file.name), () => customShaders.toggle(file.name))),
+            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "1", className: TV_ROW, onClick: customShaders.openFolder, children: /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: t("advCustomShadersOpen") }) })
+          ] }) : null
         ] }),
         /* @__PURE__ */ jsx(
           "button",
@@ -17509,7 +19542,35 @@
                   }
                 )
               ] }, key))
-            ] })
+            ] }),
+            showShaders ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+              /* @__PURE__ */ jsx(MiniHeader, { children: t("advCustomShadersTitle") }),
+              shaderStatusText ? /* @__PURE__ */ jsx("p", { "data-shader-status": "", className: `mb-2 text-[10.5px] ${shaders?.status && (shaders.status.anime4k || shaders.status.custom > 0) ? "text-accent-200" : "text-slate-400"}`, children: shaderStatusText }) : null,
+              /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+                customShaders.files?.length === 0 ? /* @__PURE__ */ jsx("p", { className: "text-[10.5px] text-slate-500", children: t("rtShadersEmpty") }) : null,
+                (customShaders.files ?? []).map((file) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+                  /* @__PURE__ */ jsx("span", { className: "min-w-0 truncate font-mono text-[11px] text-slate-300", title: file.name, children: file.name }),
+                  /* @__PURE__ */ jsx(
+                    MiniToggle,
+                    {
+                      tv: isTv,
+                      checked: customShaders.selected.includes(file.name),
+                      onChange: () => customShaders.toggle(file.name)
+                    }
+                  )
+                ] }, file.name)),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    ...isTv ? { "data-f": "" } : {},
+                    onClick: customShaders.openFolder,
+                    className: "rounded-full border border-white/10 px-2.5 py-1 text-[10.5px] font-medium text-slate-300 transition hover:border-white/25",
+                    children: t("advCustomShadersOpen")
+                  }
+                )
+              ] })
+            ] }) : null
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "mt-4 flex items-center justify-between", children: [
             /* @__PURE__ */ jsx(
@@ -17542,6 +19603,7 @@
       init_video_tuning();
       init_audio_tuning();
       init_tauri_native_player();
+      init_playback_settings();
       init_jsx_runtime_shim();
       DIALS = [
         { key: "brightness", labelKey: "vtBrightness", min: -50, max: 50, step: 1 },
@@ -17673,6 +19735,46 @@
     }
   });
 
+  // lib/night-mode.ts
+  function nightModeFfmpegFilter(mode) {
+    if (mode === "off") return null;
+    const preset = NIGHT_MODE_PRESETS[mode];
+    if (!preset) return null;
+    const thresholdDb = -preset.makeupDb * preset.ratio / (preset.ratio - 1);
+    const makeup = linear(preset.makeupDb);
+    return [
+      `acompressor=threshold=${fixed(linear(thresholdDb), 4)}:ratio=${preset.ratio}:attack=5:release=300:makeup=${fixed(makeup, 4)}:knee=2:detection=peak:link=maximum`,
+      `agate=threshold=${fixed(linear(LIFT_FADE_DB + preset.makeupDb), 5)}:ratio=4:range=${fixed(1 / makeup, 4)}:attack=5:release=300:detection=peak:link=maximum`,
+      `alimiter=limit=${fixed(linear(LIMIT_DBFS), 3)}:attack=5:release=50:level=0`
+    ].join(",");
+  }
+  function nightModeLabelKey(mode, menu) {
+    switch (mode) {
+      case "off":
+        return "nightModeOff";
+      case "mild":
+        return menu ? "nightModeMenuMild" : "nightModeMild";
+      case "medium":
+        return menu ? "nightModeMenuMedium" : "nightModeMedium";
+      case "strong":
+        return menu ? "nightModeMenuStrong" : "nightModeStrong";
+    }
+  }
+  var NIGHT_MODE_PRESETS, LIFT_FADE_DB, LIMIT_DBFS, linear, fixed;
+  var init_night_mode = __esm({
+    "lib/night-mode.ts"() {
+      NIGHT_MODE_PRESETS = {
+        mild: { makeupDb: 6, ratio: 2 },
+        medium: { makeupDb: 10, ratio: 3 },
+        strong: { makeupDb: 15, ratio: 4 }
+      };
+      LIFT_FADE_DB = -50;
+      LIMIT_DBFS = -1;
+      linear = (db) => 10 ** (db / 20);
+      fixed = (value, digits) => Number(value.toFixed(digits)).toString();
+    }
+  });
+
   // lib/core-streams/source-groups.ts
   function streamGroup(stream) {
     if (stream.sourceGroup) return stream.sourceGroup;
@@ -17681,6 +19783,7 @@
   var VOD_GROUP, CLOUD_GROUP;
   var init_source_groups = __esm({
     "lib/core-streams/source-groups.ts"() {
+      init_source_hints();
       init_stream_utils();
       VOD_GROUP = "vod";
       CLOUD_GROUP = "cloud";
@@ -17787,6 +19890,9 @@
   });
 
   // lib/vlc-deep-link.ts
+  function onTv() {
+    return typeof document !== "undefined" && document.documentElement.getAttribute("data-tv") === "1";
+  }
   function resolveDirectStreamUrl(url) {
     if (!url) return null;
     if (/^https?:\/\//i.test(url)) return url;
@@ -17800,6 +19906,7 @@
   }
   function vlcSupported() {
     if (typeof window === "undefined") return false;
+    if (onTv()) return false;
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
     if (isWindowsDesktop()) return false;
     try {
@@ -17839,6 +19946,7 @@
   }
   function openInExternalPlayer(url, startSeconds) {
     if (typeof window === "undefined") return false;
+    if (onTv()) return false;
     const direct = resolveDirectStreamUrl(url);
     if (!direct) return false;
     if (/Android/i.test(navigator.userAgent)) {
@@ -17997,6 +20105,7 @@
   async function prefetchMediaWarmup(options) {
     const tasks = [];
     const runPrefetchByImdbId = async (imdbId) => {
+      if (options.mediaType === "tv" && (options.season == null || options.episode == null)) return;
       const subtitleParams = new URLSearchParams({ imdb_id: imdbId });
       if (options.mediaType === "tv") {
         subtitleParams.set("type", "episode");
@@ -18169,7 +20278,7 @@
       let lastError = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS2);
         try {
           const res = await fetch(url, { cache: "no-store", signal: controller.signal });
           if (!res.ok) {
@@ -18214,13 +20323,13 @@
     inflight7.set(cacheKey2, request);
     return request;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS2, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
       NON_EMPTY_CACHE_TTL_MS = 2e4;
       EMPTY_CACHE_TTL_MS = 3e3;
-      FETCH_TIMEOUT_MS = 4800;
+      FETCH_TIMEOUT_MS2 = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
       inflight7 = /* @__PURE__ */ new Map();
@@ -18321,7 +20430,8 @@
     onCreditClick,
     defaultExpanded = false,
     className = "",
-    variant = "standalone"
+    variant = "standalone",
+    seenCredits
   }) {
     const { t } = useLang();
     const [person, setPerson] = useState(null);
@@ -18469,6 +20579,16 @@
               person.alsoKnownAs.join(", ")
             ] }) : null
           ] }),
+          seenCredits && seenCredits.length > 0 ? /* @__PURE__ */ jsx(
+            CreditRail,
+            {
+              credits: seenCredits,
+              onCreditClick,
+              movieLabel,
+              seriesLabel,
+              title: t("personSeenIn")
+            }
+          ) : null,
           /* @__PURE__ */ jsx(
             CreditRail,
             {
@@ -18932,7 +21052,7 @@
     const { t } = useLang();
     const isTv = useTvMode();
     const closeRef = useRef(null);
-    const [state2, setState] = useState("loading");
+    const [state3, setState] = useState("loading");
     const [result, setResult] = useState(null);
     const [errorKind, setErrorKind] = useState(null);
     useEffect(() => {
@@ -18995,7 +21115,7 @@
       const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
       ro?.observe(el);
       return () => ro?.disconnect();
-    }, [isTv, state2]);
+    }, [isTv, state3]);
     const wanted = 1.25 / (tvSceneScale() || 1);
     const embedZoom = isTv && embedBox && embedBox.w > 0 ? Math.min(wanted, embedBox.w / SPOTIFY_MIN_LAYOUT_PX) : 1;
     const embedZoomStyle = !isTv || !embedBox ? {} : {
@@ -19029,13 +21149,13 @@
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state2 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state2 !== "embed" ? { "data-scroll": "" } : {}, children: [
-            state2 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
-            state2 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
+          /* @__PURE__ */ jsxs("div", { className: `flex min-h-0 flex-1 flex-col ${state3 === "embed" ? "" : "overflow-y-auto overscroll-contain"}`, ...isTv && state3 !== "embed" ? { "data-scroll": "" } : {}, children: [
+            state3 === "loading" && /* @__PURE__ */ jsx("div", { className: "flex h-32 items-center justify-center", children: /* @__PURE__ */ jsx("svg", { className: "h-6 w-6 animate-spin text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { d: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" }) }) }),
+            state3 === "error" && /* @__PURE__ */ jsxs("div", { className: "flex h-32 items-center justify-center text-sm text-slate-500", children: [
               t("soundtrackLoadError"),
               errorKind === "timeout" ? " (timeout)" : ""
             ] }),
-            state2 === "fallback" && result && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
+            state3 === "fallback" && result && /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-4 px-4 py-8 text-center", children: [
               /* @__PURE__ */ jsx("svg", { className: "h-10 w-10 text-green-400", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" }) }),
               /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("noSoundtrackFound") }),
               /* @__PURE__ */ jsxs(
@@ -19053,7 +21173,7 @@
                 }
               )
             ] }),
-            state2 === "embed" && result?.embedUrl && /**
+            state3 === "embed" && result?.embedUrl && /**
              * GRID, inte flex: `grid-rows-[auto_1fr]` ger iframen en RÄKNAD höjd.
              *
              * Med flex fick iframen `flex-1` + `height: 100%`, och 100 % av ett
@@ -19377,6 +21497,22 @@
     }
   });
 
+  // lib/couch/remote-nav.ts
+  var init_remote_nav = __esm({
+    "lib/couch/remote-nav.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/quick-open.ts
+  var init_quick_open = __esm({
+    "lib/quick-open.ts"() {
+      "use client";
+      init_video_progress();
+      init_open_item_runtime();
+    }
+  });
+
   // lib/couch/host-bridge.ts
   function registerCouchPlayer(handlers) {
     const token = /* @__PURE__ */ Symbol("couch-player");
@@ -19418,6 +21554,9 @@
     "lib/couch/host-bridge.ts"() {
       init_host_trakt();
       init_sport_protocol();
+      init_remote_nav();
+      init_quick_open();
+      init_video_progress();
       sportSurface = null;
       tipSummary = null;
       players = [];
@@ -19450,14 +21589,14 @@
     const m = mode === "end" ? "end" : Number(mode);
     return armSleepTimer(m, nowMs);
   }
-  function couchSleep(state2, nowMs, pos, dur) {
-    if (state2.mode === "off") return { mode: "off" };
-    if (state2.mode === "end") {
+  function couchSleep(state3, nowMs, pos, dur) {
+    if (state3.mode === "off") return { mode: "off" };
+    if (state3.mode === "end") {
       const left = Math.max(0, dur - pos - SLEEP_END_MARGIN_S);
       return { mode: "end", endsAt: nowMs + left * 1e3 };
     }
-    const remaining = sleepTimerRemainingMs(state2, nowMs);
-    const mode = String(state2.mode);
+    const remaining = sleepTimerRemainingMs(state3, nowMs);
+    const mode = String(state3.mode);
     return remaining == null ? { mode } : { mode, endsAt: nowMs + remaining };
   }
   function nextEpisodeOf(ep) {
@@ -19485,13 +21624,13 @@
     return streams.filter((s) => !!s.directUrl);
   }
   function pushCue(buffer, cue, now2) {
-    const text = cue.text.trim();
-    if (!text) return buffer;
+    const text2 = cue.text.trim();
+    if (!text2) return buffer;
     const last2 = buffer[buffer.length - 1];
-    if (last2 && last2.text === text) return buffer;
+    if (last2 && last2.text === text2) return buffer;
     const base = last2 && last2.start > cue.start ? [] : buffer;
     const kept = base.filter((c) => c.start >= now2 - SAID_WINDOW_S);
-    kept.push({ text, start: cue.start });
+    kept.push({ text: text2, start: cue.start });
     return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
   }
   var SAID_WINDOW_S, SAID_MAX_CUES;
@@ -19524,6 +21663,7 @@
 
   // lib/continue-frame-capture.ts
   async function captureContinueFrame(engine, ref, video) {
+    if (incognitoBlocks("continue-frame")) return false;
     const key = continueFrameKey(ref);
     try {
       if (engine === "mpv") {
@@ -19556,6 +21696,7 @@
       init_continue_frames();
       init_tauri_mpv();
       init_tauri_native_player();
+      init_incognito();
     }
   });
 
@@ -19688,7 +21829,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY12);
+      const raw = getScopedStorageItem(KEY14);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -19717,11 +21858,11 @@
   function hasCommandModifier(e) {
     return e.metaKey || e.ctrlKey || e.altKey;
   }
-  var KEY12, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
+  var KEY14, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY12 = "keyboard_shortcuts";
+      KEY14 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -19745,37 +21886,96 @@
     }
   });
 
-  // lib/player-reveal-hold.ts
-  function state() {
-    const g = globalThis;
-    if (!g[KEY13]) g[KEY13] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY13];
+  // lib/credits-from-subs.ts
+  function stripCueMarkup(text2) {
+    return text2.replace(/\{\\[^}]*\}/g, " ").replace(/<[^>]+>/g, " ").replace(/\\[Nn]/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
   }
-  function isPlayerRevealHeld() {
-    return state().holders > 0;
+  function creditPattern() {
+    const extra = (getSourceHints().creditWords ?? []).filter((word) => /^[a-z0-9][a-z0-9-]*$/.test(word)).join("|");
+    if (creditRe && creditRe.extra === extra) return creditRe.re;
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])(${CREDIT_WORDS}${extra ? `|${extra}` : ""})(?![\\p{L}\\p{N}])`, "iu");
+    creditRe = { extra, re };
+    return re;
   }
-  function markPlayerReadyToReveal() {
-    if (state().holders > 0) state().ready = true;
+  function isTailNoiseCue(rawText) {
+    const text2 = stripCueMarkup(rawText);
+    if (!text2) return true;
+    if (MUSIC_RE.test(text2)) return true;
+    if (URL_RE.test(text2)) return true;
+    if (creditPattern().test(text2)) return true;
+    const spoken = text2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^[-–—\s]*[A-ZÅÄÖÜ0-9 .'-]{2,}:\s*/u, "").replace(/[-–—.…!?,\s]+/g, " ").trim();
+    if (!spoken) return true;
+    if (END_CARD_RE.test(spoken)) return true;
+    return false;
   }
-  function captureUserMutedOnce(current2) {
-    const s = state();
-    if (s.userMuted === null) s.userMuted = current2;
-    return s.userMuted;
+  function estimateCreditsStartFromCues(cues, durationSeconds, options = {}) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds < MIN_DURATION_SECONDS) return { start: null, reason: "short" };
+    const offset = Number.isFinite(options.offsetSeconds) ? options.offsetSeconds : 0;
+    const timed = cues.filter((c) => Number.isFinite(c.start) && Number.isFinite(c.end) && c.end > c.start).map((c) => ({ start: c.start + offset, end: c.end + offset, text: c.text ?? "" })).filter((c) => c.end > 0).sort((a, b) => a.start - b.start || a.end - b.end);
+    if (timed.length === 0) return { start: null, reason: "no_cues" };
+    const dialogueCount = timed.reduce((n, c) => n + (isTailNoiseCue(c.text) ? 0 : 1), 0);
+    if (dialogueCount < MIN_DIALOGUE_CUES || dialogueCount < durationSeconds / 60 * MIN_CUES_PER_MINUTE) {
+      return { start: null, reason: "sparse" };
+    }
+    const lastEnd = timed.reduce((m, c) => Math.max(m, c.end), 0);
+    if (lastEnd > durationSeconds + PAST_END_TOLERANCE) return { start: null, reason: "past_end" };
+    const noiseFloor = durationSeconds * (1 - NOISE_SKIP_FRACTION);
+    let lastDialogueEnd = null;
+    const byEnd = [...timed].sort((a, b) => b.end - a.end);
+    for (const cue of byEnd) {
+      if (cue.end >= noiseFloor && isTailNoiseCue(cue.text)) continue;
+      lastDialogueEnd = cue.end;
+      break;
+    }
+    if (lastDialogueEnd == null) return { start: null, reason: "no_dialogue" };
+    if (lastDialogueEnd < durationSeconds * (1 - TAIL_FRACTION)) return { start: null, reason: "too_early" };
+    const delay = Number.isFinite(options.delayAfterLastLineSeconds) && options.delayAfterLastLineSeconds >= 0 ? options.delayAfterLastLineSeconds : DEFAULT_DELAY_AFTER_LAST_LINE;
+    const candidate = lastDialogueEnd + delay;
+    if (durationSeconds - candidate < MIN_SECONDS_BEFORE_END) return { start: null, reason: "too_late" };
+    return { start: candidate, reason: "ok" };
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY13;
-  var init_player_reveal_hold = __esm({
-    "lib/player-reveal-hold.ts"() {
-      CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY13 = "__lumioRevealHold";
+  var TAIL_FRACTION, MIN_SECONDS_BEFORE_END, MIN_DURATION_SECONDS, MIN_DIALOGUE_CUES, MIN_CUES_PER_MINUTE, DEFAULT_DELAY_AFTER_LAST_LINE, PAST_END_TOLERANCE, NOISE_SKIP_FRACTION, URL_RE, CREDIT_WORDS, creditRe, END_CARD_RE, MUSIC_RE;
+  var init_credits_from_subs = __esm({
+    "lib/credits-from-subs.ts"() {
+      init_source_hints();
+      TAIL_FRACTION = 0.12;
+      MIN_SECONDS_BEFORE_END = 30;
+      MIN_DURATION_SECONDS = 480;
+      MIN_DIALOGUE_CUES = 60;
+      MIN_CUES_PER_MINUTE = 3;
+      DEFAULT_DELAY_AFTER_LAST_LINE = 20;
+      PAST_END_TOLERANCE = 5;
+      NOISE_SKIP_FRACTION = 0.25;
+      URL_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|org|net|tv|io|me|info|se|de|fr|es|nl|ru|ro|pl)\b)/i;
+      CREDIT_WORDS = "subtitles?|subtitled|subs|captions?|captioned|captioning|closed captioning|translat\\w*|transcri\\w*|synced|sync(?:ed|hronized)?\\s+(by|and)|resync\\w*|re-?synced|corrected\\s+by|corrections\\s+by|proofread\\w*|encoded\\s+by|ripped\\s+by|timed\\s+by|timing\\s+by|opensubtitles|addic7ed|podnapisi|subscene|osdb|undertext\\w*|svensk text|\xF6versatt\\w*|\xF6vers\xE4ttning|textning|textad\\w*|untertitel\\w*|\xFCbersetz\\w*|sous-titr\\w*|traduct\\w*|traduit|subt[i\xED]tul\\w*|traducci[o\xF3]n|traducido";
+      creditRe = null;
+      END_CARD_RE = /^(the end|to be continued|fin|slut|ende|continuará|à suivre|fortsättning följer|fortsetzung folgt)[.!…]*$/i;
+      MUSIC_RE = /[♪♫♬♩]|^#|#$/;
     }
   });
 
-  // lib/core-streams/start-watchdog.ts
-  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
-  var init_start_watchdog = __esm({
-    "lib/core-streams/start-watchdog.ts"() {
-      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
-      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+  // lib/player-reveal-hold.ts
+  function state2() {
+    const g = globalThis;
+    if (!g[KEY15]) g[KEY15] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY15];
+  }
+  function isPlayerRevealHeld() {
+    return state2().holders > 0;
+  }
+  function markPlayerReadyToReveal() {
+    if (state2().holders > 0) state2().ready = true;
+  }
+  function captureUserMutedOnce(current2) {
+    const s = state2();
+    if (s.userMuted === null) s.userMuted = current2;
+    return s.userMuted;
+  }
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY15;
+  var init_player_reveal_hold = __esm({
+    "lib/player-reveal-hold.ts"() {
+      CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
+      KEY15 = "__lumioRevealHold";
     }
   });
 
@@ -19845,6 +22045,14 @@
   });
 
   // components/player/credits-recommendations.tsx
+  function creditsDims(isTv) {
+    if (!isTv) {
+      return { pipW: PIP_W, pipH: PIP_H, coverW: COVER_W, coverH: COVER_H, offX: COVER_OFFSET_X, offY: COVER_OFFSET_Y, inset: PIP_INSET, top: PIP_TOP, vw: "100vw" };
+    }
+    const pipW = `calc(${TV_SW} * 0.29)`;
+    const inset = `calc(${TV_SW} * 0.02)`;
+    return { pipW, pipH: `calc(${pipW} * 9 / 16)`, coverW: TV_SW, coverH: TV_SH, offX: "0px", offY: "0px", inset, top: inset, vw: TV_SW };
+  }
   function formatRemaining(seconds2) {
     if (!Number.isFinite(seconds2) || seconds2 <= 0) return "0:00";
     const total = Math.round(seconds2);
@@ -19862,6 +22070,7 @@
     isTv
   }) {
     const { t } = useLang();
+    const d = creditsDims(isTv);
     const [index, setIndex] = useState(0);
     const [failedLogos, setFailedLogos] = useState(/* @__PURE__ */ new Set());
     const interactedRef = useRef(false);
@@ -19930,27 +22139,27 @@
           [
             // vänster om fönstret, full höjd
             {
-              box: { left: 0, top: 0, right: `calc(${PIP_W} + ${PIP_INSET})`, bottom: 0 },
-              bgX: `calc(0px - ${COVER_OFFSET_X})`,
-              bgY: `calc(0px - ${COVER_OFFSET_Y})`
+              box: { left: 0, top: 0, right: `calc(${d.pipW} + ${d.inset})`, bottom: 0 },
+              bgX: `calc(0px - ${d.offX})`,
+              bgY: `calc(0px - ${d.offY})`
             },
             // ovanför fönstret
             {
-              box: { left: `calc(100% - ${PIP_W} - ${PIP_INSET})`, top: 0, right: 0, height: PIP_TOP },
-              bgX: `calc(0px - 100vw + ${PIP_W} + ${PIP_INSET} - ${COVER_OFFSET_X})`,
-              bgY: `calc(0px - ${COVER_OFFSET_Y})`
+              box: { left: `calc(100% - ${d.pipW} - ${d.inset})`, top: 0, right: 0, height: d.top },
+              bgX: `calc(0px - ${d.vw} + ${d.pipW} + ${d.inset} - ${d.offX})`,
+              bgY: `calc(0px - ${d.offY})`
             },
             // under fönstret
             {
-              box: { left: `calc(100% - ${PIP_W} - ${PIP_INSET})`, top: `calc(${PIP_TOP} + ${PIP_H})`, right: 0, bottom: 0 },
-              bgX: `calc(0px - 100vw + ${PIP_W} + ${PIP_INSET} - ${COVER_OFFSET_X})`,
-              bgY: `calc(0px - ${PIP_TOP} - ${PIP_H} - ${COVER_OFFSET_Y})`
+              box: { left: `calc(100% - ${d.pipW} - ${d.inset})`, top: `calc(${d.top} + ${d.pipH})`, right: 0, bottom: 0 },
+              bgX: `calc(0px - ${d.vw} + ${d.pipW} + ${d.inset} - ${d.offX})`,
+              bgY: `calc(0px - ${d.top} - ${d.pipH} - ${d.offY})`
             },
             // till höger om fönstret
             {
-              box: { right: 0, width: PIP_INSET, top: PIP_TOP, height: PIP_H },
-              bgX: `calc(0px - 100vw + ${PIP_INSET} - ${COVER_OFFSET_X})`,
-              bgY: `calc(0px - ${PIP_TOP} - ${COVER_OFFSET_Y})`
+              box: { right: 0, width: d.inset, top: d.top, height: d.pipH },
+              bgX: `calc(0px - ${d.vw} + ${d.inset} - ${d.offX})`,
+              bgY: `calc(0px - ${d.top} - ${d.offY})`
             }
           ].map((panel, panelIndex) => /* @__PURE__ */ jsxs("div", { className: "pointer-events-none absolute overflow-hidden", style: panel.box, children: [
             backdrop && /* @__PURE__ */ jsx(
@@ -19969,7 +22178,7 @@
                    * samma duk, fyra fönster mot den, överallt.
                    */
                   inset: 0,
-                  backgroundSize: `${COVER_W} ${COVER_H}`,
+                  backgroundSize: `${d.coverW} ${d.coverH}`,
                   backgroundPosition: `${panel.bgX} ${panel.bgY}`,
                   backgroundRepeat: "no-repeat"
                 }
@@ -19978,77 +22187,92 @@
             /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[rgb(var(--base-950)/0.3)]" })
           ] }, panelIndex)),
           /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
-          /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
-            current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
-              "img",
-              {
-                src: current2.logoUrl,
-                alt: current2.heading,
-                className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
-                onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
-              }
-            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current2.heading }),
-            (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
-              metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
-                partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
-                /* @__PURE__ */ jsx("span", { children: part })
-              ] }, part)),
-              current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
-                /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
-                /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
-                  /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
-                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
-                ] })
-              ] })
-            ] }),
-            current2.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current2.item.overview }),
-            /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
-              /* @__PURE__ */ jsxs(
-                "button",
-                {
-                  type: "button",
-                  "data-f": isTv ? "1" : void 0,
-                  "data-init": "",
-                  onClick: () => {
-                    markInteracted();
-                    current2.onPrimary();
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: `absolute inset-0 flex flex-col justify-center ${isTv ? "" : "max-w-[58%] gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]"}`,
+              style: isTv ? { gap: "calc(16 * var(--tv-u))", paddingInline: "calc(100 * var(--tv-u))" } : void 0,
+              children: [
+                current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
+                  "img",
+                  {
+                    src: current2.logoUrl,
+                    alt: current2.heading,
+                    className: `w-auto self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)] ${isTv ? "" : "max-h-[clamp(2.25rem,10vh,6rem)] max-w-[min(100%,26rem)]"}`,
+                    style: isTv ? { maxHeight: "calc(70 * var(--tv-u))", maxWidth: "calc(380 * var(--tv-u))" } : void 0,
+                    onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
+                  }
+                ) : /* @__PURE__ */ jsx("h2", { className: `font-display leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)] ${isTv ? "" : "text-[clamp(1.35rem,5.2vh,3rem)]"}`, style: isTv ? { fontSize: "calc(36 * var(--tv-u))" } : void 0, children: current2.heading }),
+                (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: `flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-200/80 ${isTv ? "" : "text-[clamp(0.75rem,1.8vh,1rem)]"}`, style: isTv ? { fontSize: "calc(16 * var(--tv-u))" } : void 0, children: [
+                  metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+                    partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
+                    /* @__PURE__ */ jsx("span", { children: part })
+                  ] }, part)),
+                  current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
+                    /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
+                      /* @__PURE__ */ jsx("span", { className: `rounded bg-[#f5c518] px-1.5 py-0.5 font-bold tracking-wide text-black ${isTv ? "" : "text-[10px]"}`, style: isTv ? { fontSize: "calc(10 * var(--tv-u))" } : void 0, children: "IMDb" }),
+                      /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
+                    ] })
+                  ] })
+                ] }),
+                current2.item.overview && /* @__PURE__ */ jsx("p", { className: `leading-relaxed text-slate-300/85 line-clamp-3 ${isTv ? "" : "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] [@media(max-height:420px)]:line-clamp-2"}`, style: isTv ? { fontSize: "calc(14.7 * var(--tv-u))", maxWidth: "calc(840 * var(--tv-u))" } : void 0, children: current2.item.overview }),
+                /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
+                  /* @__PURE__ */ jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      "data-f": isTv ? "1" : void 0,
+                      "data-init": "",
+                      onClick: () => {
+                        markInteracted();
+                        current2.onPrimary();
+                      },
+                      className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
+                      children: [
+                        /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
+                        current2.primaryLabel
+                      ]
+                    }
+                  ),
+                  count > 1 && /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        "aria-label": t("previous"),
+                        disabled: index === 0,
+                        onClick: () => step(-1),
+                        className: "grid h-9 w-9 place-items-center rounded-full border border-white/18 bg-white/5 text-slate-200 disabled:opacity-40",
+                        children: "\u2039"
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        type: "button",
+                        "data-f": isTv ? "1" : void 0,
+                        "aria-label": t("next"),
+                        disabled: index >= count - 1,
+                        onClick: () => step(1),
+                        className: "grid h-9 w-9 place-items-center rounded-full border border-accent-500/70 bg-accent-500/15 text-white disabled:opacity-40",
+                        children: "\u203A"
+                      }
+                    )
+                  ] })
+                ] }),
+                isTv && count > 1 && /* @__PURE__ */ jsx("div", { className: "mt-2 flex items-center gap-2", children: recommendations.map((entry, dotIndex) => /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    className: dotIndex === index ? "h-1.5 w-6 rounded-full bg-accent-500" : "h-1.5 w-1.5 rounded-full bg-white/30"
                   },
-                  className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
-                  children: [
-                    /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                    current2.primaryLabel
-                  ]
-                }
-              ),
-              count > 1 && /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    "data-f": isTv ? "1" : void 0,
-                    "aria-label": t("previous"),
-                    disabled: index === 0,
-                    onClick: () => step(-1),
-                    className: "grid h-9 w-9 place-items-center rounded-full border border-white/18 bg-white/5 text-slate-200 disabled:opacity-40",
-                    children: "\u2039"
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  "button",
-                  {
-                    type: "button",
-                    "data-f": isTv ? "1" : void 0,
-                    "aria-label": t("next"),
-                    disabled: index >= count - 1,
-                    onClick: () => step(1),
-                    className: "grid h-9 w-9 place-items-center rounded-full border border-accent-500/70 bg-accent-500/15 text-white disabled:opacity-40",
-                    children: "\u203A"
-                  }
-                )
-              ] })
-            ] })
-          ] }),
-          count > 1 && /* @__PURE__ */ jsx("div", { className: "absolute bottom-[clamp(0.5rem,2.5vh,1.75rem)] left-[clamp(1rem,4vw,3.5rem)] flex items-center gap-2", children: recommendations.map((entry, dotIndex) => /* @__PURE__ */ jsx(
+                  `${entry.item.source ?? "tmdb"}::${entry.item.id}`
+                )) })
+              ]
+            }
+          ),
+          !isTv && count > 1 && /* @__PURE__ */ jsx("div", { className: `absolute flex items-center gap-2 ${isTv ? "" : "bottom-[clamp(0.5rem,2.5vh,1.75rem)] left-[clamp(1rem,4vw,3.5rem)]"}`, style: isTv ? { bottom: "calc(40 * var(--tv-u))", left: "calc(100 * var(--tv-u))" } : void 0, children: recommendations.map((entry, dotIndex) => /* @__PURE__ */ jsx(
             "span",
             {
               className: dotIndex === index ? "h-1.5 w-6 rounded-full bg-accent-500" : "h-1.5 w-1.5 rounded-full bg-white/30"
@@ -20060,7 +22284,7 @@
             {
               ref: pipRef,
               className: "absolute overflow-hidden rounded-lg border border-white/20 shadow-[0_14px_40px_rgba(0,0,0,0.6)]",
-              style: { right: PIP_INSET, top: PIP_TOP, width: PIP_W, height: PIP_H },
+              style: { right: d.inset, top: d.top, width: d.pipW, height: d.pipH },
               children: [
                 /* @__PURE__ */ jsx(
                   "button",
@@ -20078,8 +22302,8 @@
                 ),
                 /* @__PURE__ */ jsxs("div", { className: "absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1.5 bg-[linear-gradient(to_top,rgba(2,4,10,0.96)_40%,rgba(2,4,10,0))] px-3 pb-2 pt-4", children: [
                   /* @__PURE__ */ jsxs("div", { className: "flex items-baseline justify-between gap-2", children: [
-                    /* @__PURE__ */ jsx("span", { className: "text-[10px] uppercase tracking-[0.13em] text-slate-300/75", children: t("creditsRemaining") }),
-                    /* @__PURE__ */ jsx("span", { className: "text-[11px] font-semibold tabular-nums text-white", children: formatRemaining(remainingSeconds) })
+                    /* @__PURE__ */ jsx("span", { className: `uppercase tracking-[0.13em] text-slate-300/75 ${isTv ? "" : "text-[10px]"}`, style: isTv ? { fontSize: "calc(11 * var(--tv-u))" } : void 0, children: t("creditsRemaining") }),
+                    /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums text-white ${isTv ? "" : "text-[11px]"}`, style: isTv ? { fontSize: "calc(14 * var(--tv-u))" } : void 0, children: formatRemaining(remainingSeconds) })
                   ] }),
                   /* @__PURE__ */ jsx("div", { className: "h-1 overflow-hidden rounded-full bg-white/15", children: /* @__PURE__ */ jsx(
                     "div",
@@ -20096,7 +22320,7 @@
       }
     );
   }
-  var PIP_W, PIP_H, COVER_W, COVER_H, COVER_OFFSET_X, COVER_OFFSET_Y, PIP_INSET, PIP_TOP;
+  var PIP_W, PIP_H, COVER_W, COVER_H, COVER_OFFSET_X, COVER_OFFSET_Y, PIP_INSET, PIP_TOP, TV_SW, TV_SH;
   var init_credits_recommendations = __esm({
     "components/player/credits-recommendations.tsx"() {
       init_react_shim();
@@ -20110,6 +22334,8 @@
       COVER_OFFSET_Y = `calc((${COVER_H} - 100vh) / 2)`;
       PIP_INSET = "clamp(0.75rem, 2vw, 2rem)";
       PIP_TOP = `max(${PIP_INSET}, calc(env(safe-area-inset-top) + 0.5rem), calc(var(--android-inset-top, 0px) + 0.5rem))`;
+      TV_SW = "var(--tv-scene-w, 1920px)";
+      TV_SH = "var(--tv-scene-h, 1080px)";
     }
   });
 
@@ -20205,33 +22431,33 @@
   });
 
   // lib/gesture-settings.ts
-  function read5(key) {
+  function read7(key) {
     if (typeof window === "undefined") return null;
     const stored = getScopedStorageItem(key);
     return stored == null || stored === "" ? null : stored;
   }
   function getVerticalGestureLeft() {
-    const stored = read5(KEY_LEFT);
+    const stored = read7(KEY_LEFT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "brightness";
   }
   function getVerticalGestureRight() {
-    const stored = read5(KEY_RIGHT);
+    const stored = read7(KEY_RIGHT);
     return VERTICAL_GESTURE_ACTIONS.includes(stored) ? stored : "volume";
   }
   function getHorizontalGesture() {
-    const stored = read5(KEY_HORIZONTAL);
+    const stored = read7(KEY_HORIZONTAL);
     return HORIZONTAL_GESTURE_ACTIONS.includes(stored) ? stored : "seek";
   }
   function getBrightnessTarget() {
-    const stored = read5(KEY_BRIGHTNESS_TARGET);
+    const stored = read7(KEY_BRIGHTNESS_TARGET);
     return BRIGHTNESS_TARGETS.includes(stored) ? stored : "screen";
   }
   function getDoubleTapSeconds() {
-    const raw = Number.parseInt(read5(KEY_DOUBLE_TAP) ?? "", 10);
+    const raw = Number.parseInt(read7(KEY_DOUBLE_TAP) ?? "", 10);
     return DOUBLE_TAP_SECONDS.includes(raw) ? raw : 10;
   }
   function getHoldToSpeed() {
-    return read5(KEY_HOLD_SPEED) === "1";
+    return read7(KEY_HOLD_SPEED) === "1";
   }
   var VERTICAL_GESTURE_ACTIONS, HORIZONTAL_GESTURE_ACTIONS, BRIGHTNESS_TARGETS, DOUBLE_TAP_SECONDS, KEY_LEFT, KEY_RIGHT, KEY_HORIZONTAL, KEY_BRIGHTNESS_TARGET, KEY_DOUBLE_TAP, KEY_HOLD_SPEED;
   var init_gesture_settings = __esm({
@@ -20271,10 +22497,10 @@
   });
 
   // lib/subtitle-delay-store.ts
-  function readStore() {
+  function readStore2() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(STORAGE_KEY3);
+      const raw = getScopedStorageItem(STORAGE_KEY5);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -20282,16 +22508,16 @@
       return {};
     }
   }
-  function writeStore(store2) {
+  function writeStore2(store2) {
     if (typeof window === "undefined") return;
     try {
       const keys2 = Object.keys(store2);
-      if (keys2.length > MAX_ENTRIES3) {
-        keys2.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES3).forEach((key) => {
+      if (keys2.length > MAX_ENTRIES4) {
+        keys2.sort((a, b) => (store2[a]?.t ?? 0) - (store2[b]?.t ?? 0)).slice(0, keys2.length - MAX_ENTRIES4).forEach((key) => {
           delete store2[key];
         });
       }
-      setScopedStorageItem(STORAGE_KEY3, JSON.stringify(store2));
+      setScopedStorageItem(STORAGE_KEY5, JSON.stringify(store2));
     } catch {
     }
   }
@@ -20301,7 +22527,7 @@
     return `${mediaType ?? "media"}:${id}`;
   }
   function getSavedSubtitleDelay(mediaKey, season, episode) {
-    const store2 = readStore();
+    const store2 = readStore2();
     if (season != null && episode != null) {
       const exact = store2[`${mediaKey}:s${season}e${episode}`];
       if (exact && Number.isFinite(exact.d)) return exact.d;
@@ -20310,7 +22536,7 @@
     return series && Number.isFinite(series.d) ? series.d : null;
   }
   function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
-    const store2 = readStore();
+    const store2 = readStore2();
     const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
     if (season != null && episode != null) {
       const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
@@ -20319,7 +22545,7 @@
     return pick2(store2[mediaKey]);
   }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
-    const store2 = readStore();
+    const store2 = readStore2();
     const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
     if (delay === 0) {
       if (exactKey) delete store2[exactKey];
@@ -20329,14 +22555,14 @@
       if (exactKey) store2[exactKey] = entry;
       store2[mediaKey] = entry;
     }
-    writeStore(store2);
+    writeStore2(store2);
   }
-  var STORAGE_KEY3, MAX_ENTRIES3;
+  var STORAGE_KEY5, MAX_ENTRIES4;
   var init_subtitle_delay_store = __esm({
     "lib/subtitle-delay-store.ts"() {
       init_profile_storage_shim();
-      STORAGE_KEY3 = "lumio_subtitle_delays_v1";
-      MAX_ENTRIES3 = 400;
+      STORAGE_KEY5 = "lumio_subtitle_delays_v1";
+      MAX_ENTRIES4 = 400;
     }
   });
 
@@ -20479,8 +22705,8 @@
     if (r.status === "synced") return r.vttUrl !== void 0 && appliedVtt === r.vttUrl ? [selectedId] : [];
     return [selectedId];
   }
-  function withdrawsProvisional(r, applied) {
-    return applied && r.status === "no_fit" && WITHDRAW_REASONS.has(r.reason ?? "");
+  function withdrawsProvisional(r, applied2) {
+    return applied2 && r.status === "no_fit" && WITHDRAW_REASONS.has(r.reason ?? "");
   }
   function pathLabel(path) {
     if (path === "text") return "text";
@@ -20679,33 +22905,33 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/subtitle-sync/opt-out.ts
-  function read6() {
+  function read8() {
     try {
-      const parsed = JSON.parse(getScopedStorageItem(STORAGE_KEY4) ?? "{}");
+      const parsed = JSON.parse(getScopedStorageItem(STORAGE_KEY6) ?? "{}");
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
       return {};
     }
   }
   function isAutoSyncOptedOut(mediaKey, subtitleId) {
-    return `${mediaKey}|${subtitleId}` in read6();
+    return `${mediaKey}|${subtitleId}` in read8();
   }
   function setAutoSyncOptOut(mediaKey, subtitleId) {
-    const store2 = read6();
+    const store2 = read8();
     const key = `${mediaKey}|${subtitleId}`;
     delete store2[key];
     const next = Math.max(0, ...Object.values(store2)) + 1;
     store2[key] = next;
     const keys2 = Object.keys(store2).sort((a, b) => store2[a] - store2[b]);
-    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES4))) delete store2[k];
-    setScopedStorageItem(STORAGE_KEY4, JSON.stringify(store2));
+    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES5))) delete store2[k];
+    setScopedStorageItem(STORAGE_KEY6, JSON.stringify(store2));
   }
-  var STORAGE_KEY4, MAX_ENTRIES4;
+  var STORAGE_KEY6, MAX_ENTRIES5;
   var init_opt_out = __esm({
     "lib/subtitle-sync/opt-out.ts"() {
       init_profile_storage_shim();
-      STORAGE_KEY4 = "lumio_subtitle_autosync_optout_v1";
-      MAX_ENTRIES4 = 200;
+      STORAGE_KEY6 = "lumio_subtitle_autosync_optout_v1";
+      MAX_ENTRIES5 = 200;
     }
   });
 
@@ -20942,11 +23168,11 @@ ${effectiveName(url, id)}`;
           live2().setStatus({ type: "idle" });
         }
       };
-      let applied = cont?.vtt ?? null;
+      let applied2 = cont?.vtt ?? null;
       let restored = false;
       let switched = null;
       const markFinal = (r) => {
-        for (const id of ledgerMarks(r, sel.id, applied, switched)) ledgerRef.current.mark(a.mediaUrl, id);
+        for (const id of ledgerMarks(r, sel.id, applied2, switched)) ledgerRef.current.mark(a.mediaUrl, id);
       };
       const waitReady = async () => await waitForPlayerReady(() => live2().isPlayerReady?.() ?? true, controller.signal) && valid();
       const undoAction = (other) => () => {
@@ -20975,7 +23201,7 @@ ${effectiveName(url, id)}`;
           drop();
           return true;
         }
-        applied = r.vttUrl;
+        applied2 = r.vttUrl;
         const path = pathLabel(r.path);
         const late = playedSoFar > 0 ? ` efter ${Math.round(playedSoFar)}s spelat` : "";
         logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad ${describeApplied(r)} undertext=${subLabel(sel.id)}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""}${path ? ` v\xE4g=${path}` : ""}${late} fil=${file}`);
@@ -21019,10 +23245,10 @@ ${effectiveName(url, id)}`;
             drop();
             return true;
           }
-          applied = vttUrl;
+          applied2 = vttUrl;
           markFinal(r);
         } else {
-          applied = null;
+          applied2 = null;
           markFinal(r);
           await live2().restoreOriginal(other);
         }
@@ -21095,19 +23321,19 @@ ${effectiveName(url, id)}`;
           logSubsyncClient(`${CLIENT_PREFIX} ger upp efter ${Math.round(playedSoFar)}s spelat (${r.reason ?? "pending"}) undertext=${subLabel(sel.id)} fil=${file}`);
         }
         if (r.status === "reference_pending") {
-          if (applied === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
+          if (applied2 === null && valid()) live2().setStatus({ type: "analyzing", message: live2().t(PENDING_MESSAGE_KEY) });
           return;
         }
-        if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
-          await applyResult(r, applied !== null);
+        if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied2) {
+          await applyResult(r, applied2 !== null);
           return;
         }
-        if (withdrawsProvisional(r, applied !== null)) {
+        if (withdrawsProvisional(r, applied2 !== null)) {
           if (!valid()) {
             drop();
             return;
           }
-          applied = null;
+          applied2 = null;
           restored = true;
           inFlightRef.current = false;
           logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file}`);
@@ -21116,12 +23342,12 @@ ${effectiveName(url, id)}`;
           finish(r);
           return;
         }
-        if (r.status === "already_synced" && applied !== null) {
+        if (r.status === "already_synced" && applied2 !== null) {
           if (!valid()) {
             drop();
             return;
           }
-          applied = null;
+          applied2 = null;
           restored = true;
           inFlightRef.current = false;
           logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file}`);
@@ -21182,7 +23408,7 @@ ${effectiveName(url, id)}`;
             finish(v);
             return;
           }
-          if (applied === null && !restored && switched === null) finish(last2);
+          if (applied2 === null && !restored && switched === null) finish(last2);
         } catch (err) {
           if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel.id)}`);
           drop();
@@ -21317,13 +23543,13 @@ ${effectiveName(url, id)}`;
       return null;
     }
   }
-  async function removeOwned(deps, state2, keep) {
+  async function removeOwned(deps, state3, keep) {
     const tracks = await readTracks(deps);
     if (!tracks) return;
     const listed = /* @__PURE__ */ new Set();
     for (const t of tracks) {
       const p = t.external ? t.externalFilename : null;
-      if (!p || !state2.owned.has(p)) continue;
+      if (!p || !state3.owned.has(p)) continue;
       listed.add(p);
       if (p === keep) continue;
       try {
@@ -21332,34 +23558,34 @@ ${effectiveName(url, id)}`;
       } catch {
       }
     }
-    state2.owned = new Set([...state2.owned].filter((p) => listed.has(p) || p === keep));
+    state3.owned = new Set([...state3.owned].filter((p) => listed.has(p) || p === keep));
   }
-  async function swapSyncedTrack(deps, state2, mediaUrl, path) {
-    if (state2.mediaUrl !== mediaUrl) {
-      state2.mediaUrl = mediaUrl;
-      state2.current = null;
-      state2.owned = /* @__PURE__ */ new Set();
+  async function swapSyncedTrack(deps, state3, mediaUrl, path) {
+    if (state3.mediaUrl !== mediaUrl) {
+      state3.mediaUrl = mediaUrl;
+      state3.current = null;
+      state3.owned = /* @__PURE__ */ new Set();
     }
     const sidRaw = await Promise.resolve(deps.command(["get_property", "sid"])).catch(() => null);
     const sid = sidRaw === null || sidRaw === void 0 ? null : String(sidRaw);
     const off = sid === "no" || sid === "false";
     let select;
-    if (state2.current === null) {
+    if (state3.current === null) {
       select = !off;
     } else {
       const tracks = await readTracks(deps) ?? [];
-      const ours = tracks.find((t) => t.external && t.externalFilename === state2.current);
+      const ours = tracks.find((t) => t.external && t.externalFilename === state3.current);
       select = !off && ours !== void 0 && sid === String(ours.sid);
     }
     await deps.command(["sub-add", path, select ? "select" : "auto"]);
-    state2.owned.add(path);
-    state2.current = path;
-    await removeOwned(deps, state2, path);
+    state3.owned.add(path);
+    state3.current = path;
+    await removeOwned(deps, state3, path);
     return select;
   }
-  async function forgetSyncedTracks(deps, state2) {
-    await removeOwned(deps, state2, null);
-    state2.current = null;
+  async function forgetSyncedTracks(deps, state3) {
+    await removeOwned(deps, state3, null);
+    state3.current = null;
   }
   var init_mpv_swap = __esm({
     "lib/subtitle-sync/mpv-swap.ts"() {
@@ -21608,6 +23834,16 @@ ${effectiveName(url, id)}`;
     }
   });
 
+  // lib/season-lengths.ts
+  var SEASON_CACHE_TTL_MS;
+  var init_season_lengths = __esm({
+    "lib/season-lengths.ts"() {
+      "use client";
+      init_app_storage();
+      SEASON_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1e3;
+    }
+  });
+
   // lib/series-lock-gate.ts
   function epCode(ep) {
     return `S${ep.season}E${ep.episode}`;
@@ -21702,6 +23938,7 @@ ${effectiveName(url, id)}`;
       init_profile_storage_shim();
       init_watched_episodes();
       init_series_locks();
+      init_season_lengths();
       init_series_lock_gate();
       WATCHED_KEY = "watched_episodes";
       OPEN2 = { kind: "open" };
@@ -21773,15 +24010,15 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-share-button.tsx
-  function ClipShareButton({ state: state2, onClick, t, variant }) {
+  function ClipShareButton({ state: state3, onClick, t, variant }) {
     const ref = useRef(null);
-    const label = state2.kind === "ready" ? t("clipShareNow") : state2.kind === "rendering" ? state2.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state2.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
+    const label = state3.kind === "ready" ? t("clipShareNow") : state3.kind === "rendering" ? state3.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state3.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
     return /* @__PURE__ */ jsxs(
       "button",
       {
         ref,
         type: "button",
-        disabled: state2.kind === "rendering",
+        disabled: state3.kind === "rendering",
         onClick: () => {
           if (ref.current) onClick(ref.current.getBoundingClientRect());
         },
@@ -21819,11 +24056,11 @@ ${effectiveName(url, id)}`;
     if (duration <= CLIP_WINDOW_SEC) return 0;
     return ms(clamp(anchorSec - CLIP_WINDOW_SEC / 2, 0, duration - CLIP_WINDOW_SEC));
   }
-  function clipWindowEnd(state2) {
-    return Math.min(state2.duration, state2.windowStart + CLIP_WINDOW_SEC);
+  function clipWindowEnd(state3) {
+    return Math.min(state3.duration, state3.windowStart + CLIP_WINDOW_SEC);
   }
-  function clipLength(state2) {
-    return ms(state2.outSec - state2.inSec);
+  function clipLength(state3) {
+    return ms(state3.outSec - state3.inSec);
   }
   function formatClipTime(sec) {
     const total = Math.max(0, Math.floor(sec));
@@ -21832,12 +24069,12 @@ ${effectiveName(url, id)}`;
     const ss = String(total % 60).padStart(2, "0");
     return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   }
-  function normalize(s, fixed) {
+  function normalize2(s, fixed2) {
     const lo = s.windowStart;
     const hi = clipWindowEnd(s);
     const max = maxLengthFor(s.format);
     let { inSec, outSec } = s;
-    if (fixed === "out") {
+    if (fixed2 === "out") {
       outSec = clamp(outSec, Math.min(hi, lo + CLIP_MIN_SEC), hi);
       inSec = clamp(inSec, Math.max(lo, outSec - max), Math.max(lo, outSec - CLIP_MIN_SEC));
     } else {
@@ -21865,29 +24102,29 @@ ${effectiveName(url, id)}`;
       activeHandle: null,
       scrubbing: false
     };
-    return normalize(base, base.inSec <= base.windowStart ? "in" : "out");
+    return normalize2(base, base.inSec <= base.windowStart ? "in" : "out");
   }
-  function clipReducer(state2, action) {
+  function clipReducer(state3, action) {
     switch (action.type) {
       case "setHandle": {
         const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
         const other = action.handle === "in" ? "out" : "in";
-        return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+        return normalize2({ ...state3, ...moved, activeHandle: action.handle, scrubbing: true }, other);
       }
       case "nudge": {
-        const current2 = action.handle === "in" ? state2.inSec : state2.outSec;
-        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current2 + action.delta });
+        const current2 = action.handle === "in" ? state3.inSec : state3.outSec;
+        return clipReducer(state3, { type: "setHandle", handle: action.handle, sec: current2 + action.delta });
       }
       case "setLength": {
-        const len = Math.min(action.sec, maxLengthFor(state2.format));
-        return normalize({ ...state2, inSec: state2.outSec - len }, "out");
+        const len = Math.min(action.sec, maxLengthFor(state3.format));
+        return normalize2({ ...state3, inSec: state3.outSec - len }, "out");
       }
       case "setFormat":
-        return normalize({ ...state2, format: action.format }, "out");
+        return normalize2({ ...state3, format: action.format }, "out");
       case "setTitle":
-        return { ...state2, title: action.title, titleEdited: true };
+        return { ...state3, title: action.title, titleEdited: true };
       case "scrubEnd":
-        return { ...state2, scrubbing: false };
+        return { ...state3, scrubbing: false };
     }
   }
   var CLIP_WINDOW_SEC, CLIP_MIN_SEC, CLIP_MAX_SEC, GIF_MAX_SEC, CLIP_DEFAULT_SEC, clamp, ms;
@@ -21904,10 +24141,10 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-panel.tsx
-  function ClipLengthButtons({ state: state2, dispatch, heightClass, roundedClass, tv = false }) {
-    if (state2.format === "still") return null;
-    const len = Math.round(clipLength(state2));
-    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state2.format).map((sec) => {
+  function ClipLengthButtons({ state: state3, dispatch, heightClass, roundedClass, tv = false }) {
+    if (state3.format === "still") return null;
+    const len = Math.round(clipLength(state3));
+    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state3.format).map((sec) => {
       const on = len === sec;
       return /* @__PURE__ */ jsxs(
         "button",
@@ -21926,7 +24163,7 @@ ${effectiveName(url, id)}`;
       );
     }) });
   }
-  function ClipFormatSegment({ state: state2, dispatch, formats, heightClass, t }) {
+  function ClipFormatSegment({ state: state3, dispatch, formats, heightClass, t }) {
     if (formats.length <= 1) return null;
     const formatLabel = { mp4: "MP4", gif: "GIF", still: t("clipFormatStill") };
     return /* @__PURE__ */ jsx("div", { className: "flex self-start rounded-[10px] bg-white/[0.04] p-[3px]", children: formats.map((format) => /* @__PURE__ */ jsx(
@@ -21934,17 +24171,17 @@ ${effectiveName(url, id)}`;
       {
         type: "button",
         onClick: () => dispatch({ type: "setFormat", format }),
-        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state2.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
+        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state3.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
         children: formatLabel[format]
       },
       format
     )) });
   }
-  function ClipTitleField({ state: state2, dispatch }) {
+  function ClipTitleField({ state: state3, dispatch }) {
     return /* @__PURE__ */ jsx(
       "input",
       {
-        value: state2.title,
+        value: state3.title,
         onChange: (event) => dispatch({ type: "setTitle", title: event.target.value }),
         onKeyDown: (event) => {
           if (event.key !== "Escape") event.stopPropagation();
@@ -21969,8 +24206,8 @@ ${effectiveName(url, id)}`;
     ] });
   }
   function ClipPanel(p) {
-    const { state: state2, dispatch, t } = p;
-    const len = Math.round(clipLength(state2));
+    const { state: state3, dispatch, t } = p;
+    const len = Math.round(clipLength(state3));
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs("button", { type: "button", onClick, disabled, className: `${p.rowClass} disabled:opacity-50`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${p.rowTextClass}`, children: label })
@@ -21987,15 +24224,15 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
             /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-lg bg-black/60", children: [
               p.previewClip?.kind === "mp4" ? /* @__PURE__ */ jsx("video", { src: p.previewClip.src, autoPlay: true, loop: true, muted: true, playsInline: true, className: "h-full w-full object-cover" }) : p.previewClip?.kind === "gif" ? /* @__PURE__ */ jsx("img", { src: p.previewClip.src, alt: "", className: "h-full w-full object-cover" }) : p.previewSrc ? /* @__PURE__ */ jsx("img", { src: p.previewSrc, alt: "", className: "h-full w-full object-cover" }) : null,
-              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state2.inSec)) }),
+              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state3.inSec)) }),
               /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: formatClipTime(len) })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
             /* @__PURE__ */ jsx("div", { className: "px-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("clipShareSection") }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
-              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state2.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
+              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state3.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
               row("save", downloadIcon(p.iconClass), t("clipSaveFile"), p.onSaveFile, p.busy !== null),
               row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
             ] }),
@@ -22027,13 +24264,13 @@ ${effectiveName(url, id)}`;
   });
 
   // components/player/clip/clip-trimmer.tsx
-  function ClipTrimmer({ state: state2, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
+  function ClipTrimmer({ state: state3, dispatch, position, heightClass, size = "desktop", t, focused = null, onHandleKeyDown }) {
     const touch = size === "touch";
     const tv = size === "tv";
     const trackRef = useRef(null);
     const lastHandle = useRef("out");
-    const start2 = state2.windowStart;
-    const end = clipWindowEnd(state2);
+    const start2 = state3.windowStart;
+    const end = clipWindowEnd(state3);
     const span = Math.max(1, end - start2);
     const percent = (sec) => Math.min(100, Math.max(0, (sec - start2) / span * 100));
     const secAt = (clientX) => {
@@ -22101,12 +24338,12 @@ ${effectiveName(url, id)}`;
             "div",
             {
               className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
-              style: { left: `${percent(state2.inSec)}%`, width: `${percent(state2.outSec) - percent(state2.inSec)}%` }
+              style: { left: `${percent(state3.inSec)}%`, width: `${percent(state3.outSec) - percent(state3.inSec)}%` }
             }
           ),
           tv ? /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute -bottom-1 -top-1 w-[2px] -translate-x-1/2 bg-white", style: { left: `${percent(position)}%` } }) : null,
-          renderHandle("in", state2.inSec),
-          renderHandle("out", state2.outSec)
+          renderHandle("in", state3.inSec),
+          renderHandle("out", state3.outSec)
         ]
       }
     );
@@ -22210,9 +24447,9 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-phone-panels.tsx
   function ClipLandscapePanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
-    const len = Math.round(clipLength(state2));
+    const len = Math.round(clipLength(state3));
     const tile = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -22238,14 +24475,14 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx(
             ClipPanelHeader,
             {
-              label: t("clipNewWithLength").replace("{len}", state2.format === "still" ? t("clipFormatStill") : `${len} s`),
+              label: t("clipNewWithLength").replace("{len}", state3.format === "still" ? t("clipFormatStill") : `${len} s`),
               onClose: p.onClose,
               t
             }
           ),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-8", t }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-8", t }),
             /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1.5", children: [
               tile("link", gearRowIcon("link", "h-[18px] w-[18px]"), t("clipTileLink"), p.onCopyLink),
               tile("save", clipDownloadIcon("h-[18px] w-[18px]"), t("clipTileSave"), p.onSave, busy),
@@ -22258,7 +24495,7 @@ ${effectiveName(url, id)}`;
     );
   }
   function ClipPortraitSheet(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const busy = p.share.kind === "rendering";
     const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
       "button",
@@ -22285,9 +24522,9 @@ ${effectiveName(url, id)}`;
           /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
           /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3", children: [
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
-            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
-            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state3, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state3, dispatch }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               row("link", gearRowIcon("link", "h-5 w-5 flex-none text-slate-300"), t("clipCopyLink"), p.onCopyLink),
               row("save", clipDownloadIcon("h-5 w-5 flex-none text-slate-300"), t("clipSavePhotos"), p.onSave, busy),
@@ -22312,7 +24549,7 @@ ${effectiveName(url, id)}`;
 
   // components/player/clip/clip-tv-panel.tsx
   function ClipTvPanel(p) {
-    const { state: state2, dispatch, t } = p;
+    const { state: state3, dispatch, t } = p;
     const row = (key, icon, label, onClick, extra) => /* @__PURE__ */ jsxs("button", { type: "button", "data-f": "1", "data-clip-station": "row", "data-clip-row": key, onClick, className: `${p.rowClass} py-3`, children: [
       icon,
       /* @__PURE__ */ jsx("span", { className: `flex-1 text-left text-[length:var(--st-body)] ${p.rowTextClass}`, children: label }),
@@ -22333,14 +24570,14 @@ ${effectiveName(url, id)}`;
               /* @__PURE__ */ jsx("div", { className: "h-[63px] w-[112px] flex-none overflow-hidden rounded-md bg-black/60", children: p.stillSrc ? /* @__PURE__ */ jsx("img", { src: p.stillSrc, alt: "", className: "h-full w-full object-cover" }) : null }),
               /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
                 /* @__PURE__ */ jsxs("div", { className: "text-[length:var(--st-body)] font-semibold tabular-nums text-white", children: [
-                  formatClipTime(state2.inSec),
+                  formatClipTime(state3.inSec),
                   " \u2013 ",
-                  formatClipTime(state2.outSec)
+                  formatClipTime(state3.outSec)
                 ] }),
                 /* @__PURE__ */ jsx("div", { className: "text-[length:var(--st-small)] text-slate-400", children: t("clipTvStill") })
               ] })
             ] }),
-            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state3, dispatch, heightClass: "h-[38px]", roundedClass: "rounded-lg", tv: true }),
             /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
               p.phones.map((phone) => row(`send-${phone.id}`, phoneIcon(p.iconClass), t("clipSendTo").replace("{phone}", phone.name), () => p.onSend(phone.id))),
               p.canShowQr === false ? null : row("qr", qrIcon(p.iconClass), t("clipShowQr"), p.onShowQr),
@@ -22482,7 +24719,7 @@ ${effectiveName(url, id)}`;
       if (color) return color;
       if (tail != null && i >= tail) return TAIL2;
       if (unseen === "dim") return DIM2;
-      if (unseen === "empty") return EMPTY3;
+      if (unseen === "empty") return EMPTY4;
       return "hatch";
     });
   }
@@ -22508,7 +24745,7 @@ ${effectiveName(url, id)}`;
   function drawBarcode(ctx, fills, r, vertical, hatchScale) {
     const n = fills.length;
     if (n === 0) {
-      ctx.fillStyle = EMPTY3;
+      ctx.fillStyle = EMPTY4;
       ctx.fillRect(r.x, r.y, r.w, r.h);
       return;
     }
@@ -22529,8 +24766,8 @@ ${effectiveName(url, id)}`;
       i = j;
     }
   }
-  function drawSpaced(ctx, text, x, y, spacing, align) {
-    const chars = [...text];
+  function drawSpaced(ctx, text2, x, y, spacing, align) {
+    const chars = [...text2];
     const widths = chars.map((c) => ctx.measureText(c).width);
     const total = widths.reduce((s, w) => s + w, 0) + spacing * Math.max(0, chars.length - 1);
     let cx = align === "left" ? x : align === "right" ? x - total : x - total / 2;
@@ -22540,9 +24777,9 @@ ${effectiveName(url, id)}`;
       cx += widths[k] + spacing;
     });
   }
-  function fitText(ctx, text, maxWidth) {
-    if (ctx.measureText(text).width <= maxWidth) return text;
-    let t = text;
+  function fitText(ctx, text2, maxWidth) {
+    if (ctx.measureText(text2).width <= maxWidth) return text2;
+    let t = text2;
     while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > maxWidth) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
@@ -22617,7 +24854,7 @@ ${effectiveName(url, id)}`;
     const suffix = kind === "image" ? "" : kind === "story" ? " story" : kind === "wallDesktop" ? " tapet" : " tapet mobil";
     return `${safe}${b.year ? ` (${b.year})` : ""} \u2013 barcode${suffix}.png`;
   }
-  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY3, TAIL2, FONT;
+  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY4, TAIL2, FONT;
   var init_barcode_share_render = __esm({
     "lib/barcode/barcode-share-render.ts"() {
       "use strict";
@@ -22638,7 +24875,7 @@ ${effectiveName(url, id)}`;
       HATCH_BASE = "#111216";
       HATCH_LINE = "#1c1d23";
       DIM2 = "#1a1b22";
-      EMPTY3 = "#141519";
+      EMPTY4 = "#141519";
       TAIL2 = "#0b0b0d";
       FONT = '"Avenir Next", "Segoe UI Variable", "Segoe UI", "Trebuchet MS", system-ui, sans-serif';
     }
@@ -22667,22 +24904,22 @@ ${effectiveName(url, id)}`;
   function setFont(ctx, weight, size) {
     ctx.font = `${weight} ${size}px ${FONT2}`;
   }
-  function spacedWidth(ctx, text, spacing) {
-    const chars = [...text];
+  function spacedWidth(ctx, text2, spacing) {
+    const chars = [...text2];
     return chars.reduce((sum, c) => sum + ctx.measureText(c).width, 0) + spacing * Math.max(0, chars.length - 1);
   }
   function baseline(top2, lineH, size) {
     return top2 + lineH / 2 + size * 0.34;
   }
-  function clip(ctx, text, maxW, spacing = 0) {
-    if (spacedWidth(ctx, text, spacing) <= maxW) return text;
-    let t = text;
+  function clip(ctx, text2, maxW, spacing = 0) {
+    if (spacedWidth(ctx, text2, spacing) <= maxW) return text2;
+    let t = text2;
     while (t.length > 1 && spacedWidth(ctx, `${t}\u2026`, spacing) > maxW) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
-  function wrapLines(ctx, text, maxW, maxLines) {
+  function wrapLines(ctx, text2, maxW, maxLines) {
     const lines2 = [];
-    for (const word of text.split(/\s+/).filter(Boolean)) {
+    for (const word of text2.split(/\s+/).filter(Boolean)) {
       const last2 = lines2[lines2.length - 1];
       if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines2[lines2.length - 1] = `${last2} ${word}`;
       else lines2.push(word);
@@ -22780,22 +25017,23 @@ ${effectiveName(url, id)}`;
     const gap = 18 * s;
     let y = padY;
     if (opts.includeTitle) {
-      let size = 28;
+      const fixed2 = opts.fixedLayout === true;
+      let size = fixed2 ? 22 : 28;
       setFont(ctx, 700, size * s);
       const yearW = year ? ctx.measureText(year).width : 0;
       const titleMax = contentW - yearW - (year ? 24 * s : 0);
       const title = b.title.toUpperCase();
-      while (size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+      while (!fixed2 && size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
         size -= 1;
         setFont(ctx, 700, size * s);
       }
-      const rowH = 28 * 1.2 * s;
+      const rowH = (fixed2 ? size : 28) * 1.2 * s;
       ctx.fillStyle = paper.ink;
-      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, 28 * s), 0.02 * size * s, "left");
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, (fixed2 ? size : 28) * s), 0.02 * size * s, "left");
       if (year) {
-        setFont(ctx, 700, 28 * s);
+        setFont(ctx, 700, (fixed2 ? size : 28) * s);
         ctx.textAlign = "right";
-        ctx.fillText(year, padX + contentW, baseline(y, rowH, 28 * s));
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, (fixed2 ? size : 28) * s));
       }
       y += rowH + gap;
       const m = opts.meta;
@@ -22811,17 +25049,23 @@ ${effectiveName(url, id)}`;
         const size7 = 7.5 * s;
         const lineH = 7.5 * 1.5 * s;
         const spacing = 0.04 * size7;
-        const rows = Math.max(...columns.map((c) => c.names.length));
         columns.forEach((c, k) => {
           const x = padX + k * (colW + colGap);
           setFont(ctx, 700, size7);
           drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
           setFont(ctx, 400, size7);
-          c.names.forEach((name, row) => {
+          const names = fixed2 ? c.names.slice(0, CREDIT_ROWS) : c.names;
+          names.forEach((name, row) => {
             const top2 = y + lineH + 3 * s + row * lineH;
             drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top2, lineH, size7), spacing, "left");
           });
         });
+      }
+      if (fixed2) {
+        y += 7.5 * 1.5 * s * (1 + CREDIT_ROWS) + 3 * s + gap;
+      } else if (columns.length > 0) {
+        const lineH = 7.5 * 1.5 * s;
+        const rows = Math.max(...columns.map((c) => c.names.length));
         y += lineH + 3 * s + rows * lineH + gap;
       }
     }
@@ -22966,20 +25210,20 @@ ${effectiveName(url, id)}`;
       const parts = [];
       if (m?.directors.length) {
         const h = 9.5 * 1.2 * s;
-        const text = opts.labels.line(opts.labels.directedBy, m.directors);
+        const text2 = opts.labels.line(opts.labels.directedBy, m.directors);
         parts.push({ h, draw: (y) => {
           setFont(ctx, 600, 9.5 * s);
           ctx.fillStyle = paper.ink;
-          ctx.fillText(clip(ctx, text, bw), bx, baseline(y, h, 9.5 * s));
+          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y, h, 9.5 * s));
         } });
       }
       if (m?.writers.length) {
         const h = 8 * 1.2 * s;
-        const text = opts.labels.line(opts.labels.writtenBy, m.writers);
+        const text2 = opts.labels.line(opts.labels.writtenBy, m.writers);
         parts.push({ h: h + 2 * s, draw: (y) => {
           setFont(ctx, 400, 8 * s);
           ctx.fillStyle = paper.dim;
-          ctx.fillText(clip(ctx, text, bw), bx, baseline(y + 2 * s, h, 8 * s));
+          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y + 2 * s, h, 8 * s));
         } });
       }
       if (m?.synopsis) {
@@ -23038,7 +25282,7 @@ ${effectiveName(url, id)}`;
     else if (style === "portrait") drawPortrait(c);
     else drawRingPoster(c);
   }
-  var POSTER_DESIGN, POSTER_EXPORT, POSTER_FONT_FAMILY, FONT2, LATIN, LATIN_EXT, fontLoad, HATCH_MEAN;
+  var POSTER_DESIGN, POSTER_EXPORT, POSTER_FONT_FAMILY, FONT2, LATIN, LATIN_EXT, fontLoad, HATCH_MEAN, CREDIT_ROWS;
   var init_barcode_poster_render = __esm({
     "lib/barcode/barcode-poster-render.ts"() {
       "use strict";
@@ -23066,6 +25310,7 @@ ${effectiveName(url, id)}`;
         const b = parseColor(HATCH_LINE);
         return [0, 1, 2].map((k) => a[k] * (4 / 7) + b[k] * (3 / 7));
       })();
+      CREDIT_ROWS = 3;
     }
   });
 
@@ -23499,69 +25744,69 @@ ${effectiveName(url, id)}`;
     }
     return `movie:${id}`;
   }
-  function read7() {
+  function read9() {
     try {
-      const raw = getScopedStorageItem(KEY14);
+      const raw = getScopedStorageItem(KEY16);
       const parsed = raw ? JSON.parse(raw) : null;
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
       return {};
     }
   }
-  function write2(store2) {
+  function write4(store2) {
     const nycklar = Object.keys(store2);
     if (nycklar.length > MAX_TITLES) {
       nycklar.sort((a, b) => store2[a].at - store2[b].at);
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
     }
     try {
-      setScopedStorageItem(KEY14, JSON.stringify(store2));
+      setScopedStorageItem(KEY16, JSON.stringify(store2));
     } catch {
     }
-    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT10));
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT11));
   }
   function getMoments(titleKey) {
     if (!titleKey) return [];
-    return [...read7()[titleKey]?.t ?? []];
+    return [...read9()[titleKey]?.t ?? []];
   }
   function addMoment(titleKey, seconds2, nowMs = Date.now()) {
     const sekund = Math.max(0, Math.floor(seconds2));
-    const store2 = read7();
+    const store2 = read9();
     const lista = store2[titleKey]?.t ?? [];
     const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
     if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
     const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
     store2[titleKey] = { at: nowMs, t: n\u00E4sta };
-    write2(store2);
+    write4(store2);
     return { kind: "added", seconds: sekund };
   }
   function removeMoment(titleKey, seconds2) {
-    const store2 = read7();
+    const store2 = read9();
     const lista = store2[titleKey]?.t;
     if (!lista) return;
     const kvar = lista.filter((t) => t !== seconds2);
     if (kvar.length === 0) delete store2[titleKey];
     else store2[titleKey] = { at: Date.now(), t: kvar };
-    write2(store2);
+    write4(store2);
   }
   function clearMoments(titleKey) {
-    const store2 = read7();
+    const store2 = read9();
     if (!store2[titleKey]) return;
     delete store2[titleKey];
-    write2(store2);
+    write4(store2);
   }
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT10, listener);
-    return () => window.removeEventListener(EVENT10, listener);
+    window.addEventListener(EVENT11, listener);
+    return () => window.removeEventListener(EVENT11, listener);
   }
-  var KEY14, EVENT10, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY16, EVENT11, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY14 = "player_moments_v1";
-      EVENT10 = "lumio-player-moments-changed";
+      KEY16 = "player_moments_v1";
+      EVENT11 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
       MAX_TITLES = 200;
@@ -23648,8 +25893,8 @@ ${cue.text}`).join("\n\n")}
     if (parts.length === 3) return +parts[0] * 3600 + +parts[1] * 60 + parseFloat(parts[2]);
     return +parts[0] * 60 + parseFloat(parts[1]);
   }
-  function stripSdhText(text) {
-    const lines2 = text.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+  function stripSdhText(text2) {
+    const lines2 = text2.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
     return lines2.filter((line) => line.length > 0 && line !== "-").join("\n");
   }
   function parseVtt(vtt) {
@@ -23661,8 +25906,8 @@ ${cue.text}`).join("\n\n")}
       const [s, e] = timeLine.split("-->");
       const start2 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
-      const text = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
-      if (text) cues.push({ start: start2, end, text });
+      const text2 = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
+      if (text2) cues.push({ start: start2, end, text: text2 });
     }
     return cues;
   }
@@ -23783,8 +26028,8 @@ ${cue.text}`).join("\n\n")}
     }
     const step = Math.min(5, Math.max(2, Math.ceil(durationSec / 1e3)));
     return {
-      // `id`: filmen oberoende av länken (torrenthash + filnamn), så bilderna
-      // överlever att debridlänken byts och sparas till nästa gång.
+      // `id`: filmen oberoende av länken (källhash + filnamn), så bilderna
+      // överlever att källänken byts och sparas till nästa gång.
       // `d`: längden, så hjälparens glesa rutnät spänner över hela filmen.
       urlTemplate: `/api/trickplay/grab?src=${encodeURIComponent(direct)}&s=${step}&d=${Math.floor(durationSec)}${identity ? `&id=${encodeURIComponent(identity)}` : ""}${identity && title ? `&title=${encodeURIComponent(title)}` : ""}&i={index}`,
       width: 320,
@@ -23806,24 +26051,24 @@ ${cue.text}`).join("\n\n")}
     }
     return null;
   }
-  async function writeTextToClipboard(text) {
+  async function writeTextToClipboard(text2) {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(text2);
         return true;
       }
     } catch {
     }
     try {
       const ta = document.createElement("textarea");
-      ta.value = text;
+      ta.value = text2;
       ta.setAttribute("readonly", "");
       ta.style.position = "fixed";
       ta.style.top = "0";
       ta.style.left = "-9999px";
       document.body.appendChild(ta);
       ta.select();
-      ta.setSelectionRange(0, text.length);
+      ta.setSelectionRange(0, text2.length);
       const ok = document.execCommand("copy");
       ta.remove();
       return ok;
@@ -24001,7 +26246,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, expectedBitrateBps, onFirstPlay, onStartProgress, onDurationKnown, fastStart, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview: scrubPreviewProp, librarySubtitles }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     useEffect(() => {
       if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
@@ -24119,8 +26364,9 @@ ${cue.text}`).join("\n\n")}
     const introDbCacheRef = useRef(INTRODB_CACHE);
     const containerRef = useRef(null);
     const controlsRef = useRef(null);
-    const titleBlockRef = useRef(null);
+    const [titleBlockEl, setTitleBlockEl] = useState(null);
     const [titleClearance, setTitleClearance] = useState(0);
+    const showKeySeekHudRef = useRef(null);
     const boundsSyncFrameRef = useRef(null);
     const boundsResyncTimersRef = useRef([]);
     const didSeekRef = useRef(false);
@@ -24131,6 +26377,8 @@ ${cue.text}`).join("\n\n")}
       return /^\d+$/.test(bare) ? bare : null;
     })();
     const wikiTmdbId = tmdbId ?? derivedTmdbId;
+    const seriesTrackTmdbRef = useRef(null);
+    seriesTrackTmdbRef.current = mediaType === "tv" ? wikiTmdbId ?? null : null;
     const inferredMediaType = mediaType ?? (season != null || episode != null ? "tv" : "movie");
     const endHlsSessionOnServer = useCallback((sessionId) => {
       if (!sessionId) return;
@@ -24223,18 +26471,22 @@ ${cue.text}`).join("\n\n")}
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
     const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
     const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const incognito = useIncognito();
     const sleepFiredAtRef = useRef(0);
+    const sleepFadeCancelRef = useRef(() => {
+    });
     const [companionIds, setCompanionIds] = useState([]);
     const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
-    const lastPlaybackInteractionRef = useRef(initialTime ?? 0);
+    const idlePlaybackSecondsRef = useRef(0);
+    const idleTickTimeRef = useRef(null);
     const stillWatchingSeriesKeyRef = useRef(null);
     const stillWatchingEpisodeKeyRef = useRef(null);
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
-      lastPlaybackInteractionRef.current = realTime;
+      idlePlaybackSecondsRef.current = 0;
       if (showStillWatchingPrompt) {
         setShowStillWatchingPrompt(false);
         if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
@@ -24469,9 +26721,9 @@ ${cue.text}`).join("\n\n")}
       if (!hasStarted || isDroidEngine) return void 0;
       if (isMpvEngine) {
         let cancelled = false;
-        const read8 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
+        const read10 = (prop) => mpvCommand2(["get_property", prop]).catch(() => null);
         const timer4 = window.setTimeout(() => {
-          void Promise.all([read8("video-params/w"), read8("video-params/h"), read8("video-params/gamma"), read8("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
+          void Promise.all([read10("video-params/w"), read10("video-params/h"), read10("video-params/gamma"), read10("video-params/colormatrix")]).then(([w, h, gamma, colormatrix]) => {
             if (cancelled) return;
             const width = Number(w);
             const height = Number(h);
@@ -24498,6 +26750,11 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       void mpvCommand2(["set_property", "audio-channels", audioTuning.downmixStereo ? "stereo" : "auto-safe"]);
     }, [useMpv, audioTuning.downmixStereo, hasStarted]);
+    const [customShadersKey, setCustomShadersKey] = useState(() => getCustomShaders().join("\n"));
+    useEffect(() => onPlaybackSettingsChanged(() => setCustomShadersKey(getCustomShaders().join("\n"))), []);
+    const [shaderStatus, setShaderStatus] = useState(null);
+    const lastShaderRequestRef = useRef(null);
+    const shaderApplySeqRef = useRef(0);
     useEffect(() => {
       if (!useMpv) return;
       const renderTuning = getRenderTuning();
@@ -24505,15 +26762,30 @@ ${cue.text}`).join("\n\n")}
         void mpvCommand2(["set_property", prop, value]);
       }
       if (isMpvEngine) {
-        if (renderTuning.anime4k) {
-          void fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => {
-            const separator = isWindowsDesktop() ? ";" : ":";
-            if (paths && paths.length > 0) void mpvCommand2(["set_property", "glsl-shaders", paths.join(separator)]);
-          }).catch(() => {
-          });
-        } else {
-          void mpvCommand2(["set_property", "glsl-shaders", ""]);
-        }
+        const customSelected = getCustomShaders();
+        const request = `${renderTuning.anime4k ? 1 : 0}|${customSelected.join("\n")}`;
+        const changed = lastShaderRequestRef.current !== null && lastShaderRequestRef.current !== request;
+        lastShaderRequestRef.current = request;
+        const seq = ++shaderApplySeqRef.current;
+        void Promise.all([
+          renderTuning.anime4k ? fetch("/api/anime4k-shaders").then((r) => r.json()).then(({ paths }) => paths ?? []).catch(() => []) : Promise.resolve([]),
+          customSelected.length > 0 ? fetch("/api/custom-shaders").then((r) => r.json()).then(({ files }) => resolveCustomShaderPaths(customSelected, files ?? [])).catch(() => []) : Promise.resolve([])
+        ]).then(async ([anime4k, custom]) => {
+          if (seq !== shaderApplySeqRef.current) return;
+          const report = (status) => {
+            setShaderStatus(status);
+            if (changed) showMomentNotice(formatShaderStatus(status, t));
+          };
+          if (parseRawMpvConf(getRawMpvConf()).some(([prop]) => prop === "glsl-shaders")) {
+            report({ anime4k: false, custom: 0, mpvConf: true });
+            return;
+          }
+          const separator = isWindowsDesktop() ? ";" : ":";
+          await mpvCommand2(["set_property", "glsl-shaders", [...anime4k, ...custom].join(separator)]).catch(() => null);
+          const readback = await mpvCommand2(["get_property", "glsl-shaders"]).catch(() => null);
+          if (seq !== shaderApplySeqRef.current) return;
+          report({ ...readActiveShaders(readback, anime4k, custom), mpvConf: false });
+        });
       }
       for (const [prop, value] of parseRawMpvConf(getRawMpvConf())) {
         void mpvCommand2(["set_property", prop, value]);
@@ -24527,7 +26799,7 @@ ${cue.text}`).join("\n\n")}
       void mpvCommand2(["set_property", "saturation", effectiveVideoTuning.saturation]);
       void mpvCommand2(["set_property", "gamma", effectiveVideoTuning.gamma]);
       void mpvCommand2(["set_property", "sharpen", effectiveVideoTuning.sharpen]);
-    }, [useMpv, effectiveVideoTuning, hasStarted, isDirectLocalFileSource]);
+    }, [useMpv, effectiveVideoTuning, hasStarted, isDirectLocalFileSource, customShadersKey]);
     const [requiresUserStart, setRequiresUserStart] = useState(false);
     const [hasEnded, setHasEnded] = useState(false);
     const [mpvStartupHoldReady, setMpvStartupHoldReady] = useState(false);
@@ -24705,6 +26977,7 @@ ${cue.text}`).join("\n\n")}
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [externalSubtitles, setExternalSubtitles] = useState([]);
     const externalVttRef = useRef(/* @__PURE__ */ new Map());
+    const nativeAssSubIdRef = useRef(null);
     const externalFileInputRef = useRef(null);
     const [subVerticalPos, setSubVerticalPos] = useState(() => getDefaultSubtitleVerticalPosition());
     const [subOpacity, setSubOpacity] = useState(() => getDefaultSubtitleOpacity());
@@ -24804,7 +27077,7 @@ ${cue.text}`).join("\n\n")}
       const id = window.setTimeout(() => setMomentNotice(null), 2600);
       return () => window.clearTimeout(id);
     }, [momentNotice]);
-    const showMomentNotice = (text) => setMomentNotice({ text, id: Date.now() });
+    const showMomentNotice = (text2) => setMomentNotice({ text: text2, id: Date.now() });
     useEffect(() => {
       if (!showMoreMenu || !isTv) return;
       moreMenuRef.current?.querySelector("[data-f]")?.focus();
@@ -24979,6 +27252,11 @@ ${cue.text}`).join("\n\n")}
         cinemaMute.held = true;
         droid.setMuted(true);
       }
+      if (!await confirmPlaybackNetwork((timeoutMs) => np({ cmd: "networkType" }, timeoutMs))) {
+        if (!args.shouldAbort?.()) onClose();
+        return;
+      }
+      if (args.shouldAbort?.()) return;
       const heavy = (expectedBitrateRef.current ?? 0) >= 3e7 || /(?:^|[.\s_\-\[(])(2160p|4k|uhd|remux)(?:$|[.\s_\-\])])/i.test(filename ?? "");
       await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang, requestHeaders: args.requestHeaders, kind: "vod", bitrateBps: expectedBitrateRef.current, heavy });
     } : openMpvPlayer;
@@ -25284,6 +27562,24 @@ ${cue.text}`).join("\n\n")}
       console.warn("[player] mpv load failed, closing modal", { error: mpv.loadFailedError, url });
       onClose();
     }, [mpv.loadFailed, mpv.loadFailedToken, mpv.loadFailedError, mpv.firstFrameRendered, hasStarted, useMpv, url, onClose]);
+    const midPlayFailHandledRef = useRef(0);
+    useEffect(() => {
+      if (!useMpv || !isAndroidTauriEnv) return;
+      if (!mpv.loadFailed || !(hasStarted || mpv.firstFrameRendered)) return;
+      if (midPlayFailHandledRef.current === mpv.loadFailedToken) return;
+      midPlayFailHandledRef.current = mpv.loadFailedToken;
+      void reopenNativeDirectAfterCacheFailure(mpv.timePos);
+    }, [mpv.loadFailed, mpv.loadFailedToken, mpv.firstFrameRendered, mpv.timePos, hasStarted, useMpv]);
+    const mpvTimeRef = useRef(0);
+    mpvTimeRef.current = mpv.timePos;
+    const midPlayStall = useMpv && isAndroidTauriEnv && (hasStarted || mpv.firstFrameRendered) && mpv.pausedForCache;
+    useEffect(() => {
+      if (!midPlayStall) return;
+      const timer4 = window.setTimeout(() => {
+        void reopenNativeDirectAfterCacheFailure(mpvTimeRef.current);
+      }, 45e3);
+      return () => window.clearTimeout(timer4);
+    }, [midPlayStall]);
     useEffect(() => {
       if (hasEverStarted) return;
       if (hideStartSplash && !clientOwnsSplash) {
@@ -25348,12 +27644,12 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv || !streams) return;
       const id = window.setInterval(() => {
         const now2 = Date.now();
-        const state2 = starveStateRef.current;
+        const state3 = starveStateRef.current;
         const pos = realTimeRef.current;
-        if (state2.at > 0 && Math.abs(pos - state2.pos) > (now2 - state2.at) / 1e3 + 3) starvationRef.current.seeked(now2);
-        state2.pos = pos;
-        state2.at = now2;
-        if (!starvationRef.current.update(state2.buffering, now2)) return;
+        if (state3.at > 0 && Math.abs(pos - state3.pos) > (now2 - state3.at) / 1e3 + 3) starvationRef.current.seeked(now2);
+        state3.pos = pos;
+        state3.at = now2;
+        if (!starvationRef.current.update(state3.buffering, now2)) return;
         if (starvedOfferedRef.current === url) return;
         starvedOfferedRef.current = url;
         const lighter = pickLighterStream(streams.items, streams.currentUrl);
@@ -25381,7 +27677,23 @@ ${cue.text}`).join("\n\n")}
       if (prematureEndHandledRef.current) return;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const nearRealEnd = totalDuration > 0 && realTime / totalDuration >= 0.9;
-      if (nearRealEnd || watchedThisSession >= 60) return;
+      if (nearRealEnd) return;
+      if (watchedThisSession >= 60 && totalDuration > 0) {
+        prematureEndHandledRef.current = true;
+        if (!streams) return;
+        const seconds2 = Math.max(0, Math.floor(realTime));
+        const h = Math.floor(seconds2 / 3600);
+        const m = Math.floor(seconds2 % 3600 / 60);
+        const sec = String(seconds2 % 60).padStart(2, "0");
+        const time = h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+        if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+        setSyncNotice({
+          message: t("playerStreamLost").replace("{time}", time),
+          actionLabel: t("startPickSource"),
+          onAction: () => setShowStreams(true)
+        });
+        return;
+      }
       prematureEndHandledRef.current = true;
       if (onLoadFailedRef.current?.()) {
         console.warn("[player] stream ended prematurely, parent retrying", { realTime, totalDuration, url });
@@ -25572,8 +27884,14 @@ ${cue.text}`).join("\n\n")}
       if (!on) void mpvCommand2(["set_property", "secondary-sid", "no"]);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubDelay]);
     useEffect(() => {
+      if (!isDroidEngine) return;
+      void nativeSetNightMode(nightMode).catch(() => {
+      });
+    }, [isDroidEngine, nightMode]);
+    useEffect(() => {
       if (!useMpv || !mpv.fileLoaded) return;
-      const filter = nightMode === "off" ? null : nightMode === "mild" ? "lavfi=[acompressor=threshold=0.25:ratio=2.5:attack=20:release=250,alimiter=limit=0.63:level=0]" : "lavfi=[acompressor=threshold=0.125:ratio=4:attack=10:release=300,alimiter=limit=0.4:level=0]";
+      const nightChain = nightModeFfmpegFilter(nightMode);
+      const filter = nightChain ? `lavfi=[${nightChain}]` : null;
       void (async () => {
         await mpvCommand2(["af", "clr", ""]);
         if (hapticFilterWanted) {
@@ -25838,6 +28156,7 @@ ${cue.text}`).join("\n\n")}
     }
     const togglePlay = useCallback(() => {
       const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (sleepPromptUp) return;
       if (useMpv) {
@@ -25894,6 +28213,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, [useMpv, videoSrc]);
     const seek = useCallback((delta) => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       castSeekRef.current?.(realTimeRef.current + delta);
       if (useMpv) {
@@ -25934,6 +28254,7 @@ ${cue.text}`).join("\n\n")}
       }, 220);
     }, [useMpv, videoSrc, url, videoCodec, audioTracks, effectiveProxyAudioMode, nightMode, realTime, showStillWatchingPrompt, activeAudioTrack, shouldForceProxyTranscode, applyStreamSrc]);
     const toggleMute = useCallback(() => {
+      sleepFadeCancelRef.current();
       registerPlaybackInteraction();
       if (useMpv) {
         const next = !muted;
@@ -26728,6 +29049,7 @@ ${cue.text}`).join("\n\n")}
       }
       if (isTv && e.key.startsWith("Arrow")) return;
       if (isTextEntryTarget(keyTarget)) return;
+      if (e.key.startsWith("Arrow") && keyTarget instanceof HTMLInputElement && keyTarget.type === "range" && !keyTarget.hasAttribute("data-player-volume")) return;
       if (matchesShortcut("playPause", e.key) || e.key === "k") {
         e.preventDefault();
         togglePlay();
@@ -26735,10 +29057,12 @@ ${cue.text}`).join("\n\n")}
       }
       if (matchesShortcut("seekForward", e.key)) {
         seek(10);
+        showKeySeekHudRef.current?.(10);
         return;
       }
       if (matchesShortcut("seekBack", e.key)) {
         seek(-10);
+        showKeySeekHudRef.current?.(-10);
         return;
       }
       if (matchesShortcut("mute", e.key)) {
@@ -26885,6 +29209,24 @@ ${cue.text}`).join("\n\n")}
       setSubtitleDebugInfo(null);
       setSubtitleClientDebugInfo(null);
       subtitlePreferenceRef.current = nextSubtitlePreference(subtitlePreferenceRef.current, sub, Boolean(options?.manual));
+      if (options?.manual) saveSeriesSubtitlePreference(seriesTrackTmdbRef.current, subtitlePreferenceRef.current);
+      if (isDroidEngine && nativeAssSubIdRef.current && nativeAssSubIdRef.current !== sub?.id) {
+        nativeAssSubIdRef.current = null;
+        await setNativeExternalAss(null);
+      }
+      const tryNativeAss = async (target2, content2) => {
+        if (!isDroidEngine || !getStyledAssSubtitles() || !looksLikeAssSubtitle(target2.url, content2)) return false;
+        if (!(await getDeviceCapabilities())?.styledAss) return false;
+        const raw = `${window.location.origin}/api/subtitles/raw?${new URLSearchParams({ url: target2.url }).toString()}`;
+        if (!await setNativeExternalAss(raw)) return false;
+        nativeAssSubIdRef.current = target2.id;
+        if (subtitleDownloadRequestIdRef.current === requestId) {
+          setCues([]);
+          setSubtitleLoadError(null);
+          setLoadingSub(false);
+        }
+        return true;
+      };
       if (!sub) {
         setActiveSubId(null);
         setCues([]);
@@ -26909,6 +29251,7 @@ ${cue.text}`).join("\n\n")}
       if (sub.source === "external") {
         setActiveSubId(sub.id);
         setSubtitleLoadError(null);
+        if (await tryNativeAss(sub)) return;
         if (useMpv) {
           try {
             await mpvCommand2(["sub-add", sub.url, "select"]);
@@ -26928,6 +29271,10 @@ ${cue.text}`).join("\n\n")}
           setSubtitleLoadError(t("subtitleFileUnsupported"));
         }
         setLoadingSub(false);
+        return;
+      }
+      if (await tryNativeAss(sub)) {
+        setActiveSubId(sub.id);
         return;
       }
       setLoadingSub(true);
@@ -27035,6 +29382,7 @@ ${cue.text}`).join("\n\n")}
           );
         }
         if (subtitleDownloadRequestIdRef.current !== requestId) return;
+        if (await tryNativeAss(sub, subtitleVtt)) return;
         setCues(parseVtt(subtitleVtt));
         setSubtitleLoadError(null);
       } catch (error) {
@@ -27047,7 +29395,7 @@ ${cue.text}`).join("\n\n")}
         clearTimeout(loadingGuard);
         if (subtitleDownloadRequestIdRef.current === requestId) setLoadingSub(false);
       }
-    }, [refreshMpvSubtitleTracks, useMpv]);
+    }, [refreshMpvSubtitleTracks, useMpv, isDroidEngine]);
     const selectSecondarySubtitle = useCallback(async (sub, options) => {
       const requestId = ++secondaryRequestIdRef.current;
       const stale = () => secondaryRequestIdRef.current !== requestId;
@@ -27160,9 +29508,11 @@ ${cue.text}`).join("\n\n")}
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
       if (!mediaId || !url) return;
+      let lastSavedPosition = null;
       function save(final = false) {
         const snapshot = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot.totalDuration <= 0) return;
+        if (!final && lastSavedPosition != null && Math.abs(snapshot.realTime - lastSavedPosition) < 0.5) return;
         if (watchedMarkedRef.current) return;
         if (!durationConfirmedRef.current) return;
         if (!hasStartedForUrlRef.current) return;
@@ -27196,6 +29546,7 @@ ${cue.text}`).join("\n\n")}
           position: snapshot.realTime,
           duration: snapshot.totalDuration
         }, final);
+        lastSavedPosition = snapshot.realTime;
       }
       const interval = setInterval(() => save(), 5e3);
       return () => {
@@ -27282,6 +29633,10 @@ ${cue.text}`).join("\n\n")}
       const imdbCacheKey = wikiTmdbId ? `${inferredMediaType}:${wikiTmdbId}` : null;
       const cachedResolvedImdbId = imdbCacheKey ? resolvedImdbByTmdbRef.current.get(imdbCacheKey) ?? null : null;
       setResolvedImdbId(imdbId ?? cachedResolvedImdbId ?? null);
+      if (subtitlePreferenceRef.current.mode === "default" && mediaType === "tv") {
+        const saved = getSeriesSubtitlePreference(wikiTmdbId);
+        if (saved) subtitlePreferenceRef.current = saved;
+      }
       setSelectedLang(
         subtitlePreferenceRef.current.mode === "language" ? subtitlePreferenceRef.current.language : subtitlePreferenceRef.current.mode === "off" ? null : defaultSubtitleLang || null
       );
@@ -27293,7 +29648,7 @@ ${cue.text}`).join("\n\n")}
       setMpvSubtitleTracks([]);
       setActiveAudioTrack(null);
       setShowAudioMenu(false);
-      preferredAudioLangRef.current = getDefaultAudioLanguage() || null;
+      preferredAudioLangRef.current = (mediaType === "tv" ? getSeriesAudioLanguage(wikiTmdbId) : null) ?? (getDefaultAudioLanguage() || null);
       didApplyPreferredAudioRef.current = false;
       loggedAudioTrackCountRef.current = -1;
       setHasEnded(false);
@@ -27336,12 +29691,12 @@ ${cue.text}`).join("\n\n")}
         stillWatchingSeriesKeyRef.current = null;
         stillWatchingEpisodeKeyRef.current = null;
         stillWatchingEpisodeCountRef.current = 0;
-        lastPlaybackInteractionRef.current = initialTime ?? 0;
+        idlePlaybackSecondsRef.current = 0;
       } else if (stillWatchingSeriesKeyRef.current !== seriesSessionKey) {
         stillWatchingSeriesKeyRef.current = seriesSessionKey;
         stillWatchingEpisodeKeyRef.current = episodeSessionKey;
         stillWatchingEpisodeCountRef.current = 1;
-        lastPlaybackInteractionRef.current = initialTime ?? 0;
+        idlePlaybackSecondsRef.current = 0;
       } else if (stillWatchingEpisodeKeyRef.current !== episodeSessionKey) {
         stillWatchingEpisodeKeyRef.current = episodeSessionKey;
         stillWatchingEpisodeCountRef.current += 1;
@@ -27432,30 +29787,37 @@ ${cue.text}`).join("\n\n")}
       if (totalDuration <= 0) return;
       if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
-      const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const watchedEnoughThisSession = watchedThisSession >= Math.min(180, Math.max(45, totalDuration * 0.05));
-      const shouldMarkWatched = hasEndedPlayback || watchedEnoughThisSession && (completionRatio >= 0.97 || secondsRemaining <= 30);
+      const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("movie", realTime, totalDuration);
       if (!shouldMarkWatched) return;
       if (!wikiTmdbId && !resolvedImdbId && !imdbId) return;
-      setMovieWatched({
+      if (!markPlaybackMovieWatched({
         tmdbId: wikiTmdbId ?? null,
         imdbId: resolvedImdbId ?? imdbId ?? null,
         title,
         year: year ?? null,
         posterUrl: posterUrl ?? null
-      }, true);
+      })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, hasEndedPlayback, hasStarted, imdbId, mediaType, posterUrl, realTime, resolvedImdbId, title, totalDuration, wikiTmdbId]);
     useEffect(() => {
       if (!stillWatchingEnabledRef.current) return;
       if (mediaType !== "tv") return;
-      if (!hasStarted || hasEndedPlayback || showStillWatchingPrompt) return;
-      if (!isPlaying) return;
+      if (!hasStarted || hasEndedPlayback || showStillWatchingPrompt || !isPlaying) {
+        idleTickTimeRef.current = null;
+        return;
+      }
+      const previousTick = idleTickTimeRef.current;
+      idleTickTimeRef.current = realTime;
+      if (previousTick != null) {
+        const step = realTime - previousTick;
+        if (step > 0 && step < 5) idlePlaybackSecondsRef.current += step;
+      }
       if (stillWatchingEpisodeCountRef.current < 3) return;
       const maxSeconds = stillWatchingMaxMinutesRef.current * 60;
       if (maxSeconds <= 0) return;
-      if (realTime - lastPlaybackInteractionRef.current < maxSeconds) return;
+      if (idlePlaybackSecondsRef.current < maxSeconds) return;
       if (useMpv) {
         void setMpvPause2(true);
       } else {
@@ -27469,11 +29831,96 @@ ${cue.text}`).join("\n\n")}
       if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
       setSleepTimer(DISARMED);
       sleepFiredAtRef.current = Date.now();
-      if (useMpv) void setMpvPause2(true);
-      else videoRef.current?.pause();
+      sleepFadeEndingRef.current = sleepFadeRef.current < 1;
+      const paused = useMpv ? Promise.resolve(setMpvPause2(true)).catch(() => {
+      }) : Promise.resolve(videoRef.current?.pause());
+      void paused.finally(() => {
+        if (!sleepFadeEndingRef.current) return;
+        sleepFadeEndingRef.current = false;
+        sleepFadeApplyRef.current(1);
+      });
       setStillWatchingReason("sleep");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    const [sleepFadeOn, setSleepFadeOn] = useState(() => getSleepFade());
+    const [sleepFade, setSleepFadeState] = useState(1);
+    const sleepFadeRef = useRef(1);
+    const sleepFadeCancelledForRef = useRef(null);
+    const sleepFadeEndingRef = useRef(false);
+    const sleepTimerRef = useRef(sleepTimer);
+    sleepTimerRef.current = sleepTimer;
+    const sleepUserVolumeRef = useRef(volume);
+    sleepUserVolumeRef.current = volume;
+    const sleepFadeApplyRef = useRef(() => {
+    });
+    sleepFadeApplyRef.current = (level) => {
+      const next = Math.max(0, Math.min(1, level));
+      const prev = sleepFadeRef.current;
+      if (next >= 1 && prev >= 1) return;
+      if (next < 1 && next > 0 && Math.abs(next - prev) < 0.01) return;
+      if (next === prev) return;
+      sleepFadeRef.current = next;
+      setSleepFadeState(next);
+      const user = sleepUserVolumeRef.current;
+      const val = (next >= 1 ? user : sleepFadedVolume(user, next)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    const spokenDuckRef = useRef(1);
+    const writeSpokenDuckRef = useRef(() => {
+    });
+    writeSpokenDuckRef.current = () => {
+      const user = sleepUserVolumeRef.current;
+      const fade = sleepFadeRef.current;
+      const val = (fade >= 1 ? user : sleepFadedVolume(user, fade)) * spokenDuckRef.current;
+      if (useMpv) {
+        if (val > 1) void Promise.resolve(mpvCommand2(["set_property", "volume-max", 200])).catch(() => {
+        });
+        void Promise.resolve(mpvCommand2(["set_property", "volume", Math.round(val * 100)])).catch(() => {
+        });
+        return;
+      }
+      const v = videoRef.current;
+      if (v) v.volume = Math.min(1, val);
+    };
+    sleepFadeCancelRef.current = () => {
+      if (sleepFadeRef.current >= 1 || sleepFadeEndingRef.current) return;
+      sleepFadeCancelledForRef.current = sleepTimerRef.current.armedAtMs;
+      sleepFadeApplyRef.current(1);
+    };
+    useEffect(() => {
+      if (sleepFadeEndingRef.current) return;
+      const armed = sleepTimer.mode !== "off" && sleepTimer.armedAtMs != null;
+      const cancelled = armed && sleepFadeCancelledForRef.current === sleepTimer.armedAtMs;
+      const level = !sleepFadeOn || !armed || cancelled || showStillWatchingPrompt || !hasStarted ? 1 : sleepFadeLevel(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback });
+      sleepFadeApplyRef.current(level);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepFadeOn, sleepTimer, totalDuration]);
+    useEffect(() => {
+      if (sleepFade >= 1) return;
+      const cancel = () => sleepFadeCancelRef.current();
+      const onPointerMove = (e) => {
+        if (e.movementX !== 0 || e.movementY !== 0) cancel();
+      };
+      const opts = { capture: true, passive: true };
+      const events = ["pointerdown", "keydown", "wheel", "touchstart"];
+      for (const ev of events) window.addEventListener(ev, cancel, opts);
+      window.addEventListener("pointermove", onPointerMove, opts);
+      return () => {
+        for (const ev of events) window.removeEventListener(ev, cancel, opts);
+        window.removeEventListener("pointermove", onPointerMove, opts);
+      };
+    }, [sleepFade]);
+    useEffect(() => () => {
+      sleepFadeEndingRef.current = false;
+      sleepFadeApplyRef.current(1);
+    }, []);
     useEffect(() => {
       if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
     }, [isTv, showStillWatchingPrompt, tvFocus]);
@@ -27495,13 +29942,11 @@ ${cue.text}`).join("\n\n")}
       if (totalDuration <= 0) return;
       if (!durationConfirmed) return;
       const completionRatio = realTime / totalDuration;
-      const secondsRemaining = totalDuration - realTime;
       const watchedThisSession = Math.max(0, realTime - playbackStartedAtRef.current);
       const watchedEnoughThisSession = watchedThisSession >= Math.min(120, Math.max(30, totalDuration * 0.03));
-      const shouldMarkWatched = hasEndedPlayback || watchedEnoughThisSession && (completionRatio >= 0.92 || secondsRemaining <= 90);
+      const shouldMarkWatched = hasEndedPlayback && completionRatio >= 0.9 || watchedEnoughThisSession && isWatchedPosition("episode", realTime, totalDuration);
       if (!shouldMarkWatched) return;
-      setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-      removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
+      if (!markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) return;
       watchedMarkedRef.current = true;
     }, [durationConfirmed, episode, hasEndedPlayback, hasStarted, mediaType, realTime, season, totalDuration, wikiTmdbId]);
     useEffect(() => {
@@ -27693,6 +30138,46 @@ ${cue.text}`).join("\n\n")}
         });
       }
     }, [mpvChapters, introDataReady, introSegment, url]);
+    const learnedSeriesId = mediaType === "tv" && wikiTmdbId ? `tmdb:${wikiTmdbId}` : null;
+    const [learnSkipsOn, setLearnSkipsOn] = useState(() => getLearnSkipsEnabled());
+    const [learnedSkips, setLearnedSkips] = useState({ start: null, end: null });
+    const [learnedHasData, setLearnedHasData] = useState(false);
+    useEffect(() => {
+      const sync = () => {
+        setLearnSkipsOn(getLearnSkipsEnabled());
+        setLearnedSkips(learnedSeriesId ? getLearnedSkips(learnedSeriesId) : { start: null, end: null });
+        setLearnedHasData(learnedSeriesId ? hasLearnedSkipData(learnedSeriesId) : false);
+      };
+      sync();
+      return onLearnedSkipsChanged(sync);
+    }, [learnedSeriesId]);
+    const seekTrackerRef = useRef(SEEK_TRACKER_INITIAL);
+    const learnCtxRef = useRef(null);
+    const commitLearnedSkipRef = useRef(() => {
+    });
+    commitLearnedSkipRef.current = (interval) => {
+      const c = learnCtxRef.current;
+      if (!interval || !c) return;
+      const region = classifySkip(interval.start, interval.end, c.duration);
+      if (!region) return;
+      recordLearnedSkip(c.seriesId, { season: c.season, episode: c.episode, region, start: interval.start, end: interval.end });
+    };
+    useEffect(() => {
+      seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+      return () => {
+        commitLearnedSkipRef.current(flushSeekTracker(seekTrackerRef.current));
+        seekTrackerRef.current = SEEK_TRACKER_INITIAL;
+        learnCtxRef.current = null;
+      };
+    }, [learnedSeriesId, season, episode, url]);
+    useEffect(() => {
+      if (!learnSkipsOn || !learnedSeriesId || season == null || episode == null) return;
+      if (!hasStarted || !hasStartedForUrlRef.current || !(totalDuration > 0)) return;
+      learnCtxRef.current = { seriesId: learnedSeriesId, season, episode, duration: totalDuration };
+      const result = trackSeekSample(seekTrackerRef.current, realTime, Date.now(), isPlaying);
+      seekTrackerRef.current = result.state;
+      commitLearnedSkipRef.current(result.done);
+    }, [realTime, isPlaying, hasStarted, learnSkipsOn, learnedSeriesId, season, episode, totalDuration]);
     function resumeAfterSleepPrompt() {
       setStillWatchingReason("episodes");
       if (useMpv) {
@@ -27756,8 +30241,9 @@ ${cue.text}`).join("\n\n")}
     }, [url, initialTime, effectiveProxyAudioMode, nightMode, shouldProxyPlayback, isDirectLocalFileSource, useMpv, applyStreamSrc]);
     const preferredAudioLangRef = useRef(getDefaultAudioLanguage() || null);
     const [originalAudioLangToken, setOriginalAudioLangToken] = useState(0);
-    function switchAudioTrack(track) {
+    function switchAudioTrack(track, manual = true) {
       if (track.language) preferredAudioLangRef.current = toAudioLangGroup(track.language);
+      if (manual && mediaType === "tv") saveSeriesAudioLanguage(wikiTmdbId, toAudioLangGroup(track.language));
       setActiveAudioTrack(track.index);
       setShowAudioMenu(false);
       if (useMpv) {
@@ -27797,7 +30283,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       didApplyPreferredAudioRef.current = true;
-      switchAudioTrack(match);
+      switchAudioTrack(match, false);
     }, [activeAudioTrack, audioTracks, hasStarted, isDirectLocalFileSource, useMpv, originalAudioLangToken]);
     useEffect(() => {
       if (getDefaultAudioLanguage() || !wikiTmdbId) return;
@@ -28126,11 +30612,30 @@ ${cue.text}`).join("\n\n")}
         label: track.title ?? void 0
       }));
     }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine, detectedEmbeddedLanguages, t]);
+    const librarySubtitleOptions = useMemo(() => (librarySubtitles ?? []).map((sub, index) => {
+      const language = toSubtitleLangGroup(sub.language || sub.label);
+      return {
+        language,
+        lang3: language,
+        url: sub.url,
+        id: `library:${index}:${sub.url}`,
+        source: "library",
+        hashMatch: true,
+        release: sub.label,
+        label: sub.label,
+        ...sub.forced ? { forced: true } : {},
+        ...sub.sdh ? { sdh: true } : {}
+      };
+    }), [librarySubtitles]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
         ...externalSubtitles,
-        ...getPreferEmbeddedSubtitles() ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions]
+        // Serverns sidofiler: lika mycket filens egna som de inbäddade spåren.
+        // Tvingade (bara skyltar) sist, så automatvalet aldrig tar dem före en hel text.
+        ...librarySubtitleOptions.filter((option) => !option.forced),
+        ...getSubtitleOrder() !== "downloads" ? [...embeddedSubtitleOptions, ...subtitles] : [...subtitles, ...embeddedSubtitleOptions],
+        ...librarySubtitleOptions.filter((option) => option.forced)
       ];
       const seen = /* @__PURE__ */ new Set();
       return merged.filter((option) => {
@@ -28138,7 +30643,7 @@ ${cue.text}`).join("\n\n")}
         seen.add(option.id);
         return true;
       });
-    }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
+    }, [subtitles, embeddedSubtitleOptions, externalSubtitles, librarySubtitleOptions]);
     const applySyncedSubtitle = useCallback(async (sub, vttUrl) => {
       const current2 = activeSubIdRef.current;
       if (!current2 || current2.startsWith("embedded:")) {
@@ -28276,7 +30781,7 @@ ${cue.text}`).join("\n\n")}
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[subsync-klient] annan version: ${choice === "switch" ? "byter till" : "beh\xE5ller, inte"} filens eget sp\xE5r ${prompt.own.id}`)}`).catch(() => {
       });
       if (choice !== "switch") return;
-      void selectSubtitle(prompt.own, { noAutoSync: true });
+      void selectSubtitle(prompt.own, { manual: true, noAutoSync: true });
       showSyncNotice({ message: t("subtitleAutoSyncSwappedEmbedded") });
     }, [ownTrackPrompt, url, selectSubtitle, showSyncNotice, t]);
     useEffect(() => {
@@ -28307,7 +30812,7 @@ ${cue.text}`).join("\n\n")}
         currentId: preselectedId,
         // "Prefer embedded": container tracks are always in sync, so when the
         // setting is on they get first shot at every preferred language.
-        preferEmbedded: getPreferEmbeddedSubtitles(),
+        order: getSubtitleOrder(),
         isEmbedded: (subtitle) => subtitle.id.startsWith("embedded:"),
         isBlocked: (subtitle) => blockWords.length > 0 && blockWords.some((word) => `${subtitle.label ?? ""} ${subtitle.language ?? ""}`.toLowerCase().includes(word)),
         matchesLanguage: (subtitle, lang2) => normalizeLanguageCode(subtitle.language) === lang2 || subtitleOptionMatchesLanguage(subtitle, lang2)
@@ -28317,7 +30822,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       if (match && match.id !== activeSubId) {
-        const embeddedReplacesDownload = getPreferEmbeddedSubtitles() && match.id.startsWith("embedded:") && activeSubId != null && !activeSubId.startsWith("embedded:");
+        const embeddedReplacesDownload = getSubtitleOrder() !== "downloads" && match.id.startsWith("embedded:") && activeSubId != null && !activeSubId.startsWith("embedded:");
         if (!embeddedReplacesDownload) {
           if (activeSubId != null && !getUpgradeSubtitleWhenBetter()) return;
           if (activeSubId != null && syncedVttRef.current.get(activeSubId)?.url === url) return;
@@ -28336,7 +30841,7 @@ ${cue.text}`).join("\n\n")}
         language: secondarySubtitleLang,
         primaryId: activeSubId,
         allowEmbedded: isMpvEngine,
-        preferEmbedded: getPreferEmbeddedSubtitles(),
+        preferEmbedded: getSubtitleOrder() !== "downloads",
         isBlocked: (option) => blockWords.length > 0 && blockWords.some((word) => `${option.label ?? ""} ${option.language ?? ""}`.toLowerCase().includes(word)),
         matchesLanguage: (option, lang2) => normalizeLanguageCode(option.language) === lang2 || subtitleOptionMatchesLanguage(option, lang2)
       });
@@ -28424,18 +30929,20 @@ ${cue.text}`).join("\n\n")}
     }
     const volumeCeiling = useMpv ? 2 : 1;
     function pushVolume(val) {
+      const out = val * spokenDuckRef.current;
       if (useMpv) {
-        if (val > 1) void mpvCommand2(["set_property", "volume-max", 200]);
-        void mpvCommand2(["set_property", "volume", Math.round(val * 100)]);
+        if (out > 1) void mpvCommand2(["set_property", "volume-max", 200]);
+        void mpvCommand2(["set_property", "volume", Math.round(out * 100)]);
         void mpvCommand2(["set_property", "mute", val === 0 ? "yes" : "no"]);
         return;
       }
       const v = videoRef.current;
       if (!v) return;
-      v.volume = Math.min(1, val);
+      v.volume = Math.min(1, out);
       v.muted = val === 0;
     }
     function applyVolume(raw) {
+      sleepFadeCancelRef.current();
       const val = Math.min(volumeCeiling, Math.max(0, raw));
       setVolume(val);
       setMuted(val === 0);
@@ -28456,6 +30963,17 @@ ${cue.text}`).join("\n\n")}
     const shouldShowSkipIntroButton = Boolean(
       hasStarted && !autoSkipIntro && activeIntro && introDataReady && !skipButtonExpired && !skipIntroDismissed
     );
+    const learnedSkipCtx = {
+      duration: totalDuration,
+      intro: introSegment ? { start: introSegment.startMs / 1e3, end: introSegment.endMs / 1e3 } : null,
+      outro: outroSegment ? { start: outroSegment.startMs / 1e3, end: outroSegment.endMs / 1e3 } : null
+    };
+    const activeLearnedSkip = learnSkipsOn && introDataReady && !activeIntro ? [usableLearnedSkip(learnedSkips.start, "start", learnedSkipCtx), usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx)].find((seg) => seg != null && realTime >= seg.start && realTime < seg.end) ?? null : null;
+    const shouldShowLearnedSkipButton = Boolean(
+      hasStarted && activeLearnedSkip && !skipIntroDismissed && !(skipButtonAutoHideSeconds > 0 && activeLearnedSkip && realTime - activeLearnedSkip.start > skipButtonAutoHideSeconds)
+    );
+    const skipButtonUp = shouldShowSkipIntroButton && activeIntro != null || shouldShowLearnedSkipButton;
+    const skipButtonEnd = shouldShowSkipIntroButton && activeIntro ? activeIntro.endMs / 1e3 : activeLearnedSkip?.end ?? 0;
     const controlsReady = useMpv ? hasEverStarted || hasStarted || mpv.firstFrameRendered || mpvRevealPlaybackReady : hasEverStarted || hasStarted;
     const collapseMpvTopBar = useMpv && !controlsVisible && !desktopFullscreen;
     const isLastEpisodeOfSeason = useMemo(() => {
@@ -28494,11 +31012,30 @@ ${cue.text}`).join("\n\n")}
     const creditsModeAllowed = Boolean(
       getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? getCreditsRecommendationsTv() && isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
     );
+    const nextEpAfterLastSubSeconds = getNextEpAfterLastSubSeconds();
+    const hasLearnedEndSkip = learnSkipsOn && usableLearnedSkip(learnedSkips.end, "end", learnedSkipCtx) != null;
+    const creditsCueSource = useMemo(() => {
+      if (cues.length > 0) return cues;
+      const vtt = activeSubId ? externalVttRef.current.get(activeSubId) : null;
+      return vtt ? parseVtt(vtt) : [];
+    }, [cues, activeSubId]);
+    const roundedDuration = Math.round(totalDuration);
+    const subtitleCreditsStart = useMemo(() => {
+      if (mediaType !== "tv" || nextEpAfterLastSubSeconds <= 0) return null;
+      if (!introDataReady || outroSegment || hasLearnedEndSkip) return null;
+      if (!durationConfirmed || roundedDuration <= 0 || creditsCueSource.length === 0) return null;
+      const result = estimateCreditsStartFromCues(creditsCueSource, roundedDuration, {
+        offsetSeconds: subDelay,
+        delayAfterLastLineSeconds: nextEpAfterLastSubSeconds
+      });
+      queueDebugLog(`[credits-subs] ${result.reason}${result.start != null ? ` vid ${Math.round(result.start)}s` : ""} av ${roundedDuration}s (${creditsCueSource.length} rader, +${nextEpAfterLastSubSeconds}s)`);
+      return result.start;
+    }, [mediaType, nextEpAfterLastSubSeconds, introDataReady, outroSegment, hasLearnedEndSkip, durationConfirmed, roundedDuration, creditsCueSource, subDelay]);
     const creditsTriggerSeconds = (() => {
       if (totalDuration <= 600) return null;
       const tailSeconds = (mediaType === "tv" ? getCreditsThresholdMinutesTv() : getCreditsThresholdMinutes()) * 60;
       const lateThreshold = Math.max(0, totalDuration - tailSeconds);
-      if (!outroSegment) return lateThreshold;
+      if (!outroSegment) return subtitleCreditsStart ?? lateThreshold;
       const outroEndsAt = outroSegment.endMs / 1e3;
       if (totalDuration - outroEndsAt > tailSeconds) return lateThreshold;
       return outroSegment.startMs / 1e3;
@@ -28730,12 +31267,30 @@ ${cue.text}`).join("\n\n")}
       outroFiredRef.current = true;
       markOutroFired(true);
       if (mediaType === "tv" && wikiTmdbId && season != null && episode != null && !watchedMarkedRef.current && durationConfirmedRef.current) {
-        setWatched(wikiTmdbId, season, episode, true, { imdbId: imdbId ?? null });
-        removeStreamProgress(`tv-${wikiTmdbId}`, season, episode);
-        watchedMarkedRef.current = true;
+        if (markPlaybackEpisodeWatched({ tmdbId: wikiTmdbId, season, episode, imdbId })) watchedMarkedRef.current = true;
       }
-      onOutroStartRef.current?.();
+      onOutroStartRef.current?.({ source: "segment" });
     }, [episode, hasStarted, imdbId, mediaType, outroSegment, realTime, season, wikiTmdbId]);
+    const subtitleCreditsArmedRef = useRef(false);
+    useEffect(() => {
+      subtitleCreditsArmedRef.current = false;
+    }, [url]);
+    useEffect(() => {
+      if (!hasStarted || !hasStartedForUrlRef.current) return;
+      if (outroFiredRef.current || outroSegment || subtitleCreditsStart == null) return;
+      if (realTime < subtitleCreditsStart) {
+        subtitleCreditsArmedRef.current = false;
+        return;
+      }
+      if (!subtitleCreditsArmedRef.current) {
+        subtitleCreditsArmedRef.current = true;
+        return;
+      }
+      if (totalDuration - realTime < 5) return;
+      outroFiredRef.current = true;
+      queueDebugLog(`[credits-subs] kortet vid ${Math.round(realTime)}s (uppskattat ${Math.round(subtitleCreditsStart)}s)`);
+      onOutroStartRef.current?.({ source: "subtitles" });
+    }, [hasStarted, outroSegment, subtitleCreditsStart, realTime, totalDuration]);
     const handleExternalSubtitleFile = useCallback(async (file) => {
       setSubtitleLoadError(null);
       try {
@@ -28977,8 +31532,11 @@ ${cue.text}`).join("\n\n")}
       duration: totalDuration,
       speed: playbackSpeed,
       nowMs: Math.max(statusNowMs, Date.now() - 15e3),
-      introLabel: mediaType === "tv" && introSegment ? introKind === "recap" ? t("recapFound") : t("introFound") : null,
-      outroLabel: mediaType === "tv" && outroSegment ? t("outroFound") : null,
+      // TV: inga Intro/Outro-ord i statusraden — med båda fick inte alla ikoner
+      // plats i kontrollraden på serier (Jerry 2026-10-28). Hoppa över-knappen
+      // säger samma sak när det är dags.
+      introLabel: !isTv && mediaType === "tv" && introSegment ? introKind === "recap" ? t("recapFound") : t("introFound") : null,
+      outroLabel: !isTv && mediaType === "tv" && outroSegment ? t("outroFound") : null,
       endsTemplate: t("plEndsAt"),
       formatClock: (ms2) => statusClock.format(ms2)
     });
@@ -29116,13 +31674,15 @@ ${cue.text}`).join("\n\n")}
     }, [clipDocked, useMpv, scheduleBoundsResync]);
     useEffect(() => {
       const controls = controlsRef.current;
-      const block = titleBlockRef.current;
+      const block = titleBlockEl;
       if (!controls || !block || typeof ResizeObserver === "undefined") {
         setTitleClearance(0);
         return void 0;
       }
       const measure = () => {
-        const clearance = Math.round(controls.getBoundingClientRect().bottom - block.getBoundingClientRect().top);
+        const controlsRect = controls.getBoundingClientRect();
+        const scale = controls.offsetHeight > 0 ? controlsRect.height / controls.offsetHeight : 1;
+        const clearance = Math.round((controlsRect.bottom - block.getBoundingClientRect().top) / (scale > 0 ? scale : 1));
         setTitleClearance(clearance > 0 ? clearance : 0);
       };
       measure();
@@ -29130,7 +31690,7 @@ ${cue.text}`).join("\n\n")}
       observer.observe(controls);
       observer.observe(block);
       return () => observer.disconnect();
-    }, [chromeKind, showClip, Boolean(clip2), creditsMode]);
+    }, [chromeKind, showClip, Boolean(clip2), creditsMode, titleBlockEl]);
     const [clipPhones, setClipPhones] = useState([]);
     const [clipQrOpen, setClipQrOpen] = useState(false);
     const [clipTvFocus, setClipTvFocus] = useState(null);
@@ -29490,7 +32050,12 @@ ${cue.text}`).join("\n\n")}
       gearValue(value)
     ] });
     const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
-    const nightLabel = (mode) => t(mode === "off" ? "nightModeOff" : mode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong");
+    const toggleSleepFade = () => {
+      const next = !sleepFadeOn;
+      setSleepFade(next);
+      setSleepFadeOn(next);
+    };
+    const nightLabel = (mode) => t(nightModeLabelKey(mode, true));
     const applySpeed = (next) => {
       setPlaybackSpeedState(next);
       savePlaybackSpeed(mediaType, tmdbId ?? null, next);
@@ -29504,16 +32069,23 @@ ${cue.text}`).join("\n\n")}
         playerIcon("clip", dtMoreIconClass),
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("clipTitle") })
       ] }, "clip") : null,
+      gearToggleRow("incognito", "incognito", t("incognitoToggle"), incognito, () => setIncognito(!incognito)),
+      spokenSubsSupported ? gearToggleRow("spokenSubs", "speak", t("spokenSubtitles"), spokenSubsOn, () => setSpokenSubtitles(!spokenSubsOn)) : null,
       gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
       gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
       gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
-      gearNavRow("sleep", t("plSleepTimer"), sleepModeLabel(sleepTimer.mode), "sleep"),
-      isMpvEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
+      gearNavRow("sleep", t("plSleepTimer"), sleepStateLabel(), "sleep"),
+      isMpvEngine || isDroidEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
       mediaType === "tv" ? gearToggleRow("skip", "skip", t("plGearSkipIntros"), autoSkipIntro, () => {
         const next = !autoSkipIntro;
         setAutoSkipIntro(next);
         setAutoSkipIntroState(next);
       }) : null,
+      mediaType === "tv" ? gearToggleRow("learnSkips", "skip", t("plLearnSkips"), learnSkipsOn, () => setLearnSkipsEnabled(!learnSkipsOn)) : null,
+      mediaType === "tv" && learnedSeriesId && learnedHasData ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => forgetLearnedSkips(learnedSeriesId), className: dtMoreRowClass, children: [
+        gearRowIcon("skip", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plForgetLearnedSkips") })
+      ] }, "forgetLearnedSkips") : null,
       resolutionSwitch ? gearToggleRow("resolution", "resolution", t("matchResolution"), matchResolutionOn, () => {
         const next = !matchResolutionOn;
         setMatchResolution(next);
@@ -29552,13 +32124,14 @@ ${cue.text}`).join("\n\n")}
           ] });
         case "sleep":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
-            gearSubHeader(t("plSleepTimer"), sleepModeLabel(sleepTimer.mode)),
-            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
+            gearSubHeader(t("plSleepTimer"), sleepStateLabel()),
+            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now()))),
+            gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade)
           ] });
         case "night":
           return /* @__PURE__ */ jsxs(Fragment2, { children: [
             gearSubHeader(t("nightModeMenuLabel"), nightLabel(nightMode)),
-            gearOptions(["off", "mild", "strong"], nightMode, nightLabel, setNightMode)
+            gearOptions(NIGHT_MODE_OPTIONS, nightMode, nightLabel, setNightMode)
           ] });
         default:
           return null;
@@ -30226,7 +32799,7 @@ ${cue.text}`).join("\n\n")}
     const renderTitleBlock = (size, className) => /* @__PURE__ */ jsx(
       PlayerTitleBlock,
       {
-        blockRef: titleBlockRef,
+        blockRef: setTitleBlockEl,
         title: headerTitle,
         chips: titleChips,
         year,
@@ -30321,11 +32894,101 @@ ${cue.text}`).join("\n\n")}
     const saidBufferRef = useRef([]);
     const saidText = isMpvEngine ? mpv.subText : rawSubtitleText;
     useEffect(() => {
-      const text = (saidText ?? "").trim();
-      if (!text) return;
+      const text2 = (saidText ?? "").trim();
+      if (!text2) return;
       const now2 = realTimeRef.current;
-      saidBufferRef.current = pushCue(saidBufferRef.current, { text, start: now2 }, now2);
+      saidBufferRef.current = pushCue(saidBufferRef.current, { text: text2, start: now2 }, now2);
     }, [saidText]);
+    const [spokenSubsOn, setSpokenSubsOn] = useState(() => getSpokenSubtitles());
+    const [spokenSubsRate, setSpokenSubsRate] = useState(() => getSpokenSubtitlesRate());
+    const [spokenSubsSupported, setSpokenSubsSupported] = useState(false);
+    useEffect(() => {
+      setSpokenSubsSupported(spokenSubtitlesSupported());
+    }, []);
+    useEffect(() => onSpokenSubtitlesChanged(() => {
+      setSpokenSubsOn(getSpokenSubtitles());
+      setSpokenSubsRate(getSpokenSubtitlesRate());
+    }), []);
+    const spokenActive = spokenSubsOn && spokenSubsSupported;
+    const spokenUiLangRef = useRef(lang);
+    spokenUiLangRef.current = lang;
+    const spokenQueueRef = useRef(null);
+    const spokenRampRef = useRef({ timer: void 0, hold: void 0 });
+    const spokenRampTo = useCallback((target2, durationMs) => {
+      const ramp = spokenRampRef.current;
+      window.clearInterval(ramp.timer);
+      ramp.timer = void 0;
+      const from = spokenDuckRef.current;
+      if (from === target2) return;
+      const startedAt = Date.now();
+      const stepMs = isDroidEngine ? 90 : 40;
+      const step = () => {
+        const level = rampLevel(from, target2, Date.now() - startedAt, durationMs);
+        spokenDuckRef.current = level;
+        writeSpokenDuckRef.current();
+        if (level === target2) {
+          window.clearInterval(ramp.timer);
+          ramp.timer = void 0;
+        }
+      };
+      step();
+      if (spokenDuckRef.current !== target2) ramp.timer = window.setInterval(step, stepMs);
+    }, [isDroidEngine]);
+    const spokenSpeakingChange = useCallback((speaking) => {
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      ramp.hold = void 0;
+      if (speaking) {
+        spokenRampTo(DUCK_LEVEL, DUCK_ATTACK_MS);
+        return;
+      }
+      ramp.hold = window.setTimeout(() => spokenRampTo(1, DUCK_RELEASE_MS), DUCK_HOLD_MS);
+    }, [spokenRampTo]);
+    const spokenStopNow = useCallback(() => {
+      spokenQueueRef.current?.reset();
+      const ramp = spokenRampRef.current;
+      window.clearTimeout(ramp.hold);
+      window.clearInterval(ramp.timer);
+      ramp.hold = void 0;
+      ramp.timer = void 0;
+      if (spokenDuckRef.current !== 1) {
+        spokenDuckRef.current = 1;
+        writeSpokenDuckRef.current();
+      }
+    }, []);
+    useEffect(() => {
+      if (!spokenActive) {
+        spokenStopNow();
+        return;
+      }
+      if (!spokenQueueRef.current) {
+        const engine = createSpeechEngine(() => spokenUiLangRef.current);
+        if (!engine) return;
+        spokenQueueRef.current = new SpokenSubtitleQueue(engine, { onSpeakingChange: (speaking) => spokenSpeakingChange(speaking) });
+      }
+    }, [spokenActive]);
+    useEffect(() => () => spokenStopNow(), [spokenStopNow]);
+    const activeSubtitleOption = activeSubId ? subtitleOptions.find((o) => o.id === activeSubId) ?? null : null;
+    const spokenLang = normalizeLanguageCode(activeSubtitleOption?.lang3 || activeSubtitleOption?.language) ?? null;
+    useEffect(() => {
+      spokenQueueRef.current?.configure({ lang: spokenLang, rate: speechRateFor(spokenSubsRate) });
+    }, [spokenActive, spokenLang, spokenSubsRate]);
+    useEffect(() => {
+      if (!isPlaying) spokenQueueRef.current?.pause();
+    }, [isPlaying]);
+    useEffect(() => {
+      spokenQueueRef.current?.reset();
+    }, [url, activeSubId]);
+    const spokenLastTimeRef = useRef(realTime);
+    useEffect(() => {
+      const prev = spokenLastTimeRef.current;
+      spokenLastTimeRef.current = realTime;
+      if (Math.abs(realTime - prev) > 3) spokenQueueRef.current?.reset();
+    }, [realTime]);
+    useEffect(() => {
+      if (!spokenActive || !isPlaying) return;
+      spokenQueueRef.current?.line(saidText ?? "");
+    }, [spokenActive, isPlaying, saidText]);
     const couchRef = useRef({ snapshot: () => null, run: () => {
     }, said: () => [] });
     couchRef.current = {
@@ -30354,7 +33017,7 @@ ${cue.text}`).join("\n\n")}
           subId: activeSubId,
           // ExoPlayer kan inte förskjuta inbäddad undertext: telefonen döljer Synk vid null.
           subDelay: isDroidEngine && activeSubId?.startsWith("embedded:") ? null : subDelay,
-          dialogBoost: isMpvEngine ? nightMode !== "off" : null,
+          dialogBoost: isMpvEngine || isDroidEngine ? nightMode !== "off" : null,
           introUntil: activeIntro ? activeIntro.endMs / 1e3 : void 0,
           creditsAt: outroSegment ? outroSegment.startMs / 1e3 : void 0,
           nextEpisode: nextEpisodeOf(episodes),
@@ -30399,8 +33062,8 @@ ${cue.text}`).join("\n\n")}
               setSubDelay(Math.max(-180, Math.min(180, Math.round(cmd.value * 10) / 10)));
               return;
             case "dialog-boost":
-              if (!isMpvEngine) throw new Error("unsupported");
-              setNightMode(cmd.on ? "mild" : "off");
+              if (!isMpvEngine && !isDroidEngine) throw new Error("unsupported");
+              setNightMode(cmd.on ? "medium" : "off");
               return;
             case "stream": {
               const s = streams?.items.find((x) => streamKey(x) === cmd.key);
@@ -30549,8 +33212,8 @@ ${cue.text}`).join("\n\n")}
             return /* @__PURE__ */ jsxs(
               "div",
               {
-                className: "pointer-events-none absolute z-20 -translate-x-1/2 overflow-hidden rounded-md bg-black/85 text-center text-[13px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm",
-                style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))`, top: `calc(-2.25rem - ${(thumb ? thumb.h : 0) + (playerBarcode.showStrip ? isTv ? 20 : 14 : 0)}px)` },
+                className: `pointer-events-none absolute z-20 -translate-x-1/2 overflow-hidden rounded-md bg-black/85 text-center font-semibold tabular-nums text-white shadow-lg ${isTv ? "" : "text-[13px] backdrop-blur-sm"}`,
+                style: { left: `clamp(1.75rem, ${seekPercent}%, calc(100% - 1.75rem))`, top: `calc(${isTv ? "-3.25rem" : "-2.25rem"} - ${(thumb ? thumb.h : 0) + (playerBarcode.showStrip ? isTv ? 20 : 14 : 0)}px)`, ...isTv ? { fontSize: "calc(18 * var(--tv-u))" } : {} },
                 children: [
                   thumb && thumb.strip.length > 0 ? /* @__PURE__ */ jsxs("div", { "aria-hidden": true, className: "flex items-end justify-center gap-1 px-1 pt-1", children: [
                     thumb.strip.filter((f) => f.n < thumb.idx).map((f) => {
@@ -30647,9 +33310,18 @@ ${cue.text}`).join("\n\n")}
     const gestureHudTimerRef = useRef(null);
     const gestureRef = useRef(null);
     const GESTURE_SEEK_SPAN_SECONDS = 90;
-    const showGestureHud = (kind, value, text) => {
+    const showGestureHud = (kind, value, text2) => {
       if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
-      setGestureHud({ kind, value, text });
+      setGestureHud({ kind, value, text: text2 });
+    };
+    const keySeekHudRef = useRef({ total: 0, at: 0 });
+    showKeySeekHudRef.current = (delta) => {
+      const now2 = Date.now();
+      const state3 = keySeekHudRef.current;
+      state3.total = now2 - state3.at < 900 ? state3.total + delta : delta;
+      state3.at = now2;
+      showGestureHud("skip", state3.total);
+      gestureHudTimerRef.current = window.setTimeout(() => setGestureHud(null), 700);
     };
     const onGesturePointerDown = (event) => {
       if (!phoneChrome || event.pointerType === "mouse") return;
@@ -30816,6 +33488,11 @@ ${cue.text}`).join("\n\n")}
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
     const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
+    const sleepStateLabel = () => {
+      const remaining = sleepTimerRemainingMs(sleepTimer, Date.now());
+      if (remaining == null) return sleepModeLabel(sleepTimer.mode);
+      return t("plSleepRemaining").replace("{n}", String(Math.max(1, Math.ceil(remaining / 6e4))));
+    };
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -30917,7 +33594,7 @@ ${cue.text}`).join("\n\n")}
       sleepTimer: {
         label: t("plSleepShort"),
         title: t("plSleepTimer"),
-        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        value: sleepTimer.mode === "off" ? void 0 : sleepStateLabel(),
         state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
         onClick: () => setShowSleepMenu((open2) => !open2),
         triggerRef: sleepTriggerRef
@@ -30944,7 +33621,7 @@ ${cue.text}`).join("\n\n")}
     const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
     const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
     const phoneClusterIds = phoneDedicatedIds.filter((id) => showsControl(id) && Boolean(phoneControls[id]));
-    const phoneStateClass = (state2, idleClass = "text-slate-200") => state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
+    const phoneStateClass = (state3, idleClass = "text-slate-200") => state3 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state3 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : idleClass;
     const renderPhoneTile = (id, spec) => /* @__PURE__ */ jsxs(
       "button",
       {
@@ -31092,7 +33769,7 @@ ${cue.text}`).join("\n\n")}
                     mediaType === "tv" ? t("startingEpisode") : t("startingMovie")
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3", children: [
-                    clientOwnsSplash && resolveDirectStreamUrl2(url) && /* @__PURE__ */ jsx(
+                    !isTv && clientOwnsSplash && resolveDirectStreamUrl2(url) && /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
@@ -31113,6 +33790,7 @@ ${cue.text}`).join("\n\n")}
                         ref: splashCancelRef,
                         "data-f": isTv ? "1" : void 0,
                         "data-init": isTv ? "1" : void 0,
+                        "data-splash-cancel": "",
                         onClick: handleClose,
                         className: "text-xs text-slate-500 transition hover:text-slate-300",
                         children: startError ? t("close") : t("cancel")
@@ -31432,8 +34110,8 @@ ${cue.text}`).join("\n\n")}
                               const foundE = Number(m[2]);
                               if (foundS !== season || foundE !== episode) {
                                 const pad2 = (n) => String(n).padStart(2, "0");
-                                const text = t("vpWrongEpisodeWarning").replace("{found}", `S${pad2(foundS)}E${pad2(foundE)}`).replace("{wanted}", `S${pad2(season)}E${pad2(episode)}`);
-                                setSourceMismatchWarning(text);
+                                const text2 = t("vpWrongEpisodeWarning").replace("{found}", `S${pad2(foundS)}E${pad2(foundE)}`).replace("{wanted}", `S${pad2(season)}E${pad2(episode)}`);
+                                setSourceMismatchWarning(text2);
                                 if (sourceMismatchTimerRef.current) window.clearTimeout(sourceMismatchTimerRef.current);
                                 sourceMismatchTimerRef.current = window.setTimeout(() => setSourceMismatchWarning(null), 12e3);
                                 void emitDesktopPlaybackTelemetry({ stage: "player.lifecycle", status: "error", detail: "source_episode_mismatch", context: { wanted: `S${pad2(season)}E${pad2(episode)}`, found: `S${pad2(foundS)}E${pad2(foundE)}`, playbackTraceId } });
@@ -31500,6 +34178,7 @@ ${cue.text}`).join("\n\n")}
                       }
                     },
                     onVolumeChange: (e) => {
+                      if (sleepFadeRef.current < 1) return;
                       setMuted(e.currentTarget.muted);
                       setVolume(e.currentTarget.volume);
                     },
@@ -31798,11 +34477,13 @@ ${cue.text}`).join("\n\n")}
                   },
                   index
                 )) }),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* @__PURE__ */ jsxs(
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* Med kontrollerna framme lyfts texten över titelblocket och
+                   seekraden — annars låg repliken ovanpå tidslisten (TV 2026-10-30). */
+                /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
-                    style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
+                    className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8 transition-[bottom] duration-200 ease-out",
+                    style: { bottom: controlsVisible && controlsReady && titleClearance > 0 ? `max(calc(${subVerticalPos}% + 3.5rem), ${titleClearance + 12}px)` : `calc(${subVerticalPos}% + 3.5rem)` },
                     children: [
                       secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
                       [
@@ -31984,7 +34665,10 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 "data-f": isTv ? "1" : void 0,
                                 onClick: () => {
-                                  if (!editingSecondary) subtitlePreferenceRef.current = { mode: "language", language: lang2 };
+                                  if (!editingSecondary) {
+                                    subtitlePreferenceRef.current = { mode: "language", language: lang2 };
+                                    if (mediaType === "tv") saveSeriesSubtitlePreference(wikiTmdbId, subtitlePreferenceRef.current);
+                                  }
                                   setSelectedLang(lang2);
                                 },
                                 className: `flex w-full items-center justify-between px-4 py-2 text-sm transition hover:bg-white/5 ${selectedLang === lang2 ? "bg-white/5" : ""} ${isActive ? dtActiveTextClass : "text-slate-300"}`,
@@ -32020,7 +34704,7 @@ ${cue.text}`).join("\n\n")}
                                 /* @__PURE__ */ jsxs("div", { className: "text-left", children: [
                                   /* @__PURE__ */ jsx("div", { className: isActive ? dtActiveTextClass : "text-slate-300", children: sub.source === "external" ? sub.label ?? t("subtitleExternalGroup") : LANG_NAMES[selectedLang] ?? selectedLang }),
                                   /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-500", children: secondaryBlocked ? sub.id === activeSubId ? t("subtitleSlotPrimary") : t("subtitleSecondaryEmbeddedUnsupported") : [
-                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : t("subtitleProvider"),
+                                    sub.source === "embedded" ? t("subtitleEmbeddedTrack") : sub.source === "external" ? t("subtitleExternalGroup") : sub.source === "library" ? sub.label ? `${t("subtitleLibraryTrack")} \xB7 ${sub.label}` : t("subtitleLibraryTrack") : t("subtitleProvider"),
                                     sub.forced ? t("subtitleForced") : null,
                                     sub.sdh ? t("subtitleSdh") : null
                                   ].filter(Boolean).join(" \xB7 ") })
@@ -32050,6 +34734,21 @@ ${cue.text}`).join("\n\n")}
                             children: [
                               /* @__PURE__ */ jsx("span", { children: t("learningModeTitle") }),
                               /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(learningMode ? "on" : "off") })
+                            ]
+                          }
+                        ) }),
+                        spokenSubsSupported && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2", children: /* @__PURE__ */ jsxs(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            "aria-pressed": spokenSubsOn,
+                            onClick: () => setSpokenSubtitles(!spokenSubsOn),
+                            className: `flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition ${spokenSubsOn ? "border-white/25 bg-white/10 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"}`,
+                            title: t("spokenSubtitlesDesc"),
+                            children: [
+                              /* @__PURE__ */ jsx("span", { children: t("spokenSubtitles") }),
+                              /* @__PURE__ */ jsx("span", { className: "text-slate-400", children: t(spokenSubsOn ? "on" : "off") })
                             ]
                           }
                         ) }),
@@ -32142,7 +34841,7 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ),
-                overlayContent,
+                /* @__PURE__ */ jsx("div", { "data-player-overlay": "", "data-surface-open": openSurface ? "1" : void 0, style: { display: "contents" }, children: overlayContent }),
                 scrubPrepare && /* @__PURE__ */ jsx("div", { "data-scrub-prepare": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[57] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("h3", { className: "text-2xl font-semibold text-white", children: t("scrubPrepareTitle") }),
                   /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm tabular-nums text-slate-300", children: `${scrubPrepare.done} / ${scrubPrepare.total}` }),
@@ -32159,6 +34858,15 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ] }) }),
+                sleepFade < 1 && /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    "data-sleep-fade-dim": "",
+                    "aria-hidden": true,
+                    className: "pointer-events-none absolute inset-0 z-[57] bg-black",
+                    style: { opacity: sleepDimOpacity(sleepFade), transition: "opacity 1.2s linear" }
+                  }
+                ),
                 showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
                   /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
@@ -32191,6 +34899,7 @@ ${cue.text}`).join("\n\n")}
                 showTuningPanel && /* @__PURE__ */ jsx(
                   PlayerTuningPanel,
                   {
+                    shaders: isMpvEngine ? { status: shaderStatus } : null,
                     surface: isTv ? {
                       ...tvSurface2("tuning"),
                       style: pickerStyle(tuningTriggerRef.current, 420),
@@ -32211,7 +34920,7 @@ ${cue.text}`).join("\n\n")}
                   },
                   momentNotice.id
                 ) : null,
-                shouldShowSkipIntroButton && activeIntro && openSurface === null && /* @__PURE__ */ jsxs(
+                skipButtonUp && openSurface === null && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     inert: !controlsVisible,
@@ -32230,10 +34939,10 @@ ${cue.text}`).join("\n\n")}
                         {
                           type: "button",
                           "data-f": isTv ? "1" : void 0,
-                          onClick: () => seekToAbsolute(activeIntro.endMs / 1e3),
+                          onClick: () => seekToAbsolute(skipButtonEnd),
                           className: "flex items-center gap-2 py-1.5 pr-2 text-sm font-medium text-white",
                           children: [
-                            t("skipIntro"),
+                            shouldShowSkipIntroButton && activeIntro ? t("skipIntro") : t("skipLearned"),
                             /* @__PURE__ */ jsx("svg", { className: "h-[15px] w-[15px]", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) })
                           ]
                         }
@@ -32716,6 +35425,7 @@ ${cue.text}`).join("\n\n")}
                                   max: volumeCeiling,
                                   step: 0.05,
                                   value: muted ? 0 : volume,
+                                  "data-player-volume": "",
                                   onChange: handleVolumeChange,
                                   className: "h-1 w-20 cursor-pointer appearance-none rounded-full border border-white/10 bg-white/20 accent-aurora-400"
                                 }
@@ -33097,7 +35807,8 @@ ${cue.text}`).join("\n\n")}
                                 },
                                 String(mode)
                               );
-                            })
+                            }),
+                            /* @__PURE__ */ jsx("div", { className: "mt-1 border-t border-white/[0.08] pt-1", children: gearToggleRow("sleepFade", "sleep", t("plSleepFade"), sleepFadeOn, toggleSleepFade) })
                           ]
                         }
                       ),
@@ -33317,6 +36028,8 @@ ${cue.text}`).join("\n\n")}
     "components/player/video-player-modal.tsx"() {
       "use strict";
       "use client";
+      init_watched_threshold();
+      init_mobile_data_guard();
       init_player_control_icons();
       init_trickplay_identity();
       init_playback_settings();
@@ -33325,6 +36038,7 @@ ${cue.text}`).join("\n\n")}
       init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
+      init_series_track_store();
       init_react_shim();
       init_timing();
       import_react_dom2 = __toESM(require_react_dom());
@@ -33338,6 +36052,10 @@ ${cue.text}`).join("\n\n")}
       init_profile_storage_shim();
       init_profile_avatar();
       init_sleep_timer();
+      init_playback_settings();
+      init_spoken_subtitles();
+      init_spoken_subtitles_engine();
+      init_spoken_subtitles_settings();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -33349,9 +36067,12 @@ ${cue.text}`).join("\n\n")}
       init_android_media_keys();
       init_resume_playback();
       init_subtitle_autopick();
-      init_watched_episodes();
-      init_watched_movies();
+      init_playback_watched();
+      init_incognito();
+      init_use_incognito();
       init_scrobble_fanout();
+      init_learned_skip();
+      init_learned_skip_store();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -33359,6 +36080,7 @@ ${cue.text}`).join("\n\n")}
       init_haptics_filter();
       init_haptics_host();
       init_playback_settings();
+      init_night_mode();
       init_scroll_lock();
       init_i18n();
       init_lighter_stream();
@@ -33388,6 +36110,7 @@ ${cue.text}`).join("\n\n")}
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
+      init_credits_from_subs();
       init_player_reveal_hold();
       init_player_silent_start();
       init_credits_recommendations();
@@ -33460,6 +36183,30 @@ ${cue.text}`).join("\n\n")}
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
+    }
+  });
+
+  // lib/cast-recognition-core.ts
+  var CREDITS_TTL_MS;
+  var init_cast_recognition_core = __esm({
+    "lib/cast-recognition-core.ts"() {
+      CREDITS_TTL_MS = 7 * 864e5;
+    }
+  });
+
+  // lib/cast-recognition.ts
+  var FAILURE_BACKOFF_MS;
+  var init_cast_recognition = __esm({
+    "lib/cast-recognition.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_api_json_cache();
+      init_watched_movies();
+      init_watched_episodes();
+      init_profile_storage_shim();
+      init_cast_recognition_core();
+      FAILURE_BACKOFF_MS = 10 * 6e4;
     }
   });
 
@@ -33699,20 +36446,20 @@ ${cue.text}`).join("\n\n")}
       focusOnOpen.current = false;
       optionRefs.current[Math.max(0, selectedIndex)]?.focus();
     }, [open2, menuPos, selectedIndex]);
-    const close = (returnFocus) => {
+    const close2 = (returnFocus) => {
       setOpen(false);
       if (returnFocus) triggerRef.current?.focus();
     };
     const choose = (o, returnFocus) => {
       if (onChange) onChange(o.value);
-      close(returnFocus);
+      close2(returnFocus);
     };
     const onTriggerKeyDown = (e) => {
       if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         if (open2) {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") optionRefs.current[Math.max(0, selectedIndex)]?.focus();
-          else close(false);
+          else close2(false);
           return;
         }
         focusOnOpen.current = true;
@@ -33720,7 +36467,7 @@ ${cue.text}`).join("\n\n")}
       } else if (e.key === "Escape" && open2) {
         e.preventDefault();
         e.stopPropagation();
-        close(false);
+        close2(false);
       }
     };
     const onMenuKeyDown = (e) => {
@@ -33752,11 +36499,11 @@ ${cue.text}`).join("\n\n")}
         case "Escape":
           e.preventDefault();
           e.stopPropagation();
-          close(true);
+          close2(true);
           break;
         case "Tab":
           e.preventDefault();
-          close(true);
+          close2(true);
           break;
       }
     };
@@ -34291,6 +37038,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_focus_shim();
       init_wiki_request_cache();
       init_api_json_cache();
+      init_cast_recognition();
       init_person_banner();
       init_tv_settings_rows();
       init_jsx_runtime_shim();
@@ -34328,8 +37076,8 @@ ${cue.text}`).join("\n\n")}
   });
 
   // components/series-lock/copy.ts
-  function fill(text, vars) {
-    return text.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
+  function fill(text2, vars) {
+    return text2.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
   }
   function joinNames(names, t) {
     if (names.length <= 1) return names[0] ?? "";
@@ -34571,11 +37319,11 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function LockedLine({ waitingFor, text }) {
+  function LockedLine({ waitingFor, text: text2 }) {
     const avatar = getProfiles().find((p) => p.id === waitingFor[0]);
     return /* @__PURE__ */ jsxs("p", { "data-series-lock-next": "", className: "mt-1 flex items-center gap-1.5 text-[0.6875rem] text-slate-300", children: [
       avatar ? /* @__PURE__ */ jsx(ProfileAvatar, { profile: avatar, className: "h-[1.125rem] w-[1.125rem] shrink-0 text-[0.5rem]" }) : null,
-      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text })
+      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text2 })
     ] });
   }
   var init_next_episode_card = __esm({
@@ -34745,6 +37493,7 @@ ${cue.text}`).join("\n\n")}
       init_zapp_settings();
       init_zapp_runtime();
       init_open_item_runtime();
+      init_system_notification();
       init_video_player_modal_shim();
       init_full_cast_page_shim();
       init_next_episode_card_shim();
@@ -34755,13 +37504,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-storage.ts
   init_plugin_sdk();
   var AUTH_KEY2 = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
@@ -34799,7 +37548,7 @@ ${cue.text}`).join("\n\n")}
     }
     return `${prefix}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
-  function emit3(name) {
+  function emit4(name) {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(name));
     }
@@ -34950,7 +37699,7 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return;
     if (!message) {
       removeScopedStorageItem(LIBRARY_ERROR_KEY);
-      emit3(LIBRARY_ERROR_EVENT);
+      emit4(LIBRARY_ERROR_EVENT);
       return;
     }
     const payload = {
@@ -34958,7 +37707,7 @@ ${cue.text}`).join("\n\n")}
       updatedAt: Date.now()
     };
     setScopedStorageItem(LIBRARY_ERROR_KEY, JSON.stringify(payload));
-    emit3(LIBRARY_ERROR_EVENT);
+    emit4(LIBRARY_ERROR_EVENT);
   }
   function onPlexLibraryErrorChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -34970,11 +37719,11 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return;
     if (!auth) {
       removeScopedStorageItem(AUTH_KEY2);
-      emit3(AUTH_EVENT);
+      emit4(AUTH_EVENT);
       return;
     }
     setScopedStorageItem(AUTH_KEY2, JSON.stringify(auth));
-    emit3(AUTH_EVENT);
+    emit4(AUTH_EVENT);
   }
   function clearPlexAuth() {
     setPlexAuth(null);
@@ -35005,7 +37754,7 @@ ${cue.text}`).join("\n\n")}
     const currentRaw = getScopedStorageItem(SETTINGS_KEY);
     if (currentRaw === nextRaw) return;
     setScopedStorageItem(SETTINGS_KEY, nextRaw);
-    emit3(SETTINGS_EVENT);
+    emit4(SETTINGS_EVENT);
   }
   function getCachedPlexLibraryItems(limit) {
     return readItemsCache(LIBRARY_CACHE_KEY, getPlexSettings(), limit)?.items ?? null;
@@ -35040,11 +37789,39 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-library-provider.ts
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
   var MAX_BATCH_BYTES = 1e6;
   var PLEX_LIBRARY_PROVIDER_ID = "plex";
+  function plexRatingKeyOf(media) {
+    if (media.episodeKey) return /:e(\d+)$/.exec(media.episodeKey)?.[1] ?? null;
+    return /:(\d+):m\d+$/.exec(media.key)?.[1] ?? null;
+  }
+  var PLEX_TEXT_SUBTITLE_CODECS = /* @__PURE__ */ new Set(["srt", "subrip", "vtt", "webvtt"]);
+  async function fetchPlexExternalSubtitles(base, token, ratingKey, partKey) {
+    const controller = new AbortController();
+    const timer4 = window.setTimeout(() => controller.abort(), 6e3);
+    try {
+      const response = await fetch(`${base}/library/metadata/${encodeURIComponent(ratingKey)}?X-Plex-Token=${encodeURIComponent(token)}`, {
+        headers: { Accept: "application/json" },
+        signal: controller.signal
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      const parts = (data.MediaContainer?.Metadata?.[0]?.Media ?? []).flatMap((media) => media.Part ?? []);
+      const part = parts.find((candidate) => candidate.key === partKey) ?? null;
+      return (part?.Stream ?? []).filter((stream) => String(stream.streamType ?? "") === "3" && stream.key && PLEX_TEXT_SUBTITLE_CODECS.has((stream.codec ?? "").toLowerCase())).map((stream) => ({
+        url: `${base}${stream.key}?X-Plex-Token=${encodeURIComponent(token)}`,
+        language: stream.languageTag ?? stream.languageCode ?? "",
+        label: stream.title || stream.displayTitle || void 0,
+        ...stream.forced ? { forced: true } : {},
+        ...stream.hearingImpaired ? { sdh: true } : {}
+      }));
+    } finally {
+      window.clearTimeout(timer4);
+    }
+  }
   function plexLibrarySourceId(settings) {
     return settings.serverId ? `plex-${settings.serverId}` : null;
   }
@@ -35067,8 +37844,8 @@ ${cue.text}`).join("\n\n")}
       }
     }
     if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      throw new Error(`Plex ${response.status}: ${text.slice(0, 200)}`);
+      const text2 = await response.text().catch(() => "");
+      throw new Error(`Plex ${response.status}: ${text2.slice(0, 200)}`);
     }
     return await response.json();
   }
@@ -35084,22 +37861,22 @@ ${cue.text}`).join("\n\n")}
     await Promise.all(workers);
     return out;
   }
-  async function emitSized(emit4, titles) {
+  async function emitSized(emit5, titles) {
     let chunk = [];
     let bytes = 0;
     for (const title of titles) {
       const size = JSON.stringify(title).length;
       if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
-        await emit4({ upsert: chunk });
+        await emit5({ upsert: chunk });
         chunk = [];
         bytes = 0;
       }
       chunk.push(title);
       bytes += size;
     }
-    if (chunk.length > 0) await emit4({ upsert: chunk });
+    if (chunk.length > 0) await emit5({ upsert: chunk });
   }
-  async function scan(source, updatedAtMin, emit4, progress, signal) {
+  async function scan(source, updatedAtMin, emit5, progress, signal) {
     const auth = getPlexAuth();
     const settings = ensureCanonicalPlexSettings();
     if (!auth || !settings.serverUri || settings.libraries.length === 0) {
@@ -35137,7 +37914,7 @@ ${cue.text}`).join("\n\n")}
             }
           });
         }
-        await emitSized(emit4, items2);
+        await emitSized(emit5, items2);
         done += items2.length;
         progress({ phase: "titles", section: library.title, done, total: total ?? void 0 });
         if (page.nextStart == null) break;
@@ -35158,10 +37935,10 @@ ${cue.text}`).join("\n\n")}
       const source = plexLibrarySourceRef(settings);
       return source ? [source] : [];
     },
-    scanAll: (source, emit4, progress, signal) => scan(source, null, emit4, progress, signal),
-    scanDelta: (source, cursor, emit4, progress, signal) => {
+    scanAll: (source, emit5, progress, signal) => scan(source, null, emit5, progress, signal),
+    scanDelta: (source, cursor, emit5, progress, signal) => {
       const since = cursor ? Number.parseInt(cursor, 10) : NaN;
-      return scan(source, Number.isFinite(since) ? since : null, emit4, progress, signal);
+      return scan(source, Number.isFinite(since) ? since : null, emit5, progress, signal);
     },
     async resolvePlayback(_source, media) {
       const auth = getPlexAuth();
@@ -35171,7 +37948,11 @@ ${cue.text}`).join("\n\n")}
       const base = uris[0];
       if (!base || !token) return null;
       const separator = media.playRef.includes("?") ? "&" : "?";
-      return { url: `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`, filename: media.playRef.split("/").pop() };
+      const url = `${base}${media.playRef}${separator}X-Plex-Token=${encodeURIComponent(token)}`;
+      const filename = media.playRef.split("/").pop();
+      const ratingKey = plexRatingKeyOf(media);
+      const subtitles = ratingKey ? await fetchPlexExternalSubtitles(base, token, ratingKey, media.playRef.split("?")[0]).catch(() => []) : [];
+      return subtitles.length > 0 ? { url, filename, subtitles } : { url, filename };
     },
     /**
      * Progress tillbaka till Plex: `/:/timeline` under uppspelning (så Plex
@@ -35179,7 +37960,7 @@ ${cue.text}`).join("\n\n")}
      * ratingKey ligger i indexnycklarna: titel `<källa>:<ratingKey>`, avsnitt
      * `<titelnyckel>:e<ratingKey>`.
      */
-    async reportProgress(_source, ref, state2) {
+    async reportProgress(_source, ref, state3) {
       const auth = getPlexAuth();
       const settings = ensureCanonicalPlexSettings();
       const token = settings.serverAccessToken ?? auth?.authToken ?? null;
@@ -35188,12 +37969,12 @@ ${cue.text}`).join("\n\n")}
       const ratingKey = ref.episodeKey ? ref.episodeKey.split(":e").pop() : ref.title.key.split(":").pop();
       if (!ratingKey) return;
       const common = `X-Plex-Token=${encodeURIComponent(token)}&X-Plex-Client-Identifier=${encodeURIComponent(ensurePlexClientIdentifier())}`;
-      const url = state2.finished ? `${base}/:/scrobble?identifier=com.plexapp.plugins.library&key=${encodeURIComponent(ratingKey)}&${common}` : `${base}/:/timeline?ratingKey=${encodeURIComponent(ratingKey)}&key=${encodeURIComponent(`/library/metadata/${ratingKey}`)}&state=playing&time=${Math.max(0, state2.positionMs)}&duration=${Math.max(0, state2.durationMs)}&${common}`;
+      const url = state3.finished ? `${base}/:/scrobble?identifier=com.plexapp.plugins.library&key=${encodeURIComponent(ratingKey)}&${common}` : `${base}/:/timeline?ratingKey=${encodeURIComponent(ratingKey)}&key=${encodeURIComponent(`/library/metadata/${ratingKey}`)}&state=playing&time=${Math.max(0, state3.positionMs)}&duration=${Math.max(0, state3.durationMs)}&${common}`;
       await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
     }
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-sync.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-sync.ts
   init_plugin_sdk();
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -35822,7 +38603,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/playback-utils.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -35902,7 +38683,7 @@ ${cue.text}`).join("\n\n")}
     return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/playback-capability-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
     id: "plex-playback",
     pluginId: "com.lumio.plex",
@@ -35940,11 +38721,11 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-browse-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -36307,7 +39088,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-browse-page.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -36431,7 +39212,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var defaultFilterOptions2 = {
@@ -36483,10 +39264,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-library-index-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-library-index-panel.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -36574,7 +39355,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-section.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
@@ -36939,8 +39720,8 @@ ${cue.text}`).join("\n\n")}
         setHomeOverrideError(t("homeOverrideAlreadySet"));
       }
     }
-    const fieldLabel = (text) => /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: text });
-    const note = (text, tone = "dim") => /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, lineHeight: 1.5, color: tone === "ok" ? TOKENS.mint : tone === "warn" ? TOKENS.warn : tone === "error" ? TOKENS.red : TOKENS.textMute }, children: text });
+    const fieldLabel = (text2) => /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: text2 });
+    const note = (text2, tone = "dim") => /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, lineHeight: 1.5, color: tone === "ok" ? TOKENS.mint : tone === "warn" ? TOKENS.warn : tone === "error" ? TOKENS.red : TOKENS.textMute }, children: text2 });
     const stack = { display: "flex", flexDirection: "column", gap: 12 };
     return /* @__PURE__ */ jsxs("div", { style: stack, children: [
       homeOverrideEnabled ? /* @__PURE__ */ jsxs(Card, { children: [
@@ -37088,7 +39869,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/plex-episode-sidebar.tsx
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/plex-episode-sidebar.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -37582,7 +40363,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/episode-sidebar-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/episode-sidebar-provider.ts
   function isPlexItem(item) {
     return item.source === "plex" || item.id?.startsWith("plex-") || (item.providers ?? []).includes("Plex");
   }
@@ -37595,7 +40376,7 @@ ${cue.text}`).join("\n\n")}
     SidebarSection: PlexEpisodeSidebar
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/sync-identity-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -37658,7 +40439,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins-langs/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/plex/runtime/index.ts
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex", de: "Plex", fr: "Plex", es: "Plex" },

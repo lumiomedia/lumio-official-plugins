@@ -1299,6 +1299,78 @@
     }
   });
 
+  // lib/source-hints.ts
+  function connectors(value) {
+    if (!Array.isArray(value)) return [];
+    const out = [];
+    for (const entry of value) {
+      const id = text(entry?.id);
+      if (!id) continue;
+      const keys2 = (Array.isArray(entry.keys) ? entry.keys : []).map((k) => ({ storage: text(k?.storage), cookies: Array.isArray(k?.cookies) ? k.cookies.map(text).filter(Boolean) : [] })).filter((k) => k.storage || k.cookies.length > 0);
+      out.push({ id, ...text(entry.legacyId) ? { legacyId: text(entry.legacyId) } : {}, keys: keys2 });
+    }
+    return out;
+  }
+  function mirrorRules(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((r) => ({ cookiePrefix: text(r?.cookiePrefix), storagePrefix: text(r?.storagePrefix), cookie: text(r?.cookie), storage: text(r?.storage) })).filter((r) => r.cookiePrefix && r.storagePrefix || r.cookie && r.storage);
+  }
+  function strings(value) {
+    return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim() !== "").map((v) => v.trim().toLowerCase()) : [];
+  }
+  function normalize(value) {
+    const record = value && typeof value === "object" ? value : {};
+    const list = connectors(record.connectors);
+    const mirror = mirrorRules(record.cookieMirror);
+    const aliases = {};
+    if (record.groupAliases && typeof record.groupAliases === "object") {
+      for (const [from, to] of Object.entries(record.groupAliases)) {
+        if (from && text(to)) aliases[from] = text(to);
+      }
+    }
+    return {
+      parallelHosts: strings(record.parallelHosts),
+      resolverSegments: strings(record.resolverSegments),
+      ...list.length > 0 ? { connectors: list } : {},
+      ...mirror.length > 0 ? { cookieMirror: mirror } : {},
+      ...Object.keys(aliases).length > 0 ? { groupAliases: aliases } : {},
+      ...strings(record.creditWords).length > 0 ? { creditWords: strings(record.creditWords) } : {}
+    };
+  }
+  function getSourceHints() {
+    let raw = null;
+    try {
+      raw = getItem(SOURCE_HINTS_KEY);
+    } catch {
+      return memo2.value;
+    }
+    if (raw === memo2.raw) return memo2.value;
+    let value = EMPTY;
+    if (raw) {
+      try {
+        value = normalize(JSON.parse(raw));
+      } catch {
+        value = EMPTY;
+      }
+    }
+    memo2 = { raw, value };
+    return value;
+  }
+  function hostHasSuffix(host3, suffixes) {
+    const h = host3.toLowerCase();
+    return suffixes.some((suffix) => h === suffix || h.endsWith(`.${suffix}`));
+  }
+  var SOURCE_HINTS_KEY, EMPTY, text, memo2;
+  var init_source_hints = __esm({
+    "lib/source-hints.ts"() {
+      init_app_storage();
+      SOURCE_HINTS_KEY = "source_hints_v1";
+      EMPTY = { parallelHosts: [], resolverSegments: [] };
+      text = (value) => typeof value === "string" ? value.trim() : "";
+      memo2 = { raw: null, value: EMPTY };
+    }
+  });
+
   // lib/parallel-ranges.ts
   function parallelDirectEnabled() {
     if (typeof window === "undefined") return false;
@@ -1317,15 +1389,17 @@
       return false;
     }
     if (parsed2.protocol !== "https:" && parsed2.protocol !== "http:") return false;
-    return HOST.test(parsed2.hostname) || RESOLVER.test(parsed2.pathname);
+    const hints = getSourceHints();
+    if (hostHasSuffix(parsed2.hostname, hints.parallelHosts)) return true;
+    const resolved = /\/resolve\/([^/]+)\//i.exec(parsed2.pathname);
+    return !!resolved && hints.resolverSegments.includes(resolved[1].toLowerCase());
   }
-  var KEY_PARALLEL_DIRECT, RESOLVER, HOST;
+  var KEY_PARALLEL_DIRECT;
   var init_parallel_ranges = __esm({
     "lib/parallel-ranges.ts"() {
       init_app_storage();
+      init_source_hints();
       KEY_PARALLEL_DIRECT = "playback_parallel_direct";
-      RESOLVER = /\/resolve\/(torbox|realdebrid|real-debrid|premiumize|alldebrid|debridlink|debrid-link|easydebrid|offcloud)\//i;
-      HOST = /(^|\.)(tb-cdn\.st|torbox\.app|real-debrid\.com|rdeb\.io|premiumize\.me|alldebrid\.com|debrid-link\.(fr|com)|offcloud\.com)$/i;
     }
   });
 
@@ -2589,7 +2663,7 @@
       ...!wrapped && parallelOk ? { parallel: true } : {},
       // Tung film bakom en resolver vars slutadress inte är känd än:
       // spelaren avgör efter första omdirigeringen.
-      ...!wrapped && parallelIfFileHost ? { parallelIfFileHost: true } : {},
+      ...!wrapped && parallelIfFileHost ? { parallelIfFileHost: true, parallelHosts: getSourceHints().parallelHosts } : {},
       // Bara när spelaren hämtar direkt: genom källcachen sätter cachen dem.
       ...!wrapped && opts.requestHeaders ? { headers: opts.requestHeaders } : {}
     });
@@ -2897,6 +2971,7 @@
     "lib/tauri-native-player.ts"() {
       "use strict";
       init_parallel_ranges();
+      init_source_hints();
       init_timing();
       init_react_shim();
       init_tauri_mpv();
@@ -4265,14 +4340,6 @@
         streamProviderCustomUrl: "Custom URL",
         streamProviderNoUrl: "No URL set",
         streamProviderAddComet: "+ Comet",
-        streamProviderAddJackettio: "+ Jackettio",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        streamProviderAddAiostreams: "+ AIOStreams",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsOpenConfig: "Open the configurator",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
-        aiostreamsManifestLabel: "Manifest URL",
-        // boundary-exempt: pluginets UI-sträng, bundlas av pluginet; tas bort när pluginet bär egna strängar
         streamProviderAddCustom: "+ Custom URL",
         useGlobal: "Use global",
         clearFilters: "Clear filters",
@@ -7292,6 +7359,7 @@
         coreStreamsCached: "Cached",
         coreStreamsLoading: "Checking sources\u2026",
         streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
+        streamWrongFileNoneLeft: "The streams found look like the wrong file: far shorter than the film. Pick another stream from the list.",
         libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
         libraryRowSuffix: "in your library",
         libraryModeTab: "Library",
@@ -8619,9 +8687,9 @@
     }
     return pack?.[key] ?? en[key];
   }
-  function pickLangText(text2, lang) {
-    const own = text2[baseLang(lang)];
-    return own ?? text2.en;
+  function pickLangText(text3, lang) {
+    const own = text3[baseLang(lang)];
+    return own ?? text3.en;
   }
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
@@ -9155,7 +9223,7 @@
       try {
         const sourceParam = key || void 0;
         const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
-        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY;
+        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY2;
         const payload = await response.json();
         const next = {
           movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
@@ -9170,7 +9238,7 @@
         }
         return next;
       } catch {
-        return cache2 && cacheKey === key ? cache2 : EMPTY;
+        return cache2 && cacheKey === key ? cache2 : EMPTY2;
       } finally {
         if (inflight === run3) {
           inflight = null;
@@ -9229,7 +9297,7 @@
     if (key == null) return null;
     return state3 && state3.key === key ? state3.sets : LIBRARY_ID_SETS_LOADING;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY2, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -9237,7 +9305,7 @@
       init_react_shim();
       init_mode();
       LIBRARY_INDEX_CHANGED_EVENT = "lumio-library-index-changed";
-      EMPTY = {
+      EMPTY2 = {
         movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
         total: 0,
@@ -9438,6 +9506,16 @@
   });
 
   // lib/library/local-folder-provider.ts
+  function absoluteEpisode(work, parentFolder) {
+    if (!parentFolder) return null;
+    const match = work.match(/^(?:\[[^\]]*\]\s*)?(.+?)\s+[-–]\s+(\d{1,4})(?=\s|\[|\(|$)/);
+    if (!match) return null;
+    const episode = Number.parseInt(match[2], 10);
+    if (!(episode >= 1) || match[2].length === 4 && /^(19|20)/.test(match[2])) return null;
+    const title = match[1].trim();
+    const folder = parseLocalName(`${parentFolder}.mkv`).title;
+    return normalizeKey(title) && normalizeKey(title) === normalizeKey(folder) ? { title, episode } : null;
+  }
   function parseLocalName(filename, parentFolder) {
     const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
     const se = parseSeasonEpisode(stem);
@@ -9459,6 +9537,13 @@
     if (quality?.index != null) cuts.push(quality.index);
     if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
     let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (!se) {
+      const absolute = absoluteEpisode(stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim(), parentFolder);
+      if (absolute) {
+        const qualityLabel = qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase();
+        return { title: absolute.title, year: null, season: 1, episode: absolute.episode, qualityLabel };
+      }
+    }
     if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
       const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
       title = parsedFolder.title;
@@ -12015,8 +12100,8 @@
           // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
           // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
           // ecl argument if it can be done without increasing the version.
-          static encodeText(text2, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text2);
+          static encodeText(text3, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text3);
             return _QrCode2.encodeSegments(segs, ecl);
           }
           // Returns a QR Code representing the given binary data at the given error correction level.
@@ -12529,31 +12614,31 @@
           // Returns a segment representing the given text string encoded in alphanumeric mode.
           // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
           // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text2) {
-            if (!_QrSegment2.isAlphanumeric(text2))
+          static makeAlphanumeric(text3) {
+            if (!_QrSegment2.isAlphanumeric(text3))
               throw new RangeError("String contains unencodable characters in alphanumeric mode");
             let bb = [];
             let i;
-            for (i = 0; i + 2 <= text2.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i + 1));
+            for (i = 0; i + 2 <= text3.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text3.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text3.charAt(i + 1));
               appendBits(temp, 11, bb);
             }
-            if (i < text2.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text2.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text2.length, bb);
+            if (i < text3.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text3.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text3.length, bb);
           }
           // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
           // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text2) {
-            if (text2 == "")
+          static makeSegments(text3) {
+            if (text3 == "")
               return [];
-            else if (_QrSegment2.isNumeric(text2))
-              return [_QrSegment2.makeNumeric(text2)];
-            else if (_QrSegment2.isAlphanumeric(text2))
-              return [_QrSegment2.makeAlphanumeric(text2)];
+            else if (_QrSegment2.isNumeric(text3))
+              return [_QrSegment2.makeNumeric(text3)];
+            else if (_QrSegment2.isAlphanumeric(text3))
+              return [_QrSegment2.makeAlphanumeric(text3)];
             else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text2))];
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text3))];
           }
           // Returns a segment representing an Extended Channel Interpretation
           // (ECI) designator with the given assignment value.
@@ -12575,14 +12660,14 @@
           }
           // Tests whether the given string can be encoded as a segment in numeric mode.
           // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text2) {
-            return _QrSegment2.NUMERIC_REGEX.test(text2);
+          static isNumeric(text3) {
+            return _QrSegment2.NUMERIC_REGEX.test(text3);
           }
           // Tests whether the given string can be encoded as a segment in alphanumeric mode.
           // A string is encodable iff each character is in the following set: 0 to 9, A to Z
           // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text2) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text2);
+          static isAlphanumeric(text3) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text3);
           }
           /*-- Methods --*/
           // Returns a new copy of the data bits of this segment.
@@ -13375,24 +13460,24 @@
     const strict = level === "strict";
     const activeContext = context ?? readStreamFilterContext();
     return streams.map((s) => {
-      const text2 = `${s.name} ${s.title}`.toUpperCase();
-      if ((strict || filters.hideCam) && /\bCAM\b|\bCAMRIP\b|\bCAM-RIP\b/.test(text2)) return false;
-      if ((strict || filters.hideTs) && /\bHDTS\b|\bHDTC\b|\bTELESYNC\b|\bTELECINE\b/.test(text2)) return false;
-      if ((strict || filters.hideTs) && /(?<![A-Z])TS(?![A-Z])/.test(text2) && !/\d{3,4}P/.test(text2)) return false;
-      if ((strict || filters.hideScr) && /\bSCR\b|\bSCREENER\b|\bDVDSCR\b|\bDVD-SCR\b/.test(text2)) return false;
-      if (filters.hideBelow720p && /\b(480|360|240)P\b/.test(text2)) return false;
+      const text3 = `${s.name} ${s.title}`.toUpperCase();
+      if ((strict || filters.hideCam) && /\bCAM\b|\bCAMRIP\b|\bCAM-RIP\b/.test(text3)) return false;
+      if ((strict || filters.hideTs) && /\bHDTS\b|\bHDTC\b|\bTELESYNC\b|\bTELECINE\b/.test(text3)) return false;
+      if ((strict || filters.hideTs) && /(?<![A-Z])TS(?![A-Z])/.test(text3) && !/\d{3,4}P/.test(text3)) return false;
+      if ((strict || filters.hideScr) && /\bSCR\b|\bSCREENER\b|\bDVDSCR\b|\bDVD-SCR\b/.test(text3)) return false;
+      if (filters.hideBelow720p && /\b(480|360|240)P\b/.test(text3)) return false;
       if (strict) {
-        if (/\bSAMPLE\b|\bTRAILER\b/.test(text2)) return false;
-        if (/\.(EXE|MSI|ISO|ZIP|RAR|7Z|LNK|BAT|CMD|SCR|APK)\b/.test(text2)) return false;
+        if (/\bSAMPLE\b|\bTRAILER\b/.test(text3)) return false;
+        if (/\.(EXE|MSI|ISO|ZIP|RAR|7Z|LNK|BAT|CMD|SCR|APK)\b/.test(text3)) return false;
         if (activeContext.episode != null) {
           const epTag = `E${String(activeContext.episode).padStart(2, "0")}`;
-          const hasSeasonMarker = /\bS\d{1,2}\b|\bSEASON[\s.]?\d{1,2}\b|\bS\d{2}[\s.-]/.test(text2);
-          const hasAnyEpisode = /S\d{1,2}E\d{1,3}|\bE\d{2,3}\b|\d{1,2}X\d{2}/.test(text2);
-          if (hasAnyEpisode && !text2.includes(epTag) && !new RegExp(`\\d{1,2}X${String(activeContext.episode).padStart(2, "0")}`).test(text2)) return false;
-          if (!hasAnyEpisode && hasSeasonMarker && /\bCOMPLETE\b|\bPACK\b|\bSEASON\b/.test(text2)) return false;
+          const hasSeasonMarker = /\bS\d{1,2}\b|\bSEASON[\s.]?\d{1,2}\b|\bS\d{2}[\s.-]/.test(text3);
+          const hasAnyEpisode = /S\d{1,2}E\d{1,3}|\bE\d{2,3}\b|\d{1,2}X\d{2}/.test(text3);
+          if (hasAnyEpisode && !text3.includes(epTag) && !new RegExp(`\\d{1,2}X${String(activeContext.episode).padStart(2, "0")}`).test(text3)) return false;
+          if (!hasAnyEpisode && hasSeasonMarker && /\bCOMPLETE\b|\bPACK\b|\bSEASON\b/.test(text3)) return false;
         }
         if (activeContext.year && activeContext.episode == null) {
-          const years = (text2.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
+          const years = (text3.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
           if (years.length > 0 && !years.some((y) => Math.abs(y - Number(activeContext.year)) <= 1)) return false;
         }
       }
@@ -13432,8 +13517,8 @@
   function availabilityRateLimited() {
     return Date.now() < rateLimitedUntil;
   }
-  function isRateLimitNotice(text2) {
-    return Boolean(text2 && (/rate.?limit/i.test(text2) || /\b429\b/.test(text2)));
+  function isRateLimitNotice(text3) {
+    return Boolean(text3 && (/rate.?limit/i.test(text3) || /\b429\b/.test(text3)));
   }
   var MIN_INTERVAL_MS, nextSlotAt, RATE_LIMIT_COOLDOWN_MS, rateLimitedUntil;
   var init_availability_throttle = __esm({
@@ -13456,48 +13541,12 @@
     }
   });
 
-  // lib/media-stream/config.ts
-  var SCRAPER_PRESETS, DEFAULT_SCRAPER_URL;
-  var init_config = __esm({
-    "lib/media-stream/config.ts"() {
-      init_addon_url();
+  // lib/media-stream/source-list.ts
+  var init_source_list = __esm({
+    "lib/media-stream/source-list.ts"() {
       init_app_storage();
+      init_addon_url();
       init_profile_storage_shim();
-      SCRAPER_PRESETS = [
-        {
-          id: "torrentio",
-          name: "Torrentio",
-          url: "https://torrentio.strem.fun",
-          type: "torrentio",
-          description: "Publik scraper, stabil och snabb. Kr\xE4ver Real-Debrid API-nyckel.",
-          configUrl: "https://torrentio.strem.fun/configure"
-        },
-        {
-          id: "comet",
-          name: "Comet",
-          url: "",
-          type: "preconfigured",
-          description: "Snabb scraper med bra tr\xE4ffar. Kr\xE4ver konfiguration med RD-nyckel.",
-          configUrl: "https://comet.elfhosted.com"
-        },
-        {
-          id: "jackettio",
-          name: "Jackettio",
-          url: "",
-          type: "preconfigured",
-          description: "Jackett-baserad scraper med breda indexers. Kr\xE4ver Real-Debrid eller AllDebrid.",
-          configUrl: "https://jackettio.elfhosted.com/configure"
-        },
-        {
-          id: "aiostreams",
-          name: "AIOStreams",
-          url: "",
-          type: "preconfigured",
-          description: "Aggregerar m\xE5nga addons och debrid-tj\xE4nster bakom en enda konfiguration.",
-          configUrl: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure"
-        }
-      ];
-      DEFAULT_SCRAPER_URL = SCRAPER_PRESETS[0].url;
     }
   });
 
@@ -13523,7 +13572,7 @@
       "use client";
       init_addon_url();
       init_profile_storage_shim();
-      init_config();
+      init_source_list();
       KEY8 = "core_stream_addons_v1";
     }
   });
@@ -13538,8 +13587,8 @@
     if (normalized.includes("480p")) return 480;
     return null;
   }
-  function parseSizeBytes(text2) {
-    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text2);
+  function parseSizeBytes(text3) {
+    const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text3);
     if (!match) return null;
     const value = Number.parseFloat(match[1].replace(",", "."));
     const unit = SIZE_UNITS[match[2].toLowerCase()];
@@ -13570,8 +13619,8 @@
     return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
   }
   function streamLooksDolbyVision(stream) {
-    const text2 = `${stream.name} ${stream.title}`;
-    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text2) || /dolby[.\s_-]?vision/i.test(text2);
+    const text3 = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text3) || /dolby[.\s_-]?vision/i.test(text3);
   }
   function streamLooksLosslessAudio(stream) {
     return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
@@ -14052,12 +14101,12 @@
     return result2.streams.length > 0 && result2.reports.every(isAnswered) ? COMPLETE_MEMO_TTL_MS : MEMO_TTL_MS;
   }
   function freshMemo(target2) {
-    const cached2 = memo2.get(memoKey(target2));
+    const cached2 = memo3.get(memoKey(target2));
     return cached2 && Date.now() - cached2.at < cached2.ttl ? cached2.result : null;
   }
   function resetCoreStreamLookupMemo() {
     inflight2.clear();
-    memo2.clear();
+    memo3.clear();
   }
   function coreLookupAnsweredEmpty(target2) {
     const result2 = freshMemo(target2);
@@ -14065,9 +14114,9 @@
   }
   async function retryFailedCoreSources(target2, options = {}) {
     const key = memoKey(target2);
-    const previous = memo2.get(key)?.result;
+    const previous = memo3.get(key)?.result;
     if (!previous) {
-      memo2.delete(key);
+      memo3.delete(key);
       return lookupCoreStreams(target2, options);
     }
     const failed = previous.reports.filter((report) => !isAnswered(report)).map((report) => report.addon);
@@ -14084,7 +14133,7 @@
     const retriedNames = new Set(retried.reports.map((report) => report.addon.name));
     const reports = [...previous.reports.filter((report) => !retriedNames.has(report.addon.name)), ...retried.reports];
     const result2 = { streams, reports };
-    memo2.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
+    memo3.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
     if (options.signal?.aborted) return result2;
     return replayLookup(result2, options);
   }
@@ -14100,7 +14149,7 @@
       const answered2 = result2.reports.some(isAnswered);
       const framedSkip = result2.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
       if (answered2 && !framedSkip) {
-        memo2.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
+        memo3.set(key, { at: Date.now(), result: result2, ttl: memoTtl(result2) });
       }
       return result2;
     }).finally(() => inflight2.delete(key));
@@ -14135,7 +14184,7 @@
     });
     return { streams: merged, reports };
   }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo2;
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, COMPLETE_MEMO_TTL_MS, inflight2, memo3;
   var init_lookup = __esm({
     "lib/core-streams/lookup.ts"() {
       "use client";
@@ -14154,7 +14203,7 @@
       MEMO_TTL_MS = 45e3;
       COMPLETE_MEMO_TTL_MS = FRESH_SOURCE_MS;
       inflight2 = /* @__PURE__ */ new Map();
-      memo2 = /* @__PURE__ */ new Map();
+      memo3 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -15691,8 +15740,8 @@
     return ordered.find((option) => matchesLanguage(option, language)) ?? null;
   }
   function buildDualSubtitleLines(primary, secondary, stripSdh, strip) {
-    const clean = (text2) => {
-      const trimmed = text2?.trim() ?? "";
+    const clean = (text3) => {
+      const trimmed = text3?.trim() ?? "";
       if (!trimmed) return null;
       const result2 = stripSdh ? strip(trimmed).trim() : trimmed;
       return result2 || null;
@@ -18988,8 +19037,8 @@
   }
   function cleanSpokenText(raw) {
     if (!raw) return "";
-    const text2 = raw.replace(/\r\n?/g, "\n").replace(/\{\\[^}]*\}/g, "").replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'");
-    const lines2 = text2.split("\n").map((line2) => {
+    const text3 = raw.replace(/\r\n?/g, "\n").replace(/\{\\[^}]*\}/g, "").replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'");
+    const lines2 = text3.split("\n").map((line2) => {
       if (/[♪♫♬♩]/.test(line2) || /^\s*#.*#\s*$/.test(line2)) return "";
       return line2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^\s*[-–—]+\s*/, "").replace(/^\s*[A-ZÅÄÖÜÉÈÑ][A-ZÅÄÖÜÉÈÑ0-9 .'’-]{1,24}:\s*/u, "").replace(/\s{2,}/g, " ").trim();
     });
@@ -19051,25 +19100,25 @@
         }
         /** The subtitle on screen changed (raw text; '' or null = nothing on screen). */
         line(raw) {
-          const text2 = cleanSpokenText(raw);
-          if (!text2) {
+          const text3 = cleanSpokenText(raw);
+          if (!text3) {
             if (!(raw ?? "").trim()) this.lastLine = "";
             return;
           }
-          if (text2 === this.lastLine) return;
-          this.lastLine = text2;
+          if (text3 === this.lastLine) return;
+          this.lastLine = text3;
           const at = this.now();
           if (!this.speaking) {
-            this.start(text2);
+            this.start(text3);
             return;
           }
           if (at - this.startedAt >= this.maxLagMs) {
             this.pending = null;
             this.cut();
-            this.start(text2);
+            this.start(text3);
             return;
           }
-          this.pending = { text: text2, at };
+          this.pending = { text: text3, at };
         }
         /** Playback paused: stop talking, forget what was waiting. */
         pause() {
@@ -19082,11 +19131,11 @@
           this.pause();
           this.lastLine = "";
         }
-        start(text2) {
+        start(text3) {
           const gen = ++this.generation;
           this.startedAt = this.now();
           this.setSpeaking(true);
-          this.engine.speak(text2, { lang: this.lang, rate: this.rate }, () => this.ended(gen));
+          this.engine.speak(text3, { lang: this.lang, rate: this.rate }, () => this.ended(gen));
         }
         cut() {
           this.generation++;
@@ -19112,8 +19161,8 @@
   });
 
   // lib/spoken-subtitles-engine.ts
-  function estimatedSpeechMs(text2, rate) {
-    const words2 = text2.split(/\s+/).filter(Boolean).length;
+  function estimatedSpeechMs(text3, rate) {
+    const words2 = text3.split(/\s+/).filter(Boolean).length;
     return Math.round(words2 / 2.7 * 1e3 / Math.max(0.5, rate)) + 1500;
   }
   function hasWebSpeech() {
@@ -19141,7 +19190,7 @@
     let finish = null;
     let guard;
     return {
-      speak(text2, { lang, rate }, onEnd) {
+      speak(text3, { lang, rate }, onEnd) {
         let done = false;
         const end = () => {
           if (done) return;
@@ -19154,7 +19203,7 @@
           onEnd();
         };
         if (voices.length === 0) loadVoices();
-        const utterance = new SpeechSynthesisUtterance(text2);
+        const utterance = new SpeechSynthesisUtterance(text3);
         const voice = pickVoice(voices, lang, uiLanguage());
         if (voice) {
           utterance.voice = voice;
@@ -19165,7 +19214,7 @@
         utterance.onerror = end;
         current5 = utterance;
         finish = end;
-        guard = window.setTimeout(end, estimatedSpeechMs(text2, rate) + 4e3);
+        guard = window.setTimeout(end, estimatedSpeechMs(text3, rate) + 4e3);
         try {
           synth.speak(utterance);
         } catch {
@@ -19194,11 +19243,11 @@
       }
     };
     return {
-      speak(text2, { lang, rate }, onEnd) {
+      speak(text3, { lang, rate }, onEnd) {
         const id = `s${++seq3}`;
         let done = false;
         const startedAt = Date.now();
-        const limit = estimatedSpeechMs(text2, rate) + 4e3;
+        const limit = estimatedSpeechMs(text3, rate) + 4e3;
         const end = () => {
           if (done) return;
           done = true;
@@ -19211,7 +19260,7 @@
         stopPolling();
         finish = end;
         currentId = id;
-        void np({ cmd: "ttsSpeak", id, text: text2, lang: lang ?? "", rate }, 3e3).then((res) => {
+        void np({ cmd: "ttsSpeak", id, text: text3, lang: lang ?? "", rate }, 3e3).then((res) => {
           const ok = Boolean(res && typeof res === "object" && res.ok);
           if (!ok) {
             end();
@@ -20090,8 +20139,8 @@
     }
     return out;
   }
-  function cutSynopsis(text2, max = SYNOPSIS_MAX) {
-    const clean = text2.replace(/\s+/g, " ").trim();
+  function cutSynopsis(text3, max = SYNOPSIS_MAX) {
+    const clean = text3.replace(/\s+/g, " ").trim();
     if (clean.length <= max) return clean;
     const cut = clean.slice(0, max);
     const space = cut.lastIndexOf(" ");
@@ -20315,13 +20364,13 @@
   }
   function unseenColor(unseen, shape, i) {
     if (unseen === "dim") return DIM;
-    if (unseen === "empty") return EMPTY2;
+    if (unseen === "empty") return EMPTY3;
     return shape === "ring" ? RING_HATCH[i % 2] : "transparent";
   }
   function barcodeBackground(colors, unseen, shape, tailFrom2 = null) {
     const n = colors.length;
     const underlay = unseen === "hatch" && shape !== "ring" ? HATCH_UNDERLAY : null;
-    if (n === 0) return { background: EMPTY2, underlay };
+    if (n === 0) return { background: EMPTY3, underlay };
     const stops = [];
     let runColor = "";
     let runStart = 0;
@@ -20344,12 +20393,12 @@
     cache5.set(key, value);
     return value;
   }
-  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache5, CACHE_MAX;
+  var HATCH_UNDERLAY, DIM, EMPTY3, TAIL, RING_HATCH, cache5, CACHE_MAX;
   var init_barcode_gradient = __esm({
     "lib/barcode/barcode-gradient.ts"() {
       HATCH_UNDERLAY = "repeating-linear-gradient(135deg,#1c1d23 0 3px,#111216 3px 7px)";
       DIM = "#1a1b22";
-      EMPTY2 = "#141519";
+      EMPTY3 = "#141519";
       TAIL = "#0b0b0d";
       RING_HATCH = ["#1b1c22", "#111216"];
       cache5 = /* @__PURE__ */ new Map();
@@ -20622,18 +20671,18 @@
     if (c.includes("vorbis")) return { family: "vorbis", atmos: false, dtsHd: false };
     return null;
   }
-  function releaseAudioFamily(text2) {
-    if (TRUEHD.test(text2)) return "truehd";
-    if (DTS_X.test(text2) || DTS_HD.test(text2) || DTS.test(text2)) return "dts";
-    if (DDP.test(text2)) return "ddp";
-    if (DD.test(text2)) return "dd";
-    if (AAC.test(text2)) return "aac";
-    if (FLAC.test(text2)) return "flac";
-    if (OPUS.test(text2)) return "opus";
+  function releaseAudioFamily(text3) {
+    if (TRUEHD.test(text3)) return "truehd";
+    if (DTS_X.test(text3) || DTS_HD.test(text3) || DTS.test(text3)) return "dts";
+    if (DDP.test(text3)) return "ddp";
+    if (DD.test(text3)) return "dd";
+    if (AAC.test(text3)) return "aac";
+    if (FLAC.test(text3)) return "flac";
+    if (OPUS.test(text3)) return "opus";
     return null;
   }
-  function releaseChannels(text2) {
-    const match = CHANNELS.exec(text2.replace(/h\.?26[45]|x26[45]/gi, " "));
+  function releaseChannels(text3) {
+    const match = CHANNELS.exec(text3.replace(/h\.?26[45]|x26[45]/gi, " "));
     if (!match) return null;
     return Number(match[1]) + Number(match[2]);
   }
@@ -20685,29 +20734,29 @@
     const channels = engineChannels ?? (releaseApplies ? releaseChannels(releaseText) : null);
     return { family, codec, channels, atmos };
   }
-  function releaseSourceLabel(text2) {
-    if (/\bremux\b/i.test(text2)) return "REMUX";
-    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text2)) return "BluRay";
-    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text2)) return "WEB-DL";
-    if (/\bweb[.\s_-]?rip\b/i.test(text2)) return "WEBRip";
-    if (/\bhdtv\b/i.test(text2)) return "HDTV";
-    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text2)) return "DVD";
+  function releaseSourceLabel(text3) {
+    if (/\bremux\b/i.test(text3)) return "REMUX";
+    if (/blu[.\s_-]?ray|\bbd[.\s_-]?rip\b|\bbr[.\s_-]?rip\b|\bbdremux\b/i.test(text3)) return "BluRay";
+    if (/\bweb[.\s_-]?dl\b|\bwebdl\b/i.test(text3)) return "WEB-DL";
+    if (/\bweb[.\s_-]?rip\b/i.test(text3)) return "WEBRip";
+    if (/\bhdtv\b/i.test(text3)) return "HDTV";
+    if (/\bdvd(?:rip|r|5|9)?\b/i.test(text3)) return "DVD";
     return null;
   }
   function titleChipText(chip) {
     return chip.parts.map((part) => part.text).join(" \xB7 ");
   }
   function playerTitleChips(input) {
-    const text2 = input.releaseText ?? "";
+    const text3 = input.releaseText ?? "";
     const chips = [];
     const push = (kind, parts2) => {
       if (parts2.length > 0) chips.push({ kind, parts: parts2, priority: CHIP_PRIORITY[kind] });
     };
-    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text2));
+    const resolution = resolutionLabelFromSize(input.engineVideo?.width, input.engineVideo?.height) ?? resolutionLabelFromHeight(streamResolution(text3));
     if (resolution) push("resolution", [{ text: resolution }]);
-    const hdr = hdrFormatLabel(text2, input.engineVideo);
+    const hdr = hdrFormatLabel(text3, input.engineVideo);
     if (hdr) push("hdr", [hdr === "Dolby Vision" ? { text: hdr, icon: "dolby" } : { text: hdr }]);
-    const audio = audioFormatParts(text2, input.audioTrack);
+    const audio = audioFormatParts(text3, input.audioTrack);
     const track = input.audioTrack;
     const languageName2 = track ? track.title && COMMENTARY.test(track.title) ? input.commentaryLabel : audioLanguageLabel(track.language, input.uiLang) : null;
     const layout = channelLayoutLabel(audio.channels);
@@ -20721,7 +20770,7 @@
       push("audio", parts2);
     }
     if (input.includeSource !== false) {
-      const source = releaseSourceLabel(text2);
+      const source = releaseSourceLabel(text3);
       if (source) push("source", [{ text: source }]);
     }
     const languageText = languageName2 ? [languageName2, layout].filter(Boolean).join(" ") : !(audio.codec || audio.atmos) ? layout : null;
@@ -22010,7 +22059,7 @@
           onStep(e.key === "ArrowRight" ? 1 : -1);
         }
       });
-      const value = (text2) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text2 });
+      const value = (text3) => /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: text3 });
       const toggle = (key, label, on, flip) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, "data-f": "1", onClick: flip, className: TV_ROW, children: [
         /* @__PURE__ */ jsx("span", { className: TV_LABEL, children: label }),
         /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
@@ -22464,6 +22513,7 @@
   var VOD_GROUP, CLOUD_GROUP;
   var init_source_groups = __esm({
     "lib/core-streams/source-groups.ts"() {
+      init_source_hints();
       init_stream_utils();
       VOD_GROUP = "vod";
       CLOUD_GROUP = "cloud";
@@ -24304,13 +24354,13 @@
     return streams.filter((s) => !!s.directUrl);
   }
   function pushCue(buffer, cue, now2) {
-    const text2 = cue.text.trim();
-    if (!text2) return buffer;
+    const text3 = cue.text.trim();
+    if (!text3) return buffer;
     const last2 = buffer[buffer.length - 1];
-    if (last2 && last2.text === text2) return buffer;
+    if (last2 && last2.text === text3) return buffer;
     const base2 = last2 && last2.start > cue.start ? [] : buffer;
     const kept = base2.filter((c) => c.start >= now2 - SAID_WINDOW_S);
-    kept.push({ text: text2, start: cue.start });
+    kept.push({ text: text3, start: cue.start });
     return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
   }
   var SAID_WINDOW_S, SAID_MAX_CUES;
@@ -24567,16 +24617,23 @@
   });
 
   // lib/credits-from-subs.ts
-  function stripCueMarkup(text2) {
-    return text2.replace(/\{\\[^}]*\}/g, " ").replace(/<[^>]+>/g, " ").replace(/\\[Nn]/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+  function stripCueMarkup(text3) {
+    return text3.replace(/\{\\[^}]*\}/g, " ").replace(/<[^>]+>/g, " ").replace(/\\[Nn]/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+  }
+  function creditPattern() {
+    const extra = (getSourceHints().creditWords ?? []).filter((word) => /^[a-z0-9][a-z0-9-]*$/.test(word)).join("|");
+    if (creditRe && creditRe.extra === extra) return creditRe.re;
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])(${CREDIT_WORDS}${extra ? `|${extra}` : ""})(?![\\p{L}\\p{N}])`, "iu");
+    creditRe = { extra, re };
+    return re;
   }
   function isTailNoiseCue(rawText) {
-    const text2 = stripCueMarkup(rawText);
-    if (!text2) return true;
-    if (MUSIC_RE.test(text2)) return true;
-    if (URL_RE.test(text2)) return true;
-    if (CREDIT_RE.test(text2)) return true;
-    const spoken = text2.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^[-–—\s]*[A-ZÅÄÖÜ0-9 .'-]{2,}:\s*/u, "").replace(/[-–—.…!?,\s]+/g, " ").trim();
+    const text3 = stripCueMarkup(rawText);
+    if (!text3) return true;
+    if (MUSIC_RE.test(text3)) return true;
+    if (URL_RE.test(text3)) return true;
+    if (creditPattern().test(text3)) return true;
+    const spoken = text3.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ").replace(/^[-–—\s]*[A-ZÅÄÖÜ0-9 .'-]{2,}:\s*/u, "").replace(/[-–—.…!?,\s]+/g, " ").trim();
     if (!spoken) return true;
     if (END_CARD_RE.test(spoken)) return true;
     return false;
@@ -24607,9 +24664,10 @@
     if (durationSeconds - candidate < MIN_SECONDS_BEFORE_END) return { start: null, reason: "too_late" };
     return { start: candidate, reason: "ok" };
   }
-  var TAIL_FRACTION, MIN_SECONDS_BEFORE_END, MIN_DURATION_SECONDS, MIN_DIALOGUE_CUES, MIN_CUES_PER_MINUTE, DEFAULT_DELAY_AFTER_LAST_LINE, PAST_END_TOLERANCE, NOISE_SKIP_FRACTION, URL_RE, CREDIT_RE, END_CARD_RE, MUSIC_RE;
+  var TAIL_FRACTION, MIN_SECONDS_BEFORE_END, MIN_DURATION_SECONDS, MIN_DIALOGUE_CUES, MIN_CUES_PER_MINUTE, DEFAULT_DELAY_AFTER_LAST_LINE, PAST_END_TOLERANCE, NOISE_SKIP_FRACTION, URL_RE, CREDIT_WORDS, creditRe, END_CARD_RE, MUSIC_RE;
   var init_credits_from_subs = __esm({
     "lib/credits-from-subs.ts"() {
+      init_source_hints();
       TAIL_FRACTION = 0.12;
       MIN_SECONDS_BEFORE_END = 30;
       MIN_DURATION_SECONDS = 480;
@@ -24619,10 +24677,8 @@
       PAST_END_TOLERANCE = 5;
       NOISE_SKIP_FRACTION = 0.25;
       URL_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|org|net|tv|io|me|info|se|de|fr|es|nl|ru|ro|pl)\b)/i;
-      CREDIT_RE = new RegExp(
-        "(?<![\\p{L}\\p{N}])(subtitles?|subtitled|subs|captions?|captioned|captioning|closed captioning|translat\\w*|transcri\\w*|synced|sync(?:ed|hronized)?\\s+(by|and)|resync\\w*|re-?synced|corrected\\s+by|corrections\\s+by|proofread\\w*|encoded\\s+by|ripped\\s+by|timed\\s+by|timing\\s+by|opensubtitles|addic7ed|podnapisi|subscene|yify|yts|rarbg|osdb|undertext\\w*|svensk text|\xF6versatt\\w*|\xF6vers\xE4ttning|textning|textad\\w*|untertitel\\w*|\xFCbersetz\\w*|sous-titr\\w*|traduct\\w*|traduit|subt[i\xED]tul\\w*|traducci[o\xF3]n|traducido)(?![\\p{L}\\p{N}])",
-        "iu"
-      );
+      CREDIT_WORDS = "subtitles?|subtitled|subs|captions?|captioned|captioning|closed captioning|translat\\w*|transcri\\w*|synced|sync(?:ed|hronized)?\\s+(by|and)|resync\\w*|re-?synced|corrected\\s+by|corrections\\s+by|proofread\\w*|encoded\\s+by|ripped\\s+by|timed\\s+by|timing\\s+by|opensubtitles|addic7ed|podnapisi|subscene|osdb|undertext\\w*|svensk text|\xF6versatt\\w*|\xF6vers\xE4ttning|textning|textad\\w*|untertitel\\w*|\xFCbersetz\\w*|sous-titr\\w*|traduct\\w*|traduit|subt[i\xED]tul\\w*|traducci[o\xF3]n|traducido";
+      creditRe = null;
       END_CARD_RE = /^(the end|to be continued|fin|slut|ende|continuará|à suivre|fortsättning följer|fortsetzung folgt)[.!…]*$/i;
       MUSIC_RE = /[♪♫♬♩]|^#|#$/;
     }
@@ -26743,7 +26799,7 @@ ${effectiveName(url, id)}`;
     const ss = String(total % 60).padStart(2, "0");
     return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
   }
-  function normalize(s, fixed2) {
+  function normalize2(s, fixed2) {
     const lo = s.windowStart;
     const hi = clipWindowEnd(s);
     const max = maxLengthFor(s.format);
@@ -26776,14 +26832,14 @@ ${effectiveName(url, id)}`;
       activeHandle: null,
       scrubbing: false
     };
-    return normalize(base2, base2.inSec <= base2.windowStart ? "in" : "out");
+    return normalize2(base2, base2.inSec <= base2.windowStart ? "in" : "out");
   }
   function clipReducer(state3, action) {
     switch (action.type) {
       case "setHandle": {
         const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
         const other = action.handle === "in" ? "out" : "in";
-        return normalize({ ...state3, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+        return normalize2({ ...state3, ...moved, activeHandle: action.handle, scrubbing: true }, other);
       }
       case "nudge": {
         const current5 = action.handle === "in" ? state3.inSec : state3.outSec;
@@ -26791,10 +26847,10 @@ ${effectiveName(url, id)}`;
       }
       case "setLength": {
         const len = Math.min(action.sec, maxLengthFor(state3.format));
-        return normalize({ ...state3, inSec: state3.outSec - len }, "out");
+        return normalize2({ ...state3, inSec: state3.outSec - len }, "out");
       }
       case "setFormat":
-        return normalize({ ...state3, format: action.format }, "out");
+        return normalize2({ ...state3, format: action.format }, "out");
       case "setTitle":
         return { ...state3, title: action.title, titleEdited: true };
       case "scrubEnd":
@@ -27393,7 +27449,7 @@ ${effectiveName(url, id)}`;
       if (color) return color;
       if (tail != null && i >= tail) return TAIL2;
       if (unseen === "dim") return DIM2;
-      if (unseen === "empty") return EMPTY3;
+      if (unseen === "empty") return EMPTY4;
       return "hatch";
     });
   }
@@ -27419,7 +27475,7 @@ ${effectiveName(url, id)}`;
   function drawBarcode(ctx, fills, r, vertical, hatchScale) {
     const n = fills.length;
     if (n === 0) {
-      ctx.fillStyle = EMPTY3;
+      ctx.fillStyle = EMPTY4;
       ctx.fillRect(r.x, r.y, r.w, r.h);
       return;
     }
@@ -27440,8 +27496,8 @@ ${effectiveName(url, id)}`;
       i = j;
     }
   }
-  function drawSpaced(ctx, text2, x, y, spacing, align) {
-    const chars = [...text2];
+  function drawSpaced(ctx, text3, x, y, spacing, align) {
+    const chars = [...text3];
     const widths = chars.map((c) => ctx.measureText(c).width);
     const total = widths.reduce((s, w) => s + w, 0) + spacing * Math.max(0, chars.length - 1);
     let cx = align === "left" ? x : align === "right" ? x - total : x - total / 2;
@@ -27451,9 +27507,9 @@ ${effectiveName(url, id)}`;
       cx += widths[k] + spacing;
     });
   }
-  function fitText(ctx, text2, maxWidth) {
-    if (ctx.measureText(text2).width <= maxWidth) return text2;
-    let t = text2;
+  function fitText(ctx, text3, maxWidth) {
+    if (ctx.measureText(text3).width <= maxWidth) return text3;
+    let t = text3;
     while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > maxWidth) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
@@ -27528,7 +27584,7 @@ ${effectiveName(url, id)}`;
     const suffix = kind === "image" ? "" : kind === "story" ? " story" : kind === "wallDesktop" ? " tapet" : " tapet mobil";
     return `${safe}${b.year ? ` (${b.year})` : ""} \u2013 barcode${suffix}.png`;
   }
-  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY3, TAIL2, FONT;
+  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY4, TAIL2, FONT;
   var init_barcode_share_render = __esm({
     "lib/barcode/barcode-share-render.ts"() {
       "use strict";
@@ -27549,7 +27605,7 @@ ${effectiveName(url, id)}`;
       HATCH_BASE = "#111216";
       HATCH_LINE = "#1c1d23";
       DIM2 = "#1a1b22";
-      EMPTY3 = "#141519";
+      EMPTY4 = "#141519";
       TAIL2 = "#0b0b0d";
       FONT = '"Avenir Next", "Segoe UI Variable", "Segoe UI", "Trebuchet MS", system-ui, sans-serif';
     }
@@ -27578,22 +27634,22 @@ ${effectiveName(url, id)}`;
   function setFont(ctx, weight, size) {
     ctx.font = `${weight} ${size}px ${FONT2}`;
   }
-  function spacedWidth(ctx, text2, spacing) {
-    const chars = [...text2];
+  function spacedWidth(ctx, text3, spacing) {
+    const chars = [...text3];
     return chars.reduce((sum, c) => sum + ctx.measureText(c).width, 0) + spacing * Math.max(0, chars.length - 1);
   }
   function baseline(top2, lineH, size) {
     return top2 + lineH / 2 + size * 0.34;
   }
-  function clip(ctx, text2, maxW, spacing = 0) {
-    if (spacedWidth(ctx, text2, spacing) <= maxW) return text2;
-    let t = text2;
+  function clip(ctx, text3, maxW, spacing = 0) {
+    if (spacedWidth(ctx, text3, spacing) <= maxW) return text3;
+    let t = text3;
     while (t.length > 1 && spacedWidth(ctx, `${t}\u2026`, spacing) > maxW) t = t.slice(0, -1);
     return `${t.trimEnd()}\u2026`;
   }
-  function wrapLines(ctx, text2, maxW, maxLines) {
+  function wrapLines(ctx, text3, maxW, maxLines) {
     const lines2 = [];
-    for (const word of text2.split(/\s+/).filter(Boolean)) {
+    for (const word of text3.split(/\s+/).filter(Boolean)) {
       const last2 = lines2[lines2.length - 1];
       if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines2[lines2.length - 1] = `${last2} ${word}`;
       else lines2.push(word);
@@ -27884,20 +27940,20 @@ ${effectiveName(url, id)}`;
       const parts2 = [];
       if (m?.directors.length) {
         const h = 9.5 * 1.2 * s;
-        const text2 = opts.labels.line(opts.labels.directedBy, m.directors);
+        const text3 = opts.labels.line(opts.labels.directedBy, m.directors);
         parts2.push({ h, draw: (y) => {
           setFont(ctx, 600, 9.5 * s);
           ctx.fillStyle = paper.ink;
-          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y, h, 9.5 * s));
+          ctx.fillText(clip(ctx, text3, bw), bx, baseline(y, h, 9.5 * s));
         } });
       }
       if (m?.writers.length) {
         const h = 8 * 1.2 * s;
-        const text2 = opts.labels.line(opts.labels.writtenBy, m.writers);
+        const text3 = opts.labels.line(opts.labels.writtenBy, m.writers);
         parts2.push({ h: h + 2 * s, draw: (y) => {
           setFont(ctx, 400, 8 * s);
           ctx.fillStyle = paper.dim;
-          ctx.fillText(clip(ctx, text2, bw), bx, baseline(y + 2 * s, h, 8 * s));
+          ctx.fillText(clip(ctx, text3, bw), bx, baseline(y + 2 * s, h, 8 * s));
         } });
       }
       if (m?.synopsis) {
@@ -28567,8 +28623,8 @@ ${cue.text}`).join("\n\n")}
     if (parts2.length === 3) return +parts2[0] * 3600 + +parts2[1] * 60 + parseFloat(parts2[2]);
     return +parts2[0] * 60 + parseFloat(parts2[1]);
   }
-  function stripSdhText(text2) {
-    const lines2 = text2.split("\n").map((line2) => line2.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+  function stripSdhText(text3) {
+    const lines2 = text3.split("\n").map((line2) => line2.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
     return lines2.filter((line2) => line2.length > 0 && line2 !== "-").join("\n");
   }
   function parseVtt(vtt) {
@@ -28580,8 +28636,8 @@ ${cue.text}`).join("\n\n")}
       const [s, e] = timeLine3.split("-->");
       const start3 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
-      const text2 = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
-      if (text2) cues.push({ start: start3, end, text: text2 });
+      const text3 = lines2.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
+      if (text3) cues.push({ start: start3, end, text: text3 });
     }
     return cues;
   }
@@ -28725,24 +28781,24 @@ ${cue.text}`).join("\n\n")}
     }
     return null;
   }
-  async function writeTextToClipboard(text2) {
+  async function writeTextToClipboard(text3) {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text2);
+        await navigator.clipboard.writeText(text3);
         return true;
       }
     } catch {
     }
     try {
       const ta = document.createElement("textarea");
-      ta.value = text2;
+      ta.value = text3;
       ta.setAttribute("readonly", "");
       ta.style.position = "fixed";
       ta.style.top = "0";
       ta.style.left = "-9999px";
       document.body.appendChild(ta);
       ta.select();
-      ta.setSelectionRange(0, text2.length);
+      ta.setSelectionRange(0, text3.length);
       const ok = document.execCommand("copy");
       ta.remove();
       return ok;
@@ -29751,7 +29807,7 @@ ${cue.text}`).join("\n\n")}
       const id = window.setTimeout(() => setMomentNotice(null), 2600);
       return () => window.clearTimeout(id);
     }, [momentNotice]);
-    const showMomentNotice = (text2) => setMomentNotice({ text: text2, id: Date.now() });
+    const showMomentNotice = (text3) => setMomentNotice({ text: text3, id: Date.now() });
     useEffect(() => {
       if (!showMoreMenu || !isTv) return;
       moreMenuRef.current?.querySelector("[data-f]")?.focus();
@@ -35568,10 +35624,10 @@ ${cue.text}`).join("\n\n")}
     const saidBufferRef = useRef([]);
     const saidText = isMpvEngine ? mpv.subText : rawSubtitleText;
     useEffect(() => {
-      const text2 = (saidText ?? "").trim();
-      if (!text2) return;
+      const text3 = (saidText ?? "").trim();
+      if (!text3) return;
       const now2 = realTimeRef.current;
-      saidBufferRef.current = pushCue(saidBufferRef.current, { text: text2, start: now2 }, now2);
+      saidBufferRef.current = pushCue(saidBufferRef.current, { text: text3, start: now2 }, now2);
     }, [saidText]);
     const [spokenSubsOn, setSpokenSubsOn] = useState(() => getSpokenSubtitles());
     const [spokenSubsRate, setSpokenSubsRate] = useState(() => getSpokenSubtitlesRate());
@@ -35984,9 +36040,9 @@ ${cue.text}`).join("\n\n")}
     const gestureHudTimerRef = useRef(null);
     const gestureRef = useRef(null);
     const GESTURE_SEEK_SPAN_SECONDS = 90;
-    const showGestureHud = (kind, value, text2) => {
+    const showGestureHud = (kind, value, text3) => {
       if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
-      setGestureHud({ kind, value, text: text2 });
+      setGestureHud({ kind, value, text: text3 });
     };
     const keySeekHudRef = useRef({ total: 0, at: 0 });
     showKeySeekHudRef.current = (delta) => {
@@ -36784,8 +36840,8 @@ ${cue.text}`).join("\n\n")}
                               const foundE = Number(m[2]);
                               if (foundS !== season || foundE !== episode) {
                                 const pad4 = (n) => String(n).padStart(2, "0");
-                                const text2 = t("vpWrongEpisodeWarning").replace("{found}", `S${pad4(foundS)}E${pad4(foundE)}`).replace("{wanted}", `S${pad4(season)}E${pad4(episode)}`);
-                                setSourceMismatchWarning(text2);
+                                const text3 = t("vpWrongEpisodeWarning").replace("{found}", `S${pad4(foundS)}E${pad4(foundE)}`).replace("{wanted}", `S${pad4(season)}E${pad4(episode)}`);
+                                setSourceMismatchWarning(text3);
                                 if (sourceMismatchTimerRef.current) window.clearTimeout(sourceMismatchTimerRef.current);
                                 sourceMismatchTimerRef.current = window.setTimeout(() => setSourceMismatchWarning(null), 12e3);
                                 void emitDesktopPlaybackTelemetry({ stage: "player.lifecycle", status: "error", detail: "source_episode_mismatch", context: { wanted: `S${pad4(season)}E${pad4(episode)}`, found: `S${pad4(foundS)}E${pad4(foundE)}`, playbackTraceId } });
@@ -39206,31 +39262,31 @@ ${cue.text}`).join("\n\n")}
   });
 
   // lib/tv-tab-heading.tsx
-  function useRepeatsTvTabHeading(text2) {
+  function useRepeatsTvTabHeading(text3) {
     const label = useContext(TvTabHeadingContext);
-    if (!label || typeof text2 !== "string") return false;
-    return normalize2(text2) === normalize2(label);
+    if (!label || typeof text3 !== "string") return false;
+    return normalize3(text3) === normalize3(label);
   }
-  var TvTabHeadingContext, normalize2;
+  var TvTabHeadingContext, normalize3;
   var init_tv_tab_heading = __esm({
     "lib/tv-tab-heading.tsx"() {
       "use client";
       init_react_shim();
       init_jsx_runtime_shim();
       TvTabHeadingContext = createContext(null);
-      normalize2 = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
+      normalize3 = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
     }
   });
 
   // lib/settings-heading.ts
-  function normalize3(value) {
+  function normalize4(value) {
     if (typeof value === "string") return value.trim().toLowerCase().replace(/\s+/g, " ");
     if (typeof value === "number") return String(value);
     return null;
   }
   function eyebrowRepeatsTitle(eyebrow, title) {
-    const a = normalize3(eyebrow);
-    const b = normalize3(title);
+    const a = normalize4(eyebrow);
+    const b = normalize4(title);
     if (a === null || b === null || a === "" || b === "") return false;
     return a === b;
   }
@@ -40183,8 +40239,8 @@ ${cue.text}`).join("\n\n")}
       setValue(value + (shift && !numeric ? char.toUpperCase() : char));
       setShift(false);
     };
-    const insert = (text2) => {
-      const cleaned = numeric ? text2.replace(/\D/g, "") : text2.replace(/\s+/g, " ");
+    const insert = (text3) => {
+      const cleaned = numeric ? text3.replace(/\D/g, "") : text3.replace(/\s+/g, " ");
       if (!cleaned) return;
       setValue((current5) => clamp5(current5 + cleaned));
     };
@@ -40205,10 +40261,10 @@ ${cue.text}`).join("\n\n")}
         insert(event2.key);
       };
       const onPaste = (event2) => {
-        const text2 = event2.clipboardData?.getData("text");
-        if (!text2) return;
+        const text3 = event2.clipboardData?.getData("text");
+        if (!text3) return;
         event2.preventDefault();
-        insert(text2);
+        insert(text3);
       };
       window.addEventListener("keydown", onKeyDown, true);
       window.addEventListener("paste", onPaste, true);
@@ -41107,8 +41163,8 @@ ${cue.text}`).join("\n\n")}
   });
 
   // components/series-lock/copy.ts
-  function fill(text2, vars) {
-    return text2.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
+  function fill(text3, vars) {
+    return text3.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
   }
   function joinNames(names, t) {
     if (names.length <= 1) return names[0] ?? "";
@@ -41350,11 +41406,11 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function LockedLine({ waitingFor, text: text2 }) {
+  function LockedLine({ waitingFor, text: text3 }) {
     const avatar = getProfiles().find((p) => p.id === waitingFor[0]);
     return /* @__PURE__ */ jsxs("p", { "data-series-lock-next": "", className: "mt-1 flex items-center gap-1.5 text-[0.6875rem] text-slate-300", children: [
       avatar ? /* @__PURE__ */ jsx(ProfileAvatar, { profile: avatar, className: "h-[1.125rem] w-[1.125rem] shrink-0 text-[0.5rem]" }) : null,
-      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text2 })
+      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text3 })
     ] });
   }
   var init_next_episode_card = __esm({
@@ -42061,9 +42117,9 @@ ${cue.text}`).join("\n\n")}
     if (!cache13 || !cache13.isAndroid()) return null;
     return { isPhone: cache13.isPhone(), get: cache13.get, set: cache13.set };
   }
-  function resolvePluginText(text2, lang) {
-    if (typeof text2 === "string") return text2;
-    return text2[lang] ?? text2[baseLang(lang)] ?? text2.en ?? text2.sv ?? "";
+  function resolvePluginText(text3, lang) {
+    if (typeof text3 === "string") return text3;
+    return text3[lang] ?? text3[baseLang(lang)] ?? text3.en ?? text3.sv ?? "";
   }
   function hostOs() {
     return detectDesktopOs();
@@ -42677,8 +42733,8 @@ ${cue.text}`).join("\n\n")}
       body: JSON.stringify({ source })
     });
     if (!res.ok) {
-      const text2 = await res.text();
-      throw new Error(text2 || `/api/live-tv/logo-fallback returned ${res.status}`);
+      const text3 = await res.text();
+      throw new Error(text3 || `/api/live-tv/logo-fallback returned ${res.status}`);
     }
     const data = await res.json();
     emitIndexChanged();
@@ -43589,11 +43645,11 @@ ${cue.text}`).join("\n\n")}
     });
   }
   function normalizeXtreamBase(raw) {
-    let text2 = raw.trim();
-    if (!text2) return null;
-    if (!/^https?:\/\//i.test(text2)) text2 = `http://${text2}`;
+    let text3 = raw.trim();
+    if (!text3) return null;
+    if (!/^https?:\/\//i.test(text3)) text3 = `http://${text3}`;
     try {
-      const parsed2 = new URL(text2);
+      const parsed2 = new URL(text3);
       const port = parsed2.port ? `:${parsed2.port}` : "";
       return `${parsed2.protocol}//${parsed2.hostname}${port}`;
     } catch {
@@ -43905,8 +43961,8 @@ ${cue.text}`).join("\n\n")}
   function localeFor(lang) {
     return LOCALES[textLang(lang)];
   }
-  function pickText(lang, text2) {
-    return text2[textLang(lang)] ?? text2.en;
+  function pickText(lang, text3) {
+    return text3[textLang(lang)] ?? text3.en;
   }
   var LOCALES;
   var init_lang = __esm({
@@ -43918,42 +43974,42 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
-    memo3.set(key, value);
-    while (memo3.size > MAX_ENTRIES6) {
-      const oldest = memo3.keys().next();
+    memo4.set(key, value);
+    while (memo4.size > MAX_ENTRIES6) {
+      const oldest = memo4.keys().next();
       if (oldest.done) break;
-      memo3.delete(oldest.value);
+      memo4.delete(oldest.value);
     }
   }
   function getResolvedChannels(keys2) {
     const out = {};
     for (const key of keys2) {
-      const hit = memo3.get(key);
+      const hit = memo4.get(key);
       if (hit) out[key] = hit;
     }
     return out;
   }
   async function resolveChannelKeys(keys2) {
     const wanted = [...new Set(keys2.filter((key) => key.length > 0))];
-    const missing = wanted.filter((key) => !memo3.has(key));
+    const missing = wanted.filter((key) => !memo4.has(key));
     if (missing.length > 0) {
       const items2 = await lookupChannels(missing);
       const found = new Map(items2.map((item) => [item.key, item]));
       for (const key of missing) remember(key, found.get(key) ?? null);
     }
-    return wanted.map((key) => memo3.get(key) ?? null).filter((item) => item !== null);
+    return wanted.map((key) => memo4.get(key) ?? null).filter((item) => item !== null);
   }
   function clearResolvedChannels() {
-    memo3.clear();
+    memo4.clear();
   }
-  var MAX_ENTRIES6, memo3;
+  var MAX_ENTRIES6, memo4;
   var init_channel_resolver = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
       MAX_ENTRIES6 = 1e3;
-      memo3 = /* @__PURE__ */ new Map();
+      memo4 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -44268,8 +44324,8 @@ ${cue.text}`).join("\n\n")}
     }
     logLiveTv(`HLS fallback \u2192 TS (${reason}${opts.wholeAccount ? ", whole account" : ""}): ${redactLiveUrl(originalUrl)}`);
   }
-  function logLiveTv(text2) {
-    const msg = `[live-tv] ${text2}`;
+  function logLiveTv(text3) {
+    const msg = `[live-tv] ${text3}`;
     console.warn(msg);
     if (typeof fetch === "function") {
       void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {
@@ -51066,7 +51122,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/channel-overrides.ts
   function sanitize6(raw) {
-    if (!raw || typeof raw !== "object") return EMPTY4;
+    if (!raw || typeof raw !== "object") return EMPTY5;
     const r = raw;
     const hidden3 = Array.isArray(r.hidden) ? [...new Set(r.hidden.filter((k) => typeof k === "string" && k.length > 0))] : [];
     const names = {};
@@ -51078,7 +51134,7 @@ ${cue.text}`).join("\n\n")}
     return { hidden: hidden3, names };
   }
   function getChannelOverrides() {
-    return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, EMPTY4));
+    return sanitize6(readPluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, EMPTY5));
   }
   function write10(next) {
     writePluginJson(LIVE_TV_PLUGIN_ID2, CHANNEL_OVERRIDES_KEY, next);
@@ -51119,7 +51175,7 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
-  var CHANNEL_OVERRIDES_KEY, EMPTY4, sourceName;
+  var CHANNEL_OVERRIDES_KEY, EMPTY5, sourceName;
   var init_channel_overrides = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/channel-overrides.ts"() {
       "use strict";
@@ -51128,7 +51184,7 @@ ${cue.text}`).join("\n\n")}
       init_plugin_sdk();
       init_live_tv_data();
       CHANNEL_OVERRIDES_KEY = "channel_overrides_v1";
-      EMPTY4 = { hidden: [], names: {} };
+      EMPTY5 = { hidden: [], names: {} };
       sourceName = (channel) => channel.originalName ?? channel.name;
     }
   });
@@ -51524,8 +51580,8 @@ ${cue.text}`).join("\n\n")}
     const nowFor = useMemo(() => {
       const items2 = snapshot3?.items ?? null;
       return (channel) => {
-        if (!items2) return EMPTY5;
-        return items2[channelKey(channel)] ?? EMPTY5;
+        if (!items2) return EMPTY6;
+        return items2[channelKey(channel)] ?? EMPTY6;
       };
     }, [snapshot3]);
     const favouriteChannels = useMemo(
@@ -51592,7 +51648,7 @@ ${cue.text}`).join("\n\n")}
     if (/\b(SD|576|480)\b/.test(n)) return "SD";
     return null;
   }
-  var EMPTY5, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
+  var EMPTY6, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
@@ -51614,7 +51670,7 @@ ${cue.text}`).join("\n\n")}
       init_live_tv_data();
       init_tv_settings_store();
       init_group_order();
-      EMPTY5 = { now: null, next: null, later: null };
+      EMPTY6 = { now: null, next: null, later: null };
       PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
       EPG_TTL_MS = 6 * 60 * 60 * 1e3;
       bootstrapPromise = null;
@@ -56058,9 +56114,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const res = await fetch(path, init);
     let data = null;
     if (typeof res.text === "function") {
-      const text2 = await res.text();
+      const text3 = await res.text();
       try {
-        data = text2 ? JSON.parse(text2) : null;
+        data = text3 ? JSON.parse(text3) : null;
       } catch {
         data = null;
       }
@@ -56356,7 +56412,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return result2;
   }
   function nowNextLaterFrom(programmes, now2 = Date.now()) {
-    if (!programmes || programmes.length === 0) return EMPTY6;
+    if (!programmes || programmes.length === 0) return EMPTY7;
     const idx = findCurrentIndex(programmes, now2);
     const candidate = idx >= 0 ? programmes[idx] : null;
     const isCurrent = candidate != null && candidate.stop > now2;
@@ -56368,11 +56424,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     if (!programmes || programmes.length === 0) return [];
     return programmes.filter((p) => p.stop > fromMs && p.start < toMs);
   }
-  var EMPTY6;
+  var EMPTY7;
   var init_lookup2 = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
-      EMPTY6 = { now: null, next: null, later: null };
+      EMPTY7 = { now: null, next: null, later: null };
     }
   });
 
@@ -56380,10 +56436,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
-    const [state3, setState] = useState(() => ({ schedules: EMPTY8, loading: false }));
+    const [state3, setState] = useState(() => ({ schedules: EMPTY9, loading: false }));
     useEffect(() => {
       if (!listId || keys2.length === 0 || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
-        setState({ schedules: EMPTY8, loading: false });
+        setState({ schedules: EMPTY9, loading: false });
         return;
       }
       let live2 = true;
@@ -56404,7 +56460,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [listId, keysId, from, to]);
     return state3;
   }
-  var EMPTY8;
+  var EMPTY9;
   var init_useSchedules = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
@@ -56412,7 +56468,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_react_shim();
       init_live_tv_data();
       init_schedule_cache();
-      EMPTY8 = {};
+      EMPTY9 = {};
     }
   });
 
@@ -57276,8 +57332,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx("div", { ref: rowRef, "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", padding: dp(6), margin: `-${dp(6)}px -${dp(6)}px 0` }, children: cells })
     ] });
   }
-  function Notice({ text: text2, testId }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { ...sportCardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV2.muted }, children: text2 });
+  function Notice({ text: text3, testId }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { ...sportCardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV2.muted }, children: text3 });
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn, GRID_MIN_CARD;
   var init_sport_parts = __esm({
@@ -57868,8 +57924,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function PhoneTeamCrest({ name, colorKey, src, size }) {
     return /* @__PURE__ */ jsx(Crest, { name, colorKey: colorKey ?? name, src, size });
   }
-  function Tag3({ text: text2, bg, color = "#fff", testId }) {
-    return /* @__PURE__ */ jsx("span", { "data-testid": testId, style: { height: 20, padding: "0 7px", borderRadius: 6, flexShrink: 0, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: bg, color, whiteSpace: "nowrap" }, children: text2 });
+  function Tag3({ text: text3, bg, color = "#fff", testId }) {
+    return /* @__PURE__ */ jsx("span", { "data-testid": testId, style: { height: 20, padding: "0 7px", borderRadius: 6, flexShrink: 0, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: bg, color, whiteSpace: "nowrap" }, children: text3 });
   }
   function matchProgress(m, now2) {
     const st = statusAt(m, now2);
@@ -58321,8 +58377,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/tv/recording-error-note.tsx
   function RecordingErrorNote({ error, ps, tt }) {
-    const text2 = error.kind === "noSpace" ? tt("recNoSpace", { free: formatBytes(error.freeBytes, "en"), keep: formatBytes(error.keepFreeBytes, "en") }) : tt("recStartFailed");
-    return /* @__PURE__ */ jsx("div", { "data-testid": "rec-error", role: "status", style: { marginBottom: ps(10), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(255,92,92,0.16)", border: "1px solid rgba(255,92,92,0.45)", color: TV2.text, fontSize: ps(15), maxWidth: ps(640) }, children: text2 });
+    const text3 = error.kind === "noSpace" ? tt("recNoSpace", { free: formatBytes(error.freeBytes, "en"), keep: formatBytes(error.keepFreeBytes, "en") }) : tt("recStartFailed");
+    return /* @__PURE__ */ jsx("div", { "data-testid": "rec-error", role: "status", style: { marginBottom: ps(10), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(255,92,92,0.16)", border: "1px solid rgba(255,92,92,0.45)", color: TV2.text, fontSize: ps(15), maxWidth: ps(640) }, children: text3 });
   }
   var init_recording_error_note = __esm({
     "../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/tv/recording-error-note.tsx"() {
@@ -58958,7 +59014,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       event2.stopPropagation();
       ts.onJump(delta);
     };
-    const btn = (label, onOk, testId, text2) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk, void 0, { "aria-label": label, "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: `0 ${ps(12)}px`, fontSize: ps(12), fontWeight: 600, whiteSpace: "nowrap" }, children: text2 });
+    const btn = (label, onOk, testId, text3) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk, void 0, { "aria-label": label, "data-guide-row": "" }), style: { ...ctlStyle(ps), padding: `0 ${ps(12)}px`, fontSize: ps(12), fontWeight: 600, whiteSpace: "nowrap" }, children: text3 });
     return /* @__PURE__ */ jsxs("div", { "data-testid": "timeshift-bar-row", "data-row": "", style: { display: "flex", alignItems: "center", gap: ps(10), padding: `0 ${ps(4)}px`, marginBottom: ps(8) }, children: [
       /* @__PURE__ */ jsx("span", { "data-testid": "timeshift-label", style: { flexShrink: 0, minWidth: ps(56), fontSize: ps(12), fontWeight: 700, letterSpacing: "0.06em", color: m.atLive ? "#fca5a5" : "#fde68a", fontVariantNumeric: "tabular-nums" }, children: m.atLive ? tt("live").toUpperCase() : formatBehind(m.behindMs) }),
       /* @__PURE__ */ jsx(
@@ -59958,8 +60014,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   });
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/epg/name-match.ts
-  function foldDiacritics(text2) {
-    return text2.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ø/g, "o").replace(/æ/g, "ae").replace(/œ/g, "oe").replace(/ß/g, "ss").replace(/đ/g, "d").replace(/ł/g, "l");
+  function foldDiacritics(text3) {
+    return text3.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ø/g, "o").replace(/æ/g, "ae").replace(/œ/g, "oe").replace(/ß/g, "ss").replace(/đ/g, "d").replace(/ł/g, "l");
   }
   function normalizeChannelName(name) {
     return foldDiacritics(name.toLowerCase()).replace(COUNTRY_TAG_RE, " ").replace(COUNTRY_BARE_RE, " ").replace(QUALITY_RE, " ").replace(REGION_HINTS_RE, " ").replace(NON_ALNUM_RE, "").trim();
@@ -62144,7 +62200,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsx(ToastRoot, { children });
   }
   function ToastRoot({ children }) {
-    const [text2, setText] = useState(null);
+    const [text3, setText] = useState(null);
     const timer5 = useRef(null);
     const toast = useCallback((next) => {
       setText(next);
@@ -62157,10 +62213,10 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     useEffect(() => () => {
       if (timer5.current !== null) window.clearTimeout(timer5.current);
     }, []);
-    const node = useMemo(() => text2 ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
+    const node = useMemo(() => text3 ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
       /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.text }, children: text2 })
-    ] }) : null, [text2]);
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.text }, children: text3 })
+    ] }) : null, [text3]);
     return /* @__PURE__ */ jsxs(ToastContext.Provider, { value: toast, children: [
       children,
       node && typeof document !== "undefined" ? (0, import_react_dom4.createPortal)(node, document.body) : node
@@ -67244,9 +67300,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     "/sport-backgrounds/motorsport.webp": [51, 56, 52],
     "/sport-backgrounds/tennis.webp": [41, 69, 79]
   };
-  function hash(text2) {
+  function hash(text3) {
     let h = 2166136261;
-    for (let i = 0; i < text2.length; i++) h = Math.imul(h ^ text2.charCodeAt(i), 16777619);
+    for (let i = 0; i < text3.length; i++) h = Math.imul(h ^ text3.charCodeAt(i), 16777619);
     return h >>> 0;
   }
   function backdropScope(scope) {
@@ -67810,7 +67866,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
   var noLayer = () => () => {
   };
-  function HandoffBody({ close: close2, received, url, text: text2, only, cancel }) {
+  function HandoffBody({ close: close2, received, url, text: text3, only, cancel }) {
     useEffect(() => {
       if (!received) return;
       const t = window.setTimeout(close2, 1200);
@@ -67819,7 +67875,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(20), alignItems: "flex-start" }, children: [
       /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-only", style: { fontSize: dp(23), fontWeight: 600 }, children: only }),
       url && !received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(12), borderRadius: dp(12) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: url, size: dp(240) }) }) : null,
-      /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(21), lineHeight: 1.4, color: "rgba(243,244,248,0.8)" }, children: text2 }),
+      /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(21), lineHeight: 1.4, color: "rgba(243,244,248,0.8)" }, children: text3 }),
       /* @__PURE__ */ jsx(
         "div",
         {
@@ -69494,8 +69550,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
-  function splitUrls(text2) {
-    return text2.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
+  function splitUrls(text3) {
+    return text3.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
   }
   function useLiveTvSettings() {
     const { t } = useLang();
@@ -69878,13 +69934,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
-  var EMPTY7 = { now: null, next: null, later: null };
+  var EMPTY8 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
-    const [data, setData] = useState(EMPTY7);
+    const [data, setData] = useState(EMPTY8);
     const key = channel.url ? channelKey({ name: channel.name ?? "", originalName: channel.originalName, url: channel.url }) : "";
     useEffect(() => {
       if (!enabled || !listId || !key) {
-        setData(EMPTY7);
+        setData(EMPTY8);
         return;
       }
       let cancelled = false;
@@ -69899,7 +69955,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       };
       const { from, to } = hourWindow(Date.now(), 6, 24);
       fetchSchedules(listId, [key], from, to).then((schedules) => apply(schedules[key] ?? [])).catch(() => {
-        if (!cancelled) setData(EMPTY7);
+        if (!cancelled) setData(EMPTY8);
       });
       return () => {
         cancelled = true;
@@ -70018,7 +70074,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return layout;
   }
   var DEFAULT_STATE = { layout: 4, tiles: [null, null, null, null], audioIndex: 0 };
-  function normalize4(state3) {
+  function normalize5(state3) {
     const count = tileCount(state3.layout);
     const tiles = Array.from({ length: count }, (_, i) => state3.tiles[i] ?? null);
     let audioIndex = state3.audioIndex;
@@ -70032,13 +70088,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const r = raw && typeof raw === "object" ? raw : {};
     const layout = r.layout === 2 || r.layout === 3 || r.layout === 4 ? r.layout : 4;
     const tiles = Array.isArray(r.tiles) ? r.tiles.map((t) => typeof t === "string" && t ? t : null) : [];
-    return normalize4({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
+    return normalize5({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
   }
   function getMultiviewState() {
     return sanitize7(readPluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, DEFAULT_STATE));
   }
   function setMultiviewState(next) {
-    writePluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, normalize4(next));
+    writePluginJson(LIVE_TV_PLUGIN_ID2, MULTIVIEW_KEY, normalize5(next));
   }
   function useMultiviewState() {
     const [value, setValue] = useState(getMultiviewState);
@@ -70049,25 +70105,25 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const tiles = [...state3.tiles];
     tiles[index] = key;
     const hadAny = state3.tiles.some((t) => t !== null);
-    return normalize4({ ...state3, tiles, audioIndex: hadAny ? state3.audioIndex : index });
+    return normalize5({ ...state3, tiles, audioIndex: hadAny ? state3.audioIndex : index });
   }
   function removeTile(state3, index) {
     const tiles = [...state3.tiles];
     tiles[index] = null;
-    return normalize4({ ...state3, tiles });
+    return normalize5({ ...state3, tiles });
   }
   function setLayout(state3, layout) {
     const filled = state3.tiles.filter((t) => t !== null);
     const audioKey = state3.tiles[state3.audioIndex];
     const tiles = filled.slice(0, tileCount(layout));
     const audioIndex = audioKey ? Math.max(0, tiles.indexOf(audioKey)) : 0;
-    return normalize4({ layout, tiles, audioIndex });
+    return normalize5({ layout, tiles, audioIndex });
   }
   function enlargeTile(state3, index) {
     const key = state3.tiles[index];
     const rest = state3.tiles.filter((t, i) => t !== null && i !== index);
     const tiles = key ? [key, ...rest] : rest;
-    return normalize4({ layout: 3, tiles, audioIndex: key ? 0 : state3.audioIndex });
+    return normalize5({ layout: 3, tiles, audioIndex: key ? 0 : state3.audioIndex });
   }
   function addToFirstFree(state3, key) {
     const free = state3.tiles.findIndex((t) => t === null);
@@ -73293,7 +73349,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const fr = { provider: m.fixture.provider, id: m.fixture.id };
     return m.status === "finished" ? c.cachedFixture(m.kind, fr) : c.loadFixture(m.kind, fr, false);
   }
-  var text = { tt: (k, v) => tvText("sv", k, v), locale: "sv-SE" };
+  var text2 = { tt: (k, v) => tvText("sv", k, v), locale: "sv-SE" };
   function searchDeps() {
     const matches = todaysMatches();
     const leagueOf = /* @__PURE__ */ new Map();
@@ -73308,7 +73364,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       provider: searchFollowTargets,
       sports: () => searchSports(getFollows(), matches),
       primary: settings.provider,
-      label: (s) => text.tt(KIND_KEYS[s])
+      label: (s) => text2.tt(KIND_KEYS[s])
     };
   }
   var deps = {
@@ -73322,7 +73378,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     setMultiview: setMultiviewState,
     settings: getSportSettings,
     follows: getFollows,
-    text: () => text,
+    text: () => text2,
     searchDeps,
     hasKey: () => !!currentResults(),
     // Äldre app: SDK:t saknar Tippa, och då räknas det som upptaget.
@@ -73345,15 +73401,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     useEffect(() => () => {
       epgToday = [];
     }, []);
-    useSportResults({ day: merge ? day : null, epg: epg2 ?? EMPTY9 });
+    useSportResults({ day: merge ? day : null, epg: epg2 ?? EMPTY10 });
     return null;
   }
-  var EMPTY9 = [];
+  var EMPTY10 = [];
   function SportCouchMount() {
     const enabled = typeof hasCouchSdk === "function" && hasCouchSdk();
     const { tt, locale } = useTvText();
     useEffect(() => {
-      text = { tt, locale };
+      text2 = { tt, locale };
     }, [tt, locale]);
     const [present, setPresent] = useState(hasCouchPresence);
     const [watching, setWatching] = useState(tvShowsSportish);
@@ -79116,11 +79172,11 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     if (!q) return [];
     const seen2 = /* @__PURE__ */ new Set();
     const out = [];
-    const take2 = (text2) => {
-      const key = norm(text2);
+    const take2 = (text3) => {
+      const key = norm(text3);
       if (!key.startsWith(q) || seen2.has(key)) return false;
       seen2.add(key);
-      out.push(text2);
+      out.push(text3);
       return out.length >= limit;
     };
     for (const channel of channels) if (take2(channel.name)) return out;
@@ -79134,17 +79190,17 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   init_channel_resolver();
   init_live_tv_data();
   var DEBOUNCE_MS = 150;
-  var EMPTY10 = [];
+  var EMPTY11 = [];
   function useProgrammeSearch(query, dayStart, dayEnd, opts) {
     const listId = opts?.listId === void 0 ? LIVE_TV_GLOBAL_EPG_ID : opts.listId;
     const limit = opts?.limit ?? 30;
-    const [state3, setState] = useState(() => ({ hits: EMPTY10, loading: false }));
+    const [state3, setState] = useState(() => ({ hits: EMPTY11, loading: false }));
     const generation3 = useRef(0);
     useEffect(() => {
       const q = query.trim();
       const mine = ++generation3.current;
       if (!listId || q.length === 0) {
-        setState({ hits: EMPTY10, loading: false });
+        setState({ hits: EMPTY11, loading: false });
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
@@ -79160,7 +79216,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
           hits.sort((left, right) => left.programme.start - right.programme.start);
           if (generation3.current === mine) setState({ hits, loading: false });
         }).catch(() => {
-          if (generation3.current === mine) setState({ hits: EMPTY10, loading: false });
+          if (generation3.current === mine) setState({ hits: EMPTY11, loading: false });
         });
       }, DEBOUNCE_MS);
       return () => {
@@ -79188,8 +79244,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const [focused, setFocused] = useState(false);
     const canVoice = useVoiceAvailable();
     const speak = async () => {
-      const text2 = await listenVoice(locale, tt("voicePrompt"));
-      if (text2) setQuery(text2);
+      const text3 = await listenVoice(locale, tt("voicePrompt"));
+      if (text3) setQuery(text3);
     };
     const day = useMemo(() => {
       const start3 = startOfLocalDay(model.nowMs);
@@ -79354,10 +79410,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     const [listening, setListening] = useState(false);
     const speak = useCallback(async () => {
       setListening(true);
-      const text2 = await listenVoice(locale, tt("voicePrompt"));
+      const text3 = await listenVoice(locale, tt("voicePrompt"));
       setListening(false);
-      if (!text2) return;
-      setQuery(text2);
+      if (!text3) return;
+      setQuery(text3);
       window.setTimeout(focusFirstResult, 400);
     }, [locale, tt]);
     const voiceStartedRef = useRef(null);
@@ -80464,7 +80520,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     cats,
     page,
     onLoadMore,
-    text: text2
+    text: text3
   }) {
     const sentinel = useRef(null);
     const hasMore = page.hasMore;
@@ -80478,7 +80534,7 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       return () => observer.disconnect();
     }, [hasMore, onLoadMore]);
     const busy = cats.loading || cats.importing || page.loading;
-    const message = busy ? text2.loading : cats.categories.length === 0 ? text2.emptySource : page.items.length === 0 ? text2.emptyCategory : null;
+    const message = busy ? text3.loading : cats.categories.length === 0 ? text3.emptySource : page.items.length === 0 ? text3.emptyCategory : null;
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       message ? /* @__PURE__ */ jsx(
         "div",
@@ -81927,10 +81983,10 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
     if (match.rerun) return /* @__PURE__ */ jsx(ReplayPill, { u, ctx, testId: "mc-status" });
     const st = statusAt(match, ctx.now);
     const live2 = st === "live";
-    const text2 = live2 ? ctx.tt("sportLiveShort") : timeLine(match, ctx);
+    const text3 = live2 ? ctx.tt("sportLiveShort") : timeLine(match, ctx);
     return /* @__PURE__ */ jsxs("span", { "data-testid": "mc-status", "data-live": live2 ? "1" : "0", style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: u(6), height: u(30), padding: `0 ${u(12)}px`, borderRadius: u(8), fontSize: u(15), fontWeight: 700, letterSpacing: "0.06em", background: live2 ? TV2.live : TV2.s12, color: TV2.text }, children: [
       live2 ? /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: u(7), height: u(7), borderRadius: 999, background: TV2.text } }) : null,
-      text2
+      text3
     ] });
   }
   function ReplayPill({ u, ctx, testId = "replay-pill" }) {
@@ -82155,8 +82211,8 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
       reminded != null ? /* @__PURE__ */ jsx("span", { "data-testid": "page-fixture-bell", "data-on": reminded ? "1" : "0", style: { display: "inline-flex", flexShrink: 0, color: reminded ? TV2.acc : u.dim }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : null
     ] });
   }
-  function PageNote({ u, text: text2, testId }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(NOOP2), style: { fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }, children: text2 });
+  function PageNote({ u, text: text3, testId }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(NOOP2), style: { fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }, children: text3 });
   }
 
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/sport/team-model.ts
@@ -84066,15 +84122,15 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
   // ../../../lumio-official-plugins/.worktrees/merge-main/plugins/live-tv/runtime/sport/team-data.ts
   var NEAR_MS = 120 * 864e5;
   var MEMO_MS = 5 * 6e4;
-  var memo4 = /* @__PURE__ */ new Map();
+  var memo5 = /* @__PURE__ */ new Map();
   function once(key, now2, run3, keep) {
-    const hit = memo4.get(key);
+    const hit = memo5.get(key);
     if (hit && now2 - hit.at < MEMO_MS) return hit.promise;
     const promise = run3();
-    memo4.set(key, { at: now2, promise });
+    memo5.set(key, { at: now2, promise });
     promise.then((v) => {
-      if (!keep(v) && memo4.get(key)?.promise === promise) memo4.delete(key);
-    }, () => memo4.delete(key));
+      if (!keep(v) && memo5.get(key)?.promise === promise) memo5.delete(key);
+    }, () => memo5.delete(key));
     return promise;
   }
   var callKey = (b, call) => `${b.provider.id}|${call.requests.map((r) => `${r.sport}${r.path}@${r.ttlS}`).join(",")}`;
@@ -86282,9 +86338,9 @@ ${on} [data-v2f="btn"][data-f]:focus, ${on} [data-v2f="btn"][data-f][data-fcur="
         cancelled = true;
       };
     }, []);
-    const toast = useCallback((text2, ms2 = 1800) => {
-      setToastText(text2);
-      window.setTimeout(() => setToastText((current5) => current5 === text2 ? null : current5), ms2);
+    const toast = useCallback((text3, ms2 = 1800) => {
+      setToastText(text3);
+      window.setTimeout(() => setToastText((current5) => current5 === text3 ? null : current5), ms2);
     }, []);
     const goVodHome = useCallback(() => {
       if (vodHiddenForActivePlaylist()) {
