@@ -361,7 +361,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     return () => window.clearTimeout(id)
   }, [waitUntil])
 
-  // Grannkanalerna (CH ▲▼) förladdas när bilden stått en stund — bara bibliotek/debrid.
+  // Grannkanalerna (CH ▲▼) förladdas när bilden stått en stund — bara bibliotek/cloud.
   const framedNow = !!onScreen && state.framedSeq === onScreen.seq && onScreen.seq === request.seq
   useEffect(() => {
     if (!framedNow) return

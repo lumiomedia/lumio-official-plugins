@@ -9,11 +9,11 @@ import { canonGenres } from './genres'
 export type PlayRef =
   | { type: 'library'; key: string; mediaType: 'movie' | 'tv'; season?: number; episode?: number }
   | { type: 'stream'; imdbId: string; mediaType: 'movie' | 'series'; season?: number; episode?: number }
-  | ({ type: 'debrid'; alts?: DebridVersion[] } & DebridVersion)
+  | ({ type: 'cloud'; alts?: CloudVersion[] } & CloudVersion)
 
-/** En fil i debrid-molnet. `alts` på posten = andra versioner av samma titel (se play/debrid-versions). */
-export interface DebridVersion {
-  provider: 'realdebrid' | 'torbox' | 'alldebrid'
+/** En fil i molnet. `alts` på posten = andra versioner av samma titel (se play/cloud-versions). */
+export interface CloudVersion {
+  provider: string
   fileRef: string
   size?: number
   name?: string
@@ -52,10 +52,10 @@ export function filterPool(items: PoolItem[], channel: Pick<ChannelDef, 'kind' |
   })
 }
 
-const RANK: Record<SourceId, number> = { library: 0, debrid: 1, vod: 2, watchlist: 3 }
+const RANK: Record<SourceId, number> = { library: 0, cloud: 1, vod: 2, watchlist: 3 }
 
 /**
- * Bästa posten för samma titel: källrang först (bibliotek > debrid >
+ * Bästa posten för samma titel: källrang först (bibliotek > cloud >
  * watchlist), sedan en post med bild (en namnmatchad filnamnspost ska inte
  * slå källans egen matchade), sist ref — så valet inte beror på ordningen.
  */
@@ -70,7 +70,7 @@ function better(a: PoolItem, b: PoolItem): boolean {
 export function dedupePool(items: PoolItem[]): PoolItem[] {
   const best = new Map<string, PoolItem>()
   for (const item of items) {
-    // Avsnitt utan säsong/avsnittsnummer (debrid) får inte kollapsa till en post per serie.
+    // Avsnitt utan säsong/avsnittsnummer (cloud) får inte kollapsa till en post per serie.
     const identified = item.tmdbId != null && (item.kind === 'movie' || (item.season != null && item.episode != null))
     const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ''}:${item.episode ?? ''}` : `ref:${item.ref}`
     const current = best.get(key)
@@ -80,12 +80,12 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
   return [...best.values()]
 }
 
-const versionOf = (play: Extract<PlayRef, { type: 'debrid' }>): DebridVersion =>
+const versionOf = (play: Extract<PlayRef, { type: 'cloud' }>): CloudVersion =>
   ({ provider: play.provider, fileRef: play.fileRef, ...(play.size != null ? { size: play.size } : {}), ...(play.name ? { name: play.name } : {}) })
 
-/** Två debridposter för samma titel: vinnaren behåller förlorarens filer som andra versioner. */
+/** Två cloudposter för samma titel: vinnaren behåller förlorarens filer som andra versioner. */
 function withVersions(winner: PoolItem, loser: PoolItem): PoolItem {
-  if (winner.play.type !== 'debrid' || loser.play.type !== 'debrid') return winner
+  if (winner.play.type !== 'cloud' || loser.play.type !== 'cloud') return winner
   const known = new Set([winner.play, ...(winner.play.alts ?? [])].map((v) => `${v.provider}:${v.fileRef}`))
   const extra = [versionOf(loser.play), ...(loser.play.alts ?? [])].filter((v) => !known.has(`${v.provider}:${v.fileRef}`))
   if (extra.length === 0) return winner
@@ -94,10 +94,10 @@ function withVersions(winner: PoolItem, loser: PoolItem): PoolItem {
 }
 
 /**
- * Bara kanalens egna källor räknas: en debridkanal ska inte byggas om för att
+ * Bara kanalens egna källor räknas: en cloudkanal ska inte byggas om för att
  * biblioteket synkat, och tvärtom.
  */
-/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster, 3 = IPTV-VOD utbrutet ur biblioteket, 4 = debrid-versioner (alts). */
+/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster, 3 = IPTV-VOD utbrutet ur biblioteket, 4 = cloud-versioner (alts). */
 export const POOL_LOGIC_VERSION = 4
 
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {

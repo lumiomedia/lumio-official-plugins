@@ -1,6 +1,6 @@
 /**
  * Värdadapter: enda filen i logiklagret som rör @/lib/plugin-sdk. Kopplar
- * lagring, bibliotek, watchlist, debrid och TMDb-uppslag (via värdens egna
+ * lagring, bibliotek, watchlist, cloud och TMDb-uppslag (via värdens egna
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
@@ -13,7 +13,9 @@ import { createMetaCache, createSeasonsCache, createTitleMatchCache, type MatchR
 import type { SourceDeps } from './data/sources'
 import { MAX_POOL_ITEMS } from './data/pool'
 import { createResolver } from './play/resolve'
-import { createDebridCloud, DEBRID_PROVIDERS, type DebridProviderId } from './data/cloud'
+import { createCloud, type CloudServiceId } from './data/cloud'
+import { createCloudServices, fetchCloudServicesCode, type StoredCloudServices } from './data/cloud-services'
+import { sourcesFromStorage, sourcesToStorage } from './model/channel'
 import { deadKey, isDeadUnlock, pruneDead } from './data/dead-files'
 import { trace } from './trace'
 
@@ -24,13 +26,35 @@ export interface ZapMemory { lastChannelId: string | null; previousChannelId: st
 const object = <T>(value: unknown): Record<string, T> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, T>) : {}
 
+/**
+ * Tjänstefilen (data/cloud-services): vilka molntjänster som finns och hur
+ * man talar med dem. Kopian i pluginets lagring gäller direkt vid start.
+ */
+const cloudServices = createCloudServices({
+  read: () => {
+    const raw = readPluginJson<unknown>(PLUGIN_ID, 'cloudServices', null)
+    return raw && typeof raw === 'object' && typeof (raw as StoredCloudServices).code === 'string' ? (raw as StoredCloudServices) : null
+  },
+  write: (value) => writePluginJson(PLUGIN_ID, 'cloudServices', value, { emitChange: false }),
+  fetchCode: () => fetchCloudServicesCode(),
+})
+
+/** Hämtar tjänstefilen i bakgrunden (pluginets start). */
+export function warmCloudServices(): void {
+  try { cloudServices.get() } catch { /* nästa anrop försöker igen */ }
+}
+
 export function readChannels(): ChannelDef[] {
   const raw = readPluginJson<unknown>(PLUGIN_ID, 'channels', [])
-  return Array.isArray(raw) ? (raw as ChannelDef[]) : []
+  if (!Array.isArray(raw)) return []
+  // Molnkällan sparades tidigare under ett annat id (model/channel.ts).
+  return (raw as ChannelDef[]).map((channel) =>
+    channel && typeof channel === 'object' && Array.isArray(channel.sources) ? { ...channel, sources: sourcesFromStorage(channel.sources) } : channel)
 }
 
 export function writeChannels(next: ChannelDef[]): void {
-  writePluginJson(PLUGIN_ID, 'channels', next)
+  const cloudId = cloudServices.get()?.sourceId ?? null
+  writePluginJson(PLUGIN_ID, 'channels', next.map((channel) => ({ ...channel, sources: sourcesToStorage(channel.sources, cloudId) })))
 }
 
 /** Standardkanalerna skapas en gång per profil; borttagna kommer aldrig tillbaka av sig själva. */
@@ -125,7 +149,7 @@ const matchStore: MatchStore = {
 }
 
 /**
- * Värdens TMDb-sökning (samma som lokala mappen och debrid använder): tvättad
+ * Värdens TMDb-sökning (samma som lokala mappen och cloud använder): tvättad
  * titel + år, och utan år om det inte gav något. undefined = anropet föll.
  */
 async function searchTitle(ref: MatchRef): Promise<number | null | undefined> {
@@ -223,8 +247,10 @@ async function fetchSeasonRange(tmdbId: number, pick: (season: number) => boolea
   return out
 }
 
-/** Debrid-molnet (data/cloud): pluginets egen protokollkod med värdens neutrala hjälpare. */
-const debridCloud = createDebridCloud({
+/** Molnet (data/cloud): pluginets egen protokollkod med värdens neutrala hjälpare. */
+const cloud = createCloud({
+  services: () => cloudServices.get(),
+  servicesReady: () => cloudServices.ready(),
   token: (provider) => channelSourceToken(provider),
   onUnlockFailed: (provider, fileRef, status, body) => {
     const dead = isDeadUnlock(status, body)
@@ -263,15 +289,19 @@ export function markDeadFile(file: { provider: string; fileRef: string }): void 
 }
 
 /** Ny genomgång av molnet förbi 6 h-cachen (studions Uppdatera). */
-export function refreshDebridCloud() {
-  return debridCloud.listDebridCloud({ force: true })
+export function refreshCloud() {
+  return cloud.listCloud({ force: true })
 }
 
 /** Molnkonton med sparad nyckel, och borttagning (gamla konton syns annars inte någonstans). */
-export function debridAccounts(): DebridProviderId[] {
-  return DEBRID_PROVIDERS.filter((p) => !!channelSourceToken(p))
+export function cloudAccounts(): CloudServiceId[] {
+  return (cloudServices.get()?.services ?? []).map((service) => service.id).filter((p) => !!channelSourceToken(p))
 }
-export function forgetDebridAccount(provider: DebridProviderId): void {
+/** Tjänstens namn som tjänstefilen anger det; id:t om filen saknas. */
+export function cloudAccountName(provider: CloudServiceId): string {
+  return cloudServices.get()?.services.find((service) => service.id === provider)?.name ?? provider
+}
+export function forgetCloudAccount(provider: CloudServiceId): void {
   channelClearSourceToken(provider)
 }
 
@@ -281,7 +311,7 @@ export const sourceDeps: SourceDeps = {
   getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })) as never,
   fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
   fetchRestSeasons: createSeasonsCache(seasonsStore, fetchRestSeasonsUncached, Date.now, 'seasonsRest'),
-  listDebridCloud: () => debridCloud.listDebridCloud(),
+  listCloud: () => cloud.listCloud(),
   meta: createMetaCache(metaStore, fetchMeta),
   waitForIdle: () => waitForStartIdle(),
   titleMatch: createTitleMatchCache(matchStore, searchTitle),
@@ -350,8 +380,8 @@ async function computeSourceSignatures(): Promise<Signatures> {
     // VOD läser samma index som biblioteket.
     vod: `${status?.total ?? 0}:${fullSync}:${changed}`,
     watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
-    // Debridlistan cachas av värden i 6 h; samma fönster här.
-    debrid: String(Math.floor(Date.now() / (6 * 3600e3))),
+    // Cloudlistan cachas av värden i 6 h; samma fönster här.
+    cloud: String(Math.floor(Date.now() / (6 * 3600e3))),
   }
 }
 
@@ -360,8 +390,8 @@ export const resolver = createResolver({
   // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
   library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...(exclude?.length ? { exclude } : {}), ...(allowCatalog === false ? { allowCatalog: false } : {}) }),
   stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
-  debrid: (r) => debridCloud.unrestrictDebridFile(r),
-  debridCaps: () => autoplayCaps(),
+  cloud: (r) => cloud.unlockCloudFile(r),
+  cloudCaps: () => autoplayCaps(),
   isDead: (file) => deadKey(file) in readDeadFiles(),
 })
 

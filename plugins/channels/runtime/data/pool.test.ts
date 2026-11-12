@@ -28,22 +28,22 @@ describe('filterPool', () => {
 })
 
 describe('dedupePool', () => {
-  it('library vinner över debrid som vinner över watchlist', () => {
+  it('library vinner över cloud som vinner över watchlist', () => {
     const items = [
       p({ ref: 'wl', source: 'watchlist', tmdbId: 1 }),
-      p({ ref: 'db', source: 'debrid', tmdbId: 1 }),
+      p({ ref: 'db', source: 'cloud', tmdbId: 1 }),
       p({ ref: 'lib', source: 'library', tmdbId: 1 }),
-      p({ ref: 'db2', source: 'debrid', tmdbId: 2 }),
+      p({ ref: 'db2', source: 'cloud', tmdbId: 2 }),
       p({ ref: 'wl2', source: 'watchlist', tmdbId: 2 }),
       p({ ref: 'solo' }),
     ]
     expect(dedupePool(items).map((i) => i.ref).sort()).toEqual(['db2', 'lib', 'solo'])
   })
 
-  it('slår inte ihop debrid-avsnitt utan säsong/avsnitt', () => {
+  it('slår inte ihop cloud-avsnitt utan säsong/avsnitt', () => {
     const items = [
-      p({ ref: 'd1', kind: 'episode', source: 'debrid', tmdbId: 7 }),
-      p({ ref: 'd2', kind: 'episode', source: 'debrid', tmdbId: 7 }),
+      p({ ref: 'd1', kind: 'episode', source: 'cloud', tmdbId: 7 }),
+      p({ ref: 'd2', kind: 'episode', source: 'cloud', tmdbId: 7 }),
     ]
     expect(dedupePool(items)).toHaveLength(2)
   })
@@ -59,8 +59,8 @@ describe('dedupePool', () => {
 
 describe('poolSignature', () => {
   it('ändras med regler och källsignatur men inte med ordningen i listor', () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'], genres: ['Drama', 'Action'] }, [], 1, () => 0.1)
-    const swapped = { ...ch, sources: ['debrid', 'library'] as const, genres: ['Action', 'Drama'] }
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'cloud'], genres: ['Drama', 'Action'] }, [], 1, () => 0.1)
+    const swapped = { ...ch, sources: ['cloud', 'library'] as const, genres: ['Action', 'Drama'] }
     expect(poolSignature(ch, { library: '1' })).toBe(poolSignature(swapped as never, { library: '1' }))
     expect(poolSignature(ch, { library: '2' })).not.toBe(poolSignature(ch, { library: '1' }))
     expect(poolSignature({ ...ch, era: '80s' }, { library: '1' })).not.toBe(poolSignature(ch, { library: '1' }))
@@ -70,9 +70,9 @@ describe('poolSignature', () => {
 
 describe('poolSignature: bara kanalens egna källor', () => {
   it('påverkas inte av källor kanalen inte använder', () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['debrid'] }, [], 1, () => 0.1)
-    expect(poolSignature(ch, { library: '1', debrid: 'x' })).toBe(poolSignature(ch, { library: '2', debrid: 'x' }))
-    expect(poolSignature(ch, { library: '1', debrid: 'x' })).not.toBe(poolSignature(ch, { library: '1', debrid: 'y' }))
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['cloud'] }, [], 1, () => 0.1)
+    expect(poolSignature(ch, { library: '1', cloud: 'x' })).toBe(poolSignature(ch, { library: '2', cloud: 'x' }))
+    expect(poolSignature(ch, { library: '1', cloud: 'x' })).not.toBe(poolSignature(ch, { library: '1', cloud: 'y' }))
   })
 
   it('signaturen: IPTV-VOD på/av bygger om poolen', () => {

@@ -5,14 +5,14 @@ import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 
 const state = vi.hoisted(() => ({
-  calls: { library: 0, watchlist: 0, debrid: 0 } as Record<string, number>,
+  calls: { library: 0, watchlist: 0, cloud: 0 } as Record<string, number>,
   forced: 0,
   saved: [] as unknown[],
   deleted: [] as string[],
-  debridItems: [] as unknown[],
+  cloudItems: [] as unknown[],
   libraryFails: false,
-  debridQueue: [] as Array<{ resolve(v: unknown[]): void }>,
-  debridDeferred: false,
+  cloudQueue: [] as Array<{ resolve(v: unknown[]): void }>,
+  cloudDeferred: false,
   searches: [] as string[],
 }))
 
@@ -33,7 +33,7 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 vi.mock('../host', () => ({
   sourceDeps: {},
-  refreshDebridCloud: () => { state.forced += 1; return Promise.resolve([]) },
+  refreshCloud: () => { state.forced += 1; return Promise.resolve([]) },
   searchTmdbTitles: (q: string) => {
     state.searches.push(q)
     return Promise.resolve([{ kind: 'movie', tmdbId: 355460, title: 'Adventure Time', year: 2007 }])
@@ -45,10 +45,10 @@ vi.mock('../data/sources', () => ({
     return state.libraryFails ? Promise.reject(new Error('nät')) : Promise.resolve([item('a'), item('b', { genres: ['Action'] })])
   },
   loadWatchlistItems: () => { state.calls.watchlist! += 1; return Promise.resolve([item('c', { source: 'watchlist', tmdbId: 9 })]) },
-  loadDebridItems: () => {
-    state.calls.debrid! += 1
-    if (!state.debridDeferred) return Promise.resolve(state.debridItems)
-    return new Promise((resolve) => { state.debridQueue.push({ resolve }) })
+  loadCloudItems: () => {
+    state.calls.cloud! += 1
+    if (!state.cloudDeferred) return Promise.resolve(state.cloudItems)
+    return new Promise((resolve) => { state.cloudQueue.push({ resolve }) })
   },
   loadVodItems: () => Promise.resolve([item('vod1', { source: 'vod' })]),
   loadTitleFallback: () => Promise.resolve(),
@@ -70,14 +70,14 @@ const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 0))
 const summary = (c: HTMLElement) => c.querySelector('[data-studio-summary]')!.textContent
 
 beforeEach(() => {
-  state.calls = { library: 0, watchlist: 0, debrid: 0 }
+  state.calls = { library: 0, watchlist: 0, cloud: 0 }
   state.forced = 0
   state.saved = []
   state.deleted = []
-  state.debridItems = []
+  state.cloudItems = []
   state.libraryFails = false
-  state.debridQueue = []
-  state.debridDeferred = false
+  state.cloudQueue = []
+  state.cloudDeferred = false
   state.searches = []
 })
 afterEach(cleanup)
@@ -87,12 +87,12 @@ describe('Kanalstudion', () => {
     const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
     expect(summary(container)).toBe('Hämtar titlar…')
     await flush()
-    // Ny kanal: bibliotek, watchlist och debrid förvalda; IPTV-VOD av men räknad.
-    expect(state.calls).toEqual({ library: 1, watchlist: 1, debrid: 1 })
+    // Ny kanal: bibliotek, watchlist och cloud förvalda; IPTV-VOD av men räknad.
+    expect(state.calls).toEqual({ library: 1, watchlist: 1, cloud: 1 })
     expect(container.querySelector('[data-source="vod"]')!.textContent).toBe('IPTV-VOD1')
     expect(container.querySelector('[data-source="vod"]')!.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(container.querySelector('[data-source="watchlist"]')!)
-    fireEvent.click(container.querySelector('[data-source="debrid"]')!)
+    fireEvent.click(container.querySelector('[data-source="cloud"]')!)
     expect(summary(container)).toContain('≈ 2 titlar')
     fireEvent.click(screen.getByText('Drama'))
     expect(summary(container)).toContain('≈ 1 titlar')
@@ -102,7 +102,7 @@ describe('Kanalstudion', () => {
     fireEvent.click(container.querySelector('[data-source="watchlist"]')!)
     await flush()
     // Av och på igen hämtar inte på nytt.
-    expect(state.calls).toEqual({ library: 1, watchlist: 1, debrid: 1 })
+    expect(state.calls).toEqual({ library: 1, watchlist: 1, cloud: 1 })
     expect(summary(container)).toContain('≈ 2 titlar')
     expect(container.querySelector('[data-studio-warning]')!.textContent).toContain('Färre än 5 titlar')
   })
@@ -119,7 +119,7 @@ describe('Kanalstudion', () => {
     fireEvent.click(screen.getByText('Skapa kanal'))
     expect(state.saved).toHaveLength(1)
     const saved = state.saved[0] as ChannelDef
-    expect(saved).toMatchObject({ name: 'Natt', number: 1, sources: ['library', 'watchlist', 'debrid'] })
+    expect(saved).toMatchObject({ name: 'Natt', number: 1, sources: ['library', 'watchlist', 'cloud'] })
     expect(onDone).toHaveBeenCalledWith(saved.id)
   })
 
@@ -155,17 +155,17 @@ describe('Kanalstudion', () => {
     }
   })
 
-  it('Uppdatera tvingar debridlistan bara vid klick och laddar om debridpoolen', async () => {
+  it('Uppdatera tvingar cloudlistan bara vid klick och laddar om cloudpoolen', async () => {
     const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
     await flush()
     expect(state.forced).toBe(0)
-    state.debridItems = [item('d1', { source: 'debrid' })]
+    state.cloudItems = [item('d1', { source: 'cloud' })]
     fireEvent.click(container.querySelector('[data-studio-refresh]')!)
     await flush()
     expect(state.forced).toBe(1)
-    // Förvald debrid laddades en gång vid öppning, Uppdatera laddar om.
-    expect(state.calls.debrid).toBe(2)
-    expect(container.querySelector('[data-source="debrid"]')!.textContent).toBe('Debrid1')
+    // Förvald cloud laddades en gång vid öppning, Uppdatera laddar om.
+    expect(state.calls.cloud).toBe(2)
+    expect(container.querySelector('[data-source="cloud"]')!.textContent).toBe('Molnet1')
   })
 
   it('en källa som inte svarar visar "—" och ingen få-titlar-varning', async () => {
@@ -176,17 +176,17 @@ describe('Kanalstudion', () => {
     expect(container.querySelector('[data-studio-warning]')).toBeNull()
   })
 
-  it('en långsam första debridladdning skriver inte över Uppdatera', async () => {
-    state.debridDeferred = true
-    const existing: ChannelDef = { ...createChannel({ ...emptyDraft(), name: 'D', sources: ['debrid'] }, []), id: 'kd' }
+  it('en långsam första cloudladdning skriver inte över Uppdatera', async () => {
+    state.cloudDeferred = true
+    const existing: ChannelDef = { ...createChannel({ ...emptyDraft(), name: 'D', sources: ['cloud'] }, []), id: 'kd' }
     const { container } = render(<Harness studio="kd" channels={[existing]} onDone={() => {}} />)
     await flush()
     fireEvent.click(container.querySelector('[data-studio-refresh]')!)
     await flush()
-    expect(state.debridQueue).toHaveLength(2)
-    await act(async () => { state.debridQueue[1]!.resolve([item('ny1', { source: 'debrid' }), item('ny2', { source: 'debrid' })]) })
-    await act(async () => { state.debridQueue[0]!.resolve([item('gammal', { source: 'debrid' })]) })
-    expect(container.querySelector('[data-source="debrid"]')!.textContent).toBe('Debrid2')
+    expect(state.cloudQueue).toHaveLength(2)
+    await act(async () => { state.cloudQueue[1]!.resolve([item('ny1', { source: 'cloud' }), item('ny2', { source: 'cloud' })]) })
+    await act(async () => { state.cloudQueue[0]!.resolve([item('gammal', { source: 'cloud' })]) })
+    expect(container.querySelector('[data-source="cloud"]')!.textContent).toBe('Molnet2')
   })
 
   it('genrechip väljer över stavningar: sparad "Sci-Fi" visas vald som Science Fiction', async () => {
@@ -203,9 +203,9 @@ describe('Kanalstudion', () => {
   it('titelfältet: lokala förslag direkt, TMDb efter debounce, chip + tonade regler, namn och ordning från titeln', async () => {
     const at = (n: number) => item(`at${n}`, {
       kind: 'episode', title: `Avsnitt ${n}`, seriesTitle: 'Adventure Time', seriesKey: 'db:tv:15260', tmdbId: 15260, season: 1, episode: n,
-      source: 'debrid', genres: ['Animation'], play: { type: 'debrid', provider: 'torbox', fileRef: `f${n}` },
+      source: 'cloud', genres: ['Animation'], play: { type: 'cloud', provider: 'torbox', fileRef: `f${n}` },
     })
-    state.debridItems = [at(1), at(2)]
+    state.cloudItems = [at(1), at(2)]
     const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
     await flush()
     const input = container.querySelector('input[data-studio-titles]')!

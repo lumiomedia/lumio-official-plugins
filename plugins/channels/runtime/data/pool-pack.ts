@@ -35,7 +35,7 @@ interface PackedItem {
 type PackedPlay =
   | { l: string; tv?: 1; v?: 1 }
   | { i: string; tv?: 1 }
-  | { d: 'realdebrid' | 'torbox' | 'alldebrid'; f: string }
+  | { d: string; f: string }
 
 export interface PackedPool { v: typeof POOL_PACK_VERSION; g: PackedGroup[]; i: PackedItem[] }
 
@@ -53,10 +53,10 @@ function unpackPlay(p: PackedPlay, season?: number, episode?: number): PlayRef {
   const se = { ...(season != null ? { season } : {}), ...(episode != null ? { episode } : {}) }
   if ('l' in p) return { type: 'library', key: p.l, mediaType: p.tv ? 'tv' : 'movie', ...(p.tv ? se : {}) }
   if ('i' in p) return { type: 'stream', imdbId: p.i, mediaType: p.tv ? 'series' : 'movie', ...(p.tv ? se : {}) }
-  return { type: 'debrid', provider: p.d, fileRef: p.f }
+  return { type: 'cloud', provider: p.d, fileRef: p.f }
 }
 
-const SOURCE_OF: Record<'l' | 'i' | 'd', SourceId> = { l: 'library', i: 'watchlist', d: 'debrid' }
+const SOURCE_OF: Record<'l' | 'i' | 'd', SourceId> = { l: 'library', i: 'watchlist', d: 'cloud' }
 
 export function packPool(items: PoolItem[]): PackedPool {
   const groups: PackedGroup[] = []

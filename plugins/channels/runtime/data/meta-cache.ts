@@ -1,6 +1,6 @@
 /**
  * Längd, genrer och bilder per TMDb-titel. Biblioteket har det oftast själv
- * (Plex sätter aldrig runtime), watchlist och debrid aldrig. Uppslagen är
+ * (Plex sätter aldrig runtime), watchlist och cloud aldrig. Uppslagen är
  * TMDb-anrop via värden — cachade i 30 dagar och högst två åt gången, så en
  * ny kanal inte sveper hundratals anrop på en gång.
  */

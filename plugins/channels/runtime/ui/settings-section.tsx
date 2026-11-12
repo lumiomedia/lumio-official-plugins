@@ -9,8 +9,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, PillBtn, Section, Switch, TOKENS, requestOpenBrowsePage, type PluginSettingsRow, type SettingsSection } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
-import { debridAccounts, forgetDebridAccount, onChannelsChanged, readChannels, refreshDebridCloud, sourceCacheSetting } from '../host'
-import type { DebridProviderId } from '../data/cloud'
+import { cloudAccountName, cloudAccounts, forgetCloudAccount, onChannelsChanged, readChannels, refreshCloud, sourceCacheSetting } from '../host'
+import type { CloudServiceId } from '../data/cloud'
 import { deleteChannel, readCachedPool, useChannels } from '../state/store'
 import { S } from '../strings'
 import { CHANNELS_PAGE_ID } from './guide-layout'
@@ -56,15 +56,15 @@ export function buildChannelRows(channels: ChannelDef[], actions: ChannelRowActi
     })
   }
   rows.push({ t: 'action', label: S.settingsNewRow, run: actions.create })
-  const accounts = debridAccounts()
+  const accounts = cloudAccounts()
   if (accounts.length > 0) {
     rows.push({ t: 'eyebrow', label: S.settingsCloudTitle })
     for (const id of accounts) {
       rows.push({
         t: 'action',
-        label: { en: CLOUD_NAMES[id], sv: CLOUD_NAMES[id], de: CLOUD_NAMES[id], fr: CLOUD_NAMES[id], es: CLOUD_NAMES[id] },
+        label: { en: cloudAccountName(id), sv: cloudAccountName(id), de: cloudAccountName(id), fr: cloudAccountName(id), es: cloudAccountName(id) },
         danger: true,
-        confirm: { title: fill(S.settingsCloudRemoveTitle, { name: CLOUD_NAMES[id] }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
+        confirm: { title: fill(S.settingsCloudRemoveTitle, { name: cloudAccountName(id) }), body: S.settingsCloudRemoveBody, confirmLabel: S.settingsCloudRemove },
         run: () => removeCloudAccount(id),
       })
     }
@@ -117,13 +117,10 @@ export function useChannelList(): {
   return { sorted, counts, confirmId, requestDelete: onDelete }
 }
 
-/** Tjänsternas namn (pluginet får namnge dem; appkärnan gör det inte). */
-const CLOUD_NAMES: Record<DebridProviderId, string> = { realdebrid: 'Real-Debrid', torbox: 'TorBox', alldebrid: 'AllDebrid' }
-
 /** Tar bort kontots nyckel och bygger om molnlistan, så filerna lämnar kanalerna. */
-function removeCloudAccount(id: DebridProviderId): void {
-  forgetDebridAccount(id)
-  void refreshDebridCloud().catch(() => [])
+function removeCloudAccount(id: CloudServiceId): void {
+  forgetCloudAccount(id)
+  void refreshCloud().catch(() => [])
 }
 
 /**
@@ -133,12 +130,12 @@ function removeCloudAccount(id: DebridProviderId): void {
  */
 function CloudAccountsCard() {
   const t = useText()
-  const [accounts, setAccounts] = useState(() => debridAccounts())
-  const [confirm, setConfirm] = useState<DebridProviderId | null>(null)
+  const [accounts, setAccounts] = useState(() => cloudAccounts())
+  const [confirm, setConfirm] = useState<CloudServiceId | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
   if (accounts.length === 0) return null
-  const onRemove = (id: DebridProviderId) => {
+  const onRemove = (id: CloudServiceId) => {
     if (timer.current) clearTimeout(timer.current)
     if (confirm !== id) {
       setConfirm(id)
@@ -147,13 +144,13 @@ function CloudAccountsCard() {
     }
     setConfirm(null)
     removeCloudAccount(id)
-    setAccounts(debridAccounts())
+    setAccounts(cloudAccounts())
   }
   return (
     <Section title={t('settingsCloudTitle')} hint={t('settingsCloudHint')}>
       {accounts.map((id) => (
         <Card key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-          <div data-cloud-account={id} style={{ color: TOKENS.text, fontWeight: 600 }}>{CLOUD_NAMES[id]}</div>
+          <div data-cloud-account={id} style={{ color: TOKENS.text, fontWeight: 600 }}>{cloudAccountName(id)}</div>
           <PillBtn size="sm" variant="danger" onClick={() => onRemove(id)}>
             {t(confirm === id ? 'settingsCloudRemoveConfirm' : 'settingsCloudRemove')}
           </PillBtn>

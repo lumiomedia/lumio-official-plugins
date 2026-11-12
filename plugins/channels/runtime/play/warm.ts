@@ -5,7 +5,7 @@
  *
  *  - bibliotek via appens WebDAV-proxy → proxyns egen förvärmning
  *  - bibliotek direkt mot servern (Plex/Jellyfin/Emby) och redan upplåsta
- *    debrid-filer (Real-Debrid, TorBox, AllDebrid …) → källcachens förvärmning
+ *    molnfiler → källcachens förvärmning
  *
  * Aldrig strömuppslag (AIOStreams och andra resolvers): varje anrop dit räknas
  * mot leverantörens anropsgräns. De får indexcachen från andra uppspelningen.
@@ -15,7 +15,7 @@
 import type { Playable } from './resolve'
 import { prefetchInPlayer, sourceCacheSetting } from '../host'
 
-export type PlayType = 'library' | 'stream' | 'debrid'
+export type PlayType = 'library' | 'stream' | 'cloud'
 
 const WEBDAV_STREAM = '/api/webdav-library/stream?'
 

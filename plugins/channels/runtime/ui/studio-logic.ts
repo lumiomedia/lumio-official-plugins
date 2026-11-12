@@ -9,7 +9,7 @@ import { applyChannelRules, dedupePool, restrictToTitles, type PoolItem } from '
 import { canonGenre } from '../data/genres'
 import { GENRE_TEXT, type S } from '../strings'
 
-export interface SourcePools { library: PoolItem[]; watchlist: PoolItem[]; debrid: PoolItem[]; vod: PoolItem[] }
+export interface SourcePools { library: PoolItem[]; watchlist: PoolItem[]; cloud: PoolItem[]; vod: PoolItem[] }
 
 export interface PreviewRow { start: number; title: string; meta: string; isNow: boolean }
 
@@ -34,7 +34,7 @@ const MIN = 60_000
 const MAX_ROWS = 8
 
 export function sourceCounts(pools: SourcePools): Record<SourceId, number> {
-  return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length }
+  return { library: pools.library.length, watchlist: pools.watchlist.length, cloud: pools.cloud.length, vod: pools.vod.length }
 }
 
 /**
@@ -100,7 +100,7 @@ export function localTitleSuggestions(pools: SourcePools, query: string, limit =
   const q = normTitle(query)
   if (q.length < 2) return []
   const byKey = new Map<string, { s: TitleSuggestion; rank: number }>()
-  for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid, ...pools.vod]) {
+  for (const item of [...pools.library, ...pools.watchlist, ...pools.cloud, ...pools.vod]) {
     const s = titleOfItem(item)
     const name = normTitle(s.title)
     const at = name.indexOf(q)
@@ -221,7 +221,7 @@ export function genreName(token: string, seen?: string): string {
  */
 export function genreOptions(pools: SourcePools): string[] {
   const seen = new Map<string, string>()
-  for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid]) {
+  for (const item of [...pools.library, ...pools.watchlist, ...pools.cloud]) {
     for (const genre of item.genres) {
       const tokens = canonGenre(genre)
       // En ensam token behåller källans stavning om TMDb inte har en egen.

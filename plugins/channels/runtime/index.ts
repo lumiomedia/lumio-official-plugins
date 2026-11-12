@@ -5,6 +5,7 @@ import { ChannelsHomeRow } from './ui/home-row'
 import { ChannelsPage } from './ui/channels-page'
 import { channelsSettingsSection } from './ui/settings-section'
 import { CHANNELS_PAGE_ID } from './ui/guide-layout'
+import { warmCloudServices } from './host'
 
 export const ChannelsPlugin: LumioPlugin = {
   id: 'com.lumio.channels',
@@ -13,6 +14,8 @@ export const ChannelsPlugin: LumioPlugin = {
   description: S.description,
   preinstalled: false,
   register(ctx) {
+    // Tjänstefilen för molnkonton hämtas i bakgrunden (data/cloud-services.ts).
+    warmCloudServices()
     ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true, keepsTvTopChrome: true })
     // Menyvalet och sidan delar id: värdens menyer gör nyckeln till sidans id.
     ctx.registerMainMenuItem({ id: CHANNELS_PAGE_ID, label: S.menuLabel, target: { pageId: CHANNELS_PAGE_ID }, defaultEnabled: true })

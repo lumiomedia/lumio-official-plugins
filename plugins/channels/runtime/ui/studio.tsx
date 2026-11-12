@@ -4,9 +4,9 @@
  * Kanalstudion: skapa eller redigera en kanals regler med live-förhandsvisning.
  *
  * Varje vald källa hämtas EN gång per öppning (via host.sourceDeps, så
- * metadata-, säsongs- och debridcacharna delas med resten av pluginet); varje
+ * metadata-, säsongs- och cloudcacharna delas med resten av pluginet); varje
  * regeländring filtreras sedan lokalt. Förhandsvisningen gör aldrig ett
- * strömuppslag. Bara "Uppdatera" på debridraden tvingar en ny debridlista.
+ * strömuppslag. Bara "Uppdatera" på cloudraden tvingar en ny cloudlista.
  *
  * TV: alla fält är stationer (data-f) i rader, så fokusmotorns geometri ger
  * ▲▼ mellan fältrader och ◀▶ inom raden; OK växlar ett chip. Namnfältet
@@ -16,8 +16,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { Card, Switch, TOKENS, getTvKeyboardPanel, inputStyle, useLang } from '@/lib/plugin-sdk'
 import { channelTitleKey, emptyDraft, hasTitles, nextChannelNumber, createChannel, validateDraft, type ChannelDef, type ChannelDraft, type ChannelTitle, type SourceId } from '../model/channel'
 import type { PoolItem } from '../data/pool'
-import { loadDebridItems, loadLibraryItems, loadTitleFallback, loadVodItems, loadWatchlistItems } from '../data/sources'
-import { refreshDebridCloud, sourceDeps } from '../host'
+import { loadCloudItems, loadLibraryItems, loadTitleFallback, loadVodItems, loadWatchlistItems } from '../data/sources'
+import { refreshCloud, sourceDeps } from '../host'
 import { deleteChannel, saveChannel } from '../state/store'
 import { effectiveName, genreLabel, genreName, genreOptions, missingTitles, orderForTitles, previewFor, sourceCounts, type SourcePools } from './studio-logic'
 import { TitlePicker } from './title-picker'
@@ -32,14 +32,14 @@ type T = ReturnType<typeof useText>
 const LOADERS: Record<SourceId, (deps: typeof sourceDeps, opts: { strict?: boolean }) => Promise<PoolItem[]>> = {
   library: loadLibraryItems,
   watchlist: loadWatchlistItems,
-  debrid: loadDebridItems,
+  cloud: loadCloudItems,
   vod: loadVodItems,
 }
 
 const SOURCES: Array<{ id: SourceId; label: TextKey }> = [
   { id: 'library', label: 'sourceLibrary' },
   { id: 'watchlist', label: 'sourceWatchlist' },
-  { id: 'debrid', label: 'sourceDebrid' },
+  { id: 'cloud', label: 'sourceCloud' },
   // Av som standard; räknas ändå (lokalt index, billigt) så man ser vad som finns.
   { id: 'vod', label: 'sourceVod' },
 ]
@@ -113,8 +113,8 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   }, [])
   const started = useRef(new Set<SourceId>())
   // Generation per källa: bara den senaste hämtningen får skriva (en långsam
-  // första debridladdning får inte skriva över en färskare Uppdatera).
-  const generation = useRef<Record<SourceId, number>>({ library: 0, watchlist: 0, debrid: 0, vod: 0 })
+  // första cloudladdning får inte skriva över en färskare Uppdatera).
+  const generation = useRef<Record<SourceId, number>>({ library: 0, watchlist: 0, cloud: 0, vod: 0 })
   const load = useCallback((source: SourceId, run: () => Promise<PoolItem[]>) => {
     started.current.add(source)
     const gen = ++generation.current[source]
@@ -134,13 +134,13 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     }
   }, [draft.sources, load])
 
-  const refreshDebrid = useCallback(async () => {
+  const refreshCloudSource = useCallback(async () => {
     if (refreshing) return
     setRefreshing(true)
     try {
-      await load('debrid', async () => {
-        await refreshDebridCloud().catch(() => [])
-        return loadDebridItems(sourceDeps, { strict: true })
+      await load('cloud', async () => {
+        await refreshCloud().catch(() => [])
+        return loadCloudItems(sourceDeps, { strict: true })
       })
     } finally {
       if (alive.current) setRefreshing(false)
@@ -153,7 +153,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   }, [])
 
   const full: SourcePools = useMemo(
-    () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [], vod: pools.vod ?? [] }),
+    () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], cloud: pools.cloud ?? [], vod: pools.vod ?? [] }),
     [pools],
   )
   const loading = draft.sources.some((s) => pools[s] === undefined)
@@ -329,13 +329,13 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
           data-f=""
           data-studio-refresh=""
           disabled={refreshing}
-          onClick={() => void refreshDebrid()}
+          onClick={() => void refreshCloudSource()}
           style={{
             background: 'none', border: 'none', padding: 0, cursor: refreshing ? 'default' : 'pointer', color: TOKENS.textDim,
             fontSize: fs(11.5), textDecoration: 'underline', opacity: refreshing ? 0.5 : 1, fontFamily: 'inherit',
           }}
         >
-          {`${t('sourceDebrid')}: ${t('sourceRefresh')}`}
+          {`${t('sourceCloud')}: ${t('sourceRefresh')}`}
         </button>,
         showError('sources') ? <p style={errorStyle}>{t('errorSources')}</p> : null,
       )}

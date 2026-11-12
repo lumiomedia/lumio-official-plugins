@@ -60,7 +60,7 @@ export function TitlePicker({ selected, onChange, pools, extra, isTv, t, labelSt
   const posterFor = (title: ChannelTitle): string | undefined => {
     const remembered = posters.current.get(channelTitleKey(title))
     if (remembered) return remembered
-    for (const item of [...extra, ...pools.library, ...pools.vod, ...pools.debrid, ...pools.watchlist]) {
+    for (const item of [...extra, ...pools.library, ...pools.vod, ...pools.cloud, ...pools.watchlist]) {
       if (item.posterUrl && itemMatchesTitle(item, title)) return item.posterUrl
     }
     return undefined

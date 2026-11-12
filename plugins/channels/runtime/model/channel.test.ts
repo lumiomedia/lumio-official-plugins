@@ -18,8 +18,8 @@ describe('kanalmodellen', () => {
 
   it('validerar namn och källor och varnar för få titlar', () => {
     expect(validateDraft({ ...emptyDraft(), name: ' ', sources: [] }, 0)).toEqual({ errors: ['name', 'sources'], warnings: ['few-titles'] })
-    expect(validateDraft({ ...emptyDraft(), name: 'A', sources: ['debrid'] }, 12)).toEqual({ errors: [], warnings: [] })
-    expect(validateDraft({ ...emptyDraft(), name: 'A', sources: ['debrid'] }, null)).toEqual({ errors: [], warnings: [] })
+    expect(validateDraft({ ...emptyDraft(), name: 'A', sources: ['cloud'] }, 12)).toEqual({ errors: [], warnings: [] })
+    expect(validateDraft({ ...emptyDraft(), name: 'A', sources: ['cloud'] }, null)).toEqual({ errors: [], warnings: [] })
   })
 
   it('har tre förslag med giltiga regler', () => {
@@ -58,11 +58,28 @@ describe('standardkanalerna', () => {
   })
 
   it('läggs efter befintliga och hoppar över en kanal med samma regler', () => {
-    const own = { ...createChannel({ ...emptyDraft(), name: 'Evening film', kind: 'movie', length: 'feature', airWindow: 'evenings', sources: ['debrid', 'library', 'watchlist'] }, [], 1, () => 0.1) }
+    const own = { ...createChannel({ ...emptyDraft(), name: 'Evening film', kind: 'movie', length: 'feature', airWindow: 'evenings', sources: ['cloud', 'library', 'watchlist'] }, [], 1, () => 0.1) }
     const made = buildDefaultChannels([own], 'sv', 5)
     expect(made).toHaveLength(9)
     expect(made.some((c) => c.name === 'Kvällsfilm')).toBe(false)
     expect(made[0]!.number).toBe(2)
     expect(buildDefaultChannels([own, ...made], 'sv', 6)).toEqual([])
+  })
+})
+
+describe('källornas id i lagringen', () => {
+  it('molnkällan läses under vilket äldre id den än sparades med; kända källor står kvar', async () => {
+    const { sourcesFromStorage } = await import('./channel')
+    expect(sourcesFromStorage(['library', 'watchlist', 'older-cloud-id'])).toEqual(['library', 'watchlist', 'cloud'])
+    expect(sourcesFromStorage(['cloud', 'vod'])).toEqual(['cloud', 'vod'])
+    expect(sourcesFromStorage(['older-cloud-id', 'cloud', 'library', 'library'])).toEqual(['cloud', 'library'])
+    expect(sourcesFromStorage([null, 3, '', 'library'])).toEqual(['library'])
+    expect(sourcesFromStorage(undefined)).toEqual([])
+  })
+
+  it('skrivs med det id tjänstefilen anger, annars det nya', async () => {
+    const { sourcesToStorage } = await import('./channel')
+    expect(sourcesToStorage(['library', 'cloud'], 'older-cloud-id')).toEqual(['library', 'older-cloud-id'])
+    expect(sourcesToStorage(['library', 'cloud'], null)).toEqual(['library', 'cloud'])
   })
 })

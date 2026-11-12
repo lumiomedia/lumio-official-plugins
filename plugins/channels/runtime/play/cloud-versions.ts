@@ -1,6 +1,6 @@
 /**
- * Debrid-versioner av samma titel. Samma film kan ligga flera gånger i
- * molnet (flera torrents, flera konton — TorBox och ett gammalt Real-Debrid).
+ * Cloud-versioner av samma titel. Samma film kan ligga flera gånger i
+ * molnet (flera paket, flera konton).
  * Poolen behåller en post per titel men minns alla versioner; vid uppspelning
  * provas de i den här ordningen, och fallerar en (upplåsningen nekas, filen
  * dör) provas nästa i stället för Ingen signal.
@@ -10,9 +10,9 @@
  * finns bara de spelas de hellre än inget. Taket avgörs vid uppspelningen,
  * inte i poolen: poolen och tablån ska vara lika på alla enheter.
  */
-import type { DebridVersion } from '../data/pool'
+import type { CloudVersion } from '../data/pool'
 
-export interface DebridCaps {
+export interface CloudCaps {
   maxBytes: number | null
   maxResolution: number | null
 }
@@ -29,15 +29,15 @@ export function resolutionOf(name: string | undefined): number | null {
   return null
 }
 
-function withinCaps(v: DebridVersion, caps: DebridCaps): boolean {
+function withinCaps(v: CloudVersion, caps: CloudCaps): boolean {
   if (caps.maxBytes != null && v.size != null && v.size > caps.maxBytes) return false
   const res = resolutionOf(v.name)
   if (caps.maxResolution != null && res != null && res > caps.maxResolution) return false
   return true
 }
 
-export function orderDebridVersions(versions: DebridVersion[], caps: DebridCaps): DebridVersion[] {
-  const quality = (v: DebridVersion) => (resolutionOf(v.name) ?? 0) * 1e13 + (v.size ?? 0)
+export function orderCloudVersions(versions: CloudVersion[], caps: CloudCaps): CloudVersion[] {
+  const quality = (v: CloudVersion) => (resolutionOf(v.name) ?? 0) * 1e13 + (v.size ?? 0)
   const inside = versions.filter((v) => withinCaps(v, caps)).sort((a, b) => quality(b) - quality(a))
   const outside = versions.filter((v) => !withinCaps(v, caps)).sort((a, b) => quality(a) - quality(b))
   return [...inside, ...outside]

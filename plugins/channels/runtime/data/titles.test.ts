@@ -19,7 +19,7 @@ describe('titelmatchning', () => {
 
   it('sedan biblioteksnyckel/seriesKey, sist tvättad titel + år', () => {
     expect(itemMatchesTitle(ep('e1', 'AT'), { kind: 'tv', libraryKey: 'AT', title: 'Något' })).toBe(true)
-    expect(itemMatchesTitle(item('db1', { source: 'debrid', kind: 'episode', seriesKey: 'db:tv:Adventure Time' }), { kind: 'tv', libraryKey: 'db:tv:Adventure Time', title: 'x' })).toBe(true)
+    expect(itemMatchesTitle(item('db1', { source: 'cloud', kind: 'episode', seriesKey: 'db:tv:Adventure Time' }), { kind: 'tv', libraryKey: 'db:tv:Adventure Time', title: 'x' })).toBe(true)
     expect(itemMatchesTitle(ep('e1', 'Adventure Time!', { year: 2010 }), { kind: 'tv', tmdbId: 15260, title: 'adventure time', year: 2010 })).toBe(true)
     expect(itemMatchesTitle(ep('e1', 'Adventure Time', { year: 2010 }), { kind: 'tv', title: 'Adventure Time', year: 2018 })).toBe(false)
     expect(itemMatchesTitle(ep('e1', 'Adventure Time', { year: null }), { kind: 'tv', title: 'Adventure Time', year: 2010 })).toBe(true)
@@ -78,7 +78,7 @@ function deps(over: Partial<SourceDeps> = {}): SourceDeps {
       { season: 2, episodes: [{ episode: 1, title: 'It Came from the Nightosphere', runtime: 11 }] },
     ]),
     fetchRestSeasons: vi.fn(async () => [{ season: 4, episodes: [{ episode: 1, title: 'Hot to the Touch', runtime: 11 }] }]),
-    listDebridCloud: vi.fn(async () => []),
+    listCloud: vi.fn(async () => []),
     meta: {
       get: (kind: 'movie' | 'tv', id: number) => (
         kind === 'tv' && id === 15260 ? { title: 'Adventure Time', runtimeMin: 11, genres: ['Animation'], year: 2010, imdbId: 'tt1305826', posterUrl: 'p.jpg', at: 0 }

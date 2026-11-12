@@ -34,9 +34,9 @@ describe('spelarlogiken', () => {
     expect(rememberZap({ lastChannelId: 'b', previousChannelId: 'a' }, 'b')).toEqual({ lastChannelId: 'b', previousChannelId: 'a' })
   })
 
-  it('kanalbyte väntar med strömsök och debrid men inte med biblioteket', () => {
+  it('kanalbyte väntar med strömsök och cloud men inte med biblioteket', () => {
     expect(resolveDelayMs('stream', true)).toBe(ZAP_RESOLVE_DELAY_MS)
-    expect(resolveDelayMs('debrid', true)).toBe(ZAP_RESOLVE_DELAY_MS)
+    expect(resolveDelayMs('cloud', true)).toBe(ZAP_RESOLVE_DELAY_MS)
     expect(resolveDelayMs('library', true)).toBe(0)
     // Programbyte, Från början och felhopp på samma kanal väntar aldrig.
     expect(resolveDelayMs('stream', false)).toBe(0)
@@ -57,7 +57,7 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
     expect(endOfSourceAction({ position: 30, duration: 0, startedAt: 0 })).toBeNull()
   })
 
-  it('grannförladdning: CH ▲▼ nu, bara bibliotek och debrid, aldrig strömsök', () => {
+  it('grannförladdning: CH ▲▼ nu, bara bibliotek och cloud, aldrig strömsök', () => {
     const it_ = (ref: string, play: PoolItem['play']): PoolItem =>
       ({ ref, title: ref, runtimeMin: 600, runtimeKnown: true, year: null, kind: 'movie', source: 'library', genres: [], play })
     const list = [ch(1), ch(2), ch(3), ch(4)]
@@ -69,7 +69,7 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
     const of = (c: ChannelDef) => rundowns[c.id] ?? null
     expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.item.ref)).toEqual(['lib'])
     expect(neighbourPrefetch(list, 'c2', of, Date.now())[0]!.allowCatalog).toBe(false)
-    rundowns.c3 = [it_('deb', { type: 'debrid', provider: 'torbox', fileRef: '1|2' })]
+    rundowns.c3 = [it_('deb', { type: 'cloud', provider: 'torbox', fileRef: '1|2' })]
     expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.item.ref)).toEqual(['deb', 'lib'])
     // Kall cache (c4) och ensam kanal: inget.
     expect(neighbourPrefetch(list, 'c1', of, Date.now()).map((i) => i.item.ref)).toEqual([])

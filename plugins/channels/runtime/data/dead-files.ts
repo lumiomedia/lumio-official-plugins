@@ -1,8 +1,8 @@
 /**
  * Döda filer i molnet: en upplåsning som tjänsten besvarar med "finns inte"
- * (torrenten borttagen, filen spärrad). Utan minnet stod filen kvar i tablån
+ * (paketet borttaget, filen spärrad). Utan minnet stod filen kvar i tablån
  * och gav Ingen signal i hela sin programplats, varje gång den kom tillbaka
- * (TorBox 2026-10-20, "Chapter 1" på Serier i ordning). Med minnet faller
+ * (2026-10-20, "Chapter 1" på Serier i ordning). Med minnet faller
  * filen ur poolen; tablån fyller platsen med nästa post av sig själv.
  *
  * Bara ett tydligt svar räknas som dött: 404/410 eller tjänstens egen kod för
@@ -10,7 +10,7 @@
  * serverfel och nätverksfel är tillfälliga — filen provas igen. Minnet
  * gäller ett dygn (en fil kan läggas tillbaka i molnet). Ren logik.
  */
-import type { DebridVersion, PoolItem } from './pool'
+import type { CloudVersion, PoolItem } from './pool'
 
 export const DEAD_TTL_MS = 24 * 60 * 60 * 1000
 export const MAX_DEAD = 300
@@ -40,7 +40,7 @@ export function pruneDead(dead: Record<string, number>, now: number): Record<str
 }
 
 /**
- * Poolen utan döda filer. En debridpost med en död huvudfil men levande
+ * Poolen utan döda filer. En cloudpost med en död huvudfil men levande
  * versioner behåller sin plats (samma ref, tablån rubbas inte) med nästa
  * version som huvudfil; utan levande version faller posten bort.
  */
@@ -49,15 +49,15 @@ export function dropDeadFiles(items: PoolItem[], dead: Record<string, number>): 
   let changed = false
   const out: PoolItem[] = []
   for (const item of items) {
-    if (item.play.type !== 'debrid') { out.push(item); continue }
+    if (item.play.type !== 'cloud') { out.push(item); continue }
     const { alts, type: _type, ...main } = item.play
-    const versions: DebridVersion[] = [main, ...(alts ?? [])]
+    const versions: CloudVersion[] = [main, ...(alts ?? [])]
     const alive = versions.filter((v) => !(deadKey(v) in dead))
     if (alive.length === versions.length) { out.push(item); continue }
     changed = true
     if (alive.length === 0) continue
     const [first, ...rest] = alive
-    out.push({ ...item, play: { type: 'debrid', ...first!, ...(rest.length > 0 ? { alts: rest } : {}) } })
+    out.push({ ...item, play: { type: 'cloud', ...first!, ...(rest.length > 0 ? { alts: rest } : {}) } })
   }
   return changed ? out : items
 }

@@ -25,9 +25,10 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 vi.mock('../host', () => ({
   readChannels: () => state.channels, onChannelsChanged: () => () => {}, sourceCacheSetting: () => null,
-  debridAccounts: () => state.accounts,
-  forgetDebridAccount: (id: string) => { state.forgotten.push(id); state.accounts = state.accounts.filter((a) => a !== id) },
-  refreshDebridCloud: () => { state.refreshed += 1; return Promise.resolve([]) },
+  cloudAccounts: () => state.accounts,
+  cloudAccountName: (id: string) => ({ realdebrid: 'Real-Debrid', torbox: 'TorBox' } as Record<string, string>)[id] ?? id,
+  forgetCloudAccount: (id: string) => { state.forgotten.push(id); state.accounts = state.accounts.filter((a) => a !== id) },
+  refreshCloud: () => { state.refreshed += 1; return Promise.resolve([]) },
 }))
 vi.mock('../state/store', () => ({
   useChannels: () => state.channels,

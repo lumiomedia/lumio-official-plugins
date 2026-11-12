@@ -3,8 +3,8 @@
  * egen SDK-kopia har tomma register); här bara dispatch, cache och skydd mot
  * att en gammal resolve vinner över en nyare vid snabb zapp.
  */
-import type { DebridVersion, PlayRef, PoolItem } from '../data/pool'
-import { orderDebridVersions, type DebridCaps } from './debrid-versions'
+import type { CloudVersion, PlayRef, PoolItem } from '../data/pool'
+import { orderCloudVersions, type CloudCaps } from './cloud-versions'
 
 export interface Playable {
   url: string
@@ -19,9 +19,9 @@ export interface ResolveDeps {
   /** `allowCatalog: false` = aldrig titelns IPTV-VOD-versioner (kanalen har inte VOD som källa). */
   library(ref: Extract<PlayRef, { type: 'library' }>, exclude?: string[], allowCatalog?: boolean): Promise<Playable | null>
   stream(ref: Extract<PlayRef, { type: 'stream' }>, exclude?: string[]): Promise<Playable | null>
-  debrid(ref: DebridVersion): Promise<Playable | null>
+  cloud(ref: CloudVersion): Promise<Playable | null>
   /** Autostartens tak, läses vid varje uppspelning. Saknas = inget tak. */
-  debridCaps?(): DebridCaps
+  cloudCaps?(): CloudCaps
   /** En fil tjänsten sagt inte finns (data/dead-files): provas inte, inget anrop. */
   isDead?(file: { provider: string; fileRef: string }): boolean
 }
@@ -33,23 +33,23 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
   const pending = new Map<string, Promise<Playable | null>>()
 
   /**
-   * Provade debridfiler per post. Versionerna provas i takets ordning tills
+   * Provade cloudfiler per post. Versionerna provas i takets ordning tills
    * en låses upp; en nekad upplåsning (utgånget konto) ger ingen adress att
    * utesluta, så resolvern minns själv vilka som provats. Ny start = nytt varv.
    */
-  const debridTried = new Map<string, Set<string>>()
+  const cloudTried = new Map<string, Set<string>>()
 
-  async function callDebrid(ref: string, play: Extract<PlayRef, { type: 'debrid' }>, fresh: boolean): Promise<Playable | null> {
-    const tried = (!fresh && debridTried.get(ref)) || new Set<string>()
-    debridTried.set(ref, tried)
-    const caps = deps.debridCaps?.() ?? { maxBytes: null, maxResolution: null }
+  async function callCloud(ref: string, play: Extract<PlayRef, { type: 'cloud' }>, fresh: boolean): Promise<Playable | null> {
+    const tried = (!fresh && cloudTried.get(ref)) || new Set<string>()
+    cloudTried.set(ref, tried)
+    const caps = deps.cloudCaps?.() ?? { maxBytes: null, maxResolution: null }
     const { alts, type: _type, ...main } = play
-    for (const version of orderDebridVersions([main, ...(alts ?? [])], caps)) {
+    for (const version of orderCloudVersions([main, ...(alts ?? [])], caps)) {
       const key = `${version.provider}:${version.fileRef}`
       if (tried.has(key)) continue
       tried.add(key)
       if (deps.isDead?.(version)) continue
-      const playable = await deps.debrid({ provider: version.provider, fileRef: version.fileRef }).catch(() => null)
+      const playable = await deps.cloud({ provider: version.provider, fileRef: version.fileRef }).catch(() => null)
       if (playable) return playable
     }
     return null
@@ -58,7 +58,7 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
   function call(ref: string, play: PlayRef, exclude?: string[], allowCatalog?: boolean): Promise<Playable | null> {
     if (play.type === 'library') return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude)
     if (play.type === 'stream') return deps.stream(play, exclude)
-    return callDebrid(ref, play, !exclude || exclude.length === 0)
+    return callCloud(ref, play, !exclude || exclude.length === 0)
   }
 
   /**

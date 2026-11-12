@@ -41,13 +41,13 @@ export function librarySides(t: Pick<LibraryTitleLike, 'sourceId' | 'sources'>):
   return { library: ids.some((id) => !isVodSourceId(id)), vod: ids.some(isVodSourceId) }
 }
 
-export interface DebridTitleLike {
+export interface CloudTitleLike {
   kind: 'movie' | 'tv'
   title: string
   year: number | null
   tmdbId?: number
   imdbId?: string
-  files: Array<{ provider: 'realdebrid' | 'torbox' | 'alldebrid'; fileRef: string; size?: number; name?: string; season?: number; episode?: number }>
+  files: Array<{ provider: string; fileRef: string; size?: number; name?: string; season?: number; episode?: number }>
 }
 
 interface WatchlistEntry { tmdbId: number; imdbId?: string | null; title: string; posterUrl?: string | null }
@@ -64,11 +64,11 @@ export interface SourceDeps {
    * Cachas som fetchSeasons; hämtas i bakgrunden efter de tre första.
    */
   fetchRestSeasons?(tmdbId: number): Promise<SeasonList>
-  listDebridCloud(): Promise<DebridTitleLike[]>
+  listCloud(): Promise<CloudTitleLike[]>
   meta: ReturnType<typeof createMetaCache>
   /**
    * Värdens startgrind (waitForStartIdle): nätverkstungt poolbygge —
-   * watchlist, debrid och metadataberikning — väntar här så det aldrig
+   * watchlist, cloud och metadataberikning — väntar här så det aldrig
    * konkurrerar med en filmstart. Biblioteket (lokalt index) väntar inte.
    */
   waitForIdle?(): Promise<void>
@@ -310,7 +310,7 @@ export const streamWatchlistItems: SourceStream = async (deps, emit) => {
   emit(build())
 }
 
-function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem[] {
+function buildCloudItems(titles: CloudTitleLike[], deps: SourceDeps): PoolItem[] {
   const items: PoolItem[] = []
   for (const t of titles) {
     const tv = t.kind === 'tv'
@@ -320,7 +320,7 @@ function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem
     const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title)
     for (const f of t.files) {
       items.push({
-        ref: `db:${f.provider}:${f.fileRef}`, title: name, kind: tv ? 'episode' : 'movie', source: 'debrid',
+        ref: `db:${f.provider}:${f.fileRef}`, title: name, kind: tv ? 'episode' : 'movie', source: 'cloud',
         genres: meta?.genres ?? [], year: t.year ?? meta?.year ?? null,
         ...(tmdbId != null ? { tmdbId } : {}),
         ...(imdbId ? { imdbId } : {}),
@@ -328,19 +328,19 @@ function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem
         ...(meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {}),
         ...(tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...(f.season != null ? { season: f.season } : {}), ...(f.episode != null ? { episode: f.episode } : {}) } : {}),
         ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-        play: { type: 'debrid', provider: f.provider, fileRef: f.fileRef, ...(f.size ? { size: f.size } : {}), ...(f.name ? { name: f.name } : {}) },
+        play: { type: 'cloud', provider: f.provider, fileRef: f.fileRef, ...(f.size ? { size: f.size } : {}), ...(f.name ? { name: f.name } : {}) },
       })
     }
   }
   return items
 }
 
-export const streamDebridItems: SourceStream = async (deps, emit) => {
-  // Listningen (RD pausar per torrent) körs först när ingen start pågår, bara
-  // för kanaler som använder debrid; värdens 6 h-cache och delade hämtning gäller.
+export const streamCloudItems: SourceStream = async (deps, emit) => {
+  // Listningen (en tjänst pausar per paket) körs först när ingen start pågår, bara
+  // för kanaler som använder cloud; värdens 6 h-cache och delade hämtning gäller.
   await idle(deps)
-  const titles = await deps.listDebridCloud()
-  const rebuild = () => emit(buildDebridItems(titles, deps))
+  const titles = await deps.listCloud()
+  const rebuild = () => emit(buildCloudItems(titles, deps))
   rebuild()
   const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(t.kind, t.title, t.year)))
   const refs: MetaRef[] = []
@@ -445,17 +445,17 @@ async function collect(stream: SourceStream, deps: SourceDeps, opts: LoadOptions
 
 export const loadLibraryItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamLibraryItems, deps, opts)
 export const loadWatchlistItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamWatchlistItems, deps, opts)
-export const loadDebridItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamDebridItems, deps, opts)
+export const loadCloudItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamCloudItems, deps, opts)
 export const loadVodItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamVodItems, deps, opts)
 
 const STREAMS: Record<SourceId, SourceStream> = {
-  library: streamLibraryItems, watchlist: streamWatchlistItems, debrid: streamDebridItems, vod: streamVodItems,
+  library: streamLibraryItems, watchlist: streamWatchlistItems, cloud: streamCloudItems, vod: streamVodItems,
 }
 
 /**
  * En pågående källhämtning, delad av alla kanaler som laddar samtidigt: tio
  * kanaler som öppnas på en gång ger ett bibliotekssvep, en watchlistgenomgång
- * och en debridlistning — inte tio av varje. Bara pågående hämtningar delas;
+ * och en cloudlistning — inte tio av varje. Bara pågående hämtningar delas;
  * en kanal som laddar senare (ny källsignatur) får en ny hämtning.
  */
 interface SharedRun { latest: PoolItem[] | null; listeners: Set<Emit>; done: Promise<void> }
@@ -498,7 +498,7 @@ function runShared(source: SourceId, deps: SourceDeps, emit: Emit): Promise<void
  * spelfilmer som sedan försvinner när längden blir känd.
  */
 /**
- * Avsnitt utan känd längd (debrid, WebDAV, Plex …) fick standardlängden 45 min
+ * Avsnitt utan känd längd (cloud, WebDAV, Plex …) fick standardlängden 45 min
  * — appens metadata har ingen avsnittslängd för serier. Adventure Time (11,7
  * min) sände då "Programmet är slut" tre fjärdedelar av tiden (2026-10-18).
  * TMDb-säsongerna har längden per avsnitt; avsnitt utanför de hämtade
@@ -547,7 +547,7 @@ export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps,
   const all = () => dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? []))
   const merged = () => applyChannelRules(all(), channel, extra)
   // Utvalda titlar hämtas PARALLELLT med källorna (Jerry 2026-10-17: en
-  // titelkanal stod tom tills debrid-listningen svarat). Dubbletter mot
+  // titelkanal stod tom tills cloud-listningen svarat). Dubbletter mot
   // biblioteket slås ihop som vanligt — biblioteket vinner. Titlarna är få,
   // och avsnittslistorna ligger i säsongscachen.
   const fallback = hasTitles(channel)

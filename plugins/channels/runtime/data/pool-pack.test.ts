@@ -38,7 +38,7 @@ describe('packPool/unpackPool', () => {
       ...bigPool(1, 2),
       { ref: 'wl:movie:5', title: 'Alien', kind: 'movie', runtimeMin: 100, runtimeKnown: false, year: 1979, source: 'watchlist', genres: ['Horror'], tmdbId: 5, imdbId: 'tt0078748', posterUrl: POSTER, play: { type: 'stream', imdbId: 'tt0078748', mediaType: 'movie' } },
       { ref: 'wl:tv:9:1:2', title: 'Ep', seriesTitle: 'Show', kind: 'episode', seriesKey: 'wl:tv:9', season: 1, episode: 2, runtimeMin: 45, runtimeKnown: true, year: 2001, source: 'watchlist', genres: [], imdbId: 'tt9', play: { type: 'stream', imdbId: 'tt9', mediaType: 'series', season: 1, episode: 2 } },
-      { ref: 'db:torbox:7|1', title: 'X', kind: 'movie', runtimeMin: 100, runtimeKnown: false, year: null, source: 'debrid', genres: [], play: { type: 'debrid', provider: 'torbox', fileRef: '7|1' } },
+      { ref: 'db:torbox:7|1', title: 'X', kind: 'movie', runtimeMin: 100, runtimeKnown: false, year: null, source: 'cloud', genres: [], play: { type: 'cloud', provider: 'torbox', fileRef: '7|1' } },
     ]
     const back = unpackPool(JSON.parse(JSON.stringify(packPool(items))))!
     const shown = (i: PoolItem) => ({ ref: i.ref, title: i.title, kind: i.kind, runtimeMin: i.runtimeMin, runtimeKnown: i.runtimeKnown, year: i.year, seriesKey: i.seriesKey, season: i.season, episode: i.episode, seriesTitle: i.seriesTitle, posterUrl: i.posterUrl, backdropUrl: i.backdropUrl, play: i.play, source: i.source })

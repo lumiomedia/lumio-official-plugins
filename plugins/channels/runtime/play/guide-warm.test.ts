@@ -12,7 +12,7 @@ describe('guidens förvärmning', () => {
     const channels = [ch('a'), ch('b'), ch('c'), ch('d')]
     const rundowns = {
       a: { rundown: [item('lib:x', 'library', { type: 'library', key: 'x', mediaType: 'movie' })] },
-      b: { rundown: [item('db:torbox:1|2', 'debrid', { type: 'debrid', provider: 'torbox', fileRef: '1|2' })] },
+      b: { rundown: [item('db:torbox:1|2', 'cloud', { type: 'cloud', provider: 'torbox', fileRef: '1|2' })] },
       c: { rundown: [item('wl:movie:5', 'watchlist', { type: 'stream', imdbId: 'tt1', mediaType: 'movie' })] },
       d: { rundown: [item('lib:xtream-vod:9', 'vod', { type: 'library', key: 'v', mediaType: 'movie' })] },
     }

@@ -6,15 +6,15 @@ let failWrites = 0
 let libraryStatus: unknown = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] }
 const sdk = {
   queryLibrary: async (_q: unknown): Promise<{ items: unknown[] }> => ({ items: [] }),
-  listDebrid: async (): Promise<unknown[]> => [],
+  listCloud: async (): Promise<unknown[]> => [],
   idle: (): Promise<void> => Promise.resolve(),
   lang: 'sv',
   profileListeners: [] as Array<() => void>,
 }
 // Molnet är pluginets egen modul (data/cloud): listningen styrs av testet.
 vi.mock('../data/cloud', () => ({
-  DEBRID_PROVIDERS: ['realdebrid', 'torbox', 'alldebrid'],
-  createDebridCloud: () => ({ listDebridCloud: () => sdk.listDebrid(), unrestrictDebridFile: async () => null }),
+  CLOUD_SERVICES: ['realdebrid', 'torbox', 'alldebrid'],
+  createCloud: () => ({ listCloud: () => sdk.listCloud(), unlockCloudFile: async () => null }),
 }))
 vi.mock('@/lib/plugin-sdk', () => ({
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
@@ -43,7 +43,7 @@ import { render } from '@testing-library/react'
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) }))); sdk.idle = () => Promise.resolve(); sdk.lang = 'sv'; sdk.profileListeners = []; sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) }))); sdk.idle = () => Promise.resolve(); sdk.lang = 'sv'; sdk.profileListeners = []; sdk.queryLibrary = async () => ({ items: [] }); sdk.listCloud = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -58,7 +58,7 @@ describe('kanallagret', () => {
   it('poolen räknas om bara när signaturen ändras', async () => {
     const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
     const queryLibrary = vi.fn(async () => ({ items: [{ key: 'm', kind: 'movie', tmdbId: 1, title: 'X', year: 2000, genres: [], runtimeMin: 90 }] }))
-    const deps = { queryLibrary, getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+    const deps = { queryLibrary, getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
     await loadPoolCached(ch, deps as never)
     await loadPoolCached(ch, deps as never)
     expect(queryLibrary).toHaveBeenCalledTimes(1)
@@ -68,7 +68,7 @@ describe('kanallagret', () => {
 })
 
 describe('poolcache och signatur', () => {
-  const deps = { queryLibrary: async () => ({ items: [] }), getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+  const deps = { queryLibrary: async () => ({ items: [] }), getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
 
   it('deleteChannel tar bort poolcachen', async () => {
     const a = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
@@ -99,14 +99,14 @@ describe('poolcache och signatur', () => {
     expect((await sourceSignatures()).library).not.toBe(before)
   })
 
-  it('en debridkanal byggs inte om när biblioteket synkat', async () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'D', sources: ['debrid'] }, [], 1, () => 0.1)
-    const listDebridCloud = vi.fn(async () => [])
-    await loadPoolCached(ch, { ...deps, listDebridCloud } as never)
+  it('en cloudkanal byggs inte om när biblioteket synkat', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'D', sources: ['cloud'] }, [], 1, () => 0.1)
+    const listCloud = vi.fn(async () => [])
+    await loadPoolCached(ch, { ...deps, listCloud } as never)
     libraryStatus = { total: 4, sources: [{ lastFullSync: 300, lastDeltaSync: null, lastChange: 300 }] }
     resetSourceSignatures()
-    await loadPoolCached(ch, { ...deps, listDebridCloud } as never)
-    expect(listDebridCloud).toHaveBeenCalledTimes(1)
+    await loadPoolCached(ch, { ...deps, listCloud } as never)
+    expect(listCloud).toHaveBeenCalledTimes(1)
   })
 
   it('poolcachen sparas packad och läses tillbaka lika', async () => {
@@ -132,7 +132,7 @@ describe('delade laddningar', () => {
   it('samtida loadPoolCached för samma kanal ger ett poolanrop', async () => {
     const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
     const queryLibrary = vi.fn(async () => { await new Promise((r) => setTimeout(r, 5)); return { items: [] } })
-    const deps = { queryLibrary, getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+    const deps = { queryLibrary, getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
     const [a, b, c] = await Promise.all([loadPoolCached(ch, deps as never), loadPoolCached(ch, deps as never), loadPoolCached(ch, deps as never)])
     expect(queryLibrary).toHaveBeenCalledTimes(1)
     expect(b).toBe(a)
@@ -157,7 +157,7 @@ describe('delade laddningar', () => {
 })
 
 describe('laddningsfel och signaturbyte', () => {
-  const baseDeps = { getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+  const baseDeps = { getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
 
   it('en misslyckad laddning cachas inte: nästa anrop försöker igen', async () => {
     const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
@@ -191,11 +191,11 @@ describe('progressiv pool', () => {
   const movie = (key: string, tmdbId: number) => ({ key, kind: 'movie', tmdbId, title: key, year: 2000, genres: [], runtimeMin: 95 })
 
   it('första källan visas innan en långsam andra svarat; cachen skrivs först när allt är klart', async () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'cloud'] }, [], 1, () => 0.1)
     let release: () => void = () => {}
     const gate = new Promise<void>((r) => { release = r })
     sdk.queryLibrary = async () => ({ items: [movie('m1', 1)] })
-    sdk.listDebrid = async () => { await gate; return [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }] }
+    sdk.listCloud = async () => { await gate; return [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }] }
     const { result } = renderHook(() => useChannelPool(ch))
     await waitFor(() => expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1']))
     expect(result.current.loading).toBe(false)
@@ -219,7 +219,7 @@ describe('progressiv pool', () => {
   })
 
   it('en sparad pool med samma regler visas direkt och byts först mot en komplett', async () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'cloud'] }, [], 1, () => 0.1)
     sdk.queryLibrary = async () => ({ items: [movie('m1', 1)] })
     await loadPoolCached(ch)
     // Källan har ändrats: signaturen stämmer inte längre, men reglerna gör det.
@@ -228,7 +228,7 @@ describe('progressiv pool', () => {
     let release: () => void = () => {}
     const gate = new Promise<void>((r) => { release = r })
     sdk.queryLibrary = async () => ({ items: [movie('m1', 1), movie('m2', 3)] })
-    sdk.listDebrid = async () => { await gate; return [] }
+    sdk.listCloud = async () => { await gate; return [] }
     const { result } = renderHook(() => useChannelPool(ch))
     expect(result.current.loading).toBe(false)
     expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1'])
@@ -255,9 +255,9 @@ describe('standardkanalerna', () => {
 describe('uppstart och startgrinden', () => {
   it('bootstrap sår standardkanalerna utan nätverk, och en ny profil vid profilbyte', () => {
     const query = vi.fn(async () => ({ items: [] }))
-    const debrid = vi.fn(async () => [])
+    const cloud = vi.fn(async () => [])
     sdk.queryLibrary = query
-    sdk.listDebrid = debrid
+    sdk.listCloud = cloud
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     render(<ChannelsBootstrap />)
     expect(readChannels()).toHaveLength(10)
@@ -268,27 +268,27 @@ describe('uppstart och startgrinden', () => {
     for (const fn of sdk.profileListeners) fn()
     expect(readChannels()[0]!.name).toBe('Movies around the clock')
     expect(query).not.toHaveBeenCalled()
-    expect(debrid).not.toHaveBeenCalled()
+    expect(cloud).not.toHaveBeenCalled()
     expect(fetchSpy).not.toHaveBeenCalled()
     fetchSpy.mockRestore()
   })
 
-  it('biblioteket publiceras före grinden; watchlist och debrid väntar på waitForStartIdle', async () => {
-    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+  it('biblioteket publiceras före grinden; watchlist och cloud väntar på waitForStartIdle', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'cloud'] }, [], 1, () => 0.1)
     let open: () => void = () => {}
     const gate = new Promise<void>((r) => { open = r })
     sdk.idle = () => gate
     sdk.queryLibrary = async () => ({ items: [{ key: 'm1', kind: 'movie', tmdbId: 1, title: 'm1', year: 2000, genres: [], runtimeMin: 95 }] })
-    const debrid = vi.fn(async () => [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }])
-    sdk.listDebrid = debrid
+    const cloud = vi.fn(async () => [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }])
+    sdk.listCloud = cloud
     const { result } = renderHook(() => useChannelPool(ch))
     await waitFor(() => expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1']))
     await new Promise((r) => setTimeout(r, 10))
-    expect(debrid).not.toHaveBeenCalled()
+    expect(cloud).not.toHaveBeenCalled()
     expect(result.current.partial).toBe(true)
     await act(async () => { open() })
     await waitFor(() => expect(result.current.partial).toBe(false))
-    expect(debrid).toHaveBeenCalledTimes(1)
+    expect(cloud).toHaveBeenCalledTimes(1)
     expect(result.current.pool.map((i) => i.ref).sort()).toEqual(['db:torbox:1|1', 'lib:m1'])
   })
 })

@@ -1,24 +1,26 @@
 /**
- * Debrid-molnet som kanalkälla: vad användaren redan har i sitt RD/TorBox/
- * AllDebrid-konto, grupperat till titlar och matchat mot TMDb med appens
- * filnamnstolk och matchningscache (värdens neutrala hjälpare).
+ * Molnet som kanalkälla: det användaren redan har i sina molnkonton,
+ * grupperat till titlar och matchat mot TMDb med appens filnamnstolk och
+ * matchningscache (värdens neutrala hjälpare).
  *
- * Flyttat ut ur appkärnan 2026-10-20: kärnan namnger inga tjänster. Pluginet
- * talar tjänsternas protokoll via appens befintliga proxyer
- * (/api/stream-providers/<id>/…) med nyckeln ur appens lagring. En leverantör
- * utan nyckel hoppas över; en som svarar fel ger en tom lista för just den.
- * AllDebrids bas-URL saknar versionssegment, så sökvägarna bär /v4 resp. /v4.1.
+ * Pluginet känner inte till någon tjänst. Vilka tjänster som finns, deras
+ * adresser och hur man listar och låser upp filer hos dem står i tjänstefilen
+ * (data/cloud-services.ts hämtar den och håller en kopia). Här finns det som
+ * är gemensamt: anropen via appens vidarebefordring med nyckeln ur appens
+ * lagring, grupperingen, matchningen och cachen. En tjänst utan nyckel hoppas
+ * över; en som svarar fel ger en tom lista för just den.
  * Listan cachas i 6 h — molnet ändras sällan och varje genomgång är flera
- * anrop mot leverantören. Cachen nycklas på nyckeluppsättningen, samtida anrop
- * delar en genomgång, och en lista där enstaka torrentuppslag föll cachas
- * kortare i stället för inte alls.
+ * anrop. Cachen nycklas på nyckeluppsättningen, samtida anrop delar en
+ * genomgång, och en lista där enstaka uppslag föll cachas kortare i stället
+ * för inte alls.
  */
+import type { CloudApi, CloudService, CloudServicesFile, ListedFile, ProviderListing } from './cloud-services'
 
-export type DebridProviderId = 'realdebrid' | 'torbox' | 'alldebrid'
-export const DEBRID_PROVIDERS: DebridProviderId[] = ['realdebrid', 'torbox', 'alldebrid']
+/** Tjänstens id, som tjänstefilen anger det. */
+export type CloudServiceId = string
 
-export interface DebridCloudFile {
-  provider: DebridProviderId
+export interface CloudFile {
+  provider: CloudServiceId
   fileRef: string
   name: string
   size: number
@@ -26,38 +28,42 @@ export interface DebridCloudFile {
   episode?: number
 }
 
-export interface DebridCloudTitle {
+export interface CloudTitle {
   kind: 'movie' | 'tv'
   title: string
   year: number | null
   tmdbId?: number
   imdbId?: string
-  files: DebridCloudFile[]
+  files: CloudFile[]
 }
 
 interface ParsedName { title: string; year: number | null; season: number | null; episode: number | null }
 
 /** Värdens hjälpare (host.ts kopplar dem till SDK:t; testerna ger egna). */
 export interface CloudDeps {
-  token(provider: DebridProviderId): string | null
+  /** Tjänstefilen, eller null innan den hämtats. */
+  services(): CloudServicesFile | null
+  /** Väntar in tjänstefilen (ur lagringen eller nätet); en lista byggd utan den vore tom i sex timmar. */
+  servicesReady?(): Promise<unknown>
+  token(provider: CloudServiceId): string | null
   parseFileName(fileName: string, parentFolder?: string): ParsedName | null
   matchTitles(wanted: Array<{ title: string; year: number | null; kind: 'movie' | 'tv' }>): Promise<Array<{ tmdbId: number } | null>>
-  /** Paus mellan RD:s torrentuppslag (testerna: 0). */
+  /** Paus mellan RD:s uppslag (testerna: 0). */
   pauseMs?: number
   /**
    * En upplåsning som inte gav någon adress: HTTP-status (0 = nätverksfel,
    * avbrott eller ingen nyckel) och svarets kropp. Loggas och avgör om
    * filen är död (data/dead-files).
    */
-  onUnlockFailed?(provider: DebridProviderId, fileRef: string, status: number, body: unknown): void
+  onUnlockFailed?(provider: CloudServiceId, fileRef: string, status: number, body: unknown): void
 }
 
-export function createDebridCloud(deps: CloudDeps) {
+export function createCloud(deps: CloudDeps) {
   const pauseMs = deps.pauseMs ?? 1000
-  let cache: { key: string; at: number; ttl: number; titles: DebridCloudTitle[] } | null = null
-  let inflight: { key: string; promise: Promise<DebridCloudTitle[]> } | null = null
+  let cache: { key: string; at: number; ttl: number; titles: CloudTitle[] } | null = null
+  let inflight: { key: string; promise: Promise<CloudTitle[]> } | null = null
 
-  function tokenFor(provider: DebridProviderId): string | null {
+  function tokenFor(provider: CloudServiceId): string | null {
     const value = deps.token(provider)
     return value && value.trim() ? value.trim() : null
   }
@@ -69,26 +75,37 @@ export function createDebridCloud(deps: CloudDeps) {
 
   const VIDEO = /\.(mkv|mp4|m4v|avi|mov|ts|m2ts|webm)$/i
   const CACHE_TTL_MS = 6 * 60 * 60 * 1000
-  /** Lista där enstaka torrentuppslag föll: duger en stund, men ska fyllas på snart. */
+  /** Lista där enstaka uppslag föll: duger en stund, men ska fyllas på snart. */
   const PARTIAL_TTL_MS = 15 * 60 * 1000
   const FETCH_TIMEOUT_MS = 15_000
   /**
-   * Appens vidarebefordring (`/api/plugin-relay`): pluginet anger tjänstens
-   * basadress och var nyckeln ska sitta, appen känner inte till någon tjänst.
-   * `legacy*` är vägen i appar före rutten (svarar 404 "route not found" på
-   * den nya); då används den gamla resten av sessionen.
+   * Appens vidarebefordring (`/api/plugin-relay`): tjänstefilen anger adress
+   * och var nyckeln ska sitta, appen känner inte till någon tjänst. Appar
+   * före rutten svarar 404 "route not found" på den; då används den äldre
+   * vägen resten av sessionen.
    */
   const RELAY = '/api/plugin-relay'
   const LEGACY_BASE = '/api/stream-providers'
-  const SERVICES: Record<DebridProviderId, { base: string; tokenParam?: string; defaults?: string; legacyHeader: string }> = {
-    realdebrid: { base: 'https://api.real-debrid.com/rest/1.0', legacyHeader: 'x-stream-provider-token' },
-    torbox: { base: 'https://api.torbox.app/v1/api', legacyHeader: 'x-tb-token' },
-    alldebrid: { base: 'https://api.alldebrid.com', tokenParam: 'apikey', defaults: 'agent=lumio', legacyHeader: 'x-ad-token' },
-  }
   let relayMissing = false
 
+  function serviceOf(provider: CloudServiceId): CloudService | null {
+    return deps.services()?.services.find((service) => service.id === provider) ?? null
+  }
+
+  function apiFor(service: CloudService): CloudApi {
+    return {
+      getJson: (path, init) => getJson(service.id, path, init),
+      request: (path, init) => request(service.id, path, init),
+      token: tokenFor(service.id) ?? '',
+      pause,
+      pauseMs,
+      isVideo: (name) => VIDEO.test(name),
+      foldersOf,
+    }
+  }
+
   /** Kort, icke-reversibel nyckel för tokenuppsättningen (tokens hålls inte i cachen). */
-  function tokenSetKey(providers: DebridProviderId[]): string {
+  function tokenSetKey(providers: CloudServiceId[]): string {
     let hash = 0x811c9dc5
     const text = providers.map((p) => `${p}=${tokenFor(p) ?? ''}`).join('&')
     for (let i = 0; i < text.length; i += 1) {
@@ -101,19 +118,20 @@ export function createDebridCloud(deps: CloudDeps) {
 
   type Failure = { status: number; body: unknown }
 
-  async function getJson(provider: DebridProviderId, path: string, init?: RequestInit): Promise<any | null> {
+  async function getJson(provider: CloudServiceId, path: string, init?: RequestInit): Promise<any | null> {
     return (await request(provider, path, init)).data
   }
 
   /** Svaret, eller felet (status 0 = nätverksfel, avbrott eller ingen nyckel) för upplåsningens rapport. */
-  async function request(provider: DebridProviderId, path: string, init?: RequestInit): Promise<{ data: any | null; failure: Failure | null }> {
+  async function request(provider: CloudServiceId, path: string, init?: RequestInit): Promise<{ data: any | null; failure: Failure | null }> {
     const token = tokenFor(provider)
     if (!token) return { data: null, failure: { status: 0, body: 'ingen nyckel' } }
     // Ett hängande leverantörsanrop får inte hålla kanalpoolen (eller uppspelningen) i evighet.
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
     try {
-      const service = SERVICES[provider]
+      const service = serviceOf(provider)
+      if (!service) return { data: null, failure: { status: 0, body: 'ingen tjänst' } }
       const viaLegacy = () => fetch(`${LEGACY_BASE}/${provider}${path}`, {
         ...init,
         headers: { ...(init?.headers ?? {}), [service.legacyHeader]: token },
@@ -153,149 +171,20 @@ export function createDebridCloud(deps: CloudDeps) {
 
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-  /**
-   * `failed`: själva listningen föll — skiljer det från ett tomt konto och hindrar cachning.
-   * `partial`: listningen gick men enstaka uppslag föll — cachas, men kort.
-   */
-  interface ProviderListing {
-    files: ListedFile[]
-    failed: boolean
-    partial?: boolean
-  }
-
-  /**
-   * En fil med sitt sammanhang: torrentens (magnetens) namn och mapparna mellan
-   * torrentroten och filen. Filnamnet ensamt räcker inte — ett avsnitt döpt
-   * efter sin titel ("To the Lighthouse", Terminator: The Sarah Connor
-   * Chronicles S02E20) matchades mot en film från 1983.
-   */
-  interface ListedFile {
-    file: DebridCloudFile
-    /** Leverantör + torrent-id: filerna i samma torrent jämförs med varandra. */
-    torrentKey: string
-    torrentName: string
-    folders: string[]
-  }
-
-  /** Mapparna mellan torrentroten och filen; roten själv räknas inte. */
-  function foldersOf(path: string, torrentName: string): string[] {
+  /** Mapparna mellan paketets rot och filen; roten själv räknas inte. */
+  function foldersOf(path: string, containerName: string): string[] {
     const parts = path.split(/[\\/]/).filter(Boolean)
     parts.pop()
-    if (parts.length > 0 && (parts[0] === torrentName || !torrentName)) parts.shift()
+    if (parts.length > 0 && (parts[0] === containerName || !containerName)) parts.shift()
     return parts
-  }
-
-  async function listRealDebrid(): Promise<ProviderListing> {
-    const torrents = await getJson('realdebrid', '/torrents?limit=100')
-    if (!Array.isArray(torrents)) return { files: [], failed: true }
-    const files: ListedFile[] = []
-    let partial = false
-    for (const torrent of torrents) {
-      if (torrent?.status !== 'downloaded') continue
-      // Högst ett anrop per sekund mot RD (deras gräns är generös men delad
-      // med användarens egna uppslag).
-      await pause(pauseMs)
-      const info = await getJson('realdebrid', `/torrents/info/${encodeURIComponent(torrent.id)}`)
-      if (!info) {
-        partial = true
-        continue
-      }
-      const selected = (info.files ?? []).filter((file: any) => file.selected === 1)
-      const links: string[] = info.links ?? []
-      const torrentName = String(torrent.filename ?? info.filename ?? info.original_filename ?? '')
-      selected.forEach((file: any, index: number) => {
-        const path = String(file.path ?? '')
-        const name = path.split('/').pop() ?? ''
-        const link = links[index]
-        if (!link || !VIDEO.test(name)) return
-        files.push({
-          file: { provider: 'realdebrid', fileRef: `${torrent.id}|${link}`, name, size: Number(file.bytes) || 0 },
-          torrentKey: `realdebrid:${torrent.id}`,
-          torrentName,
-          folders: foldersOf(path, torrentName),
-        })
-      })
-    }
-    return { files, failed: false, partial }
-  }
-
-  async function listTorBox(): Promise<ProviderListing> {
-    const body = await getJson('torbox', '/torrents/mylist?bypass_cache=true')
-    if (!body) return { files: [], failed: true }
-    const torrents = Array.isArray(body.data) ? body.data : []
-    const files: ListedFile[] = []
-    for (const torrent of torrents) {
-      const torrentName = String(torrent?.name ?? '')
-      for (const file of torrent?.files ?? []) {
-        const name = String(file.short_name ?? file.name ?? '').split('/').pop() ?? ''
-        if (!VIDEO.test(name)) continue
-        files.push({
-          file: { provider: 'torbox', fileRef: `${torrent.id}|${file.id}`, name, size: Number(file.size) || 0 },
-          torrentKey: `torbox:${torrent.id}`,
-          torrentName,
-          folders: foldersOf(String(file.name ?? name), torrentName),
-        })
-      }
-    }
-    return { files, failed: false }
-  }
-
-  /** AllDebrid-svar kan ha magnets som lista eller som objekt nyckel→magnet. */
-  function asList<T>(value: T[] | Record<string, T> | undefined): T[] {
-    if (Array.isArray(value)) return value
-    return value && typeof value === 'object' ? Object.values(value) : []
-  }
-
-  interface AdFileNode { n: string; s?: number; l?: string; e?: AdFileNode[] }
-
-  function flattenAdFiles(nodes: AdFileNode[], parent = ''): Array<{ path: string; bytes: number; link: string }> {
-    const out: Array<{ path: string; bytes: number; link: string }> = []
-    for (const node of nodes) {
-      const path = parent ? `${parent}/${node.n}` : node.n
-      if (node.e?.length) out.push(...flattenAdFiles(node.e, path))
-      else if (node.l) out.push({ path, bytes: node.s ?? 0, link: node.l })
-    }
-    return out
-  }
-
-  const AD_FORM = { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' }
-
-  // Samma flöde som streams-pluginets AllDebrid-leverantör: POST /v4.1/magnet/status
-  // (statusCode 4 = klar), sedan POST /v4.1/magnet/files med ett nästlat filträd.
-  async function listAllDebrid(): Promise<ProviderListing> {
-    const status = await getJson('alldebrid', '/v4.1/magnet/status', { method: 'POST', headers: AD_FORM, body: '' })
-    if (status?.status !== 'success') return { files: [], failed: true }
-    const ready = asList<any>(status.data?.magnets).filter((m) => Number(m?.statusCode) === 4 && m?.id != null)
-    if (ready.length === 0) return { files: [], failed: false }
-    const form = new URLSearchParams()
-    for (const magnet of ready) form.append('id[]', String(magnet.id))
-    const filesBody = await getJson('alldebrid', '/v4.1/magnet/files', { method: 'POST', headers: AD_FORM, body: form.toString() })
-    if (filesBody?.status !== 'success') return { files: [], failed: true }
-    const files: ListedFile[] = []
-    const namesById = new Map(ready.map((m) => [String(m.id), String(m.filename ?? '')]))
-    for (const magnet of asList<any>(filesBody.data?.magnets)) {
-      if (magnet?.error) continue
-      const torrentName = namesById.get(String(magnet?.id)) ?? ''
-      for (const file of flattenAdFiles(magnet?.files ?? [])) {
-        const name = file.path.split('/').pop() ?? ''
-        if (!VIDEO.test(name)) continue
-        files.push({
-          file: { provider: 'alldebrid', fileRef: file.link, name, size: file.bytes },
-          torrentKey: `alldebrid:${magnet?.id}`,
-          torrentName,
-          folders: foldersOf(file.path, torrentName),
-        })
-      }
-    }
-    return { files, failed: false }
   }
 
   /**
    * Extramaterial som aldrig är en titel. Ordet räknas bara när det INTE också
-   * står i torrentens namn: "Trailer Park Boys" och "Extras" är serier.
+   * står i paketets namn: "Trailer Park Boys" och "Extras" är serier.
    */
   const JUNK_WORDS = /(?:^|[\s._\-[(])(sample|trailers?|featurettes?|extras|bonus|behind[\s._-]the[\s._-]scenes|deleted[\s._-]scenes|interviews?|making[\s._-]of)(?=[\s._\-\])]|$)/gi
-  /** Små filer bredvid en mycket större i samma torrent är extramaterial. */
+  /** Små filer bredvid en mycket större i samma paket är extramaterial. */
   const TINY_SHARE = 0.15
   const TINY_BYTES = 200 * 1024 * 1024
 
@@ -306,7 +195,7 @@ export function createDebridCloud(deps: CloudDeps) {
   function isJunk(entry: ListedFile, largest: number): boolean {
     const { size } = entry.file
     if (size > 0 && size < largest * TINY_SHARE && size < TINY_BYTES) return true
-    const allowed = junkWords(entry.torrentName)
+    const allowed = junkWords(entry.containerName)
     const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, '')
     for (const word of [...junkWords(stem), ...entry.folders.flatMap((folder) => [...junkWords(folder)])]) {
       if (!allowed.has(word)) return true
@@ -317,14 +206,14 @@ export function createDebridCloud(deps: CloudDeps) {
   interface ContainerInfo {
     title: string
     year: number | null
-    /** Säsongen när torrenten gäller en enda (S02, Season 2); null för hela serier. */
+    /** Säsongen när paketet gäller en enda (S02, Season 2); null för hela serier. */
     season: number | null
   }
 
   const SEASON_MARKER = /\b(?:s(\d{1,2})(?:\s*e\d{1,3})?|season\s*(\d{1,2})|s[äa]song\s*(\d{1,2}))\b/gi
   const SERIES_MARKER = /\b(?:complete[\s-]+series|the\s+complete|s\d{1,2}\s*-\s*s?\d{1,2})\b/i
 
-  /** Torrentnamnet som serie: titel + ev. säsong, eller null när namnet inte säger serie. */
+  /** Paketnamnet som serie: titel + ev. säsong, eller null när namnet inte säger serie. */
   function parseSeriesContainer(name: string): ContainerInfo | null {
     const work = name.replace(/[._]+/g, ' ').replace(/\s+/g, ' ').trim()
     if (!work) return null
@@ -339,7 +228,7 @@ export function createDebridCloud(deps: CloudDeps) {
     if (seasons.size === 0 && seriesAt < 0) return null
     const cut = [firstAt, seriesAt].filter((i) => i >= 0)
     const head = work.slice(0, Math.min(...cut)).trim()
-    // "Season 2" utan seriens namn: torrenten säger inte VILKEN serie.
+    // "Season 2" utan seriens namn: paketet säger inte VILKEN serie.
     if (!head) return null
     const parsed = parseLocalName(`${head}.mkv`)
     const title = parsed.title.replace(/[\s\-–(\[]+$/g, '').trim()
@@ -374,14 +263,14 @@ export function createDebridCloud(deps: CloudDeps) {
   }
 
   /**
-   * Var hör filen hemma? Torrentnamnet först: säger det serie grupperas filen
+   * Var hör filen hemma? Paketnamnet först: säger det serie grupperas filen
    * under serien (avsnittet ur filnamnet, säsongen ur filnamnet, mappen eller
-   * torrenten) — och en fil i en serietorrent som inte går att placera blir
-   * aldrig en film. Bara när torrentnamnet inte säger något gäller filnamnet.
+   * paketet) — och en fil i en seriepaket som inte går att placera blir
+   * aldrig en film. Bara när paketnamnet inte säger något gäller filnamnet.
    */
   function placeFile(entry: ListedFile): Placed | null {
-    const parsed = parseLocalName(entry.file.name, entry.folders[entry.folders.length - 1] ?? (entry.torrentName || undefined))
-    const series = parseSeriesContainer(entry.torrentName)
+    const parsed = parseLocalName(entry.file.name, entry.folders[entry.folders.length - 1] ?? (entry.containerName || undefined))
+    const series = parseSeriesContainer(entry.containerName)
     if (series) {
       const stem = entry.file.name.replace(/\.[a-z0-9]{2,4}$/i, '')
       const season = parsed.season ?? seasonFromFolders(entry.folders) ?? series.season
@@ -395,12 +284,12 @@ export function createDebridCloud(deps: CloudDeps) {
     return { kind: 'movie', title: parsed.title, year: parsed.year ?? null }
   }
 
-  function groupFiles(entries: ListedFile[]): DebridCloudTitle[] {
+  function groupFiles(entries: ListedFile[]): CloudTitle[] {
     const largest = new Map<string, number>()
-    for (const entry of entries) largest.set(entry.torrentKey, Math.max(largest.get(entry.torrentKey) ?? 0, entry.file.size))
-    const groups = new Map<string, DebridCloudTitle>()
+    for (const entry of entries) largest.set(entry.containerKey, Math.max(largest.get(entry.containerKey) ?? 0, entry.file.size))
+    const groups = new Map<string, CloudTitle>()
     for (const entry of entries) {
-      if (isJunk(entry, largest.get(entry.torrentKey) ?? 0)) continue
+      if (isJunk(entry, largest.get(entry.containerKey) ?? 0)) continue
       const placed = placeFile(entry)
       if (!placed) continue
       const norm = placed.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
@@ -413,11 +302,12 @@ export function createDebridCloud(deps: CloudDeps) {
     return [...groups.values()]
   }
 
-  function listDebridCloud(options: { force?: boolean } = {}): Promise<DebridCloudTitle[]> {
-    const providers = DEBRID_PROVIDERS.filter((p) => tokenFor(p))
-    if (providers.length === 0) return Promise.resolve([])
+  async function listCloud(options: { force?: boolean } = {}): Promise<CloudTitle[]> {
+    if (!deps.services()) await deps.servicesReady?.().catch(() => null)
+    const providers = (deps.services()?.services ?? []).map((service) => service.id).filter((p) => tokenFor(p))
+    if (providers.length === 0) return []
     const key = tokenSetKey(providers)
-    if (!options.force && cache && cache.key === key && Date.now() - cache.at < cache.ttl) return Promise.resolve(cache.titles)
+    if (!options.force && cache && cache.key === key && Date.now() - cache.at < cache.ttl) return cache.titles
     // Varje kanal laddar sin pool samtidigt vid kallstart: en genomgång delas av alla.
     if (inflight && inflight.key === key) return inflight.promise
     const entry = { key, promise: sweep(providers, key) }
@@ -426,11 +316,12 @@ export function createDebridCloud(deps: CloudDeps) {
     return entry.promise
   }
 
-  async function sweep(providers: DebridProviderId[], key: string): Promise<DebridCloudTitle[]> {
-    const listings = await Promise.all(providers.map((provider) => {
-      if (provider === 'realdebrid') return listRealDebrid()
-      if (provider === 'torbox') return listTorBox()
-      return listAllDebrid()
+  async function sweep(providers: CloudServiceId[], key: string): Promise<CloudTitle[]> {
+    const listings = await Promise.all(providers.map(async (provider): Promise<ProviderListing> => {
+      const service = serviceOf(provider)
+      if (!service) return { files: [], failed: true }
+      // En trasig tjänstefil får inte fälla de andra tjänsterna.
+      return service.list(apiFor(service)).catch(() => ({ files: [], failed: true }))
     }))
     const titles = groupFiles(listings.flatMap((l) => l.files))
     const hits = await deps.matchTitles(titles.map((t) => ({ title: t.title, year: t.year, kind: t.kind })))
@@ -440,7 +331,7 @@ export function createDebridCloud(deps: CloudDeps) {
       titles[index].tmdbId = hit.tmdbId
     })
     // Ett övergående leverantörsfel får inte gömma leverantören i 6 h: en listning
-    // som föll cachas inte alls, en med enstaka fallna torrentuppslag bara kort.
+    // som föll cachas inte alls, en med enstaka fallna uppslag bara kort.
     if (!listings.some((l) => l.failed)) {
       const ttl = listings.some((l) => l.partial) ? PARTIAL_TTL_MS : CACHE_TTL_MS
       cache = { key, at: Date.now(), ttl, titles }
@@ -448,41 +339,22 @@ export function createDebridCloud(deps: CloudDeps) {
     return titles
   }
 
-  async function unlock(input: { provider: DebridProviderId; fileRef: string }): Promise<{ url: string } | { failure: Failure }> {
+  async function unlock(input: { provider: CloudServiceId; fileRef: string }): Promise<{ url: string } | { failure: Failure }> {
     const { provider, fileRef } = input
-    // Ett 200-svar utan adress (TorBox success:false) räknas som fel med sin kropp.
-    const pick = (r: { data: any | null; failure: Failure | null }, url: unknown) =>
-      typeof url === 'string' ? { url } : { failure: r.failure ?? { status: 200, body: r.data } }
-    if (provider === 'realdebrid') {
-      const link = fileRef.split('|').slice(1).join('|')
-      const r = await request('realdebrid', '/unrestrict/link', {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: `link=${encodeURIComponent(link)}`,
-      })
-      return pick(r, r.data?.download)
-    }
-    if (provider === 'torbox') {
-      const [torrentId, fileId] = fileRef.split('|')
-      const token = tokenFor('torbox')
-      if (!token) return { failure: { status: 0, body: 'ingen nyckel' } }
-      const r = await request('torbox', `/torrents/requestdl?token=${encodeURIComponent(token)}&torrent_id=${encodeURIComponent(torrentId)}&file_id=${encodeURIComponent(fileId)}&redirect=false`)
-      return pick(r, r.data?.data)
-    }
-    const r = await request('alldebrid', '/v4/link/unlock', {
-      method: 'POST',
-      headers: AD_FORM,
-      body: new URLSearchParams({ link: fileRef }).toString(),
-    })
-    return pick(r, r.data?.data?.link)
+    const service = serviceOf(provider)
+    if (!service) return { failure: { status: 0, body: 'ingen tjänst' } }
+    if (!tokenFor(provider)) return { failure: { status: 0, body: 'ingen nyckel' } }
+    const { r, url } = await service.unlock(apiFor(service), fileRef)
+    // Ett 200-svar utan adress räknas som fel med sin kropp.
+    return typeof url === 'string' ? { url } : { failure: r.failure ?? { status: 200, body: r.data } }
   }
 
-  async function unrestrictDebridFile(input: { provider: DebridProviderId; fileRef: string }): Promise<{ url: string } | null> {
+  async function unlockCloudFile(input: { provider: CloudServiceId; fileRef: string }): Promise<{ url: string } | null> {
     const result = await unlock(input)
     if ('url' in result) return result
     deps.onUnlockFailed?.(input.provider, input.fileRef, result.failure.status, result.failure.body)
     return null
   }
 
-  return { listDebridCloud, unrestrictDebridFile }
+  return { listCloud, unlockCloudFile }
 }

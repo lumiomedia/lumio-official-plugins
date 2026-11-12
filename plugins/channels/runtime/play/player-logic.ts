@@ -45,9 +45,9 @@ export const ZAP_RESOLVE_DELAY_MS = 300
  * Snabb zappning ska inte starta ett strömuppslag per kanal man passerar:
  * vid kanalbyte väntar uppslaget ~300 ms (OSD:n och inställningsvyn byts
  * direkt). Biblioteksposter slås upp lokalt och väntar inte; strömsök och
- * debrid går mot leverantörer och gör det.
+ * cloud går mot leverantörer och gör det.
  */
-export function resolveDelayMs(playType: 'library' | 'stream' | 'debrid', channelChanged: boolean): number {
+export function resolveDelayMs(playType: 'library' | 'stream' | 'cloud', channelChanged: boolean): number {
   return channelChanged && playType !== 'library' ? ZAP_RESOLVE_DELAY_MS : 0
 }
 
@@ -100,7 +100,7 @@ export const NEIGHBOUR_PREFETCH_DELAY_MS = 3000
 
 /**
  * Det CH ▲▼ skulle landa på just nu, för förladdning i bakgrunden. Bara
- * biblioteks- och debridposter (lokalt uppslag resp. en fil att låsa upp) —
+ * biblioteks- och cloudposter (lokalt uppslag resp. en fil att låsa upp) —
  * aldrig strömsök, som går mot leverantörer och rate limits. Grannar utan
  * sparad tablå hoppas över (ingen poolladdning för en gissning).
  */
@@ -121,7 +121,7 @@ export function neighbourPrefetch(
     if (!rundown || rundown.length === 0) continue
     const slot = programmeAt(rundown, c.airWindow, now)
     if (slot.kind !== 'programme') continue
-    if (slot.item.play.type === 'library' || slot.item.play.type === 'debrid') out.push({ item: slot.item, allowCatalog: allowsCatalog(c) })
+    if (slot.item.play.type === 'library' || slot.item.play.type === 'cloud') out.push({ item: slot.item, allowCatalog: allowsCatalog(c) })
   }
   return out
 }

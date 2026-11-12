@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createDebridCloud } from './cloud'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { createCloud } from './cloud'
+import { evaluateCloudServices } from './cloud-services'
+
+// Den riktiga tjänstefilen ur repots rot: testerna nedan är dess regressionssvit.
+const SERVICES = evaluateCloudServices(readFileSync(resolve(process.cwd(), '../../connectors/channels-cloud.js'), 'utf8'))!
 
 /** Testens filnamnstolk (appens är en värdfunktion): titel före SxxEyy/år/kvalitet. */
 function parseLocalName(fileName: string) {
@@ -13,9 +19,9 @@ function parseLocalName(fileName: string) {
 
 const tokens: Record<string, string> = {}
 const matchTitles = vi.fn(async (wanted: unknown[]) => wanted.map((_, i) => ({ tmdbId: 100 + i })))
-let cloud = createDebridCloud({ token: () => null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
-const listDebridCloud = (options?: { force?: boolean }) => cloud.listDebridCloud(options)
-const unrestrictDebridFile: typeof cloud.unrestrictDebridFile = (input) => cloud.unrestrictDebridFile(input)
+let cloud = createCloud({ services: () => SERVICES, token: () => null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
+const listCloud = (options?: { force?: boolean }) => cloud.listCloud(options)
+const unlockCloudFile: typeof cloud.unlockCloudFile = (input) => cloud.unlockCloudFile(input)
 
 const fetchMock = vi.fn()
 function json(body: unknown, status = 200) {
@@ -49,12 +55,12 @@ beforeEach(() => {
   rawFetch.mockReset()
   vi.stubGlobal('fetch', relayedFetch)
   // Ny instans per test = tom cache och ingen pågående genomgång.
-  cloud = createDebridCloud({ token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
+  cloud = createCloud({ services: () => SERVICES, token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
 })
 
-describe('listDebridCloud', () => {
+describe('listCloud', () => {
   it('hoppar över leverantörer utan token och anropar ingenting', async () => {
-    expect(await listDebridCloud()).toEqual([])
+    expect(await listCloud()).toEqual([])
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -70,7 +76,7 @@ describe('listDebridCloud', () => {
       }
       throw new Error(`oväntat ${url}`)
     })
-    const out = await listDebridCloud()
+    const out = await listCloud()
     expect(out).toHaveLength(1)
     expect(out[0]).toMatchObject({ kind: 'tv', title: 'Reacher', tmdbId: 100 })
     expect(out[0].files.map((f: { fileRef: string; season?: number; episode?: number }) => [f.fileRef, f.season, f.episode])).toEqual([['7|1', 1, 1], ['7|2', 1, 2]])
@@ -92,7 +98,7 @@ describe('listDebridCloud', () => {
       }
       throw new Error(`oväntat ${url}`)
     })
-    const out = await listDebridCloud()
+    const out = await listCloud()
     expect(out.map((t: { kind: string; title: string; year: number | null }) => [t.kind, t.title, t.year])).toEqual([['movie', 'Alien', 1979]])
     expect(out[0].files).toHaveLength(1)
     expect(out[0].files[0]).toMatchObject({ provider: 'alldebrid', fileRef: 'https://ad/l1', size: 4e9 })
@@ -118,7 +124,7 @@ describe('listDebridCloud', () => {
       }
       throw new Error(`oväntat ${url}`)
     })
-    const out = await listDebridCloud()
+    const out = await listCloud()
     expect(out).toHaveLength(1)
     expect(out[0].files).toEqual([{ provider: 'realdebrid', fileRef: 'T1|https://rd/l1', name: 'Alien.1979.mkv', size: 4e9 }])
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/info/T2'))).toBe(false)
@@ -132,35 +138,35 @@ describe('listDebridCloud', () => {
       if (url.includes('/torbox/')) return torboxFails ? json({}, 500) : json({ data: [] })
       return json({ status: 'success', data: { magnets: [] } })
     })
-    await listDebridCloud()
+    await listCloud()
     const callsAfterFirst = fetchMock.mock.calls.length
     torboxFails = false
-    await listDebridCloud()
+    await listCloud()
     expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterFirst)
     const callsAfterSecond = fetchMock.mock.calls.length
-    await listDebridCloud()
+    await listCloud()
     expect(fetchMock.mock.calls.length).toBe(callsAfterSecond)
   })
 
   it('cachar i 6 h och respekterar force', async () => {
     tokens.alldebrid = 'ad'
     fetchMock.mockImplementation(() => json({ status: 'success', data: { magnets: [] } }))
-    await listDebridCloud()
-    await listDebridCloud()
+    await listCloud()
+    await listCloud()
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    await listDebridCloud({ force: true })
+    await listCloud({ force: true })
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 
-describe('listDebridCloud: delning, delvisa listor och tokennyckel', () => {
+describe('listCloud: delning, delvisa listor och tokennyckel', () => {
   it('samtida anrop delar en genomgång', async () => {
     tokens.torbox = 'tb'
     let release: () => void = () => {}
     fetchMock.mockImplementation(() => new Promise((resolve) => { release = () => resolve(json({ data: [] })) }).then((r) => r))
-    const a = listDebridCloud()
-    const b = listDebridCloud()
-    const c = listDebridCloud()
+    const a = listCloud()
+    const b = listCloud()
+    const c = listCloud()
     await Promise.resolve()
     release()
     await Promise.all([a, b, c])
@@ -177,14 +183,14 @@ describe('listDebridCloud: delning, delvisa listor och tokennyckel', () => {
     })
     const now = vi.spyOn(Date, 'now')
     now.mockReturnValue(1_000_000)
-    const first = await listDebridCloud()
+    const first = await listCloud()
     expect(first).toHaveLength(1)
     const calls = fetchMock.mock.calls.length
     now.mockReturnValue(1_000_000 + 14 * 60_000)
-    expect(await listDebridCloud()).toHaveLength(1)
+    expect(await listCloud()).toHaveLength(1)
     expect(fetchMock.mock.calls.length).toBe(calls)
     now.mockReturnValue(1_000_000 + 16 * 60_000)
-    await listDebridCloud()
+    await listCloud()
     expect(fetchMock.mock.calls.length).toBeGreaterThan(calls)
     now.mockRestore()
   })
@@ -196,13 +202,13 @@ describe('listDebridCloud: delning, delvisa listor och tokennyckel', () => {
       const name = token === 'tb-a' ? 'Alpha.2001.mkv' : 'Beta.2002.mkv'
       return json({ data: [{ id: 1, files: [{ id: 1, name, size: 1 }] }] })
     })
-    const a = await listDebridCloud()
+    const a = await listCloud()
     tokens.torbox = 'tb-b'
-    const b = await listDebridCloud()
+    const b = await listCloud()
     expect(a[0].title).toBe('Alpha')
     expect(b[0].title).toBe('Beta')
     tokens.torbox = 'tb-a'
-    await listDebridCloud()
+    await listCloud()
     // Bara en post cachas: tillbaka till A är en ny genomgång, men aldrig B:s lista.
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
@@ -214,7 +220,7 @@ describe('listDebridCloud: delning, delvisa listor och tokennyckel', () => {
       fetchMock.mockImplementation((_url: string, init?: RequestInit) => new Promise((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
       }))
-      const pending = listDebridCloud()
+      const pending = listCloud()
       await vi.advanceTimersByTimeAsync(15_000)
       expect(await pending).toEqual([])
     } finally {
@@ -223,11 +229,11 @@ describe('listDebridCloud: delning, delvisa listor och tokennyckel', () => {
   })
 })
 
-describe('unrestrictDebridFile', () => {
+describe('unlockCloudFile', () => {
   it('AllDebrid: ger data.link', async () => {
     tokens.alldebrid = 'ad'
     fetchMock.mockImplementation(() => json({ status: 'success', data: { link: 'https://cdn/x.mkv' } }))
-    expect(await unrestrictDebridFile({ provider: 'alldebrid', fileRef: 'https://ad/l1' })).toEqual({ url: 'https://cdn/x.mkv' })
+    expect(await unlockCloudFile({ provider: 'alldebrid', fileRef: 'https://ad/l1' })).toEqual({ url: 'https://cdn/x.mkv' })
     const [url, init] = fetchMock.mock.calls[0]
     expect(String(url)).toContain('/alldebrid/v4/link/unlock')
     expect(init).toMatchObject({ method: 'POST', body: 'link=https%3A%2F%2Fad%2Fl1' })
@@ -236,7 +242,7 @@ describe('unrestrictDebridFile', () => {
   it('Real-Debrid: POSTar länken och ger download', async () => {
     tokens.realdebrid = 'rd'
     fetchMock.mockImplementation(() => json({ download: 'https://rd/dl.mkv' }))
-    expect(await unrestrictDebridFile({ provider: 'realdebrid', fileRef: 'T1|https://rd/l1' })).toEqual({ url: 'https://rd/dl.mkv' })
+    expect(await unlockCloudFile({ provider: 'realdebrid', fileRef: 'T1|https://rd/l1' })).toEqual({ url: 'https://rd/dl.mkv' })
     const [url, init] = fetchMock.mock.calls[0]
     expect(String(url)).toContain('/realdebrid/unrestrict/link')
     expect(init).toMatchObject({ method: 'POST', body: 'link=https%3A%2F%2Frd%2Fl1' })
@@ -245,11 +251,11 @@ describe('unrestrictDebridFile', () => {
   it('ger null vid fel i stället för att kasta', async () => {
     tokens.torbox = 'tb'
     fetchMock.mockImplementation(() => json({}, 500))
-    expect(await unrestrictDebridFile({ provider: 'torbox', fileRef: '7|1' })).toBeNull()
+    expect(await unlockCloudFile({ provider: 'torbox', fileRef: '7|1' })).toBeNull()
   })
 })
 
-describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
+describe('listCloud: torrentens namn och mappar som sammanhang', () => {
   type File = { fileRef: string; name: string; season?: number; episode?: number }
   const torbox = (torrents: unknown[]) => {
     tokens.torbox = 'tb'
@@ -258,7 +264,7 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       throw new Error(`oväntat ${url}`)
     })
   }
-  const summary = (out: Awaited<ReturnType<typeof listDebridCloud>>) =>
+  const summary = (out: Awaited<ReturnType<typeof listCloud>>) =>
     out.map((t) => [t.kind, t.title, t.files.map((f: File) => [f.fileRef, f.season ?? null, f.episode ?? null])])
 
   it('ett avsnitt döpt efter sin titel hamnar under serien, inte som film', async () => {
@@ -268,7 +274,7 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       { id: 2, name: `${root}/20 - To the Lighthouse.mkv`, short_name: '20 - To the Lighthouse.mkv', size: 1.5e9 },
       { id: 3, name: `${root}/To the Lighthouse.mkv`, short_name: 'To the Lighthouse.mkv', size: 1.5e9 },
     ] }])
-    expect(summary(await listDebridCloud())).toEqual([
+    expect(summary(await listCloud())).toEqual([
       ['tv', 'Terminator The Sarah Connor Chronicles', [['5|1', 2, 19], ['5|2', 2, 20]]],
     ])
   })
@@ -279,7 +285,7 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       { id: 1, name: `${root}/Season 2/03 - Picture of the Dead.mkv`, short_name: '03 - Picture of the Dead.mkv', size: 2e9 },
       { id: 2, name: `${root}/Season 1/Reacher.S01E01.mkv`, short_name: 'Reacher.S01E01.mkv', size: 2e9 },
     ] }])
-    expect(summary(await listDebridCloud())).toEqual([['tv', 'Reacher', [['6|1', 2, 3], ['6|2', 1, 1]]]])
+    expect(summary(await listCloud())).toEqual([['tv', 'Reacher', [['6|1', 2, 3], ['6|2', 1, 1]]]])
   })
 
   it('sample, trailer, extramaterial och småfiler bredvid huvudfilen räknas inte', async () => {
@@ -291,7 +297,7 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       { id: 4, name: `${root}/Featurettes/The Beast Within.mkv`, short_name: 'The Beast Within.mkv', size: 900e6 },
       { id: 5, name: `${root}/clip01.mkv`, short_name: 'clip01.mkv', size: 120e6 },
     ] }])
-    expect(summary(await listDebridCloud())).toEqual([['movie', 'Alien', [['7|1', null, null]]]])
+    expect(summary(await listCloud())).toEqual([['movie', 'Alien', [['7|1', null, null]]]])
   })
 
   it('ett skräpord som är en del av seriens namn fäller inte avsnitten', async () => {
@@ -300,7 +306,7 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       { id: 1, name: `${root}/Trailer.Park.Boys.S01E01.mkv`, short_name: 'Trailer.Park.Boys.S01E01.mkv', size: 4e8 },
       { id: 2, name: `${root}/Trailer.Park.Boys.S01E02.mkv`, short_name: 'Trailer.Park.Boys.S01E02.mkv', size: 4e8 },
     ] }])
-    expect(summary(await listDebridCloud())).toEqual([['tv', 'Trailer Park Boys', [['8|1', 1, 1], ['8|2', 1, 2]]]])
+    expect(summary(await listCloud())).toEqual([['tv', 'Trailer Park Boys', [['8|1', 1, 1], ['8|2', 1, 2]]]])
   })
 
   it('Real-Debrid: torrentens filnamn och sökvägen ger serien', async () => {
@@ -312,14 +318,14 @@ describe('listDebridCloud: torrentens namn och mappar som sammanhang', () => {
       }
       throw new Error(`oväntat ${url}`)
     })
-    expect(summary(await listDebridCloud())).toEqual([['tv', 'Firefly', [['T9|https://rd/l9', 1, 14]]]])
+    expect(summary(await listCloud())).toEqual([['tv', 'Firefly', [['T9|https://rd/l9', 1, 14]]]])
   })
 })
 
 describe('fallerade upplåsningar rapporteras med status och svar', () => {
   it('TorBox 200 utan adress och RD 404 når onUnlockFailed; en lyckad gör det inte', async () => {
     const failed: Array<[string, string, number, unknown]> = []
-    cloud = createDebridCloud({ token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0, onUnlockFailed: (p, f, s, b) => { failed.push([p, f, s, b]) } })
+    cloud = createCloud({ services: () => SERVICES, token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0, onUnlockFailed: (p, f, s, b) => { failed.push([p, f, s, b]) } })
     tokens.torbox = 'tb'
     tokens.realdebrid = 'rd'
     fetchMock.mockImplementation((url: string) => {
@@ -328,9 +334,9 @@ describe('fallerade upplåsningar rapporteras med status och svar', () => {
       if (url.includes('/realdebrid/unrestrict/link')) return json({ error: 'unknown_ressource', error_code: 7 }, 404)
       return json({}, 500)
     })
-    expect(await unrestrictDebridFile({ provider: 'torbox', fileRef: '1|378' })).toBeNull()
-    expect(await unrestrictDebridFile({ provider: 'torbox', fileRef: '1|5' })).toEqual({ url: 'https://cdn/ok.mkv' })
-    expect(await unrestrictDebridFile({ provider: 'realdebrid', fileRef: 'T|https://rd/l' })).toBeNull()
+    expect(await unlockCloudFile({ provider: 'torbox', fileRef: '1|378' })).toBeNull()
+    expect(await unlockCloudFile({ provider: 'torbox', fileRef: '1|5' })).toEqual({ url: 'https://cdn/ok.mkv' })
+    expect(await unlockCloudFile({ provider: 'realdebrid', fileRef: 'T|https://rd/l' })).toBeNull()
     expect(failed).toEqual([
       ['torbox', '1|378', 200, { success: false, error: 'DOWNLOAD_NOT_FOUND' }],
       ['realdebrid', 'T|https://rd/l', 404, { error: 'unknown_ressource', error_code: 7 }],
@@ -346,7 +352,7 @@ describe('appens vidarebefordring', () => {
       if (url.includes('/torbox/')) return json({ data: [] })
       return json({ status: 'success', data: { magnets: [] } })
     })
-    await listDebridCloud()
+    await listCloud()
     const calls = rawFetch.mock.calls.map(([u, init]) => [u, init?.headers as Record<string, string>] as const)
     const torbox = calls.find(([, h]) => h['x-relay-base'] === 'https://api.torbox.app/v1/api')!
     expect(torbox[0]).toBe('/api/plugin-relay/torrents/mylist?bypass_cache=true')
@@ -367,9 +373,31 @@ describe('appens vidarebefordring', () => {
       expect((init?.headers as Record<string, string>)['x-tb-token']).toBe('tb')
       return json({ data: [{ id: 1, files: [{ id: 1, name: 'Alien.1979.mkv', size: 1 }] }] })
     })
-    expect(await listDebridCloud()).toHaveLength(1)
+    expect(await listCloud()).toHaveLength(1)
     expect(seen).toEqual(['/api/plugin-relay/torrents/mylist?bypass_cache=true', '/api/stream-providers/torbox/torrents/mylist?bypass_cache=true'])
-    await listDebridCloud({ force: true })
+    await listCloud({ force: true })
     expect(seen.slice(2)).toEqual(['/api/stream-providers/torbox/torrents/mylist?bypass_cache=true'])
+  })
+})
+
+describe('tjänstefilen', () => {
+  it('en listning väntar in filen i stället för att svara tomt', async () => {
+    tokens.torbox = 'tb'
+    fetchMock.mockImplementation(() => json({ data: [{ id: 1, files: [{ id: 1, name: 'Alien.1979.mkv', size: 1 }] }] }))
+    let file: typeof SERVICES | null = null
+    const waiting = createCloud({
+      services: () => file,
+      servicesReady: async () => { file = SERVICES },
+      token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0,
+    })
+    expect(await waiting.listCloud()).toHaveLength(1)
+  })
+
+  it('utan fil finns inga molntjänster, och inget anropas', async () => {
+    tokens.torbox = 'tb'
+    const none = createCloud({ services: () => null, servicesReady: async () => null, token: (p) => tokens[p] ?? null, parseFileName: parseLocalName, matchTitles, pauseMs: 0 })
+    expect(await none.listCloud()).toEqual([])
+    expect(await none.unlockCloudFile({ provider: 'torbox', fileRef: '1|1' })).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

@@ -4,11 +4,11 @@ import { emptyDraft } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 
 const item = (ref: string, over: Partial<PoolItem> = {}): PoolItem => ({ ref, title: ref, runtimeMin: 60, runtimeKnown: true, year: 1985, kind: 'movie', source: 'library', genres: ['Drama'], play: { type: 'library', key: ref, mediaType: 'movie' }, ...over })
-const pools = { library: [item('a'), item('b', { genres: ['Action'] })], watchlist: [item('c', { source: 'watchlist', tmdbId: 9 })], debrid: [], vod: [item('v', { source: 'vod' })] }
+const pools = { library: [item('a'), item('b', { genres: ['Action'] })], watchlist: [item('c', { source: 'watchlist', tmdbId: 9 })], cloud: [], vod: [item('v', { source: 'vod' })] }
 
 describe('studion', () => {
   it('räknar per källa', () => {
-    expect(sourceCounts(pools)).toEqual({ library: 2, watchlist: 1, debrid: 0, vod: 1 })
+    expect(sourceCounts(pools)).toEqual({ library: 2, watchlist: 1, cloud: 0, vod: 1 })
   })
 
   it('förhandsvisningen följer reglerna direkt', () => {
@@ -32,7 +32,7 @@ describe('studion', () => {
     expect(tonightEnd(now)).toBe(end)
     // Strax före 03:00: natten därpå.
     expect(tonightEnd(new Date(2026, 9, 15, 2, 30).getTime())).toBe(new Date(2026, 9, 16, 3, 0).getTime())
-    const many = { library: Array.from({ length: 20 }, (_, i) => item(`m${i}`, { runtimeMin: 20 })), watchlist: [], debrid: [] }
+    const many = { library: Array.from({ length: 20 }, (_, i) => item(`m${i}`, { runtimeMin: 20 })), watchlist: [], cloud: [] }
     const p = previewFor({ ...emptyDraft(), name: 'X' }, many, 7, now)
     expect(p.tonight).toHaveLength(8)
     expect(p.tonight.every((r) => r.start < end)).toBe(true)
@@ -49,14 +49,14 @@ describe('studion', () => {
   })
 
   it('genrelistan är sorterad, utan skiftlägesdubbletter, med standardgenrer', () => {
-    const list = genreOptions({ library: [item('a', { genres: ['drama', 'Egen'] })], watchlist: [], debrid: [] })
+    const list = genreOptions({ library: [item('a', { genres: ['drama', 'Egen'] })], watchlist: [], cloud: [] })
     expect(list.filter((g) => g.toLowerCase() === 'drama')).toHaveLength(1)
     expect(list).toEqual(expect.arrayContaining(['Egen', 'Comedy', 'Science Fiction']))
     expect([...list].sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1))).toEqual(list)
   })
 
   it('genrelistan slår ihop stavningar och delar TV:s sammansatta genrer', () => {
-    const list = genreOptions({ library: [item('a', { genres: ['Sci-Fi', 'Action & Adventure'] })], watchlist: [], debrid: [] })
+    const list = genreOptions({ library: [item('a', { genres: ['Sci-Fi', 'Action & Adventure'] })], watchlist: [], cloud: [] })
     expect(list.filter((g) => /sci/i.test(g))).toEqual(['Science Fiction'])
     expect(list).toEqual(expect.arrayContaining(['Action', 'Adventure']))
     expect(list).not.toContain('Action & Adventure')
@@ -69,7 +69,7 @@ describe('studions titelfält', () => {
   })
   const tpools = {
     library: [at('1'), at('2', { posterUrl: 'lib.jpg' }), item('m', { title: 'Time Bandits', tmdbId: 36819, year: 1981 })],
-    watchlist: [], debrid: [item('d', { title: 'Adventureland', year: 2009, source: 'debrid', play: { type: 'debrid', provider: 'torbox', fileRef: 'x' } })], vod: [],
+    watchlist: [], cloud: [item('d', { title: 'Adventureland', year: 2009, source: 'cloud', play: { type: 'cloud', provider: 'torbox', fileRef: 'x' } })], vod: [],
   }
 
   it('lokala förslag: en per titel (serien, inte avsnitten), början av namnet först', () => {
@@ -101,7 +101,7 @@ describe('studions titelfält', () => {
   })
 
   it('förhandsvisningen med titlar: bara titlarna, reservposter för saknade', () => {
-    const draft = { ...emptyDraft(), name: '', sources: ['library' as const, 'debrid' as const], genres: ['Comedy'], titles: [{ kind: 'tv' as const, tmdbId: 15260, title: 'Adventure Time' }, { kind: 'movie' as const, tmdbId: 949, title: 'Heat' }] }
+    const draft = { ...emptyDraft(), name: '', sources: ['library' as const, 'cloud' as const], genres: ['Comedy'], titles: [{ kind: 'tv' as const, tmdbId: 15260, title: 'Adventure Time' }, { kind: 'movie' as const, tmdbId: 949, title: 'Heat' }] }
     expect(missingTitles(draft, tpools).map((t) => t.title)).toEqual(['Heat'])
     const heat = item('ti:movie:949', { title: 'Heat', tmdbId: 949, source: 'watchlist' })
     const now = new Date(2026, 9, 14, 21, 47).getTime()
